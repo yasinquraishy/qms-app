@@ -9,6 +9,7 @@ export const PUBLIC_ROUTES = [
   '/forgot-password',
   '/reset-password',
   '/accept-invitation',
+  '/asset-request',
 ]
 
 /**

@@ -191,6 +191,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/asset-request/[token]': RouteRecordInfo<
+      '/asset-request/[token]',
+      '/asset-request/:token',
+      { token: ParamValue<true> },
+      { token: ParamValue<false> },
+      | never
+    >,
     '/forgot-password': RouteRecordInfo<
       '/forgot-password',
       '/forgot-password',
@@ -387,6 +394,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/accept-invitation.vue': {
       routes:
         | '/accept-invitation'
+      views:
+        | never
+    }
+    'src/pages/asset-request/[token].vue': {
+      routes:
+        | '/asset-request/[token]'
       views:
         | never
     }

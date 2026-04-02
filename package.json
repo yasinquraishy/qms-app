@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "A QMS Project",
   "productName": "QMS",
-  "author": "Yasin Quraishy <yasin.quraishy@we45.com>",
+  "author": "Yasin Quraishy <yasin.quraishy@wire2air.com>",
   "type": "module",
   "private": true,
   "scripts": {

@@ -1,7 +1,7 @@
 <script setup>
 import { initSession, currentSession } from '@/utils/currentSession'
 import { initCurrentCompany, companies } from '@/utils/currentCompany'
-import { PUBLIC_ROUTES } from '@/constants/authRoutes'
+import { isPublicRoute as isPublicRouteFn, isAuthRoute } from '@/constants/authRoutes'
 import { provideNotifications } from '@/composables/useNotifications.js'
 
 provideNotifications()
@@ -21,9 +21,7 @@ const isOpenRoute = openRoutes.some(
   (route) => currentPath === route || currentPath.startsWith(`${route}/`),
 )
 // Check if this is a public route that doesn't depend on companyCode
-const isPublicRoute = PUBLIC_ROUTES.some(
-  (route) => currentPath === route || currentPath.startsWith(`${route}/`),
-)
+const isPublicRoute = isPublicRouteFn(currentPath)
 onMounted(async () => {
   if (isOpenRoute) {
     loading.value = false
@@ -33,7 +31,7 @@ onMounted(async () => {
   if (isPublicRoute) {
     // For public routes, just init session without companyCode
     await initSession()
-    if (currentSession.value) {
+    if (currentSession.value && isAuthRoute(currentPath)) {
       await initCurrentCompany()
       if (companies.value.length > 0) {
         const firstCompanyCode = companies.value[0].code

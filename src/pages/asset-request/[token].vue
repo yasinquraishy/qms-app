@@ -1,5 +1,5 @@
 <script setup>
-import { get, post, upload } from '@/api'
+import { get, upload } from '@/api'
 
 const route = useRoute()
 const token = route.params.token
@@ -22,12 +22,8 @@ async function fetchAssetRequest() {
       showError: false,
     })
     assetRequest.value = data.assetRequest
-  } catch (err) {
-    if (err.response?.status === 410) {
-      expired.value = true
-    } else {
-      error.value = err.response?.data?.error || err.message
-    }
+  } catch {
+    expired.value = true
   }
 }
 
@@ -54,7 +50,7 @@ async function onSubmit() {
     formData.append('file', selectedFile.value)
     formData.append('fileType', 'ASSET')
 
-    const uploadData = await upload(`/v1/services/public/assetRequests/${token}/upload`, formData, {
+    await upload(`/v1/services/public/assetRequests/${token}/upload`, formData, {
       showError: false,
       onUpload: (progressEvent) => {
         uploadProgress.value = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
@@ -62,15 +58,6 @@ async function onSubmit() {
     })
 
     uploading.value = false
-
-    await post(
-      `/v1/services/public/assetRequests/${token}/submit`,
-      {
-        assetId: uploadData.asset.id,
-      },
-      { showError: false },
-    )
-
     success.value = true
   } catch (err) {
     if (err.response?.status === 410) {

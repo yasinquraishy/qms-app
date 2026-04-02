@@ -12,6 +12,10 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  contacts: {
+    type: Array,
+    default: () => [],
+  },
   requestTypes: {
     type: Array,
     default: () => [],
@@ -32,6 +36,7 @@ const saving = ref(false)
 
 const form = ref({
   requestTypeId: null,
+  contactIds: [],
   title: '',
   description: '',
   dueDate: null,
@@ -39,11 +44,19 @@ const form = ref({
   statusId: 'PENDING',
 })
 
+const contactOptions = computed(() =>
+  props.contacts.map((c) => ({
+    label: c.email || c.phoneNumber || 'No email',
+    value: c.id,
+  })),
+)
+
 watch(show, (val) => {
   if (val) {
     form.value = props.editingRequest
       ? {
           requestTypeId: props.editingRequest.requestTypeId || null,
+          contactIds: (props.editingRequest.contacts || []).map((c) => c.id),
           title: props.editingRequest.title,
           description: props.editingRequest.description || '',
           dueDate: props.editingRequest.dueDate || null,
@@ -52,6 +65,7 @@ watch(show, (val) => {
         }
       : {
           requestTypeId: null,
+          contactIds: [],
           title: '',
           description: '',
           dueDate: null,
@@ -68,12 +82,14 @@ async function onSave() {
     return
   }
   if (!form.value.title?.trim()) return
+  if (!form.value.contactIds?.length) return
 
   saving.value = true
 
   let result
   if (props.editingRequest) {
     result = await put(`/v1/services/assetRequests/${props.editingRequest.id}`, {
+      contactIds: form.value.contactIds,
       requestTypeId: form.value.requestTypeId || null,
       title: form.value.title,
       description: form.value.description || null,
@@ -85,6 +101,7 @@ async function onSave() {
   } else {
     result = await post('/v1/services/assetRequests', {
       supplierId: props.supplierId,
+      contactIds: form.value.contactIds,
       requestTypeId: form.value.requestTypeId || null,
       title: form.value.title,
       description: form.value.description || null,
@@ -118,6 +135,20 @@ async function onSave() {
   >
     <div class="tw:p-4 tw:space-y-4">
       <WInput v-model="form.title" label="Title *" outlined dense hideBottomSpace />
+      <WSelect
+        v-model="form.contactIds"
+        :options="contactOptions"
+        label="Supplier Contacts *"
+        outlined
+        dense
+        multiple
+        emitValue
+        mapOptions
+        useChips
+        hideBottomSpace
+        optionLabel="label"
+        optionValue="value"
+      />
       <WSelect
         v-model="form.requestTypeId"
         :options="requestTypes"
@@ -176,7 +207,7 @@ async function onSave() {
         :label="editingRequest ? 'Save' : 'Create'"
         unelevated
         :loading="saving"
-        :disable="!form.title?.trim()"
+        :disable="!form.title?.trim() || !form.contactIds?.length"
         @click="onSave"
       />
     </template>

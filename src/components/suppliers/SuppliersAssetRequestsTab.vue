@@ -164,6 +164,20 @@ onMounted(() => {
           <p v-if="request.description" class="tw:text-xs tw:text-secondary tw:mt-1 tw:truncate">
             {{ request.description }}
           </p>
+          <div
+            v-if="request.contacts?.length"
+            class="tw:flex tw:items-center tw:gap-1 tw:mt-1 tw:flex-wrap"
+          >
+            <QBadge
+              v-for="contact in request.contacts"
+              :key="contact.id"
+              color="grey-3"
+              textColor="grey-8"
+              class="tw:rounded-full"
+            >
+              <span class="tw:text-[10px] tw:px-1">{{ contact.email || contact.phoneNumber }}</span>
+            </QBadge>
+          </div>
         </div>
 
         <div v-if="canUpdate" class="tw:flex tw:items-center tw:gap-1 tw:shrink-0">
@@ -213,6 +227,7 @@ onMounted(() => {
       v-model="showDialog"
       :supplierId="supplier.id"
       :editingRequest="editingRequest"
+      :contacts="supplier.contacts || []"
       :requestTypes="requestTypes"
       :requestStatuses="requestStatuses"
       @saved="fetchData"

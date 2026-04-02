@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { apiClient } from '@/api/client.js'
-import { PUBLIC_ROUTES } from '@/constants/authRoutes.js'
+import { isPublicRoute } from '@/constants/authRoutes.js'
 
 // Unique identifier for the current tab
 export const TAB_ID = `tab-${crypto.randomUUID()}`
@@ -135,7 +135,7 @@ async function fetchUserSession(options = {}) {
   } catch {
     // Not logged in - redirect unless already on auth pages
     const path = window.location.pathname
-    if (![...PUBLIC_ROUTES, '/app'].includes(path)) {
+    if (!isPublicRoute(path) && path !== '/app') {
       window.location.href = '/signin'
     }
     return null

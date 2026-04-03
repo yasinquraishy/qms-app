@@ -10,6 +10,8 @@ export class TableMeta extends BaseModel {
   @Property({ type: String }) tableName = '' // PK — "users", "documents"
   @Property({ type: String }) modelName = '' // indexed — "User", "Document"
   @Property({ type: String }) primaryKey = '' // "id"
+  @Property({ type: String }) syncField = /** @type {string | undefined} */ (undefined) // "updatedAt" or "version" (optional) — for sync status tracking
+  @Property({ type: String }) lastSyncValue = 0 // timestamp or version for last successful sync like "updatedAt" or "version" field
   @Property({ type: String }) singularName = '' // "user", "document"
   @Property({ type: String }) createMutation = '' // full GraphQL mutation string
   @Property({ type: String }) updateMutation = '' // full GraphQL mutation string

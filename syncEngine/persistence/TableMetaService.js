@@ -28,6 +28,8 @@ export class TableMetaService {
         tableName: schema.tableName, // PK
         modelName, // indexed — SW looks up by modelName from queue entries
         primaryKey: pk, // e.g. "id"
+        syncField: schema.syncField, // e.g. "updatedAt" or "version" (optional) — for sync status tracking
+        lastSyncValue: 0, // timestamp or version for last successful sync
         singularName, // e.g. "user" — needed for CREATE variable shape
         createMutation: mutations.create,
         updateMutation: mutations.update,

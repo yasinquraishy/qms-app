@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 import { fileURLToPath } from 'url'
 import vue from '@vitejs/plugin-vue'
+import babel from 'vite-plugin-babel'
 import VueRouter from 'unplugin-vue-router/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -39,6 +40,7 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@resource': fileURLToPath(new URL('./resource', import.meta.url)),
         '@shared': fileURLToPath(new URL('./resource/js/shared', import.meta.url)),
+        '@syncEngine': fileURLToPath(new URL('./syncEngine', import.meta.url)),
       },
     },
 
@@ -62,6 +64,14 @@ export default defineConfig(({ mode }) => {
     plugins: [
       // TailwindCSS
       tailwindcss(),
+
+      // Babel — needed for TC39 decorator support used by syncEngine
+      babel({
+        include: /syncEngine\//,
+        babelConfig: {
+          plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }]],
+        },
+      }),
 
       // Vue Router with file-based routing
       VueRouter({

@@ -1,17 +1,17 @@
-import { GraphQLSchemaGenerator } from "./GraphQLSchemaGenerator.js";
+import { GraphQLSchemaGenerator } from './GraphQLSchemaGenerator.js'
 
 export class GraphQLWorker {
-  #client;
-  #intervalMs;
-  #onError;
-  #onFlush;
-  #getPending;
-  #deleteEntry;
-  #rollback;
-  #timer;
-  #running;
-  #backoffMs;
-  #maxBackoffMs;
+  #client
+  #intervalMs
+  #onError
+  #onFlush
+  #getPending
+  #deleteEntry
+  #rollback
+  #timer
+  #running
+  #backoffMs
+  #maxBackoffMs
 
   /**
    * @param {object} client - GraphQL client with request(doc, vars) method
@@ -25,62 +25,55 @@ export class GraphQLWorker {
    */
   constructor(
     client,
-    {
-      intervalMs = 5000,
-      onError,
-      onFlush,
-      getPending,
-      deleteEntry,
-      rollback,
-    } = {},
+    { intervalMs = 5000, onError, onFlush, getPending, deleteEntry, rollback } = {},
   ) {
-    this.#client = client;
-    this.#intervalMs = intervalMs;
-    this.#onError = onError;
-    this.#onFlush = onFlush;
-    this.#getPending = getPending;
-    this.#deleteEntry = deleteEntry;
-    this.#rollback = rollback;
-    this.#timer = null;
-    this.#running = false;
-    this.#backoffMs = intervalMs;
-    this.#maxBackoffMs = 60000;
+    this.#client = client
+    this.#intervalMs = intervalMs
+    this.#onError = onError
+    this.#onFlush = onFlush
+    this.#getPending = getPending
+    this.#deleteEntry = deleteEntry
+    this.#rollback = rollback
+    this.#timer = null
+    this.#running = false
+    this.#backoffMs = intervalMs
+    this.#maxBackoffMs = 60000
   }
 
   start() {
-    if (this.#running) return;
-    this.#running = true;
-    this.#scheduleNext();
+    if (this.#running) return
+    this.#running = true
+    this.#scheduleNext()
   }
 
   stop() {
-    this.#running = false;
+    this.#running = false
     if (this.#timer) {
-      clearTimeout(this.#timer);
-      this.#timer = null;
+      clearTimeout(this.#timer)
+      this.#timer = null
     }
   }
 
   #scheduleNext() {
-    if (!this.#running) return;
-    this.#timer = setTimeout(() => this.#poll(), this.#backoffMs);
+    if (!this.#running) return
+    this.#timer = setTimeout(() => this.#poll(), this.#backoffMs)
   }
 
   async #poll() {
-    if (!this.#running) return;
+    if (!this.#running) return
 
     try {
-      const pending = await this.#getPending();
+      const pending = await this.#getPending()
       if (pending.length > 0) {
-        await this.#flush(pending);
-        this.#backoffMs = this.#intervalMs; // reset backoff on success
+        await this.#flush(pending)
       }
+      this.#backoffMs = this.#intervalMs // reset backoff on success (including empty queue)
     } catch (err) {
-      this.#onError?.(err);
+      this.#onError?.(err)
       // Exponential backoff on failure
-      this.#backoffMs = Math.min(this.#backoffMs * 2, this.#maxBackoffMs);
+      this.#backoffMs = Math.min(this.#backoffMs * 2, this.#maxBackoffMs)
     } finally {
-      this.#scheduleNext();
+      this.#scheduleNext()
     }
   }
 
@@ -91,20 +84,19 @@ export class GraphQLWorker {
   async #flush(entries) {
     for (const entry of entries) {
       try {
-        const { mutation, variables } =
-          GraphQLSchemaGenerator.generateMutation(entry);
-        await this.#client.request(mutation, variables);
-        await this.#deleteEntry(entry.id);
-        this.#onFlush?.(entry);
+        const { mutation, variables } = GraphQLSchemaGenerator.generateMutation(entry)
+        await this.#client.request(mutation, variables)
+        await this.#deleteEntry(entry.id)
+        this.#onFlush?.(entry)
       } catch (err) {
         // Check for permanent failures (400/409/422 status codes) — these will never succeed
-        const status = err?.response?.status;
-        const isPermanent = status === 400 || status === 409 || status === 422;
+        const status = err?.response?.status
+        const isPermanent = status === 400 || status === 409 || status === 422
         if (isPermanent) {
           // Rollback IndexedDB directly — no model instantiation needed
-          await this.#rollback(entry);
+          await this.#rollback(entry)
           // Remove queue entry
-          await this.#deleteEntry(entry.id);
+          await this.#deleteEntry(entry.id)
           this.#onError?.(
             Object.assign(err, {
               rollback: true,
@@ -114,12 +106,12 @@ export class GraphQLWorker {
                 action: entry.action,
               },
             }),
-          );
-          continue;
+          )
+          continue
         }
         // Transient failure — re-throw to trigger backoff in #poll
-        this.#onError?.(err);
-        throw err;
+        this.#onError?.(err)
+        throw err
       }
     }
   }

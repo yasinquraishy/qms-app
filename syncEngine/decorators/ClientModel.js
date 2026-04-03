@@ -1,7 +1,6 @@
-import pluralize from "pluralize-esm";
-import ModelRegistry from "../core/ModelRegistry.js";
-import { parseCustomIndex } from "../utils/parseCustomIndex.js";
-import { LOAD_STRATEGY } from "../shared/constants.js";
+import ModelRegistry from '../core/ModelRegistry.js'
+import { parseCustomIndex } from '../utils/parseCustomIndex.js'
+import { LOAD_STRATEGY } from '../shared/constants.js'
 
 /**
  * @ClientModel — class decorator.
@@ -21,19 +20,19 @@ import { LOAD_STRATEGY } from "../shared/constants.js";
  *   @ClientModel("users", { loadStrategy: LOAD_STRATEGY.LAZY }) — with options
  */
 export function ClientModel(tableName, options = {}) {
-  if (typeof tableName !== "string") {
+  if (typeof tableName !== 'string') {
     throw new Error(
       "@ClientModel requires a table name as first argument, e.g., @ClientModel('users')",
-    );
+    )
   }
 
   return function (Class, context) {
-    const modelName = context.name;
-    const properties = context.metadata?._syncProps ?? [];
-    const customIndexStr = Class.customIndex ?? null;
-    const indexes = customIndexStr ? parseCustomIndex(customIndexStr) : [];
-    const primaryKey = options.primaryKey ?? "id";
-    const syncField = options.syncField;
+    const modelName = context.name
+    const properties = context.metadata?._syncProps ?? []
+    const customIndexStr = Class.customIndex ?? null
+    const indexes = customIndexStr ? parseCustomIndex(customIndexStr) : []
+    const primaryKey = options.primaryKey ?? 'id'
+    const syncField = options.syncField
 
     ModelRegistry.register(
       modelName,
@@ -45,7 +44,7 @@ export function ClientModel(tableName, options = {}) {
       primaryKey,
       syncField,
       tableName,
-    );
-    return Class;
-  };
+    )
+    return Class
+  }
 }

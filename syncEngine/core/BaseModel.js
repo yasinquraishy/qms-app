@@ -1,13 +1,13 @@
-import { UpdateTransaction } from "./UpdateTransaction.js";
-import ModelRegistry from "./ModelRegistry.js";
-import { ObjectPool } from "./ObjectPool.js";
-import { hydrate } from "../persistence/hydration.js";
-import { QueryBuilder } from "../query/QueryBuilder.js";
-import { OPERATION } from "../shared/constants.js";
-import { ModelValidator, ValidationError } from "./ModelValidator.js";
+import { UpdateTransaction } from './UpdateTransaction.js'
+import ModelRegistry from './ModelRegistry.js'
+import { ObjectPool } from './ObjectPool.js'
+import { hydrate } from '../persistence/hydration.js'
+import { QueryBuilder } from '../query/QueryBuilder.js'
+import { OPERATION } from '../shared/constants.js'
+import { ModelValidator, ValidationError } from './ModelValidator.js'
 
 // Re-export for backwards compatibility
-export { ValidationError };
+export { ValidationError }
 
 /**
  * Base class for all @ClientModel classes.
@@ -34,10 +34,10 @@ export class BaseModel {
    * This replaces monkey-patching of BaseModel.prototype.save (OCP).
    * @type {((instance: BaseModel) => Promise<void>) | null}
    */
-  static _saveStrategy = null;
+  static _saveStrategy = null
 
-  #action = OPERATION.UPDATE;
-  #modified = {};
+  #action = OPERATION.UPDATE
+  #modified = {}
 
   /**
    * Create a new instance of this model class.
@@ -46,37 +46,37 @@ export class BaseModel {
    * @returns {InstanceType} — hydrated instance
    */
   static create(object) {
-    const modelName = this.name;
-    const Ctor = ModelRegistry.getConstructor(modelName);
-    if (!Ctor) throw new Error(`[BaseModel] Unknown model: ${modelName}`);
+    const modelName = this.name
+    const Ctor = ModelRegistry.getConstructor(modelName)
+    if (!Ctor) throw new Error(`[BaseModel] Unknown model: ${modelName}`)
 
-    const schema = ModelRegistry.getSchema(modelName);
-    const pk = schema.primaryKey;
+    const schema = ModelRegistry.getSchema(modelName)
+    const pk = schema.primaryKey
 
     // Create instance
-    const instance = new Ctor();
+    const instance = new Ctor()
 
     // Assign provided properties
     for (const [key, value] of Object.entries(object)) {
-      instance[key] = value;
+      instance[key] = value
     }
 
     // Ensure pk is set (generate UUID if not provided)
     if (!instance[pk]) {
-      instance[pk] = crypto.randomUUID();
+      instance[pk] = crypto.randomUUID()
     }
 
     // Clear dirty state from property assignments — a newly created instance
     // should not appear dirty until a property is explicitly modified.
-    instance._clearModified();
+    instance._clearModified()
 
     // Mark as create action
-    instance.#action = OPERATION.CREATE;
+    instance.#action = OPERATION.CREATE
 
     // Register in pool
-    ObjectPool.register(modelName, instance[pk], instance);
+    ObjectPool.register(modelName, instance[pk], instance)
 
-    return instance;
+    return instance
   }
 
   /**
@@ -85,7 +85,7 @@ export class BaseModel {
    * @returns {Promise<this|null>} The model instance or null if not found
    */
   static async findByPk(id) {
-    return hydrate(this.name, id);
+    return hydrate(this.name, id)
   }
 
   /**
@@ -96,10 +96,10 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async reload() {
-    const modelName = this.constructor.name;
-    const schema = ModelRegistry.getSchema(modelName);
-    const pk = schema.primaryKey;
-    await hydrate(modelName, this[pk]);
+    const modelName = this.constructor.name
+    const schema = ModelRegistry.getSchema(modelName)
+    const pk = schema.primaryKey
+    await hydrate(modelName, this[pk])
   }
 
   /**
@@ -108,7 +108,7 @@ export class BaseModel {
    * @returns {QueryBuilder}
    */
   static where(conditions) {
-    return new QueryBuilder(this.name).where(conditions || {});
+    return new QueryBuilder(this.name).where(conditions || {})
   }
 
   /**
@@ -117,8 +117,8 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async delete() {
-    this.#action = OPERATION.DELETE;
-    await this.save();
+    this.#action = OPERATION.DELETE
+    await this.save()
   }
 
   /**
@@ -126,7 +126,7 @@ export class BaseModel {
    * @returns {string}
    */
   get action() {
-    return this.#action;
+    return this.#action
   }
 
   /**
@@ -137,7 +137,7 @@ export class BaseModel {
    */
   _propertyChanged(name, oldValue) {
     if (!(name in this.#modified)) {
-      this.#modified[name] = oldValue;
+      this.#modified[name] = oldValue
     }
   }
 
@@ -146,7 +146,7 @@ export class BaseModel {
    * @internal
    */
   _clearModified() {
-    this.#modified = {};
+    this.#modified = {}
   }
 
   /**
@@ -154,14 +154,14 @@ export class BaseModel {
    * the last save().
    */
   isDirty() {
-    return Object.keys(this.#modified).length > 0;
+    return Object.keys(this.#modified).length > 0
   }
 
   /**
    * Returns a shallow copy of the current dirty-field snapshot.
    */
   getModifiedProperties() {
-    return { ...this.#modified };
+    return { ...this.#modified }
   }
 
   /**
@@ -171,23 +171,15 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async save() {
-    this._validateProperties();
+    ModelValidator.validate(this, this.constructor.name)
 
     if (BaseModel._saveStrategy) {
-      await BaseModel._saveStrategy(this);
+      await BaseModel._saveStrategy(this)
     } else {
-      const changes = this.getModifiedProperties();
-      const transaction = new UpdateTransaction(this, changes);
-      await transaction.commit();
-      this._clearModified();
+      const changes = this.getModifiedProperties()
+      const transaction = new UpdateTransaction(this, changes)
+      await transaction.commit()
+      this._clearModified()
     }
-  }
-
-  /**
-   * Validate all @Property fields against their declared type and required constraint.
-   * @throws {ValidationError} if any field fails validation
-   */
-  _validateProperties() {
-    ModelValidator.validate(this, this.constructor.name);
   }
 }

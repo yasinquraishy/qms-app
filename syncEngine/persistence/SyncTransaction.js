@@ -1,23 +1,19 @@
 // SyncTransaction.js
-import { UpdateTransaction } from "../core/UpdateTransaction.js";
-import { IndexedDB } from "./IndexedDB.js";
-import { TransactionQueue } from "./TransactionQueue.js";
-import ModelRegistry from "../core/ModelRegistry.js";
-import {
-  LOAD_STRATEGY,
-  TRANSACTIONS_STORE,
-  OPERATION,
-} from "../shared/constants.js";
-import { dehydrate, serializeValue, deserializeValue } from "./hydration.js";
-import { ObjectPool } from "../core/ObjectPool.js";
+import { UpdateTransaction } from '../core/UpdateTransaction.js'
+import { IndexedDB } from './IndexedDB.js'
+import { TransactionQueue } from './TransactionQueue.js'
+import ModelRegistry from '../core/ModelRegistry.js'
+import { LOAD_STRATEGY, TRANSACTIONS_STORE, OPERATION } from '../shared/constants.js'
+import { dehydrate, serializeValue, deserializeValue } from './hydration.js'
+import { ObjectPool } from '../core/ObjectPool.js'
 
 export class SyncTransaction extends UpdateTransaction {
-  #queueId = null;
-  #action = OPERATION.UPDATE;
+  #queueId = null
+  #action = OPERATION.UPDATE
 
   constructor(model, changes, action = OPERATION.UPDATE) {
-    super(model, changes);
-    this.#action = action;
+    super(model, changes)
+    this.#action = action
   }
 
   /**
@@ -31,56 +27,49 @@ export class SyncTransaction extends UpdateTransaction {
    * @param {object} entry - Queue entry with { modelName, modelId, action, newValues, changes }
    */
   static async rollbackQueueEntry(entry) {
-    const schema = ModelRegistry.getSchema(entry.modelName);
-    if (!schema) return;
+    const schema = ModelRegistry.getSchema(entry.modelName)
+    if (!schema) return
 
-    const tableName = schema.tableName;
+    const tableName = schema.tableName
 
     switch (entry.action) {
       case OPERATION.CREATE: {
-        await IndexedDB.delete(tableName, entry.modelId);
-        ObjectPool.unregister(entry.modelName, entry.modelId);
-        break;
+        await IndexedDB.delete(tableName, entry.modelId)
+        ObjectPool.unregister(entry.modelName, entry.modelId)
+        break
       }
       case OPERATION.UPDATE: {
         if (entry.changes && entry.newValues) {
           const restoredRecord = {
             ...entry.newValues,
             ...entry.changes,
-          };
-          await IndexedDB.put(tableName, restoredRecord);
+          }
+          await IndexedDB.put(tableName, restoredRecord)
 
           // Update ObjectPool instance if loaded (apply deserialized old values)
-          const poolInstance = ObjectPool.get(entry.modelName, entry.modelId);
+          const poolInstance = ObjectPool.get(entry.modelName, entry.modelId)
           if (poolInstance) {
-            const propertyMetaMap = schema.properties;
+            const propertyMetaMap = schema.properties
             for (const [key, serializedVal] of Object.entries(entry.changes)) {
-              poolInstance[key] = deserializeValue(
-                serializedVal,
-                propertyMetaMap.get(key),
-              );
+              poolInstance[key] = deserializeValue(serializedVal, propertyMetaMap.get(key))
             }
-            poolInstance._clearModified();
+            poolInstance._clearModified()
           }
         }
-        break;
+        break
       }
       case OPERATION.DELETE: {
         if (entry.newValues) {
-          await IndexedDB.put(tableName, entry.newValues);
+          await IndexedDB.put(tableName, entry.newValues)
         }
-        break;
+        break
       }
     }
   }
 
   /** @returns {string} */
   get modelName() {
-    // Derive model name from constructor name via ModelRegistry reverse lookup
-    for (const [name, ctor] of Object.entries(ModelRegistry.modelLookup)) {
-      if (this.model.constructor === ctor) return name;
-    }
-    return this.model.constructor.name;
+    return this.model.constructor.name
   }
 
   /**
@@ -88,45 +77,45 @@ export class SyncTransaction extends UpdateTransaction {
    * Skips queue for 'local' loadStrategy.
    */
   async commit() {
-    if (this.committed) return this;
+    if (this.committed) return this
 
-    const schema = ModelRegistry.getSchema(this.modelName);
-    const pk = schema.primaryKey;
-    const id = this.model[pk];
-    const tableName = ModelRegistry.getTableName(this.modelName);
+    const schema = ModelRegistry.getSchema(this.modelName)
+    const pk = schema.primaryKey
+    const id = this.model[pk]
+    const tableName = ModelRegistry.getTableName(this.modelName)
 
     // Capture old IDB record for atomicity rollback
-    const oldRecord = await IndexedDB.get(tableName, id);
+    const oldRecord = await IndexedDB.get(tableName, id)
 
     try {
-      let newValues = {};
-      let patch = {};
-      let changes = null;
+      let newValues = {}
+      let patch = {}
+      let changes = null
 
       if (this.#action === OPERATION.DELETE) {
         // Dehydrate BEFORE delete so we have a full snapshot for rollback
-        newValues = await dehydrate(this.modelName, this.model);
-        await IndexedDB.delete(tableName, id);
+        newValues = await dehydrate(this.modelName, this.model)
+        await IndexedDB.delete(tableName, id)
         // For delete rollback, changes is the full snapshot (restore entire record)
-        changes = newValues;
+        changes = newValues
       } else {
         // Persist model data to IndexedDB using pk as keyPath
-        newValues = await dehydrate(this.modelName, this.model);
+        newValues = await dehydrate(this.modelName, this.model)
 
         // Build serialized patch: only the changed fields' new values (network-ready)
-        const changedKeys = Object.keys(this.changes);
+        const changedKeys = Object.keys(this.changes)
         for (const key of changedKeys) {
           if (key in newValues) {
-            patch[key] = newValues[key];
+            patch[key] = newValues[key]
           }
         }
 
         // Serialize old values for rollback
         if (this.#action !== OPERATION.CREATE) {
-          const propertyMetaMap = schema.properties;
-          changes = {};
+          const propertyMetaMap = schema.properties
+          changes = {}
           for (const [key, oldValue] of Object.entries(this.changes)) {
-            changes[key] = serializeValue(oldValue, propertyMetaMap.get(key));
+            changes[key] = serializeValue(oldValue, propertyMetaMap.get(key))
           }
         }
       }
@@ -140,34 +129,32 @@ export class SyncTransaction extends UpdateTransaction {
           newValues,
           patch,
           this.#action,
-        );
+        )
       }
 
-      this.committed = true;
-      return this;
+      this.committed = true
+      return this
     } catch (err) {
       // Rollback queue entry if it was appended
       if (this.#queueId) {
-        await IndexedDB.delete(TRANSACTIONS_STORE, this.#queueId).catch(
-          () => {},
-        );
-        this.#queueId = null;
+        await IndexedDB.delete(TRANSACTIONS_STORE, this.#queueId).catch(() => {})
+        this.#queueId = null
       }
 
       // Restore IndexedDB to pre-commit state
       switch (this.#action) {
         case OPERATION.CREATE:
-          await IndexedDB.delete(tableName, id).catch(() => {});
-          break;
+          await IndexedDB.delete(tableName, id).catch(() => {})
+          break
         case OPERATION.DELETE:
         case OPERATION.UPDATE:
           if (oldRecord) {
-            await IndexedDB.put(tableName, oldRecord).catch(() => {});
+            await IndexedDB.put(tableName, oldRecord).catch(() => {})
           }
-          break;
+          break
       }
 
-      throw err;
+      throw err
     }
   }
 
@@ -176,9 +163,9 @@ export class SyncTransaction extends UpdateTransaction {
    */
   async rollback() {
     if (this.#queueId) {
-      await IndexedDB.delete(TRANSACTIONS_STORE, this.#queueId);
-      this.#queueId = null;
+      await IndexedDB.delete(TRANSACTIONS_STORE, this.#queueId)
+      this.#queueId = null
     }
-    return super.rollback();
+    return super.rollback()
   }
 }

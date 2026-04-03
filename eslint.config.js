@@ -4,8 +4,21 @@ import pluginVue from 'eslint-plugin-vue'
 import pluginQuasar from '@quasar/app-vite/eslint'
 import prettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting'
 import eslintAutoImport from './eslint-auto-import.js'
+import babelParser from '@babel/eslint-parser'
 
 export default [
+  // syncEngine uses TC39 decorators — parse with Babel
+  {
+    languageOptions: {
+      parser: babelParser,
+      parserOptions: {
+        requireConfigFile: false,
+        babelOptions: {
+          plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }]],
+        },
+      },
+    },
+  },
   {
     /**
      * Ignore the following files.

@@ -29,49 +29,6 @@ export const GraphQLSchemaGenerator = {
   },
 
   /**
-   * PostGraphile v5 fetch-by-pk query.
-   * @param {string} modelName
-   * @returns {{ query: string, variableName: string }}
-   */
-  generateFetchQuery(modelName) {
-    const { singularName, capitalSingular, pk, fields } = this._resolveSchema(modelName)
-    const capitalPk = capitalize(pk)
-
-    const query = `query Fetch${capitalSingular}($${pk}: ID!) {
-  ${singularName}By${capitalPk}(${pk}: $${pk}) {
-    ${fields}
-  }
-}`
-
-    return {
-      query,
-      variableName: pk,
-    }
-  },
-
-  /**
-   * PostGraphile v5 fetch-all query.
-   * @param {string} modelName
-   * @returns {{ query: string }}
-   */
-  generateFetchAllQuery(modelName) {
-    const { schema } = this._resolveSchema(modelName)
-    const tableName = schema.tableName
-    const pluralName = pluralize(tableName)
-    const fields = [...schema.properties.keys()].join('\n      ')
-
-    const query = `query {
-  ${pluralName} {
-    nodes {
-      ${fields}
-    }
-  }
-}`
-
-    return { query }
-  },
-
-  /**
    * Generate all mutation strings for a model (strings only, no variables).
    * Used by TableMetaService to pre-compute for Service Worker consumption.
    * @param {string} modelName
@@ -110,7 +67,7 @@ export const GraphQLSchemaGenerator = {
    * Generate all query strings for a model (strings only, no variables).
    * Used by TableMetaService to pre-compute for Service Worker consumption.
    * @param {string} modelName
-   * @returns {{ fetch: { query: string, variableName: string }, fetchAll: { query: string } }}
+   * @returns {{ fetch: { query: string, variableName: string }, fetchAll: { query: string, filterType: string } }}
    */
   generateQueryStrings(modelName) {
     const { schema, singularName, capitalSingular, pk, fields } = this._resolveSchema(modelName)
@@ -118,6 +75,7 @@ export const GraphQLSchemaGenerator = {
     const tableName = schema.tableName
     const pluralName = pluralize(tableName)
     const allFields = [...schema.properties.keys()].join('\n      ')
+    const filterType = `${capitalSingular}Filter`
 
     const fetch = {
       query: `query Fetch${capitalSingular}($${pk}: ID!) {
@@ -129,13 +87,20 @@ export const GraphQLSchemaGenerator = {
     }
 
     const fetchAll = {
-      query: `query {
-  ${pluralName} {
+      query: `query FetchAll${capitalSingular}($filter: ${filterType}, $first: Int, $after: Cursor) {
+  ${pluralName}(filter: $filter, first: $first, after: $after) {
     nodes {
       ${allFields}
     }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
   }
 }`,
+      filterType,
     }
 
     return { fetch, fetchAll }

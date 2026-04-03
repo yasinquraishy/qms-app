@@ -115,7 +115,9 @@ async function onConfirm() {
             <QIcon name="insert_drive_file" color="primary" size="sm" />
             <div class="tw:flex-1 tw:min-w-0">
               <p class="tw:text-sm tw:text-on-main tw:truncate">
-                {{ assetRequest.asset.originalFilename || assetRequest.asset.filename || 'Document' }}
+                {{
+                  assetRequest.asset.originalFilename || assetRequest.asset.filename || 'Document'
+                }}
               </p>
               <p v-if="assetRequest.asset.mimeType" class="tw:text-xs tw:text-secondary">
                 {{ assetRequest.asset.mimeType }}

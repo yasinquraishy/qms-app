@@ -101,43 +101,40 @@ async function onConfirm() {
           </p>
         </div>
 
-        <!-- Uploaded documents -->
+        <!-- Uploaded document -->
         <div>
           <p
             class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wide tw:mb-2"
           >
-            Submitted Documents
+            Submitted Document
           </p>
-          <div v-if="assetRequest.supplierAssets?.length" class="tw:space-y-2">
-            <div
-              v-for="sa in assetRequest.supplierAssets"
-              :key="sa.id"
-              class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:bg-main-hover tw:rounded-lg tw:border tw:border-divider"
-            >
-              <QIcon name="insert_drive_file" color="primary" size="sm" />
-              <div class="tw:flex-1 tw:min-w-0">
-                <p class="tw:text-sm tw:text-on-main tw:truncate">
-                  {{ sa.asset?.originalFilename || sa.asset?.filename || 'Document' }}
-                </p>
-                <p v-if="sa.asset?.mimeType" class="tw:text-xs tw:text-secondary">
-                  {{ sa.asset.mimeType }}
-                </p>
-              </div>
-              <WBtn
-                v-if="sa.asset?.url"
-                flat
-                round
-                dense
-                icon="open_in_new"
-                color="secondary"
-                size="sm"
-                :href="sa.asset.url"
-                target="_blank"
-                title="Open file"
-              />
+          <div
+            v-if="assetRequest.asset"
+            class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:bg-main-hover tw:rounded-lg tw:border tw:border-divider"
+          >
+            <QIcon name="insert_drive_file" color="primary" size="sm" />
+            <div class="tw:flex-1 tw:min-w-0">
+              <p class="tw:text-sm tw:text-on-main tw:truncate">
+                {{ assetRequest.asset.originalFilename || assetRequest.asset.filename || 'Document' }}
+              </p>
+              <p v-if="assetRequest.asset.mimeType" class="tw:text-xs tw:text-secondary">
+                {{ assetRequest.asset.mimeType }}
+              </p>
             </div>
+            <WBtn
+              v-if="assetRequest.asset.url"
+              flat
+              round
+              dense
+              icon="open_in_new"
+              color="secondary"
+              size="sm"
+              :href="assetRequest.asset.url"
+              target="_blank"
+              title="Open file"
+            />
           </div>
-          <p v-else class="tw:text-sm tw:text-secondary tw:italic">No documents uploaded yet.</p>
+          <p v-else class="tw:text-sm tw:text-secondary tw:italic">No document uploaded yet.</p>
         </div>
 
         <!-- Action selection -->

@@ -41,7 +41,6 @@ const form = ref({
   description: '',
   dueDate: null,
   expiryDate: null,
-  statusId: 'PENDING',
 })
 
 const contactOptions = computed(() =>
@@ -61,7 +60,6 @@ watch(show, (val) => {
           description: props.editingRequest.description || '',
           dueDate: props.editingRequest.dueDate || null,
           expiryDate: props.editingRequest.expiryDate || null,
-          statusId: props.editingRequest.statusId || 'PENDING',
         }
       : {
           requestTypeId: null,
@@ -70,7 +68,6 @@ watch(show, (val) => {
           description: '',
           dueDate: null,
           expiryDate: null,
-          statusId: 'PENDING',
         }
   }
 })
@@ -95,7 +92,6 @@ async function onSave() {
       description: form.value.description || null,
       dueDate: form.value.dueDate || null,
       expiryDate: form.value.expiryDate || null,
-      statusId: form.value.statusId || null,
       companyId,
     })
   } else {
@@ -107,7 +103,6 @@ async function onSave() {
       description: form.value.description || null,
       dueDate: form.value.dueDate || null,
       expiryDate: form.value.expiryDate || null,
-      statusId: form.value.statusId || null,
       companyId,
     })
   }
@@ -158,18 +153,6 @@ async function onSave() {
         emitValue
         mapOptions
         clearable
-        hideBottomSpace
-        optionLabel="label"
-        optionValue="value"
-      />
-      <WSelect
-        v-model="form.statusId"
-        :options="requestStatuses"
-        label="Status"
-        outlined
-        dense
-        emitValue
-        mapOptions
         hideBottomSpace
         optionLabel="label"
         optionValue="value"

@@ -23,9 +23,6 @@ export { SyncTransaction } from './persistence/SyncTransaction.js'
 export { IndexedDB } from './persistence/IndexedDB.js'
 export { TransactionQueue } from './persistence/TransactionQueue.js'
 
-// Network layer
-export { createGraphQLClient, GraphQLWorker, GraphQLSchemaGenerator } from './network/index.js'
-
 // SW infrastructure
 export { TableMetaService } from './persistence/TableMetaService.js'
 export { SyncWorkerBridge } from './worker/SyncWorkerBridge.js'

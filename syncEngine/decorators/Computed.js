@@ -14,26 +14,17 @@ import { computed as vueComputed } from 'vue'
  *   get parents() { return this.parentIds.map(id => ModelRegistry.get('Issue', id)); }
  */
 
-// WeakMap keeps one Vue computed per (instance, getter) pair without leaking.
-const computedCache = new WeakMap()
-
 export function Computed(getter, context) {
   if (context.kind !== 'getter') {
     throw new Error('@Computed must be applied to a getter accessor')
   }
 
+  const cacheKey = Symbol(context.name)
+
   return function () {
-    let cache = computedCache.get(this)
-    if (!cache) {
-      cache = new Map()
-      computedCache.set(this, cache)
+    if (!this[cacheKey]) {
+      this[cacheKey] = vueComputed(getter.bind(this))
     }
-
-    const name = context.name
-    if (!cache.has(name)) {
-      cache.set(name, vueComputed(getter.bind(this)))
-    }
-
-    return cache.get(name).value
+    return this[cacheKey].value
   }
 }

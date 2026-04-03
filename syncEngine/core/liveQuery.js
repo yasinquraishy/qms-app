@@ -21,14 +21,12 @@ export function useLiveQuery(
   { models = '*', initial = [], debounce = DEFAULT_DEBOUNCE } = {},
 ) {
   const data = shallowRef(initial)
-  const loading = shallowRef(false)
 
   async function refresh() {
-    loading.value = true
     try {
       data.value = await queryFn()
-    } finally {
-      loading.value = false
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -41,7 +39,7 @@ export function useLiveQuery(
 
   onScopeDispose(() => unsubscribes.forEach((fn) => fn()))
 
-  return { data, loading, refresh }
+  return data
 }
 
 /**
@@ -61,14 +59,12 @@ export function useLiveQueryWithDeps(
   { models = '*', initial = [], debounce = DEFAULT_DEBOUNCE } = {},
 ) {
   const data = shallowRef(initial)
-  const loading = shallowRef(false)
 
   async function refresh() {
-    loading.value = true
     try {
       data.value = await queryFn()
-    } finally {
-      loading.value = false
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -81,5 +77,5 @@ export function useLiveQueryWithDeps(
 
   onScopeDispose(() => unsubscribes.forEach((fn) => fn()))
 
-  return { data, loading, refresh }
+  return data
 }

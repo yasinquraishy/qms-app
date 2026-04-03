@@ -1,7 +1,6 @@
-import { action as mobxAction } from "mobx";
-import { observabilityHelper } from "../core/observabilityHelper.js";
-import { ObjectPool } from "../core/ObjectPool.js";
-import { PROP_TYPE } from "../shared/constants.js";
+import { observabilityHelper } from '../core/observabilityHelper.js'
+import { ObjectPool } from '../core/ObjectPool.js'
+import { PROP_TYPE } from '../shared/constants.js'
 
 /**
  * @Reference(modelFn, inverseKey, [options]) — foreign-key field decorator.
@@ -27,31 +26,27 @@ import { PROP_TYPE } from "../shared/constants.js";
  */
 export function Reference(modelFn, inverseKey, options = {}) {
   return function (_, context) {
-    if (context.kind !== "field") {
-      throw new Error("@Reference must be applied to a class field");
+    if (context.kind !== 'field') {
+      throw new Error('@Reference must be applied to a class field')
     }
 
-    const modelFieldName = context.name;
-    const idFieldName = `${modelFieldName}Id`;
+    const modelFieldName = context.name
+    const idFieldName = `${modelFieldName}Id`
 
     // Register both in metadata for schemaHash (only the id is persisted).
-    context.metadata._syncProps ??= [];
+    context.metadata._syncProps ??= []
     context.metadata._syncProps.push(
       { name: idFieldName, type: PROP_TYPE.REFERENCE, options },
       { name: modelFieldName, type: PROP_TYPE.REFERENCE_MODEL, options },
-    );
+    )
 
     context.addInitializer(function () {
-      const instance = this;
+      const instance = this
 
       // ── id field — observable, persisted ──────────────────────────────
-      observabilityHelper(
-        instance,
-        idFieldName,
-        (inst, fieldName, oldValue) => {
-          inst._propertyChanged?.(fieldName, oldValue);
-        },
-      );
+      observabilityHelper(instance, idFieldName, (inst, fieldName, oldValue) => {
+        inst._propertyChanged?.(fieldName, oldValue)
+      })
 
       // ── model accessor — not persisted ────────────────────────────────
       Object.defineProperty(instance, modelFieldName, {
@@ -59,22 +54,22 @@ export function Reference(modelFn, inverseKey, options = {}) {
         configurable: true,
         get() {
           // Resolve via ObjectPool using the class name from modelFn().
-          const targetName = modelFn().name;
-          return ObjectPool.get(targetName, instance[idFieldName]);
+          const targetName = modelFn().name
+          return ObjectPool.get(targetName, instance[idFieldName])
         },
-        set: mobxAction(`${modelFieldName}=`, function (relatedInstance) {
+        set(relatedInstance) {
           if (relatedInstance == null) {
             if (!options.nullable) {
               throw new Error(
                 `@Reference '${modelFieldName}' cannot be set to null (nullable: false)`,
-              );
+              )
             }
-            instance[idFieldName] = null;
+            instance[idFieldName] = null
           } else {
-            instance[idFieldName] = relatedInstance.id;
+            instance[idFieldName] = relatedInstance.id
           }
-        }),
-      });
-    });
-  };
+        },
+      })
+    })
+  }
 }

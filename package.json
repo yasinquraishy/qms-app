@@ -46,7 +46,6 @@
     "jspdf-autotable": "^5.0.7",
     "jszip": "^3.10.1",
     "luxon": "^3.7.2",
-    "mobx": "^6.15.0",
     "pluralize-esm": "^9.0.5",
     "quasar": "^2.19.2",
     "socket.io-client": "^4.8.3",

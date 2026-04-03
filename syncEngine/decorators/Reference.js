@@ -21,10 +21,10 @@ import { PROP_TYPE } from '../shared/constants.js'
  *                         on `<field>Id` (consumed by the persistence layer).
  *
  * Usage:
- *   @Reference(() => User, 'assignedIssues', { nullable: true, indexed: true })
+ *   @Reference(() => User, { nullable: true, indexed: true })
  *   assignee = null;
  */
-export function Reference(modelFn, inverseKey, options = {}) {
+export function Reference(modelFn, options = {}) {
   return function (_, context) {
     if (context.kind !== 'field') {
       throw new Error('@Reference must be applied to a class field')
@@ -42,6 +42,7 @@ export function Reference(modelFn, inverseKey, options = {}) {
 
     context.addInitializer(function () {
       const instance = this
+      let targetName
 
       // ── id field — observable, persisted ──────────────────────────────
       observabilityHelper(instance, idFieldName, (inst, fieldName, oldValue) => {
@@ -53,8 +54,8 @@ export function Reference(modelFn, inverseKey, options = {}) {
         enumerable: true,
         configurable: true,
         get() {
-          // Resolve via ObjectPool using the class name from modelFn().
-          const targetName = modelFn().name
+          // Resolve via ObjectPool — cache the model name to avoid re-calling modelFn() on every access.
+          targetName ??= modelFn().name
           return ObjectPool.get(targetName, instance[idFieldName])
         },
         set(relatedInstance) {

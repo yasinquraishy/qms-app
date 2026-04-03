@@ -33,7 +33,7 @@ export function ClientModel(tableName, options = {}) {
     const customIndexStr = Class.customIndex ?? null;
     const indexes = customIndexStr ? parseCustomIndex(customIndexStr) : [];
     const primaryKey = options.primaryKey ?? "id";
-    const syncField = options.syncField ?? undefined;
+    const syncField = options.syncField;
 
     ModelRegistry.register(
       modelName,

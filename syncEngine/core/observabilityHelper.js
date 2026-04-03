@@ -1,4 +1,4 @@
-import { observable, action as mobxAction } from "mobx";
+import { ref } from 'vue'
 
 /**
  * observabilityHelper — "M1" in the plan.
@@ -16,21 +16,21 @@ import { observable, action as mobxAction } from "mobx";
  */
 export function observabilityHelper(instance, name, onSet) {
   // Capture any value already placed on the instance by a field initializer.
-  const existing = Object.getOwnPropertyDescriptor(instance, name);
-  const initialValue = existing?.value;
+  const existing = Object.getOwnPropertyDescriptor(instance, name)
+  const initialValue = existing?.value
 
-  const box = observable.box(initialValue, { name });
+  const box = ref(initialValue)
 
   Object.defineProperty(instance, name, {
     enumerable: true,
     configurable: true,
     get() {
-      return box.get();
+      return box.value
     },
-    set: mobxAction(`${name}=`, function (newVal) {
-      const old = box.get();
-      box.set(newVal);
-      if (old !== newVal) onSet(instance, name, old);
-    }),
-  });
+    set(newVal) {
+      const old = box.value
+      box.value = newVal
+      if (old !== newVal) onSet(instance, name, old)
+    },
+  })
 }

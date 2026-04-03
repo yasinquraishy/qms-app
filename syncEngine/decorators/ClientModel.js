@@ -34,6 +34,23 @@ export function ClientModel(tableName, options = {}) {
     const primaryKey = options.primaryKey ?? 'id'
     const syncField = options.syncField
 
+    if (syncField !== undefined) {
+      const prop = properties.find((p) => p.name === syncField)
+      if (!prop) {
+        throw new Error(
+          `@ClientModel("${tableName}"): syncField "${syncField}" does not exist on ${modelName}. ` +
+            `It must be decorated with @Property.`,
+        )
+      }
+      const fieldType = prop.options?.type
+      if (fieldType !== Number && fieldType !== Date) {
+        throw new Error(
+          `@ClientModel("${tableName}"): syncField "${syncField}" on ${modelName} must have type Number or Date, ` +
+            `got ${fieldType?.name ?? fieldType}.`,
+        )
+      }
+    }
+
     ModelRegistry.register(
       modelName,
       Class,

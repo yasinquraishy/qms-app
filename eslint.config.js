@@ -117,6 +117,10 @@ export default [
       'vue/no-mutating-props': 'off',
     },
   },
+  {
+    files: ['syncEngine/**/*.js'], // Target the specific folder
+    rules: { 'no-console': 'off' }, // Disable the rule here
+  },
 
   prettierSkipFormatting,
 ]

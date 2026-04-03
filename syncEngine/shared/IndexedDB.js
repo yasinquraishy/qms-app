@@ -1,8 +1,8 @@
 // IndexedDB.js
-import { TX_MODE } from "./constants.js";
+import { TX_MODE } from './constants.js'
 
 export class IndexedDB {
-  static #db = null;
+  static #db = null
 
   /**
    * Initialize and open the IndexedDB database.
@@ -10,18 +10,28 @@ export class IndexedDB {
    * @returns {Promise<IDBDatabase>}
    */
   static async init(dbName) {
-    if (IndexedDB.#db) return IndexedDB.#db;
+    if (IndexedDB.#db) return IndexedDB.#db
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(dbName, 1);
-      req.onerror = () => reject(req.error);
+      const req = indexedDB.open(dbName, 1)
+      req.onerror = () => reject(req.error)
       req.onsuccess = () => {
-        IndexedDB.#db = req.result;
-        resolve(IndexedDB.#db);
-      };
+        IndexedDB.#db = req.result
+        resolve(IndexedDB.#db)
+      }
       req.onupgradeneeded = (event) => {
-        this.ensureSchema(event.target.result);
-      };
-    });
+        this.ensureSchema(event.target.result)
+      }
+    })
+  }
+
+  /**
+   * Close the current database connection so init() can reopen a different DB.
+   */
+  static close() {
+    if (IndexedDB.#db) {
+      IndexedDB.#db.close()
+      IndexedDB.#db = null
+    }
   }
 
   /**
@@ -31,12 +41,12 @@ export class IndexedDB {
    */
   static async put(storeName, record) {
     return new Promise((resolve, reject) => {
-      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READWRITE);
-      const store = tx.objectStore(storeName);
-      const req = store.put(record);
-      req.onerror = () => reject(req.error);
-      tx.oncomplete = () => resolve(record);
-    });
+      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READWRITE)
+      const store = tx.objectStore(storeName)
+      const req = store.put(record)
+      req.onerror = () => reject(req.error)
+      tx.oncomplete = () => resolve(record)
+    })
   }
 
   /**
@@ -47,12 +57,12 @@ export class IndexedDB {
    */
   static async get(storeName, id) {
     return new Promise((resolve, reject) => {
-      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READONLY);
-      const store = tx.objectStore(storeName);
-      const req = store.get(id);
-      req.onerror = () => reject(req.error);
-      req.onsuccess = () => resolve(req.result ?? null);
-    });
+      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READONLY)
+      const store = tx.objectStore(storeName)
+      const req = store.get(id)
+      req.onerror = () => reject(req.error)
+      req.onsuccess = () => resolve(req.result ?? null)
+    })
   }
 
   /**
@@ -62,12 +72,12 @@ export class IndexedDB {
    */
   static async getAll(storeName) {
     return new Promise((resolve, reject) => {
-      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READONLY);
-      const store = tx.objectStore(storeName);
-      const req = store.getAll();
-      req.onerror = () => reject(req.error);
-      req.onsuccess = () => resolve(req.result ?? []);
-    });
+      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READONLY)
+      const store = tx.objectStore(storeName)
+      const req = store.getAll()
+      req.onerror = () => reject(req.error)
+      req.onsuccess = () => resolve(req.result ?? [])
+    })
   }
 
   /**
@@ -77,14 +87,14 @@ export class IndexedDB {
    */
   static async bulkPut(storeName, records) {
     return new Promise((resolve, reject) => {
-      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READWRITE);
-      const store = tx.objectStore(storeName);
+      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READWRITE)
+      const store = tx.objectStore(storeName)
       for (const record of records) {
-        store.put(record);
+        store.put(record)
       }
-      tx.oncomplete = () => resolve(records);
-      tx.onerror = () => reject(tx.error);
-    });
+      tx.oncomplete = () => resolve(records)
+      tx.onerror = () => reject(tx.error)
+    })
   }
 
   /**
@@ -94,12 +104,12 @@ export class IndexedDB {
    */
   static async delete(storeName, id) {
     return new Promise((resolve, reject) => {
-      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READWRITE);
-      const store = tx.objectStore(storeName);
-      const req = store.delete(id);
-      req.onerror = () => reject(req.error);
-      tx.oncomplete = () => resolve();
-    });
+      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READWRITE)
+      const store = tx.objectStore(storeName)
+      const req = store.delete(id)
+      req.onerror = () => reject(req.error)
+      tx.oncomplete = () => resolve()
+    })
   }
 
   /**
@@ -111,13 +121,13 @@ export class IndexedDB {
    */
   static async getByIndex(storeName, indexName, value) {
     return new Promise((resolve, reject) => {
-      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READONLY);
-      const store = tx.objectStore(storeName);
-      const index = store.index(indexName);
-      const req = index.getAll(value);
-      req.onerror = () => reject(req.error);
-      req.onsuccess = () => resolve(req.result ?? []);
-    });
+      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READONLY)
+      const store = tx.objectStore(storeName)
+      const index = store.index(indexName)
+      const req = index.getAll(value)
+      req.onerror = () => reject(req.error)
+      req.onsuccess = () => resolve(req.result ?? [])
+    })
   }
 
   /**

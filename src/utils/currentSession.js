@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { apiClient } from '@/api/client.js'
 import { isPublicRoute } from '@/constants/authRoutes.js'
+import { deleteAllSyncDatabases } from '@/utils/initSyncEngine.js'
 
 // Unique identifier for the current tab
 export const TAB_ID = `tab-${crypto.randomUUID()}`
@@ -79,6 +80,10 @@ export const logoutCurrentSession = async () => {
   } catch {
     // Ignore errors — we're logging out regardless
   }
+
+  // Wipe all company-scoped IndexedDB databases
+  await deleteAllSyncDatabases()
+
   sessionStorage.removeItem('isLogin')
   sendTabMessage('logout')
   window.location = '/signin'

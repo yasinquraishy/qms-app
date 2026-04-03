@@ -3,6 +3,7 @@ import { IndexedDB } from './persistence/IndexedDB.js'
 import { SyncTransaction } from './persistence/SyncTransaction.js'
 import { TableMetaService } from './persistence/TableMetaService.js'
 import { SyncWorkerBridge } from './worker/SyncWorkerBridge.js'
+import { ObjectPool } from './core/ObjectPool.js'
 import { MSG } from './shared/messageTypes.js'
 import { shouldNuke, computeSchemaHash } from './persistence/schemaManager.js'
 import { DB_NAME, SCHEMA_HASH_KEY } from './shared/constants.js'
@@ -98,6 +99,19 @@ export class SyncEngine {
     if (this.#workerBridge) {
       this.#workerBridge.stop()
     }
+  }
+
+  /**
+   * Teardown the engine — stop SW, close IDB, clear in-memory pool.
+   * Call before switching to a different company DB or on logout.
+   */
+  teardown() {
+    if (this.#workerBridge) {
+      this.#workerBridge.stop()
+      this.#workerBridge = null
+    }
+    IndexedDB.close()
+    ObjectPool.clear()
   }
 }
 

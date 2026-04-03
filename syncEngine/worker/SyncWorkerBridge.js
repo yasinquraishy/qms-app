@@ -1,15 +1,16 @@
-import { ObjectPool } from "../core/ObjectPool.js";
-import { hydrate } from "../persistence/hydration.js";
-import { MSG } from "../shared/messageTypes.js";
+import { ObjectPool } from '../core/ObjectPool.js'
+import { hydrate } from '../persistence/hydration.js'
+import { MSG } from '../shared/messageTypes.js'
+import { syncBus } from '../core/syncBus.js'
 
 export class SyncWorkerBridge {
-  #registration = null;
-  #onFlush = null;
-  #onError = null;
+  #registration = null
+  #onFlush = null
+  #onError = null
 
   constructor({ onFlush, onError } = {}) {
-    this.#onFlush = onFlush;
-    this.#onError = onError;
+    this.#onFlush = onFlush
+    this.#onError = onError
   }
 
   /**
@@ -18,13 +19,13 @@ export class SyncWorkerBridge {
    */
   async register(swUrl) {
     this.#registration = await navigator.serviceWorker.register(swUrl, {
-      type: "module",
-    });
-    await navigator.serviceWorker.ready;
+      type: 'module',
+    })
+    await navigator.serviceWorker.ready
 
-    navigator.serviceWorker.addEventListener("message", (event) => {
-      this.#handleMessage(event.data);
-    });
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      this.#handleMessage(event.data)
+    })
   }
 
   /**
@@ -32,15 +33,15 @@ export class SyncWorkerBridge {
    * @param {object} msg
    */
   sendMessage(msg) {
-    const sw = this.#registration?.active;
-    if (sw) sw.postMessage(msg);
+    const sw = this.#registration?.active
+    if (sw) sw.postMessage(msg)
   }
 
   /**
    * Tell the SW to stop polling and disconnect socket.
    */
   stop() {
-    this.sendMessage({ type: MSG.STOP });
+    this.sendMessage({ type: MSG.STOP })
   }
 
   // ── private ──────────────────────────────────────────────────────────────
@@ -49,14 +50,14 @@ export class SyncWorkerBridge {
     switch (msg.type) {
       case MSG.SYNC:
       case MSG.ROLLBACK:
-        this.#handleNotification(msg).catch((err) => this.#onError?.(err));
-        break;
+        this.#handleNotification(msg).catch((err) => this.#onError?.(err))
+        break
       case MSG.FLUSH:
-        this.#onFlush?.(msg.entry);
-        break;
+        this.#onFlush?.(msg.entry)
+        break
       case MSG.ERROR:
-        this.#onError?.(msg.error);
-        break;
+        this.#onError?.(msg.error)
+        break
     }
   }
 
@@ -73,13 +74,14 @@ export class SyncWorkerBridge {
    * @param {{ type: string, modelName: string, modelId: string, action: string }} msg
    */
   async #handleNotification({ type, modelName, modelId, action }) {
-    const shouldRemove =
-      action === "delete" || (type === MSG.ROLLBACK && action === "create");
+    const shouldRemove = action === 'delete' || (type === MSG.ROLLBACK && action === 'create')
 
     if (shouldRemove) {
-      ObjectPool.unregister(modelName, modelId);
-      return;
+      ObjectPool.unregister(modelName, modelId)
+    } else {
+      await hydrate(modelName, modelId)
     }
-    await hydrate(modelName, modelId);
+
+    syncBus.emit({ modelName, modelId, action, type })
   }
 }

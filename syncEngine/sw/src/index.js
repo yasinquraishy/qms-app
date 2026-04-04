@@ -7,111 +7,118 @@ import { connectSocket, disconnectSocket } from './socketHandler.js'
 import { bootstrapAll } from './bootstrap.js'
 import { broadcastMessage } from './broadcaster.js'
 
-let config = null
-let metas = { metaMap: new Map(), metaByTable: new Map() }
-let swState = SW_STATE.IDLE
-let isOffline = false
+// ─── State ────────────────────────────────────────────────────────────────────
 
-async function hasActiveClients() {
-  const clientsList = await self.clients.matchAll({ type: 'window' })
-  return clientsList.length > 0
+const state = {
+  config: null,
+  metas: { metaMap: new Map(), metaByTable: new Map() },
+  sw: SW_STATE.IDLE,
+  isOffline: false,
 }
 
-self.addEventListener('install', () => {
-  self.skipWaiting()
-})
+// ─── Lifecycle ────────────────────────────────────────────────────────────────
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
-})
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
+
+// ─── Network ──────────────────────────────────────────────────────────────────
 
 self.addEventListener('online', () => {
-  isOffline = false
-  if (swState === SW_STATE.READY) {
-    startPolling(metas.metaMap, config)
-    if (config?.socketUrl) connectSocket(config, metas.metaByTable)
-  } else if (swState === SW_STATE.BOOTSTRAPPING && config) {
-    // Bootstrap was skipped because we were offline — retry now
-    bootstrapAll(metas.metaMap, config).then((wasSkipped) => {
-      if (!wasSkipped) {
-        swState = SW_STATE.READY
-        startPolling(metas.metaMap, config)
-        if (config?.socketUrl) connectSocket(config, metas.metaByTable)
-      }
-    })
+  state.isOffline = false
+
+  if (state.sw === SW_STATE.READY) {
+    startServices()
+  } else if (state.sw === SW_STATE.BOOTSTRAPPING && state.config) {
+    // Bootstrap was skipped while offline — retry now
+    runBootstrap()
   }
 })
 
 self.addEventListener('offline', () => {
-  isOffline = true
-  stopPolling()
-  disconnectSocket()
+  state.isOffline = true
+  stopServices()
 })
 
-async function doInit(payload) {
+// ─── Core logic ───────────────────────────────────────────────────────────────
+
+function startServices() {
+  startPolling(state.metas.metaMap, state.config)
+  if (state.config?.socketUrl) connectSocket(state.config, state.metas.metaByTable)
+}
+
+function stopServices() {
+  stopPolling()
+  disconnectSocket()
+}
+
+async function runBootstrap() {
+  const wasSkipped = await bootstrapAll(state.metas.metaMap, state.config)
+  if (!wasSkipped) {
+    state.sw = SW_STATE.READY
+    if (!state.isOffline) startServices()
+  }
+  // wasSkipped → state remains BOOTSTRAPPING; retried when 'online' fires
+}
+
+async function doInit(config) {
   try {
-    config = payload
+    state.config = config
     await IndexedDB.init(config.dbName)
-    metas = await loadMetas()
-    swState = SW_STATE.BOOTSTRAPPING
-    const wasSkipped = await bootstrapAll(metas.metaMap, config)
-    if (!wasSkipped) {
-      swState = SW_STATE.READY
-      if (!isOffline) {
-        startPolling(metas.metaMap, config)
-        if (config.socketUrl) connectSocket(config, metas.metaByTable)
-      }
-    }
-    // wasSkipped: swState stays BOOTSTRAPPING — retried when 'online' fires
+    state.metas = await loadMetas()
+    state.sw = SW_STATE.BOOTSTRAPPING
+    await runBootstrap()
   } catch (err) {
-    swState = SW_STATE.IDLE
+    state.sw = SW_STATE.IDLE
     await broadcastMessage({ type: MSG.ERROR, error: { message: err.message, stack: err.stack } })
   }
 }
+
+function teardown() {
+  stopServices()
+  IndexedDB.close()
+  state.sw = SW_STATE.IDLE
+  state.config = null
+}
+
+// ─── Message handler ──────────────────────────────────────────────────────────
 
 async function messageHandler(event) {
   const { type, ...payload } = event.data
 
   switch (type) {
     case MSG.INIT: {
-      if (swState === SW_STATE.READY) {
+      if (state.sw === SW_STATE.READY) {
         await broadcastMessage({ type: MSG.BOOTSTRAP_COMPLETE })
-        break
+      } else if (state.sw === SW_STATE.IDLE) {
+        await doInit(payload)
       }
-      if (swState === SW_STATE.BOOTSTRAPPING) break
-      // IDLE — full init
-      await doInit(payload)
+      // BOOTSTRAPPING → no-op; already in progress
       break
     }
+
     case MSG.REINIT: {
-      // Schema nuke — tear down current state, re-init against new DB
-      stopPolling()
-      disconnectSocket()
-      IndexedDB.close()
-      swState = SW_STATE.IDLE
+      // Schema change — tear down and re-initialise against the new DB
+      teardown()
       await doInit(payload)
       break
     }
+
     case MSG.STOP: {
-      stopPolling()
-      disconnectSocket()
-      IndexedDB.close()
-      swState = SW_STATE.IDLE
-      config = null
+      teardown()
       break
     }
+
     case MSG.REFRESH_METAS: {
-      metas = await loadMetas()
-      if (swState === SW_STATE.READY) {
-        stopPolling()
-        startPolling(metas.metaMap, config)
-        disconnectSocket()
-        if (config?.socketUrl) connectSocket(config, metas.metaByTable)
+      state.metas = await loadMetas()
+      if (state.sw === SW_STATE.READY) {
+        stopServices()
+        startServices()
       }
       break
     }
+
     case MSG.GET_STATUS: {
-      await broadcastMessage({ type: MSG.STATUS, state: swState })
+      await broadcastMessage({ type: MSG.STATUS, state: state.sw })
       break
     }
   }
@@ -119,12 +126,11 @@ async function messageHandler(event) {
 
 self.addEventListener('message', messageHandler)
 
-setInterval(
-  async () => {
-    const active = await hasActiveClients()
-    if (!active) {
-      messageHandler({ data: { type: MSG.STOP } }) // self-terminate if no active clients after 5m
-    }
-  },
-  5 * 60 * 1000,
-)
+// ─── Self-termination ─────────────────────────────────────────────────────────
+
+const IDLE_CHECK_INTERVAL = 5 * 60 * 1000 // 5 minutes
+
+setInterval(async () => {
+  const clients = await self.clients.matchAll({ type: 'window' })
+  if (clients.length === 0) teardown()
+}, IDLE_CHECK_INTERVAL)

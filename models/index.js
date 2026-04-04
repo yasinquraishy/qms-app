@@ -32,13 +32,10 @@ import { DocumentVersionStatus } from './documentVersionStatus'
 import { FormStatus } from './formStatus'
 import { FormTemplate } from './formTemplate'
 import { GoogleDoc } from './googleDoc'
-import { InvitationToken } from './invitationToken'
-import { LastLogin } from './lastLogin'
 import { Module } from './module'
 import { Notification } from './notification'
 import { NotificationType } from './notificationType'
 import { OptionSet } from './optionSet'
-import { PasswordResetToken } from './passwordResetToken'
 import { Permission } from './permission'
 import { PermissionOnRole } from './permissionOnRole'
 import { Record } from './record'
@@ -49,7 +46,6 @@ import { RiskLevel } from './riskLevel'
 import { Role } from './role'
 import { RoleOnUser } from './roleOnUser'
 import { RoleStatus } from './roleStatus'
-import { Signature } from './signature'
 import { Site } from './site'
 import { SiteOnTemplate } from './siteOnTemplate'
 import { Supplier } from './supplier'
@@ -103,13 +99,10 @@ export const db = {
   FormStatus,
   FormTemplate,
   GoogleDoc,
-  InvitationToken,
-  LastLogin,
   Module,
   Notification,
   NotificationType,
   OptionSet,
-  PasswordResetToken,
   Permission,
   PermissionOnRole,
   Record,
@@ -120,7 +113,6 @@ export const db = {
   Role,
   RoleOnUser,
   RoleStatus,
-  Signature,
   Site,
   SiteOnTemplate,
   Supplier,

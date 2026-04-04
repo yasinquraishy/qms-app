@@ -41,6 +41,7 @@ export class TableMetaService {
         fetchQuery: queries.fetch.query,
         fetchAllQuery: queries.fetchAll.query,
         fetchAllFilterType: queries.fetchAll.filterType,
+        fetchAllOrderBy: queries.fetchAll.syncFieldOrderByDesc ?? null,
         fetchVariableName: queries.fetch.variableName,
       })
     }

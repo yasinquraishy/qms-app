@@ -1,6 +1,7 @@
 import ModelRegistry from '../core/ModelRegistry.js'
 import { parseCustomIndex } from '../utils/parseCustomIndex.js'
 import { LOAD_STRATEGY } from '../shared/constants.js'
+import { DateTime } from 'luxon'
 
 /**
  * @ClientModel — class decorator.
@@ -43,9 +44,9 @@ export function ClientModel(tableName, options = {}) {
         )
       }
       const fieldType = prop.options?.type
-      if (fieldType !== Number && fieldType !== Date) {
+      if (fieldType !== Number && fieldType !== Date && fieldType !== DateTime) {
         throw new Error(
-          `@ClientModel("${tableName}"): syncField "${syncField}" on ${modelName} must have type Number or Date, ` +
+          `@ClientModel("${tableName}"): syncField "${syncField}" on ${modelName} must have type Number, Date, or DateTime, ` +
             `got ${fieldType?.name ?? fieldType}.`,
         )
       }

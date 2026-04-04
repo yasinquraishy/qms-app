@@ -17,7 +17,8 @@ export class TableMeta extends BaseModel {
   @Property({ type: String }) updateMutation = '' // full GraphQL mutation string
   @Property({ type: String }) deleteMutation = '' // full GraphQL mutation string
   @Property({ type: String }) fetchQuery = '' // full GraphQL query string
-  @Property({ type: String }) fetchAllQuery = '' // full GraphQL query string — supports $filter, $first, $after
+  @Property({ type: String }) fetchAllQuery = '' // full GraphQL query string — supports $filter, $first, $after, $orderBy
   @Property({ type: String }) fetchAllFilterType = '' // e.g. "UserFilter" — for typed variables
+  @Property({ type: String }) fetchAllOrderBy = /** @type {string | null} */ (null) // e.g. "UPDATED_AT_DESC" — enum value for orderBy when syncField is set
   @Property({ type: String }) fetchVariableName = '' // "id" — for fetch-by-pk variables
 }

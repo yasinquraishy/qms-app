@@ -67,6 +67,10 @@ async function bootstrapModel(meta, config, signal) {
       variables.filter = { [meta.syncField]: { greaterThan: meta.lastSyncValue } }
     }
 
+    if (meta.syncField && meta.fetchAllOrderBy) {
+      variables.orderBy = [meta.fetchAllOrderBy]
+    }
+
     const data = await graphqlRequest(
       config.graphqlUrl,
       config.headers,

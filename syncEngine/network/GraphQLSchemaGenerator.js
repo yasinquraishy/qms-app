@@ -6,6 +6,11 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
+/** Convert camelCase to UPPER_SNAKE_CASE: "updatedAt" → "UPDATED_AT" */
+function camelToUpperSnake(str) {
+  return str.replace(/([A-Z])/g, '_$1').toUpperCase()
+}
+
 /**
  * Auto-generate PostGraphile v5 compliant GraphQL operations from @ClientModel schemas.
  */
@@ -76,6 +81,10 @@ export const GraphQLSchemaGenerator = {
     const pluralName = pluralize(tableName)
     const allFields = [...schema.properties.keys()].join('\n      ')
     const filterType = `${capitalSingular}Filter`
+    const orderByType = `${capitalize(pluralName)}OrderBy`
+    const syncFieldOrderByDesc = schema.syncField
+      ? `${camelToUpperSnake(schema.syncField)}_DESC`
+      : null
 
     const fetch = {
       query: `query Fetch${capitalSingular}($${pk}: ID!) {
@@ -87,8 +96,8 @@ export const GraphQLSchemaGenerator = {
     }
 
     const fetchAll = {
-      query: `query FetchAll${capitalSingular}($filter: ${filterType}, $first: Int, $after: Cursor) {
-  ${pluralName}(filter: $filter, first: $first, after: $after) {
+      query: `query FetchAll${capitalSingular}($filter: ${filterType}, $first: Int, $after: Cursor, $orderBy: [${orderByType}!]) {
+  ${pluralName}(filter: $filter, first: $first, after: $after, orderBy: $orderBy) {
     nodes {
       ${allFields}
     }
@@ -101,6 +110,7 @@ export const GraphQLSchemaGenerator = {
   }
 }`,
       filterType,
+      syncFieldOrderByDesc,
     }
 
     return { fetch, fetchAll }

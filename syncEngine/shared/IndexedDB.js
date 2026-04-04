@@ -134,5 +134,5 @@ export class IndexedDB {
    * Create all object stores at version 1.
    * @param {IDBDatabase} db
    */
-  static ensureSchema(db) {}
+  static ensureSchema(_db) {}
 }

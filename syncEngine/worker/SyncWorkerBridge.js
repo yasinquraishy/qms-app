@@ -12,7 +12,8 @@ export class SyncWorkerBridge {
   constructor({ onFlush, onError, onBootstrapComplete } = {}) {
     this.#onFlush = onFlush
     this.#onError = onError
-    this.#onBootstrapComplete ??= onBootstrapComplete
+    this.#onBootstrapComplete =
+      typeof onBootstrapComplete === 'function' ? onBootstrapComplete : this.#onBootstrapComplete
   }
 
   /**

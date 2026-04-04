@@ -121,12 +121,14 @@ export class SyncEngine {
   #nukeDatabaseIfNeeded() {
     if (this.#dbToNuke) {
       const req = indexedDB.deleteDatabase(this.#dbToNuke)
-      req.onsuccess = () => console.log(`[SyncEngine] Nuked old database: ${this.#dbToNuke}`)
+      req.onsuccess = () => {
+        console.log(`[SyncEngine] Nuked old database: ${this.#dbToNuke}`)
+        this.#dbToNuke = null
+      }
       req.onerror = () =>
         console.error(`[SyncEngine] Failed to nuke database: ${this.#dbToNuke}`, req.error)
       req.onblocked = () =>
         console.warn(`[SyncEngine] DB delete blocked by open connections: ${this.#dbToNuke}`)
-      this.#dbToNuke = null
     }
   }
 

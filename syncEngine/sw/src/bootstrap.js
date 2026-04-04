@@ -36,6 +36,12 @@ export async function bootstrapAll(metaMap, config, signal) {
     ...(failed.length > 0 ? { failed } : {}),
   })
 
+  await Promise.allSettled(
+    failed.map((modelName) =>
+      broadcastMessage({ type: MSG.BOOTSTRAP, modelName, count: 0, error: 'Bootstrap failed' }),
+    ),
+  )
+
   return false
 }
 

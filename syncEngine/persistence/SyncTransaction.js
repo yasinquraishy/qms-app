@@ -4,8 +4,7 @@ import { IndexedDB } from './IndexedDB.js'
 import { TransactionQueue } from './TransactionQueue.js'
 import ModelRegistry from '../core/ModelRegistry.js'
 import { LOAD_STRATEGY, TRANSACTIONS_STORE, OPERATION } from '../shared/constants.js'
-import { dehydrate, serializeValue, deserializeValue } from './hydration.js'
-import { ObjectPool } from '../core/ObjectPool.js'
+import { dehydrate, serializeValue } from './hydration.js'
 
 export class SyncTransaction extends UpdateTransaction {
   #queueId = null
@@ -14,57 +13,6 @@ export class SyncTransaction extends UpdateTransaction {
   constructor(model, changes, action = OPERATION.UPDATE) {
     super(model, changes)
     this.#action = action
-  }
-
-  /**
-   * Rollback a queue entry by restoring IndexedDB and ObjectPool state.
-   * Used by GraphQLWorker when the server permanently rejects an entry.
-   *
-   * - CREATE → delete the record + unregister from pool
-   * - UPDATE → overlay serialized old values onto newValues, write back
-   * - DELETE → re-insert the pre-delete snapshot
-   *
-   * @param {object} entry - Queue entry with { modelName, modelId, action, newValues, changes }
-   */
-  static async rollbackQueueEntry(entry) {
-    const schema = ModelRegistry.getSchema(entry.modelName)
-    if (!schema) return
-
-    const tableName = schema.tableName
-
-    switch (entry.action) {
-      case OPERATION.CREATE: {
-        await IndexedDB.delete(tableName, entry.modelId)
-        ObjectPool.unregister(entry.modelName, entry.modelId)
-        break
-      }
-      case OPERATION.UPDATE: {
-        if (entry.changes && entry.newValues) {
-          const restoredRecord = {
-            ...entry.newValues,
-            ...entry.changes,
-          }
-          await IndexedDB.put(tableName, restoredRecord)
-
-          // Update ObjectPool instance if loaded (apply deserialized old values)
-          const poolInstance = ObjectPool.get(entry.modelName, entry.modelId)
-          if (poolInstance) {
-            const propertyMetaMap = schema.properties
-            for (const [key, serializedVal] of Object.entries(entry.changes)) {
-              poolInstance[key] = deserializeValue(serializedVal, propertyMetaMap.get(key))
-            }
-            poolInstance._clearModified()
-          }
-        }
-        break
-      }
-      case OPERATION.DELETE: {
-        if (entry.newValues) {
-          await IndexedDB.put(tableName, entry.newValues)
-        }
-        break
-      }
-    }
   }
 
   /** @returns {string} */

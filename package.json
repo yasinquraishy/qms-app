@@ -10,8 +10,8 @@
     "lint": "eslint \"./src*/**/*.{js,cjs,mjs,vue}\" \"./resource/**/*.{js,cjs,mjs,vue}\"",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
-    "dev": "vite",
-    "build": "vite build && vite build -c syncEngine/sw/vite.config.js",
+    "dev": "vite build -c syncEngine/sw/vite.config.js && vite",
+    "build": "vite build -c syncEngine/sw/vite.config.js && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -5,6 +5,9 @@ node_modules
 # Quasar core related directories
 .quasar
 /dist
+
+# Generated service worker (built from syncEngine/sw/)
+/public/sync-worker.js
 /quasar.config.*.temporary.compiled*
 
 # Cordova related directories and files

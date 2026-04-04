@@ -14,6 +14,7 @@ import { LOAD_STRATEGY } from '../shared/constants.js'
  * @param {string} [options.loadStrategy='instant'] — sync strategy ('instant', 'lazy', or 'local')
  * @param {number} [options.schemaVersion=1] — schema version for migration detection
  * @param {string} [options.syncField] — field name to use for sync status tracking
+ * @param {string} [options.customIndex] — custom index definition string, e.g. "email" or "[firstName+lastName]"
  *
  * Usage:
  *   @ClientModel("users")                        — table name required
@@ -29,8 +30,7 @@ export function ClientModel(tableName, options = {}) {
   return function (Class, context) {
     const modelName = context.name
     const properties = context.metadata?._syncProps ?? []
-    const customIndexStr = Class.customIndex ?? null
-    const indexes = customIndexStr ? parseCustomIndex(customIndexStr) : []
+    const indexes = options.customIndex ? parseCustomIndex(options.customIndex) : []
     const primaryKey = options.primaryKey ?? 'id'
     const syncField = options.syncField
 

@@ -5,11 +5,11 @@ import { BaseModel } from '../core/BaseModel.js'
 import { IndexedDB } from './IndexedDB.js'
 import { TRANSACTIONS_STORE, STATUS, OPERATION, LOAD_STRATEGY } from '../shared/constants.js'
 
-@ClientModel(TRANSACTIONS_STORE, { loadStrategy: LOAD_STRATEGY.LOCAL })
+@ClientModel(TRANSACTIONS_STORE, {
+  loadStrategy: LOAD_STRATEGY.LOCAL,
+  customIndex: 'status, [modelName+modelId]',
+})
 class TransactionQueue extends BaseModel {
-  // NOTE: primaryKey is set via @ClientModel options (primaryKey: 'id'), not here.
-  static customIndex = 'status, [modelName+modelId]'
-
   @Property({ type: String }) id = ''
   @Property({ type: String }) modelName = ''
   @Property({ type: String }) modelId = ''

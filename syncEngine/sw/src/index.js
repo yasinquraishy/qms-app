@@ -30,6 +30,15 @@ self.addEventListener('online', () => {
   if (swState === SW_STATE.READY) {
     startPolling(metas.metaMap, config)
     if (config?.socketUrl) connectSocket(config, metas.metaByTable)
+  } else if (swState === SW_STATE.BOOTSTRAPPING && config) {
+    // Bootstrap was skipped because we were offline — retry now
+    bootstrapAll(metas.metaMap, config).then((wasSkipped) => {
+      if (!wasSkipped) {
+        swState = SW_STATE.READY
+        startPolling(metas.metaMap, config)
+        if (config?.socketUrl) connectSocket(config, metas.metaByTable)
+      }
+    })
   }
 })
 
@@ -40,15 +49,23 @@ self.addEventListener('offline', () => {
 })
 
 async function doInit(payload) {
-  config = payload
-  await IndexedDB.init(config.dbName)
-  metas = await loadMetas()
-  swState = SW_STATE.BOOTSTRAPPING
-  await bootstrapAll(metas.metaMap, config)
-  swState = SW_STATE.READY
-  if (!isOffline) {
-    startPolling(metas.metaMap, config)
-    if (config.socketUrl) connectSocket(config, metas.metaByTable)
+  try {
+    config = payload
+    await IndexedDB.init(config.dbName)
+    metas = await loadMetas()
+    swState = SW_STATE.BOOTSTRAPPING
+    const wasSkipped = await bootstrapAll(metas.metaMap, config)
+    if (!wasSkipped) {
+      swState = SW_STATE.READY
+      if (!isOffline) {
+        startPolling(metas.metaMap, config)
+        if (config.socketUrl) connectSocket(config, metas.metaByTable)
+      }
+    }
+    // wasSkipped: swState stays BOOTSTRAPPING — retried when 'online' fires
+  } catch (err) {
+    swState = SW_STATE.IDLE
+    await broadcastMessage({ type: MSG.ERROR, error: { message: err.message, stack: err.stack } })
   }
 }
 

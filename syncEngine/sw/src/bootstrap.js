@@ -13,15 +13,28 @@ const PAGE_SIZE = 100
  * @param {Map<string, object>} metaMap  modelName → tableMeta
  * @param {{ graphqlUrl: string, headers: object }} config
  */
+/**
+ * @returns {Promise<boolean>} true if bootstrap was skipped (offline), false if it ran
+ */
 export async function bootstrapAll(metaMap, config) {
   if (!navigator.onLine) {
     await broadcastMessage({ type: MSG.BOOTSTRAP_COMPLETE, skipped: true, reason: 'offline' })
-    return
+    return true
   }
 
-  await Promise.allSettled([...metaMap.values()].map((meta) => bootstrapModel(meta, config)))
+  const allMetas = [...metaMap.values()]
+  const results = await Promise.allSettled(allMetas.map((meta) => bootstrapModel(meta, config)))
 
-  await broadcastMessage({ type: MSG.BOOTSTRAP_COMPLETE })
+  const failed = allMetas
+    .filter((_, i) => results[i].status === 'rejected')
+    .map((meta) => meta.modelName)
+
+  await broadcastMessage({
+    type: MSG.BOOTSTRAP_COMPLETE,
+    ...(failed.length > 0 ? { failed } : {}),
+  })
+
+  return false
 }
 
 /**

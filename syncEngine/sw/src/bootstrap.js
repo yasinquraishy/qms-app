@@ -64,7 +64,7 @@ async function bootstrapModel(meta, config, signal) {
     if (after) variables.after = after
 
     if (meta.syncField && meta.lastSyncValue !== null) {
-      variables.filter = { [meta.syncField]: { greaterThan: meta.lastSyncValue } }
+      variables.condition = { [meta.syncField]: { greaterThan: meta.lastSyncValue } }
     }
 
     if (meta.syncField && meta.fetchAllOrderBy) {

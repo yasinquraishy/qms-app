@@ -26,6 +26,9 @@ const editingRequest = ref(null)
 const showSubmitDialog = ref(false)
 const submittingRequest = ref(null)
 
+const showReviewDialog = ref(false)
+const reviewingRequestId = ref(null)
+
 async function fetchData() {
   const companyId = currentCompany.value?.id
   loading.value = true
@@ -62,6 +65,11 @@ function openEditDialog(request) {
 function openSubmitDialog(request) {
   submittingRequest.value = request
   showSubmitDialog.value = true
+}
+
+function openReviewDialog(request) {
+  reviewingRequestId.value = request.id
+  showReviewDialog.value = true
 }
 
 function onDeleteRequest(request) {
@@ -193,6 +201,17 @@ onMounted(() => {
             @click="openSubmitDialog(request)"
           />
           <WBtn
+            v-if="request.statusId === 'RECEIVED'"
+            flat
+            round
+            dense
+            icon="rate_review"
+            color="primary"
+            size="sm"
+            title="Review document"
+            @click="openReviewDialog(request)"
+          />
+          <WBtn
             flat
             round
             dense
@@ -237,6 +256,12 @@ onMounted(() => {
       v-model="showSubmitDialog"
       :request="submittingRequest"
       @submitted="fetchData"
+    />
+
+    <SuppliersAssetRequestReviewDialog
+      v-model="showReviewDialog"
+      :assetRequestId="reviewingRequestId"
+      @done="fetchData"
     />
   </div>
 </template>

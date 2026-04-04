@@ -72,8 +72,11 @@ export function disconnectSocket() {
 
 async function hasPendingTransaction(modelName, modelId) {
   try {
-    const pending = await IndexedDB.getByIndex(TRANSACTIONS_STORE, 'status', STATUS.PENDING)
-    return pending.some((e) => e.modelName === modelName && String(e.modelId) === String(modelId))
+    const pending = await IndexedDB.getByIndex(TRANSACTIONS_STORE, '[modelName+modelId]', [
+      modelName,
+      String(modelId),
+    ])
+    return pending.some((e) => e.status === STATUS.PENDING)
   } catch {
     return false
   }

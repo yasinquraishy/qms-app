@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
         '@resource': fileURLToPath(new URL('./resource', import.meta.url)),
         '@shared': fileURLToPath(new URL('./resource/js/shared', import.meta.url)),
         '@syncEngine': fileURLToPath(new URL('./syncEngine', import.meta.url)),
+        '@models': fileURLToPath(new URL('./models', import.meta.url)),
       },
     },
 
@@ -67,7 +68,6 @@ export default defineConfig(({ mode }) => {
 
       // Babel — needed for TC39 decorator support used by syncEngine
       babel({
-        include: /syncEngine\//,
         babelConfig: {
           plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }]],
         },

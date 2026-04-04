@@ -1,5 +1,6 @@
 import { shallowRef, watch, onScopeDispose } from 'vue'
 import { syncBus } from '@syncEngine/core/syncBus.js'
+import { db } from '@models/index'
 
 const DEFAULT_DEBOUNCE = 50
 
@@ -9,7 +10,7 @@ const DEFAULT_DEBOUNCE = 50
  * Returns a shallowRef so BaseModel instances are never wrapped in a Proxy
  * (avoids private-field access errors).
  *
- * @param {() => Promise<any>} queryFn — async function returning results
+ * @param {(db: typeof import('@models/index').db) => Promise<any>} queryFn — async function returning results
  * @param {object}  [options]
  * @param {string|string[]} [options.models='*']  — model(s) to watch
  * @param {any}             [options.initial=[]]  — value before first load
@@ -24,7 +25,7 @@ export function useLiveQuery(
 
   async function refresh() {
     try {
-      data.value = await queryFn()
+      data.value = await queryFn(db)
     } catch (err) {
       console.error(err)
     }
@@ -49,7 +50,7 @@ export function useLiveQuery(
  * reactive state changes AND sync events.
  *
  * @param {import('vue').WatchSource|import('vue').WatchSource[]} deps — reactive dependencies
- * @param {() => Promise<any>} queryFn
+ * @param {(db: typeof import('@models/index').db, ...args: any[]) => Promise<any>} queryFn
  * @param {object} [options] — same as useLiveQuery
  * @returns {{ data: import('vue').ShallowRef, loading: import('vue').ShallowRef<boolean>, refresh: () => Promise<void> }}
  */
@@ -60,9 +61,9 @@ export function useLiveQueryWithDeps(
 ) {
   const data = shallowRef(initial)
 
-  async function refresh() {
+  async function refresh(...args) {
     try {
-      data.value = await queryFn()
+      data.value = await queryFn(db, ...args)
     } catch (err) {
       console.error(err)
     }

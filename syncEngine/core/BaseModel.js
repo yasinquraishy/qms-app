@@ -5,12 +5,13 @@ import { hydrate } from '../persistence/hydration.js'
 import { QueryBuilder } from '../query/QueryBuilder.js'
 import { OPERATION } from '../shared/constants.js'
 import { ModelValidator, ValidationError } from './ModelValidator.js'
+import { DateTime } from 'luxon'
 
 // Re-export for backwards compatibility
 export { ValidationError }
 
 /**
- * Base class for all @ClientModel classes.
+ * Base class for all @ClientModel classes
  *
  * Provides:
  *   _propertyChanged(name, oldValue) — called by observabilityHelper on every
@@ -35,6 +36,23 @@ export class BaseModel {
    * @type {((instance: BaseModel) => Promise<void>) | null}
    */
   static _saveStrategy = null
+
+  /**
+   * @type {boolean|string} paranoid delete mode — if true, delete() will set a "deletedAt" timestamp instead of removing the record.
+   * If a string is provided, it will be used as the field name for the timestamp (e.g., "deletedAt").
+   * The field must be decorated with @Property({ type: Date }) or @Property({ type: DateTime }).
+   * Note: paranoid mode is opt-in and must be explicitly enabled by setting this static property in the model class.
+   * Example:
+   *   class User extends BaseModel {
+   *     static paranoid = true // uses "deletedAt" by default
+   *     // or
+   *     static paranoid = "deletedAt" // specify custom field name
+   *
+   *     @Property({ type: Date }) deletedAt = null
+   *     // ...
+   *   }
+   */
+  static paranoid = false
 
   #action = OPERATION.UPDATE
   #modified = {}
@@ -117,7 +135,24 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async delete() {
-    this.#action = OPERATION.DELETE
+    if (this.paranoid) {
+      const field = typeof this.paranoid === 'string' ? this.paranoid : 'deletedAt'
+      const schema = ModelRegistry.getSchema(this.constructor.name)
+      const propMeta = schema?.properties?.get(field)
+      const fieldType = propMeta?.options?.type
+
+      if (fieldType === DateTime) {
+        this[field] = DateTime.now()
+      } else if (fieldType === Number) {
+        this[field] = Date.now()
+      } else {
+        // Date or any other type — default to native Date
+        this[field] = new Date()
+      }
+      this.#action = OPERATION.UPDATE
+    } else {
+      this.#action = OPERATION.DELETE
+    }
     await this.save()
   }
 

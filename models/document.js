@@ -1,4 +1,5 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
+import { DateTime } from 'luxon'
 
 @ClientModel('documents', { primaryKey: 'id' })
 export class Document extends BaseModel {
@@ -17,5 +18,7 @@ export class Document extends BaseModel {
   @Property({ type: String }) relatedStandardId = ''
   @Property({ type: Number }) periodicReviewMonths = 12
   @Property({ type: Boolean }) autoEffectiveOnApproval = true
-  @Property({ type: Number }) updatedAt = 0
+  @Property({ type: DateTime }) updatedAt = DateTime.now()
+  @Property({ type: DateTime }) createdAt = DateTime.now()
+  @Property({ type: DateTime }) deletedAt = DateTime.now()
 }

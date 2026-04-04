@@ -1,4 +1,5 @@
 import { syncEngine } from '@syncEngine/syncEngine.js'
+import '@models/index.js'
 
 const DB_PREFIX = 'qms-'
 

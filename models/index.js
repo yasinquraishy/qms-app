@@ -1,1 +1,5 @@
-export { Document } from './document.js'
+import { Document } from './document'
+
+export const db = {
+  Document,
+}

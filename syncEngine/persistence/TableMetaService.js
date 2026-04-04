@@ -2,6 +2,7 @@ import ModelRegistry from '../core/ModelRegistry.js'
 import { GraphQLSchemaGenerator } from '../network/GraphQLSchemaGenerator.js'
 import { IndexedDB } from './IndexedDB.js'
 import { TABLE_METAS_STORE, LOAD_STRATEGY } from '../shared/constants.js'
+import './TableMeta.js'
 
 export class TableMetaService {
   /**

@@ -248,6 +248,8 @@ declare global {
   const useKeyModifier: typeof import('@vueuse/core').useKeyModifier
   const useLastChanged: typeof import('@vueuse/core').useLastChanged
   const useLink: typeof import('vue-router').useLink
+  const useLiveQuery: typeof import('./src/composables/useLiveQuery.js').useLiveQuery
+  const useLiveQueryWithDeps: typeof import('./src/composables/useLiveQuery.js').useLiveQueryWithDeps
   const useLocalStorage: typeof import('@vueuse/core').useLocalStorage
   const useMagicKeys: typeof import('@vueuse/core').useMagicKeys
   const useManualRefHistory: typeof import('@vueuse/core').useManualRefHistory

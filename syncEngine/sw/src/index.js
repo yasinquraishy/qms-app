@@ -14,6 +14,7 @@ const state = {
   metas: { metaMap: new Map(), metaByTable: new Map() },
   sw: SW_STATE.IDLE,
   isOffline: false,
+  bootstrapAbortController: null,
 }
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
@@ -52,7 +53,14 @@ function stopServices() {
 }
 
 async function runBootstrap() {
-  const wasSkipped = await bootstrapAll(state.metas.metaMap, state.config)
+  const ac = new AbortController()
+  state.bootstrapAbortController = ac
+
+  const wasSkipped = await bootstrapAll(state.metas.metaMap, state.config, ac.signal)
+
+  // A concurrent REINIT/STOP already called teardown() — bail out silently
+  if (ac.signal.aborted) return
+
   if (!wasSkipped) {
     state.sw = SW_STATE.READY
     if (!state.isOffline) startServices()
@@ -74,6 +82,8 @@ async function doInit(config) {
 }
 
 function teardown() {
+  state.bootstrapAbortController?.abort()
+  state.bootstrapAbortController = null
   stopServices()
   IndexedDB.close()
   state.sw = SW_STATE.IDLE

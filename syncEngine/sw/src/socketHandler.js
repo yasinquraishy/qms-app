@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client'
 import { IndexedDB } from '../../shared/IndexedDB.js'
-import { TRANSACTIONS_STORE, STATUS } from '../../shared/constants.js'
+import { TRANSACTIONS_STORE, STATUS, TABLE_METAS_STORE } from '../../shared/constants.js'
 import { broadcastMessage } from './broadcaster.js'
 import { MSG } from '../../shared/messageTypes.js'
 
@@ -34,6 +34,19 @@ export function connectSocket(config, metaByTable) {
 
       if (action === 'create' || action === 'update') {
         await IndexedDB.put(table, data)
+        if (meta.syncField) {
+          const newValue = data[meta.syncField]
+          if (newValue != null) {
+            const storedMeta = await IndexedDB.get(TABLE_METAS_STORE, table)
+            if (
+              storedMeta &&
+              (storedMeta.lastSyncValue === null || newValue > storedMeta.lastSyncValue)
+            ) {
+              storedMeta.lastSyncValue = newValue
+              await IndexedDB.put(TABLE_METAS_STORE, storedMeta)
+            }
+          }
+        }
       } else if (action === 'delete') {
         await IndexedDB.delete(table, data[pk])
       }

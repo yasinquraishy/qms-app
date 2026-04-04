@@ -7,10 +7,12 @@ export class SyncWorkerBridge {
   #registration = null
   #onFlush = null
   #onError = null
+  #onBootstrapComplete = null
 
-  constructor({ onFlush, onError } = {}) {
+  constructor({ onFlush, onError, onBootstrapComplete } = {}) {
     this.#onFlush = onFlush
     this.#onError = onError
+    this.#onBootstrapComplete = onBootstrapComplete
   }
 
   /**
@@ -57,6 +59,16 @@ export class SyncWorkerBridge {
         break
       case MSG.ERROR:
         this.#onError?.(msg.error)
+        break
+      case MSG.BOOTSTRAP:
+        syncBus.emit({ modelName: msg.modelName, type: msg.type, count: msg.count })
+        break
+      case MSG.BOOTSTRAP_COMPLETE:
+        this.#onBootstrapComplete?.()
+        syncBus.emit({ type: msg.type, skipped: msg.skipped })
+        break
+      case MSG.STATUS:
+        syncBus.emit({ type: msg.type, state: msg.state })
         break
     }
   }

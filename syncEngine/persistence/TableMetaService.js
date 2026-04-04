@@ -23,13 +23,16 @@ export class TableMetaService {
       const mutations = GraphQLSchemaGenerator.generateMutationStrings(modelName)
       const queries = GraphQLSchemaGenerator.generateQueryStrings(modelName)
 
+      // Preserve lastSyncValue from existing meta (critical for delta-sync to survive re-install)
+      const existing = await IndexedDB.get(TABLE_METAS_STORE, schema.tableName)
+
       // Write directly via IndexedDB.put (bypass save() to avoid SyncTransaction overhead)
       await IndexedDB.put(TABLE_METAS_STORE, {
         tableName: schema.tableName, // PK
         modelName, // indexed — SW looks up by modelName from queue entries
         primaryKey: pk, // e.g. "id"
         syncField: schema.syncField, // e.g. "updatedAt" or "version" (optional) — for sync status tracking
-        lastSyncValue: 0, // timestamp or version for last successful sync
+        lastSyncValue: existing?.lastSyncValue ?? null, // preserve existing value; null for new metas
         singularName, // e.g. "user" — needed for CREATE variable shape
         createMutation: mutations.create,
         updateMutation: mutations.update,

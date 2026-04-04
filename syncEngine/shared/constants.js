@@ -45,3 +45,9 @@ export const OPERATION = Object.freeze({
   UPDATE: 'update',
   DELETE: 'delete',
 })
+
+export const SW_STATE = Object.freeze({
+  IDLE: 'idle',
+  BOOTSTRAPPING: 'bootstrapping',
+  READY: 'ready',
+})

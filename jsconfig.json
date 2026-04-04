@@ -2,7 +2,8 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
-      "@shared/*": ["./resource/js/shared/*"]
+      "@shared/*": ["./resource/js/shared/*"],
+      "@syncEngine/*": ["./syncEngine/*"]
     }
   },
   "exclude": ["node_modules", "dist"]

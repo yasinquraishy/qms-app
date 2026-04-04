@@ -29,4 +29,3 @@ export { SyncWorkerBridge } from './worker/SyncWorkerBridge.js'
 
 // Vue integration
 export { syncBus } from './core/syncBus.js'
-export { useLiveQuery, useLiveQueryWithDeps } from './core/liveQuery.js'

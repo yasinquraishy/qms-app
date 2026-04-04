@@ -1,5 +1,5 @@
 import { shallowRef, watch, onScopeDispose } from 'vue'
-import { syncBus } from './syncBus.js'
+import { syncBus } from '@syncEngine/core/syncBus.js'
 
 const DEFAULT_DEBOUNCE = 50
 

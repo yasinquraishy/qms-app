@@ -44,7 +44,7 @@ async function poll() {
   } catch (err) {
     await broadcastMessage({
       type: MSG.ERROR,
-      error: { message: err.message, stack: err.stack },
+      error: { message: err.message, stack: err.stack, source: 'poll' },
     })
     backoffMs = Math.min(backoffMs * 2, MAX_BACKOFF)
   } finally {
@@ -95,6 +95,7 @@ async function flush(entries) {
           error: {
             message: err.message,
             rollback: true,
+            source: 'flush',
             entry: {
               modelName: entry.modelName,
               modelId: entry.modelId,
@@ -106,7 +107,7 @@ async function flush(entries) {
       }
       await broadcastMessage({
         type: MSG.ERROR,
-        error: { message: err.message, stack: err.stack },
+        error: { message: err.message, stack: err.stack, source: 'flush' },
       })
       throw err
     }

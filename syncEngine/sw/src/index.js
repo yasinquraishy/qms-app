@@ -77,7 +77,10 @@ async function doInit(config) {
     await runBootstrap()
   } catch (err) {
     state.sw = SW_STATE.IDLE
-    await broadcastMessage({ type: MSG.ERROR, error: { message: err.message, stack: err.stack } })
+    await broadcastMessage({
+      type: MSG.ERROR,
+      error: { message: err.message, stack: err.stack, source: 'doInit' },
+    })
   }
 }
 

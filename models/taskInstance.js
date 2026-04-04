@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('task_instances', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('taskInstances', { primaryKey: 'id', syncField: 'updatedAt' })
 export class TaskInstance extends BaseModel {
   @Property({ type: String }) id = ''
   @Property({ type: String }) assignedTo = ''

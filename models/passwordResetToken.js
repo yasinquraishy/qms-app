@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('password_reset_tokens', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('passwordResetTokens', { primaryKey: 'id', syncField: 'updatedAt' })
 export class PasswordResetToken extends BaseModel {
   @Property({ type: String }) id = ''
   @Property({ type: String }) userId = ''

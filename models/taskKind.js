@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('task_kinds', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('taskKinds', { primaryKey: 'id', syncField: 'updatedAt' })
 export class TaskKind extends BaseModel {
   @Property({ type: String }) id = ''
   @Property({ type: String }) name = ''

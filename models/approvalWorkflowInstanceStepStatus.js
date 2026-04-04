@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('approval_workflow_instance_step_statuses', {
+@ClientModel('approvalWorkflowInstanceStepStatuses', {
   primaryKey: 'id',
   syncField: 'updatedAt',
 })

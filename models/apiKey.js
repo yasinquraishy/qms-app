@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('api_keys', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('apiKeys', { primaryKey: 'id', syncField: 'updatedAt' })
 export class ApiKey extends BaseModel {
   @Property({ type: String }) id = ''
   @Property({ type: String }) userId = ''

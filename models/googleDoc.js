@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('google_docs', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('googleDocs', { primaryKey: 'id', syncField: 'updatedAt' })
 export class GoogleDoc extends BaseModel {
   @Property({ type: String }) id = ''
   @Property({ type: String }) googleDocId = ''

@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('notification_types', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('notificationTypes', { primaryKey: 'id', syncField: 'updatedAt' })
 export class NotificationType extends BaseModel {
   @Property({ type: String }) id = ''
   @Property({ type: String }) name = ''

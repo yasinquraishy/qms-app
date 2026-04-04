@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('approval_workflow_version_statuses', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('approvalWorkflowVersionStatuses', { primaryKey: 'id', syncField: 'updatedAt' })
 export class ApprovalWorkflowVersionStatus extends BaseModel {
   @Property({ type: String }) id = ''
   @Property({ type: String }) name = ''

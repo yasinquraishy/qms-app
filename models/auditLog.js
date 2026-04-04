@@ -1,7 +1,7 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('auditLogs', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('auditLogs', { primaryKey: 'id', syncField: 'createdAt' })
 export class AuditLog extends BaseModel {
   @Property({ type: String }) id = ''
   @Property({ type: String }) entityType = ''
@@ -15,5 +15,4 @@ export class AuditLog extends BaseModel {
   @Property({ type: String }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime }) createdAt = DateTime.now()
-  @Property({ type: DateTime }) updatedAt = DateTime.now()
 }

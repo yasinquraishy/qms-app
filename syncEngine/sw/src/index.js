@@ -102,6 +102,12 @@ async function messageHandler(event) {
     }
     case MSG.REFRESH_METAS: {
       metas = await loadMetas()
+      if (swState === SW_STATE.READY) {
+        stopPolling()
+        startPolling(metas.metaMap, config)
+        disconnectSocket()
+        if (config?.socketUrl) connectSocket(config, metas.metaByTable)
+      }
       break
     }
     case MSG.GET_STATUS: {

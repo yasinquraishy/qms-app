@@ -81,8 +81,6 @@ export class SyncEngine {
       headers: graphqlClientOptions.headers,
       pollIntervalMs: graphQLWorkerIntervalMs,
     })
-
-    this.#nukeDatabaseIfNeeded()
   }
 
   async #initDatabase(dbName) {
@@ -105,6 +103,7 @@ export class SyncEngine {
     this.#workerBridge = new SyncWorkerBridge({
       onFlush: (entry) => console.log('[SyncEngine] Flushed:', entry),
       onError: (err) => console.error('[SyncEngine] SW error:', err),
+      onBootstrapComplete: () => this.#nukeDatabaseIfNeeded(),
     })
 
     await this.#workerBridge.register(serviceWorkerUrl)

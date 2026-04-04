@@ -25,6 +25,23 @@ export async function bootstrapAll(metaMap, config) {
   const allMetas = [...metaMap.values()]
   const results = await Promise.allSettled(allMetas.map((meta) => bootstrapModel(meta, config)))
 
+  const rejectedModels = []
+  results.forEach((result, i) => {
+    if (result.status === 'rejected') {
+      rejectedModels.push(allMetas[i].modelName)
+    }
+  })
+
+  if (rejectedModels.length > 0) {
+    console.error(
+      `[SyncWorker] Bootstrap completed with ${rejectedModels.length} failed models:`,
+      rejectedModels,
+    )
+
+    // Notify the main thread about each failed models
+    await broadcastMessage({ type: MSG.BOOTSTRAP, modelNames: rejectedModels, error: true })
+  }
+
   const failed = allMetas
     .filter((_, i) => results[i].status === 'rejected')
     .map((meta) => meta.modelName)
@@ -81,7 +98,7 @@ async function bootstrapModel(meta, config) {
       }
     }
 
-    if (!pageInfo.hasNextPage) {
+    if (!pageInfo.hasNextPage || !pageInfo.endCursor) {
       if (meta.syncField && maxSyncValue !== meta.lastSyncValue) {
         const storedMeta = await IndexedDB.get(TABLE_METAS_STORE, meta.tableName)
         if (storedMeta) {

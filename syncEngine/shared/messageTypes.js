@@ -4,13 +4,14 @@
  */
 export const MSG = Object.freeze({
   // Main thread → SW
-  INIT: "init",
-  STOP: "stop",
-  REFRESH_METAS: "refreshMetas",
+  INIT: 'init',
+  REINIT: 'reinit',
+  STOP: 'stop',
+  REFRESH_METAS: 'refreshMetas',
 
   // SW → Main thread
-  SYNC: "sync",
-  ROLLBACK: "rollback",
-  FLUSH: "flush",
-  ERROR: "error",
-});
+  SYNC: 'sync',
+  ROLLBACK: 'rollback',
+  FLUSH: 'flush',
+  ERROR: 'error',
+})

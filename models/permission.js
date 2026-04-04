@@ -1,0 +1,11 @@
+import { BaseModel, ClientModel, Property } from '@syncEngine/index'
+import { DateTime } from 'luxon'
+
+@ClientModel('permissions', { primaryKey: 'id', syncField: 'updatedAt' })
+export class Permission extends BaseModel {
+  @Property({ type: String }) id = ''
+  @Property({ type: String }) name = ''
+  @Property({ type: String }) description = ''
+  @Property({ type: DateTime }) createdAt = DateTime.now()
+  @Property({ type: DateTime }) updatedAt = DateTime.now()
+}

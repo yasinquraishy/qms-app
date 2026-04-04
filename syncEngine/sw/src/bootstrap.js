@@ -16,31 +16,16 @@ const PAGE_SIZE = 100
 /**
  * @returns {Promise<boolean>} true if bootstrap was skipped (offline), false if it ran
  */
-export async function bootstrapAll(metaMap, config) {
+export async function bootstrapAll(metaMap, config, signal) {
   if (!navigator.onLine) {
     await broadcastMessage({ type: MSG.BOOTSTRAP_COMPLETE, skipped: true, reason: 'offline' })
     return true
   }
 
   const allMetas = [...metaMap.values()]
-  const results = await Promise.allSettled(allMetas.map((meta) => bootstrapModel(meta, config)))
-
-  const rejectedModels = []
-  results.forEach((result, i) => {
-    if (result.status === 'rejected') {
-      rejectedModels.push(allMetas[i].modelName)
-    }
-  })
-
-  if (rejectedModels.length > 0) {
-    console.error(
-      `[SyncWorker] Bootstrap completed with ${rejectedModels.length} failed models:`,
-      rejectedModels,
-    )
-
-    // Notify the main thread about each failed models
-    await broadcastMessage({ type: MSG.BOOTSTRAP, modelNames: rejectedModels, error: true })
-  }
+  const results = await Promise.allSettled(
+    allMetas.map((meta) => bootstrapModel(meta, config, signal)),
+  )
 
   const failed = allMetas
     .filter((_, i) => results[i].status === 'rejected')
@@ -60,12 +45,14 @@ export async function bootstrapAll(metaMap, config) {
  * @param {object} meta  tableMeta record
  * @param {{ graphqlUrl: string, headers: object }} config
  */
-async function bootstrapModel(meta, config) {
+async function bootstrapModel(meta, config, signal) {
   let after = null
   let totalCount = 0
   let maxSyncValue = meta.lastSyncValue !== null ? meta.lastSyncValue : null
 
   while (true) {
+    if (signal?.aborted) throw new DOMException('Bootstrap aborted', 'AbortError')
+
     const variables = { first: PAGE_SIZE }
 
     if (after) variables.after = after
@@ -79,6 +66,7 @@ async function bootstrapModel(meta, config) {
       config.headers,
       meta.fetchAllQuery,
       variables,
+      signal,
     )
     const collection = data[meta.tableName]
     const nodes = collection?.nodes ?? []

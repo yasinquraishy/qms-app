@@ -6,22 +6,23 @@
  * @param {object} variables
  * @returns {Promise<object>} The `data` field from the response
  */
-export async function graphqlRequest(url, headers, query, variables) {
+export async function graphqlRequest(url, headers, query, variables, signal) {
   const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify({ query, variables }),
-  });
+    signal,
+  })
   if (!res.ok) {
-    const error = new Error(`GraphQL request failed: ${res.status}`);
-    error.status = res.status;
-    throw error;
+    const error = new Error(`GraphQL request failed: ${res.status}`)
+    error.status = res.status
+    throw error
   }
-  const json = await res.json();
+  const json = await res.json()
   if (json.errors?.length) {
-    const error = new Error(json.errors[0].message);
-    error.graphqlErrors = json.errors;
-    throw error;
+    const error = new Error(json.errors[0].message)
+    error.graphqlErrors = json.errors
+    throw error
   }
-  return json.data;
+  return json.data
 }

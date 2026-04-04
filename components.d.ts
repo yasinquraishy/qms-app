@@ -222,6 +222,7 @@ declare module 'vue' {
     StepInstanceStatusBadge: typeof import('./src/components/badges/StepInstanceStatusBadge.vue')['default']
     Suggestion: typeof import('./resource/js/shared/components/Editor/extensions/emoji/suggestion.js')['default']
     SuppliersAssetRequestDialog: typeof import('./src/components/suppliers/SuppliersAssetRequestDialog.vue')['default']
+    SuppliersAssetRequestReviewDialog: typeof import('./src/components/suppliers/SuppliersAssetRequestReviewDialog.vue')['default']
     SuppliersAssetRequestsTab: typeof import('./src/components/suppliers/SuppliersAssetRequestsTab.vue')['default']
     SuppliersAssetRequestSubmitDialog: typeof import('./src/components/suppliers/SuppliersAssetRequestSubmitDialog.vue')['default']
     SuppliersAssociatedSitesCard: typeof import('./src/components/suppliers/SuppliersAssociatedSitesCard.vue')['default']

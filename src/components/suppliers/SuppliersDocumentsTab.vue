@@ -53,6 +53,18 @@ const typeLabel = {
         <p class="tw:text-xs tw:text-secondary">
           {{ doc.createdAt?.formatDate('date') }}
         </p>
+        <WBtn
+          v-if="doc.asset?.url"
+          flat
+          round
+          dense
+          icon="open_in_new"
+          color="secondary"
+          size="sm"
+          title="Open document"
+          :href="doc.asset.url"
+          target="_blank"
+        />
       </div>
     </div>
     <div v-else class="tw:py-12 tw:text-center">

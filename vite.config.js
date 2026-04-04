@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => {
 
     // Build target configuration
     build: {
-      target: ['es2022', 'firefox115', 'chrome115', 'safari14'],
+      target: ['es2022', 'firefox115', 'chrome115', 'safari16'],
     },
 
     // Dev server configuration

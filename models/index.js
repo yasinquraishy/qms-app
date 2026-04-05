@@ -18,7 +18,6 @@ import { AssetRequestStatus } from './assetRequestStatus'
 import { AssetRequestType } from './assetRequestType'
 import { AuditLog } from './auditLog'
 import { Comment } from './comment'
-import { Company } from './company'
 import { Department } from './department'
 import { Document } from './document'
 import { DocumentCounter } from './documentCounter'
@@ -31,8 +30,6 @@ import { DocumentVersion } from './documentVersion'
 import { DocumentVersionStatus } from './documentVersionStatus'
 import { FormStatus } from './formStatus'
 import { FormTemplate } from './formTemplate'
-import { GoogleDoc } from './googleDoc'
-import { Module } from './module'
 import { Notification } from './notification'
 import { NotificationType } from './notificationType'
 import { OptionSet } from './optionSet'
@@ -85,7 +82,6 @@ export const db = {
   AssetRequestType,
   AuditLog,
   Comment,
-  Company,
   Department,
   Document,
   DocumentCounter,
@@ -98,8 +94,6 @@ export const db = {
   DocumentVersionStatus,
   FormStatus,
   FormTemplate,
-  GoogleDoc,
-  Module,
   Notification,
   NotificationType,
   OptionSet,

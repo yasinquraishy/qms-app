@@ -102,8 +102,13 @@ export class BaseModel {
    * @param {*} id - The primary key value
    * @returns {Promise<this|null>} The model instance or null if not found
    */
-  static async findByPk(id) {
-    return hydrate(this.name, id)
+  static async findByPk(id, { force = false } = {}) {
+    const instance = await hydrate(this.name, id)
+    if (!force && instance && this.paranoid) {
+      const field = typeof this.paranoid === 'string' ? this.paranoid : 'deletedAt'
+      if (instance[field] != null) return null
+    }
+    return instance
   }
 
   /**
@@ -156,6 +161,27 @@ export class BaseModel {
     } else {
       this.#action = OPERATION.DELETE
     }
+    await this.save()
+  }
+
+  /**
+   * Restore a soft-deleted instance by clearing the paranoid field.
+   * @returns {Promise<void>}
+   */
+  async restore() {
+    const field =
+      typeof this.constructor.paranoid === 'string' ? this.constructor.paranoid : 'deletedAt'
+    this[field] = null
+    this.#action = OPERATION.UPDATE
+    await this.save()
+  }
+
+  /**
+   * Permanently delete this instance, bypassing paranoid soft-delete.
+   * @returns {Promise<void>}
+   */
+  async hardDelete() {
+    this.#action = OPERATION.DELETE
     await this.save()
   }
 

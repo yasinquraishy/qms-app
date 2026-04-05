@@ -22,13 +22,18 @@ export class QueryBuilder {
   #sortBy = null
   #limit = null
   #offset = 0
+  #paranoidField = null
 
-  constructor(modelName, indexField, indexValue) {
+  constructor(modelName, indexField, indexValue, paranoid) {
     this.#modelName = modelName
 
     if (indexField) {
       this.#indexName = indexField
       this.#indexValue = indexValue
+    }
+
+    if (paranoid) {
+      this.#paranoidField = typeof paranoid === 'string' ? paranoid : 'deletedAt'
     }
   }
 
@@ -149,6 +154,10 @@ export class QueryBuilder {
       records = await IndexedDB.getByIndex(this.#getTableName(), this.#indexName, this.#indexValue)
     } else {
       records = await IndexedDB.getAll(this.#getTableName())
+    }
+
+    if (this.#paranoidField) {
+      records = records.filter((r) => r[this.#paranoidField] == null)
     }
 
     for (const [field, test] of this.#conditions) {

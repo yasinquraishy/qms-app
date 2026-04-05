@@ -106,7 +106,7 @@ export declare class UpdateTransaction<M extends BaseModel = BaseModel> {
 // ---------------------------------------------------------------------------
 
 export declare class QueryBuilder<M extends BaseModel = BaseModel> {
-  constructor(modelName: string, indexField?: string, indexValue?: unknown);
+  constructor(modelName: string, indexField?: string, indexValue?: unknown, paranoid?: boolean | string);
 
   /**
    * Add an in-memory filter condition.
@@ -158,6 +158,12 @@ export declare class BaseModel {
    */
   delete(): Promise<void>;
 
+  /** Restore a soft-deleted instance by clearing the paranoid field. */
+  restore(): Promise<void>;
+
+  /** Permanently delete this instance, bypassing paranoid soft-delete. */
+  hardDelete(): Promise<void>;
+
   /** Validate all @Property fields against their declared type and required constraint. */
   _validateProperties(): void;
 
@@ -184,6 +190,7 @@ export declare class BaseModel {
   static findByPk<T extends typeof BaseModel>(
     this: T,
     id: unknown,
+    options?: { force?: boolean },
   ): Promise<InstanceType<T> | null>;
 
   /**
@@ -201,6 +208,7 @@ export declare class BaseModel {
     this: T,
     indexField?: string,
     indexValue?: unknown,
+    options?: { force?: boolean },
   ): QueryBuilder<InstanceType<T>>;
 }
 

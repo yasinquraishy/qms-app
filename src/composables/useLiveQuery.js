@@ -15,11 +15,11 @@ const DEFAULT_DEBOUNCE = 50
  * @param {string|string[]} [options.models='*']  — model(s) to watch
  * @param {any}             [options.initial=[]]  — value before first load
  * @param {number}          [options.debounce=50] — ms to coalesce burst syncs
- * @returns {{ data: import('vue').ShallowRef, loading: import('vue').ShallowRef<boolean>, refresh: () => Promise<void> }}
+ * @returns {import('vue').ShallowRef<any>}
  */
 export function useLiveQuery(
   queryFn,
-  { models = '*', initial = [], debounce = DEFAULT_DEBOUNCE } = {},
+  { models = '*', initial = undefined, debounce = DEFAULT_DEBOUNCE } = {},
 ) {
   const data = shallowRef(initial)
 
@@ -52,12 +52,12 @@ export function useLiveQuery(
  * @param {import('vue').WatchSource|import('vue').WatchSource[]} deps — reactive dependencies
  * @param {(db: typeof import('@models/index').db, ...args: any[]) => Promise<any>} queryFn
  * @param {object} [options] — same as useLiveQuery
- * @returns {{ data: import('vue').ShallowRef, loading: import('vue').ShallowRef<boolean>, refresh: () => Promise<void> }}
+ * @returns {import('vue').ShallowRef<any>}
  */
 export function useLiveQueryWithDeps(
   deps,
   queryFn,
-  { models = '*', initial = [], debounce = DEFAULT_DEBOUNCE } = {},
+  { models = '*', initial = undefined, debounce = DEFAULT_DEBOUNCE } = {},
 ) {
   const data = shallowRef(initial)
 

@@ -4,7 +4,7 @@ import { DateTime } from 'luxon'
 @ClientModel('documents', {
   primaryKey: 'id',
   syncField: 'updatedAt',
-  customIndex: 'documentId, docNumber',
+  customIndex: 'docNumber',
 })
 export class Document extends BaseModel {
   @Property({ type: String }) id = ''

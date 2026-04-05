@@ -25,6 +25,12 @@ const {
 } = useDocuments()
 
 // State
+const newDocument = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  return db.Document.findByPk(id)
+})
+const newVersions = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  return db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec()
+})
 const document = ref(null)
 const versions = ref([])
 const selectedVersion = ref(null)

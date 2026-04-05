@@ -256,6 +256,7 @@ export default {
     "useKeyModifier": true,
     "useLastChanged": true,
     "useLink": true,
+    "useLiveMutation": true,
     "useLiveQuery": true,
     "useLiveQueryWithDeps": true,
     "useLocalStorage": true,

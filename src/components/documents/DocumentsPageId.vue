@@ -12,6 +12,7 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
+const router = useRouter()
 
 // State
 const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
@@ -20,6 +21,13 @@ const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
 const versions = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
   return db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec()
 })
+
+const latestVersion = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  return db.DocumentVersion.where('documentId', id, { force: true })
+    .orderBy('createdAt', 'desc')
+    .first()
+})
+
 const selectedVersion = ref(null)
 const showWorkflowSidebar = ref(false)
 const showMessages = ref(false)
@@ -105,12 +113,14 @@ function openEditDialog() {
   showEditDialog.value = true
 }
 
-function handleDeleteDocument() {
-  // TODO: delete document
+async function handleDeleteDocument() {
+  await document.value.delete()
+  router.push(getCompanyPath('/documents'))
 }
 
-function handleDeleteVersion() {
-  // TODO: delete version
+async function handleDeleteVersion() {
+  await selectedVersion.value.delete()
+  // watch(versions) will auto-select the next available version
 }
 
 function onDocumentUpdated() {
@@ -130,8 +140,20 @@ function handleSetEffective() {
   // TODO: set effective
 }
 
-function createNewVersion() {
-  // TODO: create new version
+async function createNewVersion() {
+  const create = useLiveMutation(async (db) => {
+    const version = db.DocumentVersion.create({
+      documentId: props.id,
+      versionMajor: latestVersion.value ? latestVersion.value.versionMajor + 1 : 1,
+      versionMinor: 0,
+      statusId: 'DRAFT',
+    })
+
+    await version.save()
+    return version
+  })
+
+  selectedVersion.value = await create()
 }
 </script>
 

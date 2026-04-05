@@ -76,12 +76,9 @@ export class BaseModel {
 
     // Assign provided properties
     for (const [key, value] of Object.entries(object)) {
-      instance[key] = value
-    }
-
-    // Ensure pk is set (generate UUID if not provided)
-    if (!instance[pk]) {
-      instance[pk] = crypto.randomUUID()
+      if (value !== undefined) {
+        instance[key] = value
+      }
     }
 
     // Clear dirty state from property assignments — a newly created instance

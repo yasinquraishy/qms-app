@@ -3,6 +3,12 @@ import { DateTime } from 'luxon'
 
 @ClientModel('permissions', { primaryKey: 'id', syncField: 'updatedAt' })
 export class Permission extends BaseModel {
+  constructor(...args) {
+    super(...args)
+    if (!this.id) {
+      this.id = crypto.randomUUID()
+    }
+  }
   @Property({ type: String }) id = ''
   @Property({ type: String }) name = ''
   @Property({ type: String }) description = ''

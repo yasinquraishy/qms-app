@@ -3,6 +3,12 @@ import { DateTime } from 'luxon'
 
 @ClientModel('documentVersionStatuses', { primaryKey: 'id', syncField: 'updatedAt' })
 export class DocumentVersionStatus extends BaseModel {
+  constructor(...args) {
+    super(...args)
+    if (!this.id) {
+      this.id = crypto.randomUUID()
+    }
+  }
   @Property({ type: String }) id = ''
   @Property({ type: String }) name = ''
   @Property({ type: String }) description = ''

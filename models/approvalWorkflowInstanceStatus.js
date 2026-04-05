@@ -3,6 +3,12 @@ import { DateTime } from 'luxon'
 
 @ClientModel('approvalWorkflowInstanceStatuses', { primaryKey: 'id', syncField: 'updatedAt' })
 export class ApprovalWorkflowInstanceStatus extends BaseModel {
+  constructor(...args) {
+    super(...args)
+    if (!this.id) {
+      this.id = crypto.randomUUID()
+    }
+  }
   @Property({ type: String }) id = ''
   @Property({ type: String }) name = ''
   @Property({ type: String }) description = ''

@@ -18,9 +18,13 @@ const router = useRouter()
 const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
   return db.Document.findByPk(id)
 })
-const versions = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
-  return db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec()
-})
+const versions = useLiveQueryWithDeps(
+  [() => props.id],
+  async (db, [id]) => {
+    return db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec()
+  },
+  { initial: [] },
+)
 
 const latestVersion = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
   return db.DocumentVersion.where('documentId', id, { force: true })

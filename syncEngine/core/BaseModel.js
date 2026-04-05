@@ -124,10 +124,12 @@ export class BaseModel {
    * Create a QueryBuilder for filtering instances.
    * @param {string} [indexField] — indexed field name (or compound bracket syntax)
    * @param {unknown} [indexValue] — value to look up via the index
+   * @param {Object} [options] — additional options
+   * @param {boolean} [options.force=false] — force query even if paranoid mode is enabled
    * @returns {QueryBuilder}
    */
-  static where(indexField, indexValue) {
-    return new QueryBuilder(this.name, indexField, indexValue)
+  static where(indexField, indexValue, { force = false } = {}) {
+    return new QueryBuilder(this.name, indexField, indexValue, force ? false : this.paranoid)
   }
 
   /**

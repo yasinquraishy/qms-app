@@ -83,7 +83,7 @@ export function useLiveQueryWithDeps(
 
 /**
  *
- * @param {(db: typeof import('@models/index').db) => Promise<any>} mutationFn
+ * @param {(db: typeof import('@models/index').db, ...args: any[]) => Promise<any>} mutationFn
  */
 export function useLiveMutation(mutationFn) {
   async function mutate(...args) {

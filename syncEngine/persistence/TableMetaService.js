@@ -40,7 +40,6 @@ export class TableMetaService {
         deleteMutation: mutations.delete,
         fetchQuery: queries.fetch.query,
         fetchAllQuery: queries.fetchAll.query,
-        fetchAllConditionType: queries.fetchAll.conditionType,
         fetchAllOrderBy: queries.fetchAll.syncFieldOrderByDesc ?? null,
         fetchVariableName: queries.fetch.variableName,
       })

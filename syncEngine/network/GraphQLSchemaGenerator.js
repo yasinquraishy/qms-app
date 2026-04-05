@@ -72,7 +72,7 @@ export const GraphQLSchemaGenerator = {
    * Generate all query strings for a model (strings only, no variables).
    * Used by TableMetaService to pre-compute for Service Worker consumption.
    * @param {string} modelName
-   * @returns {{ fetch: { query: string, variableName: string }, fetchAll: { query: string, conditionType: string } }}
+   * @returns {{ fetch: { query: string, variableName: string }, fetchAll: { query: string } }}
    */
   generateQueryStrings(modelName) {
     const { schema, singularName, capitalSingular, pk, fields } = this._resolveSchema(modelName)
@@ -80,7 +80,7 @@ export const GraphQLSchemaGenerator = {
     const tableName = schema.tableName
     const pluralName = pluralize(tableName)
     const allFields = [...schema.properties.keys()].join('\n      ')
-    const conditionType = `${capitalSingular}Condition`
+    const filterType = `${capitalSingular}Filter`
     const orderByType = `${capitalSingular}OrderBy`
     const syncFieldOrderByDesc = schema.syncField
       ? `${camelToUpperSnake(schema.syncField)}_DESC`
@@ -96,8 +96,8 @@ export const GraphQLSchemaGenerator = {
     }
 
     const fetchAll = {
-      query: `query FetchAll${capitalSingular}($condition: ${conditionType}, $first: Int, $after: Cursor, $orderBy: [${orderByType}!]) {
-  ${pluralName}(condition: $condition, first: $first, after: $after, orderBy: $orderBy) {
+      query: `query FetchAll${capitalSingular}($filter: ${filterType}, $first: Int, $after: Cursor, $orderBy: [${orderByType}!]) {
+  ${pluralName}(filter: $filter, first: $first, after: $after, orderBy: $orderBy) {
     nodes {
       ${allFields}
     }
@@ -109,7 +109,6 @@ export const GraphQLSchemaGenerator = {
     }
   }
 }`,
-      conditionType,
       syncFieldOrderByDesc,
     }
 

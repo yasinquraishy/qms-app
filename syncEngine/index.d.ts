@@ -106,20 +106,19 @@ export declare class UpdateTransaction<M extends BaseModel = BaseModel> {
 // ---------------------------------------------------------------------------
 
 export declare class QueryBuilder<M extends BaseModel = BaseModel> {
-  constructor(modelName: string);
+  constructor(modelName: string, indexField?: string, indexValue?: unknown);
 
   /**
-   * Specify filter conditions (AND logic).
-   * Supports compound index queries using bracket syntax:
-   * where({ '[field1+field2]': [value1, value2] })
+   * Add an in-memory filter condition.
+   * @param field — field name to match
+   * @param value — equality value or predicate function
    *
    * @example
-   * Issue.where({ status: 'open' }).exec()
-   * Issue.where({ '[status+priority]': ['pending', 1] }).exec()
+   * Issue.where('status', 'open').where('priority', v => v > 3).exec()
    */
-  where(conditions: Record<string, unknown>): this;
-  filter(conditions: Record<string, unknown>): this;
-  orderBy(field: string, direction?: "asc" | "desc"): this;
+  where(field: string, value: unknown | ((v: unknown) => boolean)): this;
+  orderBy(field: string, direction?: "asc" | "desc" | ((a: unknown, b: unknown) => number)): this;
+  sortBy(field: string, direction?: "asc" | "desc" | ((a: unknown, b: unknown) => number)): this;
   limit(n: number): this;
   offset(n: number): this;
 
@@ -189,16 +188,19 @@ export declare class BaseModel {
 
   /**
    * Create a QueryBuilder for filtering instances.
-   * @param conditions — optional initial filter conditions
+   * @param indexField — optional indexed field name (or compound bracket syntax)
+   * @param indexValue — value to look up via the index
    * @returns QueryBuilder typed to the calling class
    *
    * @example
-   * Issue.where({ status: 'open' }).exec()  // Promise<Issue[]>
-   * Issue.where({ priority: 5 }).first()    // Promise<Issue | null>
+   * Issue.where('status', 'open').exec()                     // indexed lookup
+   * Issue.where('[status+priority]', ['open', 1]).exec()      // compound index
+   * Issue.where().where('name', 'foo').exec()                 // full scan + filter
    */
   static where<T extends typeof BaseModel>(
     this: T,
-    conditions?: Record<string, unknown>,
+    indexField?: string,
+    indexValue?: unknown,
   ): QueryBuilder<InstanceType<T>>;
 }
 

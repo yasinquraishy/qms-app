@@ -5,25 +5,25 @@
  * @returns {Array<{ type: 'single', field: string } | { type: 'compound', fields: string[] }>}
  */
 export function parseCustomIndex(indexStr) {
-  if (!indexStr) return [];
+  if (!indexStr) return []
   return indexStr
-    .split(",")
+    .split(',')
     .map((s) => {
-      const trimmed = s.trim();
-      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      const trimmed = s.trim()
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
         // Compound: [field1+field2]
-        const inner = trimmed.slice(1, -1);
-        const fields = inner.split("+").map((f) => f.trim()).filter(Boolean);
-        return { type: "compound", fields };
+        const inner = trimmed.slice(1, -1)
+        const fields = inner
+          .split('+')
+          .map((f) => f.trim())
+          .filter(Boolean)
+        return { type: 'compound', fields, name: trimmed }
       } else {
         // Single field
-        return { type: "single", field: trimmed };
+        return { type: 'single', field: trimmed, name: trimmed }
       }
     })
-    .filter(
-      (item) =>
-        item.type === "single"
-          ? item.field
-          : item.type === "compound" && item.fields.length > 0,
-    );
+    .filter((item) =>
+      item.type === 'single' ? item.field : item.type === 'compound' && item.fields.length > 0,
+    )
 }

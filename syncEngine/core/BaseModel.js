@@ -122,11 +122,12 @@ export class BaseModel {
 
   /**
    * Create a QueryBuilder for filtering instances.
-   * @param {Record<string, unknown>} [conditions] — optional initial filter
+   * @param {string} [indexField] — indexed field name (or compound bracket syntax)
+   * @param {unknown} [indexValue] — value to look up via the index
    * @returns {QueryBuilder}
    */
-  static where(conditions) {
-    return new QueryBuilder(this.name).where(conditions || {})
+  static where(indexField, indexValue) {
+    return new QueryBuilder(this.name, indexField, indexValue)
   }
 
   /**

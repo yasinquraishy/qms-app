@@ -53,7 +53,7 @@ class TransactionQueue extends BaseModel {
    * @returns {Promise<TransactionQueue[]>}
    */
   static async getPending() {
-    return this.where({ status: STATUS.PENDING }).exec()
+    return this.where('status', STATUS.PENDING).exec()
   }
 
   /**

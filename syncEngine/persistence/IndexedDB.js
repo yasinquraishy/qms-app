@@ -1,6 +1,6 @@
 // IndexedDB.js
-import { buildStoreDefinitions } from "./schemaManager.js";
-import { IndexedDB as AbstractIndexedDB } from "../shared/IndexedDB.js";
+import { buildStoreDefinitions } from './schemaManager.js'
+import { IndexedDB as AbstractIndexedDB } from '../shared/IndexedDB.js'
 
 export class IndexedDB extends AbstractIndexedDB {
   /**
@@ -8,18 +8,18 @@ export class IndexedDB extends AbstractIndexedDB {
    * @param {IDBDatabase} db
    */
   static ensureSchema(db) {
-    const definitions = buildStoreDefinitions();
+    const definitions = buildStoreDefinitions()
 
     for (const [storeName, def] of Object.entries(definitions)) {
-      const store = db.createObjectStore(storeName, { keyPath: def.keyPath });
+      const store = db.createObjectStore(storeName, { keyPath: def.keyPath })
 
       for (const idx of def.indexes) {
-        if (idx.type === "single") {
-          store.createIndex(idx.field, idx.field, { unique: false });
-        } else if (idx.type === "compound") {
-          store.createIndex(idx.fields.join("+"), idx.fields, {
+        if (idx.type === 'single') {
+          store.createIndex(idx.name, idx.field, { unique: false })
+        } else if (idx.type === 'compound') {
+          store.createIndex(idx.name, idx.fields, {
             unique: false,
-          });
+          })
         }
       }
     }

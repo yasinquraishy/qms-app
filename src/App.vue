@@ -3,7 +3,7 @@ import { initSession, currentSession } from '@/utils/currentSession'
 import { initCurrentCompany, companies } from '@/utils/currentCompany'
 import { isPublicRoute as isPublicRouteFn, isAuthRoute } from '@/constants/authRoutes'
 import { provideNotifications } from '@/composables/useNotifications.js'
-import { initSync, teardownSync } from '@/utils/initSyncEngine.js'
+import { initSync } from '@/utils/initSyncEngine.js'
 
 provideNotifications()
 
@@ -51,29 +51,20 @@ onMounted(async () => {
   await initSession(companyCode)
   await initCurrentCompany()
 
+  const isCompanyExists = companies.value.some((c) => c.code === companyCode)
+  if (!isCompanyExists && companies.value.length > 0) {
+    const firstCompanyCode = companies.value[0].code
+    window.location.href = `/${firstCompanyCode}/dashboard`
+    return
+  }
+
   // Install syncEngine with company-scoped DB
   if (currentSession.value?.companyId) {
     await initSync(currentSession.value.companyId)
   }
 
-  const isCompanyExists = companies.value.some((c) => c.code === companyCode)
-  if (!isCompanyExists && companies.value.length > 0) {
-    const firstCompanyCode = companies.value[0].code
-    window.location.href = `/${firstCompanyCode}/dashboard`
-  }
-
   loading.value = false
 })
-
-// Reinstall syncEngine when company changes (e.g. company switch)
-watch(
-  () => currentSession.value?.companyId,
-  async (newId, oldId) => {
-    if (!newId || newId === oldId) return
-    teardownSync()
-    await initSync(newId)
-  },
-)
 </script>
 
 <template>

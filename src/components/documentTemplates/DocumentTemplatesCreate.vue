@@ -4,6 +4,7 @@ import { required, minValue, helpers } from '@vuelidate/validators'
 import { useDocumentTemplates } from '@/composables/useDocumentTemplates.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { validateUUID } from '@/utils/validators.js'
+import { currentCompany } from '@/utils/currentCompany.js'
 
 const props = defineProps({
   id: {
@@ -33,12 +34,16 @@ const form = ref({
   prefix: '',
   departmentId: null,
   relatedStandardId: null,
-  trainingAvailable: true,
-  retrainingOnVersion: true,
-  periodicReviewMonths: 12,
-  reviewLimitDays: 14,
-  approvalLimitDays: 7,
-  autoEffectiveOnApproval: true,
+  trainingAvailable:
+    currentCompany.value?.settings?.defaultDocumentTemplateTrainingAvailable ?? true,
+  retrainingOnVersion:
+    currentCompany.value?.settings?.defaultDocumentTemplateRetrainingOnVersion ?? true,
+  periodicReviewMonths:
+    currentCompany.value?.settings?.defaultDocumentTemplatePeriodicReviewMonths ?? 12,
+  reviewLimitDays: currentCompany.value?.settings?.defaultDocumentTemplateReviewLimitDays ?? 14,
+  approvalLimitDays: currentCompany.value?.settings?.defaultDocumentTemplateApprovalLimitDays ?? 7,
+  autoEffectiveOnApproval:
+    currentCompany.value?.settings?.defaultDocumentTemplateAutoEffectiveOnApproval ?? true,
   showSectionTitles: true,
   sections: [
     {

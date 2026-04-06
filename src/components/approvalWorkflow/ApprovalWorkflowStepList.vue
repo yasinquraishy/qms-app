@@ -1,4 +1,6 @@
 <script setup>
+import { currentCompany } from '@/utils/currentCompany.js'
+
 defineProps({
   canUpdate: { type: Boolean, default: false },
 })
@@ -20,14 +22,15 @@ function selectStep(index) {
 function addStep() {
   if (!steps.value) return
   const newOrder = steps.value.length + 1
+  const s = currentCompany.value?.settings || {}
   steps.value.push({
     name: `Step ${newOrder}`,
     description: '',
     stepOrder: newOrder,
-    approvalRule: 'ALL',
-    slaDays: null,
-    requireComments: false,
-    requireEsignature: false,
+    approvalRule: s.defaultApprovalWorkflowApprovalRule ?? 'ALL',
+    slaDays: s.defaultSla ?? null,
+    requireComments: s.defaultApprovalWorkflowRequireComment ?? false,
+    requireEsignature: s.defaultApprovalWorkflowRequireSignature ?? false,
     roleIds: [],
     reviewerIds: [],
   })

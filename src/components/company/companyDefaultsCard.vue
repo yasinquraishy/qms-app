@@ -1,0 +1,166 @@
+<script setup>
+const model = defineModel({ type: Object, required: true })
+
+const approvalRuleOptions = [
+  { label: 'ALL — every approver must approve', value: 'ALL' },
+  { label: 'ANY — one approver is sufficient', value: 'ANY' },
+]
+</script>
+
+<template>
+  <div
+    class="tw:rounded-xl tw:border tw:border-divider tw:shadow-sm tw:overflow-hidden tw:bg-sidebar"
+  >
+    <!-- Card Header -->
+    <div class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover">
+      <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Default Settings</h2>
+    </div>
+
+    <!-- Card Content -->
+    <div class="tw:p-6 tw:flex tw:flex-col tw:gap-8">
+      <!-- Approval Workflow Defaults -->
+      <div class="tw:flex tw:flex-col tw:gap-5">
+        <h3 class="tw:text-xs tw:font-bold tw:uppercase tw:tracking-widest tw:text-secondary">
+          Approval Workflow Defaults
+        </h3>
+
+        <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-6">
+          <WInput
+            v-model.number="model.settings.defaultSla"
+            label="Default SLA (days)"
+            type="number"
+            hint="Applied to new workflow steps"
+          />
+          <WSelect
+            v-model="model.settings.defaultApprovalWorkflowApprovalRule"
+            label="Default Approval Rule"
+            :options="approvalRuleOptions"
+            optionLabel="label"
+            optionValue="value"
+            emitValue
+            mapOptions
+            hint="ALL or ANY approvers required"
+          />
+        </div>
+
+        <div class="tw:flex tw:flex-col tw:gap-4">
+          <div class="tw:flex tw:items-center tw:justify-between">
+            <div>
+              <div class="tw:text-sm tw:font-medium tw:text-on-sidebar">
+                Require Signature by Default
+              </div>
+              <div class="tw:text-xs tw:text-secondary">Workflow steps require an e-signature</div>
+            </div>
+            <QToggle
+              v-model="model.settings.defaultApprovalWorkflowRequireSignature"
+              color="primary"
+            />
+          </div>
+          <div class="tw:flex tw:items-center tw:justify-between">
+            <div>
+              <div class="tw:text-sm tw:font-medium tw:text-on-sidebar">
+                Require Comment by Default
+              </div>
+              <div class="tw:text-xs tw:text-secondary">Workflow steps require a comment</div>
+            </div>
+            <QToggle
+              v-model="model.settings.defaultApprovalWorkflowRequireComment"
+              color="primary"
+            />
+          </div>
+        </div>
+      </div>
+
+      <QSeparator />
+
+      <!-- Document Template Defaults -->
+      <div class="tw:flex tw:flex-col tw:gap-5">
+        <h3 class="tw:text-xs tw:font-bold tw:uppercase tw:tracking-widest tw:text-secondary">
+          Document Template Defaults
+        </h3>
+
+        <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-3 tw:gap-6">
+          <WInput
+            v-model.number="model.settings.defaultDocumentTemplatePeriodicReviewMonths"
+            label="Periodic Review (months)"
+            type="number"
+            hint="How often documents are reviewed"
+          />
+          <WInput
+            v-model.number="model.settings.defaultDocumentTemplateReviewLimitDays"
+            label="Review Limit (days)"
+            type="number"
+            hint="Days allowed for review"
+          />
+          <WInput
+            v-model.number="model.settings.defaultDocumentTemplateApprovalLimitDays"
+            label="Approval Limit (days)"
+            type="number"
+            hint="Days allowed for approval"
+          />
+        </div>
+
+        <div class="tw:flex tw:flex-col tw:gap-4">
+          <div class="tw:flex tw:items-center tw:justify-between">
+            <div>
+              <div class="tw:text-sm tw:font-medium tw:text-on-sidebar">
+                Training Available by Default
+              </div>
+              <div class="tw:text-xs tw:text-secondary">
+                New document templates include training
+              </div>
+            </div>
+            <QToggle
+              v-model="model.settings.defaultDocumentTemplateTrainingAvailable"
+              color="primary"
+            />
+          </div>
+          <div class="tw:flex tw:items-center tw:justify-between">
+            <div>
+              <div class="tw:text-sm tw:font-medium tw:text-on-sidebar">
+                Retrain on New Version by Default
+              </div>
+              <div class="tw:text-xs tw:text-secondary">
+                Users must complete training after version updates
+              </div>
+            </div>
+            <QToggle
+              v-model="model.settings.defaultDocumentTemplateRetrainingOnVersion"
+              color="primary"
+            />
+          </div>
+          <div class="tw:flex tw:items-center tw:justify-between">
+            <div>
+              <div class="tw:text-sm tw:font-medium tw:text-on-sidebar">
+                Auto Effective on Approval by Default
+              </div>
+              <div class="tw:text-xs tw:text-secondary">
+                Documents become effective immediately upon approval
+              </div>
+            </div>
+            <QToggle
+              v-model="model.settings.defaultDocumentTemplateAutoEffectiveOnApproval"
+              color="primary"
+            />
+          </div>
+        </div>
+      </div>
+
+      <QSeparator />
+
+      <!-- Asset Request Defaults -->
+      <div class="tw:flex tw:flex-col tw:gap-5">
+        <h3 class="tw:text-xs tw:font-bold tw:uppercase tw:tracking-widest tw:text-secondary">
+          Asset Request Defaults
+        </h3>
+        <WInput
+          v-model.number="model.settings.defaultAssetRequestDueDays"
+          label="Default Due In (days)"
+          type="number"
+          hint="Days from today set as due date on new asset requests"
+          class="tw:max-w-xs"
+        />
+      </div>
+    </div>
+  </div>
+</template>

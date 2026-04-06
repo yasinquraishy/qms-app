@@ -29,13 +29,17 @@ onMounted(async () => {
   }
 
   // Validate the token and get user info for the welcome message
-  const data = await validateInvitation(token.value)
-  if (data) {
-    firstName.value = data.firstName
-    lastName.value = data.lastName
-    email.value = data.email
-    tokenValid.value = true
-  } else {
+  try {
+    const data = await validateInvitation(token.value)
+    if (data) {
+      firstName.value = data.firstName
+      lastName.value = data.lastName
+      email.value = data.email
+      tokenValid.value = true
+    } else {
+      tokenValid.value = false
+    }
+  } catch {
     tokenValid.value = false
   }
   validating.value = false

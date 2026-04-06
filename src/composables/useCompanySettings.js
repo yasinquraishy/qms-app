@@ -15,6 +15,19 @@ function CompanySettingsState() {
     stateId: '',
     createdAt: null,
     updatedAt: null,
+    settings: {
+      defaultSla: null,
+      defaultApprovalWorkflowApprovalRule: 'ALL',
+      defaultApprovalWorkflowRequireSignature: false,
+      defaultApprovalWorkflowRequireComment: false,
+      defaultDocumentTemplatePeriodicReviewMonths: 12,
+      defaultDocumentTemplateReviewLimitDays: 14,
+      defaultDocumentTemplateApprovalLimitDays: 7,
+      defaultDocumentTemplateTrainingAvailable: true,
+      defaultDocumentTemplateRetrainingOnVersion: true,
+      defaultDocumentTemplateAutoEffectiveOnApproval: true,
+      defaultAssetRequestDueDays: null,
+    },
   })
 
   const originalData = ref(null)
@@ -56,9 +69,35 @@ function CompanySettingsState() {
       stateId: company.stateId || '',
       createdAt: company.createdAt,
       updatedAt: company.updatedAt,
+      settings: {
+        defaultSla: company.settings?.defaultSla ?? null,
+        defaultApprovalWorkflowApprovalRule:
+          company.settings?.defaultApprovalWorkflowApprovalRule ?? 'ALL',
+        defaultApprovalWorkflowRequireSignature:
+          company.settings?.defaultApprovalWorkflowRequireSignature ?? false,
+        defaultApprovalWorkflowRequireComment:
+          company.settings?.defaultApprovalWorkflowRequireComment ?? false,
+        defaultDocumentTemplatePeriodicReviewMonths:
+          company.settings?.defaultDocumentTemplatePeriodicReviewMonths ?? 12,
+        defaultDocumentTemplateReviewLimitDays:
+          company.settings?.defaultDocumentTemplateReviewLimitDays ?? 14,
+        defaultDocumentTemplateApprovalLimitDays:
+          company.settings?.defaultDocumentTemplateApprovalLimitDays ?? 7,
+        defaultDocumentTemplateTrainingAvailable:
+          company.settings?.defaultDocumentTemplateTrainingAvailable ?? true,
+        defaultDocumentTemplateRetrainingOnVersion:
+          company.settings?.defaultDocumentTemplateRetrainingOnVersion ?? true,
+        defaultDocumentTemplateAutoEffectiveOnApproval:
+          company.settings?.defaultDocumentTemplateAutoEffectiveOnApproval ?? true,
+        defaultAssetRequestDueDays: company.settings?.defaultAssetRequestDueDays ?? null,
+      },
     }
 
     originalData.value = JSON.parse(JSON.stringify(formData.value))
+
+    if (currentCompany.value) {
+      currentCompany.value.settings = company.settings
+    }
   }
 
   // Save company settings
@@ -72,16 +111,21 @@ function CompanySettingsState() {
 
     error.value = null
 
-    const data = await patch(`/v1/services/companies/${companyId}`, {
-      name: formData.value.name,
-      defaultTimeZone: formData.value.defaultTimeZone,
-      defaultFirstDayOfWeek: formData.value.defaultFirstDayOfWeek,
-      companyIconUrl: formData.value.companyIconUrl,
-      companyDarkIconUrl: formData.value.companyDarkIconUrl,
-    }, {
-      params: { companyId },
-      loader: saving,
-    })
+    const data = await patch(
+      `/v1/services/companies/${companyId}`,
+      {
+        name: formData.value.name,
+        defaultTimeZone: formData.value.defaultTimeZone,
+        defaultFirstDayOfWeek: formData.value.defaultFirstDayOfWeek,
+        companyIconUrl: formData.value.companyIconUrl,
+        companyDarkIconUrl: formData.value.companyDarkIconUrl,
+        settings: formData.value.settings,
+      },
+      {
+        params: { companyId },
+        loader: saving,
+      },
+    )
 
     const company = data.company
 
@@ -96,6 +140,28 @@ function CompanySettingsState() {
       stateId: company.stateId || '',
       createdAt: company.createdAt,
       updatedAt: company.updatedAt,
+      settings: {
+        defaultSla: company.settings?.defaultSla ?? null,
+        defaultApprovalWorkflowApprovalRule:
+          company.settings?.defaultApprovalWorkflowApprovalRule ?? 'ALL',
+        defaultApprovalWorkflowRequireSignature:
+          company.settings?.defaultApprovalWorkflowRequireSignature ?? false,
+        defaultApprovalWorkflowRequireComment:
+          company.settings?.defaultApprovalWorkflowRequireComment ?? false,
+        defaultDocumentTemplatePeriodicReviewMonths:
+          company.settings?.defaultDocumentTemplatePeriodicReviewMonths ?? 12,
+        defaultDocumentTemplateReviewLimitDays:
+          company.settings?.defaultDocumentTemplateReviewLimitDays ?? 14,
+        defaultDocumentTemplateApprovalLimitDays:
+          company.settings?.defaultDocumentTemplateApprovalLimitDays ?? 7,
+        defaultDocumentTemplateTrainingAvailable:
+          company.settings?.defaultDocumentTemplateTrainingAvailable ?? true,
+        defaultDocumentTemplateRetrainingOnVersion:
+          company.settings?.defaultDocumentTemplateRetrainingOnVersion ?? true,
+        defaultDocumentTemplateAutoEffectiveOnApproval:
+          company.settings?.defaultDocumentTemplateAutoEffectiveOnApproval ?? true,
+        defaultAssetRequestDueDays: company.settings?.defaultAssetRequestDueDays ?? null,
+      },
     }
 
     originalData.value = JSON.parse(JSON.stringify(formData.value))
@@ -107,6 +173,7 @@ function CompanySettingsState() {
       currentCompany.value.defaultFirstDayOfWeek = company.defaultFirstDayOfWeek
       currentCompany.value.companyIconUrl = company.companyIconUrl
       currentCompany.value.companyDarkIconUrl = company.companyDarkIconUrl
+      currentCompany.value.settings = company.settings
     }
 
     return true

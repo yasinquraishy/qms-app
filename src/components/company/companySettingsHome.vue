@@ -82,6 +82,7 @@ function handleDiscard() {
         <div class="tw:lg:col-span-2 tw:flex tw:flex-col tw:gap-8">
           <CompanyBrandingCard v-model="formData" />
           <CompanyRegionalCard v-model="formData" />
+          <CompanyDefaultsCard v-model="formData" />
         </div>
 
         <!-- Right column (1/3 width) - Metadata -->

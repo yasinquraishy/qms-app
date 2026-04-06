@@ -1,5 +1,6 @@
 <script setup>
 import { useQuasar } from 'quasar'
+import { DateTime } from 'luxon'
 import { currentCompany } from '@/utils/currentCompany.js'
 import { post, put } from '@/api'
 
@@ -66,7 +67,11 @@ watch(show, (val) => {
           contactIds: [],
           title: '',
           description: '',
-          dueDate: null,
+          dueDate: currentCompany.value?.settings?.defaultAssetRequestDueDays
+            ? DateTime.now().plus({
+                days: currentCompany.value.settings.defaultAssetRequestDueDays,
+              })
+            : null,
           expiryDate: null,
         }
   }

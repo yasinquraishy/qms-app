@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["./resource/js/shared/*"],
+      "@syncEngine/*": ["./syncEngine/*"],
+      "@models/*": ["./models/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

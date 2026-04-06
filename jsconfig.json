@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["./resource/js/shared/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

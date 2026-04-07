@@ -4,6 +4,7 @@ import { DateTime } from 'luxon'
 
 @ClientModel('teams', { primaryKey: 'id', syncField: 'updatedAt' })
 export class Team extends BaseModel {
+  static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation

@@ -8,6 +8,7 @@ import { DateTime } from 'luxon'
   customIndex: 'documentId, versionMajor, versionMinor',
 })
 export class DocumentVersion extends BaseModel {
+  static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation

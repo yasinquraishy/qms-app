@@ -4,6 +4,7 @@ import { DateTime } from 'luxon'
 
 @ClientModel('comments', { primaryKey: 'id', syncField: 'updatedAt' })
 export class Comment extends BaseModel {
+  static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
     super(...args)
     // Auto-assign companyId and userId from current session on creation

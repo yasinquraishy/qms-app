@@ -4,13 +4,13 @@ import { DateTime } from 'luxon'
 
 @ClientModel('recordCounters', { primaryKey: 'companyId', syncField: 'updatedAt' })
 export class RecordCounter extends BaseModel {
+  static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation
     if (!this.companyId) {
       this.companyId = currentSession.value?.companyId || ''
     }
-
   }
   @Property({ type: String }) companyId = ''
   @Property({ type: String }) documentTypeId = ''

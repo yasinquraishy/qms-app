@@ -60,6 +60,7 @@ declare module 'vue' {
     AuditLogsItem: typeof import('./src/components/auditLog/AuditLogsItem.vue')['default']
     AuditLogsList: typeof import('./src/components/auditLog/AuditLogsList.vue')['default']
     CompanyBrandingCard: typeof import('./src/components/company/companyBrandingCard.vue')['default']
+    CompanyDefaultsCard: typeof import('./src/components/company/companyDefaultsCard.vue')['default']
     CompanyInfoCard: typeof import('./src/components/company/companyInfoCard.vue')['default']
     CompanyMetadataCard: typeof import('./src/components/company/companyMetadataCard.vue')['default']
     CompanyRegionalCard: typeof import('./src/components/company/companyRegionalCard.vue')['default']

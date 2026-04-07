@@ -2,6 +2,9 @@
 import { TX_MODE } from './constants.js'
 
 export class IndexedDB {
+  /**
+   * @type {IDBDatabase}
+   */
   static #db = null
 
   /**

@@ -1,5 +1,5 @@
 import { currentCompany } from '@/utils/currentCompany.js'
-import { get, post } from '@/api'
+import { post } from '@/api'
 
 export function useDocuments() {
   async function submitForReview(documentId) {
@@ -38,15 +38,5 @@ export function useDocuments() {
     return { version: data.version }
   }
 
-  async function previewWorkflow(documentId) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    const data = await get('/v1/services/workflowInstances/preview', {
-      params: { companyId, resourceType: 'Document', resourceId: documentId },
-    })
-    return data
-  }
-
-  return { submitForReview, cancelReview, setEffective, previewWorkflow }
+  return { submitForReview, cancelReview, setEffective }
 }

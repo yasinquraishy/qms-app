@@ -8,6 +8,8 @@ import { DateTime } from 'luxon'
   customIndex: 'docNumber',
 })
 export class Document extends BaseModel {
+  static paranoid = true // Enable soft deletes using deletedAt field
+
   constructor(...args) {
     super(...args)
     // Auto-assign companyId and userId from current session on creation

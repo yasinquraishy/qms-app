@@ -19,11 +19,11 @@ export class UserOnDocument extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
+
   @Property({ type: String }) id = ''
   @Property({ type: String }) userId = ''
   @Property({ type: String }) documentId = ''
   @Property({ type: String }) companyId = ''
-  @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime }) createdAt = DateTime.now()
   @Property({ type: DateTime }) updatedAt = DateTime.now()
 }

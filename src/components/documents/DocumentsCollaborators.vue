@@ -64,6 +64,7 @@ async function toggleCollaborator(userId) {
         await record.save()
         return record
       })
+
       await add()
     }
   } finally {

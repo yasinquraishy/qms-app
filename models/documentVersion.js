@@ -28,13 +28,13 @@ export class DocumentVersion extends BaseModel {
   @Property({ type: String }) versionLabel = ''
   @Property({ type: Array }) sections = null
   @Property({ type: String }) changeSummary = ''
-  @Property({ type: String }) effectiveDate = ''
   @Property({ type: String }) createdBy = ''
   @Property({ type: DateTime }) lockedAt = null
   @Property({ type: DateTime }) approvedAt = null
   @Property({ type: String }) statusId = 'DRAFT'
   @Property({ type: String }) workflowInstanceId = ''
   @Property({ type: Boolean }) isLatest = false
+  @Property({ type: DateTime }) effectiveDate = DateTime.now()
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime }) createdAt = DateTime.now()
   @Property({ type: DateTime }) updatedAt = DateTime.now()

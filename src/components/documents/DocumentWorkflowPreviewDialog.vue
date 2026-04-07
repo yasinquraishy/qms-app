@@ -18,7 +18,7 @@ const document = useLiveQueryWithDeps([() => props.documentId], async (db, [docu
 )
 
 const allWorkflowSteps = useLiveQueryWithDeps(
-  [() => document.value.workflowVersionId],
+  [() => document.value?.workflowVersionId],
   async (db, [workflowVersionId]) =>
     workflowVersionId
       ? db.ApprovalWorkflowStep.where('workflowVersionId', workflowVersionId)
@@ -30,9 +30,15 @@ const allWorkflowSteps = useLiveQueryWithDeps(
   },
 )
 
-const allStepUsers = useLiveQuery(async (db) => db.ApprovalWorkflowStepUser.where().exec(), {
-  initial: [],
-})
+const stepIds = computed(() => allWorkflowSteps.value.map((s) => s.id))
+
+const allStepUsers = useLiveQueryWithDeps(
+  [stepIds],
+  async (db, [stepIds]) => db.ApprovalWorkflowStepUser.where('stepId', stepIds).exec(),
+  {
+    initial: [],
+  },
+)
 
 const allUsers = useLiveQuery(async (db) => db.User.where().exec(), { initial: [] })
 
@@ -49,10 +55,8 @@ const steps = computed(() => {
     stepUserMap[su.stepId].push(su)
   }
 
-  return allWorkflowSteps.map((step) => {
-    step.reviewers = (stepUserMap[step.id] ?? [])
-      .map((su) => usersById.value[su.userId])
-      .filter(Boolean)
+  return allWorkflowSteps.value.map((step) => {
+    step.reviewers = (stepUserMap[step.id] ?? []).map((su) => usersById.value[su.userId])
     return step
   })
 })

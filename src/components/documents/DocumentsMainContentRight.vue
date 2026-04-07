@@ -126,11 +126,7 @@ function scrollToSection(sectionId) {
           </div>
 
           <!-- Collaborators Section -->
-          <DocumentsCollaborators
-            v-model:collaborators="document.collaborators"
-            :documentId="document.id"
-            :canEdit="canEdit"
-          />
+          <DocumentsCollaborators :documentId="document.id" :canEdit="canEdit" />
 
           <!-- Approvers Section -->
           <div v-if="document.approvers?.length > 0" class="tw:pt-4 tw:border-t tw:border-divider">

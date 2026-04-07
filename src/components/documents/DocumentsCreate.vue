@@ -1,12 +1,10 @@
 <script setup>
 import { useQuasar } from 'quasar'
 import { required, minValue, helpers } from '@vuelidate/validators'
-import { useDocuments } from '@/composables/useDocuments.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const router = useRouter()
 const $q = useQuasar()
-const { createDocument } = useDocuments()
 
 const saving = ref(false)
 const activeTab = ref('properties')
@@ -104,16 +102,39 @@ async function saveDraft() {
 
   saving.value = true
   try {
-    const result = await createDocument(form.value) // Pass true to indicate it's a draft save
+    const create = useLiveMutation(async (db) => {
+      const doc = db.Document.create({
+        title: form.value.title,
+        documentTypeId: form.value.documentTypeId,
+        documentTemplateId: form.value.documentTemplateId,
+        departmentId: form.value.departmentId,
+        siteId: form.value.siteId,
+        prefix: form.value.prefix,
+        relatedStandardId: form.value.relatedStandardId,
+        periodicReviewMonths: form.value.periodicReviewMonths,
+        autoEffectiveOnApproval: form.value.autoEffectiveOnApproval,
+        statusId: 'DRAFT',
+      })
+      await doc.save()
 
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-      return true // Indicate error
-    } else {
-      $q.notify({ type: 'positive', message: 'Document saved as draft' })
-      form.value = { ...DEFAULT_FORM } // Clear form after successful creation
-      router.push(getCompanyPath(`/documents/${result.document.id}`))
-    }
+      const version = db.DocumentVersion.create({
+        documentId: doc.id,
+        versionMajor: 1,
+        versionMinor: 0,
+        statusId: 'DRAFT',
+        sections: form.value.sections || [],
+        changeSummary: form.value.changeNotes || '',
+        effectiveDate: form.value.effectiveDate || '',
+      })
+      await version.save()
+
+      return doc
+    })
+
+    const doc = await create()
+    $q.notify({ type: 'positive', message: 'Document saved as draft' })
+    form.value = { ...DEFAULT_FORM }
+    router.push(getCompanyPath(`/documents/${doc.id}`))
   } finally {
     saving.value = false
   }

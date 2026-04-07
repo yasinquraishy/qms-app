@@ -1,6 +1,4 @@
 <script setup>
-import { useDocuments } from '@/composables/useDocuments.js'
-
 const props = defineProps({
   documentId: {
     type: String,
@@ -8,10 +6,23 @@ const props = defineProps({
   },
 })
 
-const { fetchAuditLogs } = useDocuments()
+const auditLogs = useLiveQueryWithDeps(
+  [() => props.documentId],
+  async (db, [documentId]) => {
+    return db.AuditLog.where('[entityType+entityId]', ['Document', documentId])
+      .orderBy('createdAt', 'desc')
+      .exec()
+  },
+  { initial: [] },
+)
 
-const auditLogs = ref([])
-const loading = ref(true)
+const users = useLiveQuery(async (db) => db.User.where().exec(), { initial: [] })
+
+const usersById = computed(() => {
+  const map = {}
+  for (const u of users.value) map[u.id] = u
+  return map
+})
 
 function getActionIcon(action) {
   const map = {
@@ -42,22 +53,10 @@ function getActionColor(action) {
 }
 
 function getPerformerName(log) {
-  if (!log.performer) return 'System'
-  return `${log.performer.firstName} ${log.performer.lastName}`.trim()
+  const user = usersById.value[log.performedBy]
+  if (!user) return 'System'
+  return `${user.firstName} ${user.lastName}`.trim()
 }
-
-async function loadAuditLogs() {
-  loading.value = true
-  const result = await fetchAuditLogs(props.documentId)
-  if (result.auditLogs) {
-    auditLogs.value = result.auditLogs
-  }
-  loading.value = false
-}
-
-onMounted(() => {
-  loadAuditLogs()
-})
 </script>
 
 <template>
@@ -65,7 +64,7 @@ onMounted(() => {
     <h3 class="tw:text-lg tw:font-bold tw:text-on-sidebar tw:mb-4">Audit Log</h3>
 
     <!-- Loading -->
-    <div v-if="loading" class="tw:flex tw:justify-center tw:py-8">
+    <div v-if="auditLogs === undefined" class="tw:flex tw:justify-center tw:py-8">
       <QSpinner color="primary" size="32px" />
     </div>
 
@@ -93,8 +92,12 @@ onMounted(() => {
             </div>
           </div>
           <div class="tw:text-xs tw:text-secondary tw:mt-0.5">by {{ getPerformerName(log) }}</div>
-          <div v-if="log.details" class="tw:text-xs tw:text-secondary tw:mt-1">
-            {{ typeof log.details === 'string' ? log.details : JSON.stringify(log.details) }}
+          <div v-if="log.newValueJson" class="tw:text-xs tw:text-secondary tw:mt-1">
+            {{
+              typeof log.newValueJson === 'string'
+                ? log.newValueJson
+                : JSON.stringify(log.newValueJson)
+            }}
           </div>
         </div>
       </div>

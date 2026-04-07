@@ -3,6 +3,7 @@ import { useQuasar } from 'quasar'
 import { provideDocumentMessages } from '@/composables/useDocumentMessages.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
+import { useDocuments } from '@/composables/useDocuments.js'
 
 const props = defineProps({
   id: {
@@ -13,6 +14,7 @@ const props = defineProps({
 
 const $q = useQuasar()
 const router = useRouter()
+const { cancelReview, setEffective } = useDocuments()
 
 // State
 const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
@@ -132,12 +134,22 @@ function handleSubmitForReview() {
   showPreviewDialog.value = true
 }
 
-function handleCancelReview() {
-  // TODO: cancel review
+async function handleCancelReview() {
+  const result = await cancelReview(selectedVersion.value.workflowInstanceId)
+  if (result.error) {
+    $q.notify({ type: 'negative', message: result.error })
+  } else {
+    $q.notify({ type: 'positive', message: 'Review cancelled successfully' })
+  }
 }
 
-function handleSetEffective() {
-  // TODO: set effective
+async function handleSetEffective() {
+  const result = await setEffective(props.id, selectedVersion.value.id)
+  if (result.error) {
+    $q.notify({ type: 'negative', message: result.error })
+  } else {
+    $q.notify({ type: 'positive', message: 'Document set as effective' })
+  }
 }
 
 async function createNewVersion() {

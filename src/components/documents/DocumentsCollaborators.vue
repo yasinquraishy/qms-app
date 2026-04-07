@@ -1,7 +1,4 @@
 <script setup>
-import { currentCompany } from '@/utils/currentCompany.js'
-import { get } from '@/api'
-
 const props = defineProps({
   documentId: {
     type: String,
@@ -13,21 +10,39 @@ const props = defineProps({
   },
 })
 
-const collaborators = defineModel('collaborators', { type: Array, default: () => [] })
-
-const { updateDocument } = useDocuments()
-
-const users = ref([])
-const usersLoading = ref(false)
 const userSearch = ref('')
 const isUpdating = ref(false)
 
-const collaboratorUserIds = computed(() => collaborators.value.map((c) => c.userId))
+const allUsers = useLiveQuery(async (db) => db.User.where().exec(), { initial: [] })
+
+const collaboratorRecords = useLiveQueryWithDeps(
+  [() => props.documentId],
+  async (db, [documentId]) => {
+    const records = await db.UserOnDocument.where().exec()
+    return records.filter((r) => r.documentId === documentId && !r.deletedAt)
+  },
+  { initial: [] },
+)
+
+const collaboratorUserIds = computed(() => collaboratorRecords.value.map((r) => r.userId))
+
+const usersById = computed(() => {
+  const map = {}
+  for (const u of allUsers.value) map[u.id] = u
+  return map
+})
+
+const collaborators = computed(() =>
+  collaboratorRecords.value.map((r) => {
+    r.user = usersById.value[r.userId]
+    return r
+  }),
+)
 
 const filteredUsers = computed(() => {
-  if (!userSearch.value.trim()) return users.value
+  if (!userSearch.value.trim()) return allUsers.value
   const q = userSearch.value.toLowerCase()
-  return users.value.filter(
+  return allUsers.value.filter(
     (u) =>
       u.firstName?.toLowerCase().includes(q) ||
       u.lastName?.toLowerCase().includes(q) ||
@@ -35,32 +50,21 @@ const filteredUsers = computed(() => {
   )
 })
 
-async function fetchUsers() {
-  const companyId = currentCompany.value?.id
-  if (!companyId || users.value.length) return
-  try {
-    const data = await get('/v1/services/users', { params: { companyId }, loader: usersLoading })
-    users.value = data.users || []
-  } catch {
-    users.value = []
-  }
-}
-
 async function toggleCollaborator(userId) {
   if (isUpdating.value) return
-  const currentIds = collaboratorUserIds.value
-  const newIds = currentIds.includes(userId)
-    ? currentIds.filter((id) => id !== userId)
-    : [...currentIds, userId]
-
   isUpdating.value = true
   try {
-    const result = await updateDocument(props.documentId, { collaboratorIds: newIds })
-    if (!result.error) {
-      collaborators.value = newIds.map((id) => ({
-        userId: id,
-        user: users.value.find((u) => u.id === id),
-      }))
+    const isCollaborator = collaboratorUserIds.value.includes(userId)
+    if (isCollaborator) {
+      const record = collaboratorRecords.value.find((r) => r.userId === userId)
+      if (record) await record.delete()
+    } else {
+      const add = useLiveMutation(async (db) => {
+        const record = db.UserOnDocument.create({ documentId: props.documentId, userId })
+        await record.save()
+        return record
+      })
+      await add()
     }
   } finally {
     isUpdating.value = false
@@ -79,7 +83,6 @@ async function toggleCollaborator(userId) {
         <WIcon name="add" size="14px" />
         <QMenu
           class="tw:w-72 tw:shadow-xl tw:border tw:border-divider tw:rounded-xl tw:overflow-hidden"
-          @beforeShow="fetchUsers"
         >
           <div class="tw:p-3 tw:border-b tw:border-divider">
             <QInput
@@ -95,7 +98,7 @@ async function toggleCollaborator(userId) {
             </QInput>
           </div>
           <QList class="tw:max-h-56 tw:overflow-y-auto tw:py-1">
-            <div v-if="usersLoading" class="tw:flex tw:justify-center tw:py-4">
+            <div v-if="allUsers === undefined" class="tw:flex tw:justify-center tw:py-4">
               <QSpinner color="primary" size="20px" />
             </div>
             <QItem

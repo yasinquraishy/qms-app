@@ -1,14 +1,10 @@
 <script setup>
-import { provideDocuments } from '@/composables/useDocuments.js'
-
 defineProps({
   id: {
     type: String,
     default: undefined,
   },
 })
-
-provideDocuments()
 </script>
 
 <template>

@@ -1,23 +1,60 @@
 <script setup>
 import { useQuasar } from 'quasar'
-import { useDocuments } from '@/composables/useDocuments.js'
 import { isAllowed } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const router = useRouter()
 const $q = useQuasar()
 
-const {
-  documents,
-  loading,
-  filters,
-  stats,
-  statsTotal,
-  statsLoading,
-  archiveDocument,
-  fetchDocuments,
-  fetchStats,
-} = useDocuments()
+const filters = ref({
+  search: '',
+  documentTypeId: null,
+  documentTemplateId: null,
+  departmentId: null,
+  statusId: null,
+})
+
+const allDocuments = useLiveQueryWithDeps(
+  [
+    () => filters.value.documentTypeId,
+    () => filters.value.documentTemplateId,
+    () => filters.value.departmentId,
+    () => filters.value.statusId,
+  ],
+  async (db, [documentTypeId, documentTemplateId, departmentId, statusId]) => {
+    let q = db.Document.where()
+    if (documentTypeId) q = q.where('documentTypeId', documentTypeId)
+    if (documentTemplateId) q = q.where('documentTemplateId', documentTemplateId)
+    if (departmentId) q = q.where('departmentId', departmentId)
+    if (statusId) q = q.where('statusId', statusId)
+    return q.exec()
+  },
+  { initial: [] },
+)
+
+const documents = computed(() => {
+  const list = allDocuments.value ?? []
+  if (!filters.value.search) return list
+  const q = filters.value.search.toLowerCase()
+  return list.filter(
+    (d) => d.title?.toLowerCase().includes(q) || d.docNumber?.toLowerCase().includes(q),
+  )
+})
+
+const allDocumentsForStats = useLiveQuery(async (db) => db.Document.where().exec(), {
+  initial: [],
+})
+
+const stats = computed(() => {
+  const list = allDocumentsForStats.value ?? []
+  const counts = {}
+  for (const d of list) {
+    counts[d.statusId] = (counts[d.statusId] || 0) + 1
+  }
+  return Object.entries(counts).map(([statusId, count]) => ({ statusId, count }))
+})
+
+const statsTotal = computed(() => (allDocumentsForStats.value ?? []).length)
 
 const canCreate = computed(() => isAllowed(['documents:create']))
 const canUpdate = computed(() => isAllowed(['documents:update']))
@@ -38,19 +75,11 @@ async function onArchiveDocument(row) {
     cancel: true,
     persistent: true,
   }).onOk(async () => {
-    const result = await archiveDocument(row.id)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Document archived successfully' })
-    }
+    row.statusId = 'ARCHIVED'
+    await row.save()
+    $q.notify({ type: 'positive', message: 'Document archived successfully' })
   })
 }
-
-onMounted(() => {
-  fetchDocuments()
-  fetchStats()
-})
 </script>
 
 <template>
@@ -85,7 +114,7 @@ onMounted(() => {
     </div>
 
     <!-- Stats Cards -->
-    <DocumentsStatsCards :stats="stats" :total="statsTotal" :loading="statsLoading" />
+    <DocumentsStatsCards :stats="stats" :total="statsTotal" />
 
     <!-- Filter Toolbar -->
     <DocumentsFilterToolbar v-model:filters="filters" />
@@ -93,7 +122,7 @@ onMounted(() => {
     <!-- Documents Table -->
     <DocumentsTable
       :rows="documents"
-      :loading="loading"
+      :loading="allDocuments === undefined"
       :canUpdate="canUpdate"
       :canArchive="canArchive"
       @view="navigateToDetail"

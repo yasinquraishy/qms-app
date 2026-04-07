@@ -19,6 +19,10 @@ export class DocumentVersion extends BaseModel {
     if (!this.id) {
       this.id = crypto.randomUUID()
     }
+
+    if (!this.createdBy) {
+      this.createdBy = currentSession.value?.userId
+    }
   }
   @Property({ type: String }) id = ''
   @Property({ type: String }) companyId = ''
@@ -28,7 +32,7 @@ export class DocumentVersion extends BaseModel {
   @Property({ type: String }) versionLabel = ''
   @Property({ type: Array }) sections = null
   @Property({ type: String }) changeSummary = ''
-  @Property({ type: String }) createdBy = ''
+  @Property({ type: String }) createdBy = null
   @Property({ type: DateTime }) lockedAt = null
   @Property({ type: DateTime }) approvedAt = null
   @Property({ type: String }) statusId = 'DRAFT'

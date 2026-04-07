@@ -45,5 +45,5 @@ export class Document extends BaseModel {
   updatedAt = /** @type {DateTime} */ (null)
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)
-  @Property({ type: DateTime }) deletedAt = DateTime.now()
+  @Property({ type: DateTime }) deletedAt = /** @type {DateTime} */ (null)
 }

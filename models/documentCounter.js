@@ -20,8 +20,8 @@ export class DocumentCounter extends BaseModel {
   @Property({ type: String, required: true }) prefix = ''
   @Property({ type: Number, required: true }) currentValue = 1
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime, required: true, timestamp: true }) createdAt =
-    /** @type {DateTime} */ (null)
-  @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true }) updatedAt =
-    /** @type {DateTime} */ (null)
+  @Property({ type: DateTime, required: true, timestamp: true })
+  createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true })
+  updatedAt = /** @type {DateTime} */ (null)
 }

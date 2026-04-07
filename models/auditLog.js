@@ -30,5 +30,6 @@ export class AuditLog extends BaseModel {
   @Property({ type: String }) ipAddress = ''
   @Property({ type: String }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime, required: true, timestamp: true })
+  createdAt = /** @type {DateTime} */ (null)
 }

@@ -21,6 +21,8 @@ export class SiteOnTemplate extends BaseModel {
   @Property({ type: String }) templateId = ''
   @Property({ type: String }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
-  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime, required: true, timestamp: true })
+  createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true })
+  updatedAt = /** @type {DateTime} */ (null)
 }

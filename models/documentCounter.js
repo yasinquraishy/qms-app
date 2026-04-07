@@ -3,7 +3,7 @@ import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
 @ClientModel('documentCounters', {
-  primaryKey: 'companyId',
+  primaryKey: 'id',
   syncField: 'updatedAt',
   customIndex: 'prefix',
 })
@@ -16,6 +16,7 @@ export class DocumentCounter extends BaseModel {
       this.companyId = currentSession.value?.companyId || ''
     }
   }
+  @Property({ type: String, required: true }) id = ''
   @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String, required: true }) prefix = ''
   @Property({ type: Number, required: true }) currentValue = 1

@@ -134,6 +134,45 @@ export class IndexedDB {
   }
 
   /**
+   * Get all records matching any of several index values (SQL IN-style).
+   * Runs one `getAll` per value inside a single readonly transaction and
+   * deduplicates results by the store's primary key.
+   * @param {string} storeName
+   * @param {string} indexName
+   * @param {Array<*>} values
+   * @returns {Promise<object[]>}
+   */
+  static async getByIndexMulti(storeName, indexName, values) {
+    if (values.length === 0) return []
+    if (values.length === 1) return IndexedDB.getByIndex(storeName, indexName, values[0])
+
+    return new Promise((resolve, reject) => {
+      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READONLY)
+      const store = tx.objectStore(storeName)
+      const index = store.index(indexName)
+      const pkPath = store.keyPath
+      const seen = new Set()
+      const results = []
+
+      for (let i = 0; i < values.length; i++) {
+        const val = values[i]
+        const req = index.getAll(val)
+        req.onerror = () => reject(req.error)
+        req.onsuccess = () => {
+          for (const record of req.result) {
+            const pk = record[pkPath]
+            if (!seen.has(pk)) {
+              seen.add(pk)
+              results.push(record)
+            }
+          }
+          if (i === values.length - 1) resolve(results)
+        }
+      }
+    })
+  }
+
+  /**
    * Cursor-based scan with per-record filter. Avoids loading the entire store into memory.
    * @param {string} storeName
    * @param {(record: object) => boolean} filterFn

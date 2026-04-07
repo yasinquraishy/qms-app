@@ -111,12 +111,13 @@ export declare class QueryBuilder<M extends BaseModel = BaseModel> {
   /**
    * Add an in-memory filter condition.
    * @param field — field name to match
-   * @param value — equality value or predicate function
+   * @param value — equality value, array of values (IN-style), or predicate function
    *
    * @example
    * Issue.where('status', 'open').where('priority', v => v > 3).exec()
+   * Issue.where('status', ['open', 'in_progress']).exec()  // IN-style
    */
-  where(field: string, value: unknown | ((v: unknown) => boolean)): this;
+  where(field: string, value: unknown | unknown[] | ((v: unknown) => boolean)): this;
   orderBy(field: string, direction?: "asc" | "desc" | ((a: unknown, b: unknown) => number)): this;
   sortBy(field: string, direction?: "asc" | "desc" | ((a: unknown, b: unknown) => number)): this;
   limit(n: number): this;
@@ -384,6 +385,11 @@ export declare const IndexedDB: {
     modelName: string,
     indexName: string,
     value: unknown,
+  ): Promise<Record<string, unknown>[]>;
+  getByIndexMulti(
+    modelName: string,
+    indexName: string,
+    values: unknown[],
   ): Promise<Record<string, unknown>[]>;
 };
 

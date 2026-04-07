@@ -29,6 +29,9 @@ import { hydrate } from '../persistence/hydration.js'
  *
  * // Compound index
  * const logs = await db.AuditLog.where('[entityType+entityId]', ['Document', id]).exec()
+ *
+ * // IN-style — match any of several values
+ * const docs = await db.Document.where('statusId', ['DRAFT', 'APPROVED']).exec()
  */
 export class QueryBuilder {
   #modelName
@@ -187,7 +190,12 @@ export class QueryBuilder {
 
     // 2. Indexed path (fast path)
     if (this.#indexName) {
-      let records = await IndexedDB.getByIndex(table, this.#indexName, this.#indexValue)
+      // if value is an array and index is not compound, treat as IN query and use multi-get
+      const isArrayIN = Array.isArray(this.#indexValue) && !this.#indexName.startsWith('[')
+
+      let records = isArrayIN
+        ? await IndexedDB.getByIndexMulti(table, this.#indexName, this.#indexValue)
+        : await IndexedDB.getByIndex(table, this.#indexName, this.#indexValue)
 
       return this.#applyPostFilters(records)
     }
@@ -233,6 +241,8 @@ export class QueryBuilder {
 
       if (typeof test === 'function') {
         if (!test(value)) return false
+      } else if (Array.isArray(test)) {
+        if (!test.includes(value)) return false
       } else {
         if (value !== test) return false
       }
@@ -257,7 +267,9 @@ export class QueryBuilder {
     for (const [field, test] of this.#conditions) {
       result = result.filter((r) => {
         const value = r[field]
-        return typeof test === 'function' ? test(value) : value === test
+        if (typeof test === 'function') return test(value)
+        if (Array.isArray(test)) return test.includes(value)
+        return value === test
       })
     }
 

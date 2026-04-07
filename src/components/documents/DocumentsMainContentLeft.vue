@@ -95,7 +95,6 @@ function openAddSectionDialog() {
 const debouncedSave = useDebounceFn(async () => {
   if (canUpdateVersion.value) {
     await currentVersion.value.save() // Saves the changes
-    // TODO: replace REST updateVersion with SyncEngine mutation — currentVersion.value.sections = newSections; await currentVersion.value.save()
   }
 }, 500)
 

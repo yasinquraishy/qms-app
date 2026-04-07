@@ -94,13 +94,14 @@ export function useLiveQueryWithDeps(
 }
 
 /**
- *
- * @param {(db: typeof import('@models/index').db, ...args: any[]) => Promise<any>} mutationFn
+ * @template T
+ * @param {(db: typeof import('@models/index').db, ...args: any[]) => Promise<T>} mutationFn
+ * @returns {(args: any[]) => Promise<T>} mutate function that runs the mutation and logs errors
  */
 export function useLiveMutation(mutationFn) {
   async function mutate(...args) {
     try {
-      await mutationFn(db, ...args)
+      return await mutationFn(db, ...args)
     } catch (err) {
       console.error(err)
     }

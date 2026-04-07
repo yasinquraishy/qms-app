@@ -2,7 +2,11 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('auditLogs', { primaryKey: 'id', syncField: 'createdAt' })
+@ClientModel('auditLogs', {
+  primaryKey: 'id',
+  syncField: 'createdAt',
+  customIndex: '[entityType+entityId], performedBy',
+})
 export class AuditLog extends BaseModel {
   constructor(...args) {
     super(...args)

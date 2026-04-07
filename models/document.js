@@ -32,6 +32,7 @@ export class Document extends BaseModel {
   @Property({ type: String }) documentTemplateId = ''
   @Property({ type: String }) userId = ''
   @Property({ type: String }) siteId = ''
+  @Property({ type: String }) statusId = 'DRAFT'
   @Property({ type: String }) companyId = ''
   @Property({ type: String }) workflowVersionId = ''
   @Property({ type: String }) prefix = ''

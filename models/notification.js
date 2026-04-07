@@ -33,6 +33,6 @@ export class Notification extends BaseModel {
   @Property({ type: String }) createdBy = ''
   @Property({ type: Array }) channels = null
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
 }

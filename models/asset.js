@@ -30,6 +30,6 @@ export class Asset extends BaseModel {
   @Property({ type: Boolean }) isExternal = false
   @Property({ type: String }) bucket = ''
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
 }

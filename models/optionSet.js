@@ -21,6 +21,6 @@ export class OptionSet extends BaseModel {
   @Property({ type: String }) description = ''
   @Property({ type: Object }) options = null
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
 }

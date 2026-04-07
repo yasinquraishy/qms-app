@@ -28,6 +28,6 @@ export class UserOnApprovalWorkflowInstanceStep extends BaseModel {
   @Property({ type: String }) statusId = 'PENDING'
   @Property({ type: String }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
 }

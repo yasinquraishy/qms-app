@@ -25,6 +25,6 @@ export class FormTemplate extends BaseModel {
   @Property({ type: Number }) version = 1
   @Property({ type: Object }) config = null
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
 }

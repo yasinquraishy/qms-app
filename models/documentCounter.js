@@ -16,10 +16,10 @@ export class DocumentCounter extends BaseModel {
       this.companyId = currentSession.value?.companyId || ''
     }
   }
-  @Property({ type: String }) companyId = ''
-  @Property({ type: String }) prefix = ''
-  @Property({ type: Number }) currentValue = 1
+  @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String, required: true }) prefix = ''
+  @Property({ type: Number, required: true }) currentValue = 1
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime, required: true }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime, required: true }) updatedAt = /** @type {DateTime} */ (null)
 }

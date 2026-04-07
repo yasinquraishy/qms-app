@@ -24,6 +24,6 @@ export class UserOnDocument extends BaseModel {
   @Property({ type: String }) userId = ''
   @Property({ type: String }) documentId = ''
   @Property({ type: String }) companyId = ''
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
 }

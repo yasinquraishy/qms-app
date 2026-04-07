@@ -14,6 +14,6 @@ export class RiskLevel extends BaseModel {
   @Property({ type: String }) description = ''
   @Property({ type: String }) color = ''
   @Property({ type: Number }) order = 0
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
 }

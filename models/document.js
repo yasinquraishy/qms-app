@@ -41,7 +41,7 @@ export class Document extends BaseModel {
   @Property({ type: String }) relatedStandardId = ''
   @Property({ type: Number }) periodicReviewMonths = 12
   @Property({ type: Boolean }) autoEffectiveOnApproval = true
-  @Property({ type: DateTime }) updatedAt = null
-  @Property({ type: DateTime }) createdAt = null
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
   @Property({ type: DateTime }) deletedAt = DateTime.now()
 }

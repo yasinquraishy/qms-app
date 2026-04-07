@@ -31,6 +31,6 @@ export class ApprovalWorkflowStep extends BaseModel {
   @Property({ type: Boolean }) requireEsignature = false
   @Property({ type: String }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = null
-  @Property({ type: DateTime }) updatedAt = null
+  @Property({ type: DateTime }) createdAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) updatedAt = /** @type {DateTime} */ (null)
 }

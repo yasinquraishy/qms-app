@@ -27,15 +27,9 @@ export default defineConfig(({ mode }) => {
       changeOrigin: true,
     },
     '/socket.io': {
-      target: env.VITE_PROXY_WORKER_TARGET,
-      changeOrigin: true,
-      ws: true,
-    },
-    '/sync/socket.io': {
       target: env.VITE_PROXY_SYNC_TARGET,
       changeOrigin: true,
       ws: true,
-      rewrite: (path) => path.replace(/^\/sync/, ''),
     },
   }
 

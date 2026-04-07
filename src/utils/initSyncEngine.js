@@ -14,7 +14,7 @@ export async function initSync(companyId) {
     dbName: `${DB_PREFIX}${companyId}`,
     serviceWorkerUrl: '/sync-worker.js',
     graphqlUrl: '/api/graphql',
-    socketUrl: '/sync/socket.io',
+    socketUrl: '/socket.io',
   })
 }
 

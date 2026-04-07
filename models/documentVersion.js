@@ -37,7 +37,7 @@ export class DocumentVersion extends BaseModel {
   @Property({ type: DateTime }) approvedAt = null
   @Property({ type: String }) statusId = 'DRAFT'
   @Property({ type: String }) workflowInstanceId = /** @type {String|null} */ (null)
-  @Property({ type: Boolean }) isLatest = false
+  @Property({ type: Boolean }) isLatest = true
   @Property({ type: DateTime }) effectiveDate = DateTime.now()
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })

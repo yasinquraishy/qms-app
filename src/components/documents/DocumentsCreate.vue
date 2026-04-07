@@ -122,7 +122,7 @@ async function saveDraft() {
         autoEffectiveOnApproval: form.value.autoEffectiveOnApproval,
         workflowVersionId: form.value.workflowVersionId,
         statusId: 'ACTIVE',
-        docNumber: `${form.value.prefix}-${String(documentCounter.currentValue).padStart(4, '0')}`,
+        docNumber: `${form.value.prefix}-${String(documentCounter.currentValue).padStart(3, '0')}`,
       })
       await doc.save()
       await documentCounter.save()

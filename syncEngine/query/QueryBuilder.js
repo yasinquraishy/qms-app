@@ -9,21 +9,46 @@ import { hydrate } from '../persistence/hydration.js'
  * filters are added with `.where(field, value | fn)`.
  *
  * @example
- * const issues = await Issue.where('status', 'open').exec();
- * const first  = await Issue.where('status', 'open').where('priority', v => v > 3).orderBy('createdAt').first();
- * const all    = await Issue.where().where('title', 'foo').exec();
+ * // Indexed lookup
+ * const versions = await db.DocumentVersion.where('documentId', id).exec()
+ *
+ * // Indexed lookup + in-memory filter + sort + limit
+ * const drafts = await db.DocumentVersion.where('documentId', id)
+ *   .where('statusId', 'DRAFT')
+ *   .orderBy('createdAt', 'desc')
+ *   .limit(10)
+ *   .exec()
+ *
+ * // Full scan with cursor (no index)
+ * const all = await db.Document.where().exec()
+ *
+ * // Function predicate
+ * const high = await db.Issue.where('status', 'open')
+ *   .where('priority', v => v > 3)
+ *   .first()
+ *
+ * // Compound index
+ * const logs = await db.AuditLog.where('[entityType+entityId]', ['Document', id]).exec()
  */
 export class QueryBuilder {
   #modelName
   #tableName = null
+
   #indexName = null
   #indexValue = null
+
   #conditions = []
   #sortBy = null
   #limit = null
   #offset = 0
   #paranoidField = null
 
+  /**
+   * @param {string} modelName — registered model class name
+   * @param {string} [indexField] — IDB index to use for the initial lookup
+   * @param {*} [indexValue] — value to match against the index
+   * @param {boolean|string} [paranoid] — soft-delete field name, or `true` for 'deletedAt'
+   */
   constructor(modelName, indexField, indexValue, paranoid) {
     this.#modelName = modelName
 
@@ -38,7 +63,7 @@ export class QueryBuilder {
   }
 
   /**
-   * Get the IndexedDB store name for this model's table.
+   * Resolve and cache the IndexedDB store name for this model.
    * @returns {string}
    */
   #getTableName() {
@@ -50,9 +75,9 @@ export class QueryBuilder {
 
   /**
    * Add an in-memory filter condition.
-   * @param {string} field — field name to match
-   * @param {unknown | ((value: unknown) => boolean)} value — equality value or predicate function
-   * @returns {this} for chaining
+   * @param {string} field — property name to match
+   * @param {*|((value: *) => boolean)} value — exact value or predicate function
+   * @returns {this}
    */
   where(field, value) {
     this.#conditions.push([field, value])
@@ -60,25 +85,25 @@ export class QueryBuilder {
   }
 
   /**
-   * Sort by a field.
-   * @param {string} field — field name to sort by
-   * @param {"asc"|"desc"|((a: unknown, b: unknown) => number)} [direction="asc"]
+   * Sort results by a field.
+   * @param {string} field — property name to sort by
+   * @param {'asc'|'desc'|((a: *, b: *) => number)} [direction='asc'] — direction or custom comparator
+   * @returns {this}
    */
   orderBy(field, direction = 'asc') {
     this.#sortBy = [field, direction]
     return this
   }
 
-  /**
-   * Alias for orderBy().
-   */
+  /** Alias for {@link orderBy}. */
   sortBy(field, direction = 'asc') {
     return this.orderBy(field, direction)
   }
 
   /**
-   * Limit result count.
+   * Limit the number of returned results.
    * @param {number} n
+   * @returns {this}
    */
   limit(n) {
     this.#limit = n
@@ -86,8 +111,9 @@ export class QueryBuilder {
   }
 
   /**
-   * Skip N results (for pagination).
+   * Skip the first N matching results (applied after sort).
    * @param {number} n
+   * @returns {this}
    */
   offset(n) {
     this.#offset = n
@@ -95,33 +121,30 @@ export class QueryBuilder {
   }
 
   /**
-   * Execute the query and return all matching instances.
+   * Execute the query and return all matching hydrated model instances.
    * @returns {Promise<object[]>}
    */
   async exec() {
     let records = await this.#execute()
 
-    // Apply sorting in-memory
     if (this.#sortBy) {
       records = this.#applySort(records)
     }
 
-    // Apply offset BEFORE hydration to avoid unnecessary work
+    // offset + limit AFTER sort
     if (this.#offset > 0) {
       records = records.slice(this.#offset)
     }
 
-    // Apply limit BEFORE hydration — only hydrate the records we need
     if (this.#limit !== null) {
       records = records.slice(0, this.#limit)
     }
 
-    // Hydrate raw records to model instances (only the sliced subset)
     return this.#hydrateResults(records)
   }
 
   /**
-   * Execute and return the first match.
+   * Execute and return the first matching instance, or `null`.
    * @returns {Promise<object|null>}
    */
   async first() {
@@ -130,7 +153,7 @@ export class QueryBuilder {
   }
 
   /**
-   * Execute and return the last match (after sorting).
+   * Execute and return the last matching instance (reverse-sorts by PK if no sort is set).
    * @returns {Promise<object|null>}
    */
   async last() {
@@ -141,36 +164,111 @@ export class QueryBuilder {
     return this.first()
   }
 
-  // ─── Private helpers ────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  // Core execution (optimized)
+  // ─────────────────────────────────────────────
 
   /**
-   * Fetch raw records — indexed lookup or full scan, then filter conditions in-memory.
-   * @returns {Promise<Record<string, unknown>[]>}
+   * Core fetch: picks the best index (or falls back to cursor scan),
+   * retrieves raw records, and applies in-memory filters.
+   * @returns {Promise<object[]>}
    */
   async #execute() {
-    let records
+    const table = this.#getTableName()
 
+    // 1. Determine best index if not provided
+    if (!this.#indexName) {
+      const idx = this.#chooseBestIndex()
+      if (idx) {
+        this.#indexName = idx[0]
+        this.#indexValue = idx[1]
+      }
+    }
+
+    // 2. Indexed path (fast path)
     if (this.#indexName) {
-      records = await IndexedDB.getByIndex(this.#getTableName(), this.#indexName, this.#indexValue)
-    } else {
-      records = await IndexedDB.getAll(this.#getTableName())
+      let records = await IndexedDB.getByIndex(table, this.#indexName, this.#indexValue)
+
+      return this.#applyPostFilters(records)
     }
 
-    if (this.#paranoidField) {
-      records = records.filter((r) => r[this.#paranoidField] == null)
-    }
+    // 3. Cursor scan (NO getAll)
+    return IndexedDB.scan(table, (record) => this.#matches(record), {
+      limit: this.#sortBy ? null : this.#limit, // can't early limit if sorting later
+      offset: this.#sortBy ? 0 : this.#offset,
+    })
+  }
 
-    for (const [field, test] of this.#conditions) {
-      records = records.filter((r) =>
-        typeof test === 'function' ? test(r[field]) : r[field] === test,
-      )
-    }
+  // ─────────────────────────────────────────────
+  // Helpers
+  // ─────────────────────────────────────────────
 
-    return records
+  /**
+   * Scan conditions for one that matches a known IDB index,
+   * promoting it from in-memory filter to indexed lookup.
+   * @returns {[string, *]|null} — `[field, value]` tuple or `null`
+   */
+  #chooseBestIndex() {
+    for (const [field, value] of this.#conditions) {
+      if (typeof value !== 'function' && ModelRegistry.hasIndex?.(this.#modelName, field)) {
+        return [field, value]
+      }
+    }
+    return null
   }
 
   /**
-   * Apply in-memory sorting.
+   * Test a single record against paranoid filter + all conditions.
+   * Used as the predicate for cursor-based scans.
+   * @param {object} record — raw IDB record
+   * @returns {boolean}
+   */
+  #matches(record) {
+    if (this.#paranoidField && record[this.#paranoidField] != null) {
+      return false
+    }
+
+    for (const [field, test] of this.#conditions) {
+      const value = record[field]
+
+      if (typeof test === 'function') {
+        if (!test(value)) return false
+      } else {
+        if (value !== test) return false
+      }
+    }
+
+    return true
+  }
+
+  /**
+   * Filter records returned from an indexed lookup through
+   * paranoid check + all in-memory conditions.
+   * @param {object[]} records
+   * @returns {object[]}
+   */
+  #applyPostFilters(records) {
+    let result = records
+
+    if (this.#paranoidField) {
+      result = result.filter((r) => r[this.#paranoidField] == null)
+    }
+
+    for (const [field, test] of this.#conditions) {
+      result = result.filter((r) => {
+        const value = r[field]
+        return typeof test === 'function' ? test(value) : value === test
+      })
+    }
+
+    return result
+  }
+
+  /**
+   * Sort records in-memory by the configured field/direction.
+   * Supports `'asc'`, `'desc'`, or a custom comparator function.
+   * @param {object[]} records
+   * @returns {object[]}
    */
   #applySort(records) {
     const [field, direction] = this.#sortBy
@@ -180,9 +278,11 @@ export class QueryBuilder {
     }
 
     const dir = direction === 'desc' ? -1 : 1
+
     return [...records].sort((a, b) => {
       const va = a[field]
       const vb = b[field]
+
       if (va < vb) return -1 * dir
       if (va > vb) return 1 * dir
       return 0
@@ -190,12 +290,16 @@ export class QueryBuilder {
   }
 
   /**
-   * Hydrate raw records to model instances using hydrate().
+   * Convert raw IDB records into hydrated model instances.
+   * @param {object[]} records
+   * @returns {Promise<object[]>}
    */
   async #hydrateResults(records) {
     if (records.length === 0) return []
+
     const schema = ModelRegistry.getSchema(this.#modelName)
     const pk = schema.primaryKey
+
     return Promise.all(records.map((r) => hydrate(this.#modelName, r[pk], {}, r)))
   }
 }

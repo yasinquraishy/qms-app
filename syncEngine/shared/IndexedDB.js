@@ -134,6 +134,46 @@ export class IndexedDB {
   }
 
   /**
+   * Cursor-based scan with per-record filter. Avoids loading the entire store into memory.
+   * @param {string} storeName
+   * @param {(record: object) => boolean} filterFn
+   * @param {{ limit?: number|null, offset?: number }} [options]
+   * @returns {Promise<object[]>}
+   */
+  static async scan(storeName, filterFn, { limit = null, offset = 0 } = {}) {
+    return new Promise((resolve, reject) => {
+      const tx = IndexedDB.#db.transaction(storeName, TX_MODE.READONLY)
+      const store = tx.objectStore(storeName)
+      const req = store.openCursor()
+      const results = []
+      let skipped = 0
+
+      req.onerror = () => reject(req.error)
+      req.onsuccess = (event) => {
+        const cursor = event.target.result
+        if (!cursor) {
+          resolve(results)
+          return
+        }
+
+        if (filterFn(cursor.value)) {
+          if (skipped < offset) {
+            skipped++
+          } else {
+            results.push(cursor.value)
+            if (limit !== null && results.length >= limit) {
+              resolve(results)
+              return
+            }
+          }
+        }
+
+        cursor.continue()
+      }
+    })
+  }
+
+  /**
    * Create all object stores at version 1.
    * @param {IDBDatabase} db
    */

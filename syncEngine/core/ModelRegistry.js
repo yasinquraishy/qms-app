@@ -1,4 +1,4 @@
-import { LOAD_STRATEGY } from "../shared/constants.js";
+import { LOAD_STRATEGY } from '../shared/constants.js'
 
 /**
  * djb2 hash — fast, dependency-free, good enough for schema versioning.
@@ -6,12 +6,12 @@ import { LOAD_STRATEGY } from "../shared/constants.js";
  * @returns {string} hex string
  */
 function simpleHash(str) {
-  let hash = 5381;
+  let hash = 5381
   for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
-    hash = hash >>> 0; // force unsigned 32-bit
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i)
+    hash = hash >>> 0 // force unsigned 32-bit
   }
-  return hash.toString(16);
+  return hash.toString(16)
 }
 
 /**
@@ -41,22 +41,20 @@ const ModelRegistry = {
     loadStrategy = LOAD_STRATEGY.INSTANT,
     schemaVersion = 1,
     indexes = [],
-    primaryKey = "id",
+    primaryKey = 'id',
     syncField = undefined,
     tableName,
   ) {
-    const sortedNames = properties.map((p) => p.name).sort();
+    const sortedNames = properties.map((p) => p.name).sort()
     const customIndexStr = indexes
-      .map((idx) =>
-        idx.type === "single" ? idx.field : `[${idx.fields.join("+")}]`,
-      )
+      .map((idx) => (idx.type === 'single' ? idx.field : `[${idx.fields.join('+')}]`))
       .sort()
-      .join(",");
-    const hashSource = `${name}:v${schemaVersion}:${sortedNames.join(",")}:${customIndexStr}:pk=${primaryKey}`;
-    const schemaHash = simpleHash(hashSource);
-    const propertiesMap = new Map(properties.map((p) => [p.name, p]));
+      .join(',')
+    const hashSource = `${name}:v${schemaVersion}:${sortedNames.join(',')}:${customIndexStr}:pk=${primaryKey}`
+    const schemaHash = simpleHash(hashSource)
+    const propertiesMap = new Map(properties.map((p) => [p.name, p]))
 
-    this.modelLookup[name] = constructor;
+    this.modelLookup[name] = constructor
     this.schemas[name] = {
       schemaHash,
       loadStrategy,
@@ -65,15 +63,15 @@ const ModelRegistry = {
       primaryKey,
       syncField,
       tableName,
-    };
+    }
   },
 
   getSchema(name) {
-    return this.schemas[name] ?? null;
+    return this.schemas[name] ?? null
   },
 
   getConstructor(name) {
-    return this.modelLookup[name] ?? null;
+    return this.modelLookup[name] ?? null
   },
 
   /**
@@ -83,9 +81,19 @@ const ModelRegistry = {
    * @returns {string}
    */
   getTableName(modelName) {
-    const schema = this.schemas[modelName];
-    return schema?.tableName ?? modelName;
+    const schema = this.schemas[modelName]
+    return schema?.tableName ?? modelName
   },
-};
 
-export default ModelRegistry;
+  hasIndex(modelName, field) {
+    const schema = this.schemas[modelName]
+    if (!schema) return false
+    return schema.indexes.some(
+      (idx) =>
+        (idx.type === 'single' && idx.field === field) ||
+        (idx.type === 'compound' && idx.fields?.[0] === field),
+    )
+  },
+}
+
+export default ModelRegistry

@@ -54,6 +54,33 @@ export class BaseModel {
    */
   static paranoid = false
 
+  /**
+   * Returns a "now" value appropriate for the given type constructor.
+   * @param {Function} type — Number, String, Date, or DateTime
+   * @returns {*}
+   */
+  static #nowForType(type) {
+    if (type === Number) return Date.now()
+    if (type === String) return new Date().toISOString()
+    if (type === DateTime) return DateTime.now()
+    return new Date()
+  }
+
+  /**
+   * Set all @Property({ timestamp: true }) fields to their current-time value.
+   * Called once during create().
+   * @param {BaseModel} instance
+   * @param {Object} schema
+   */
+  static #applyTimestamps(instance, schema) {
+    if (!schema?.properties) return
+    for (const [name, meta] of schema.properties) {
+      if (meta.options?.timestamp) {
+        instance[name] = BaseModel.#nowForType(meta.options.type)
+      }
+    }
+  }
+
   #action = OPERATION.UPDATE
   #modified = {}
 
@@ -80,6 +107,9 @@ export class BaseModel {
         instance[key] = value
       }
     }
+
+    // Set timestamp fields to current time
+    BaseModel.#applyTimestamps(instance, schema)
 
     // Clear dirty state from property assignments — a newly created instance
     // should not appear dirty until a property is explicitly modified.
@@ -232,6 +262,16 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async save() {
+    // Apply autoUpdate timestamps before saving
+    const schema = ModelRegistry.getSchema(this.constructor.name)
+    if (schema?.properties) {
+      for (const [name, meta] of schema.properties) {
+        if (meta.options?.autoUpdate) {
+          this[name] = BaseModel.#nowForType(meta.options.type)
+        }
+      }
+    }
+
     ModelValidator.validate(this, this.constructor.name)
 
     if (BaseModel._saveStrategy) {

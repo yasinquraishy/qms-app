@@ -1,5 +1,5 @@
-import { observabilityHelper } from "../core/observabilityHelper.js";
-import { PROP_TYPE } from "../shared/constants.js";
+import { observabilityHelper } from '../core/observabilityHelper.js'
+import { PROP_TYPE } from '../shared/constants.js'
 
 /**
  * @Property([options]) — field decorator for plain owned fields.
@@ -25,41 +25,39 @@ import { PROP_TYPE } from "../shared/constants.js";
  */
 export function Property(options = {}) {
   return function (_, context) {
-    if (context.kind !== "field") {
-      throw new Error("@Property must be applied to a class field");
+    if (context.kind !== 'field') {
+      throw new Error('@Property must be applied to a class field')
     }
 
-    const { type, required = false, serializer } = options;
+    const { type, required = false, serializer, timestamp = false, autoUpdate = false } = options
 
     // type is required
     if (!type) {
       throw new Error(
         `@Property("${context.name}"): 'type' option is required (e.g. { type: String }, { type: Number })`,
-      );
+      )
     }
 
-    if (typeof required !== "boolean") {
-      throw new Error(
-        `@Property("${context.name}"): 'required' must be a boolean`,
-      );
+    if (typeof required !== 'boolean') {
+      throw new Error(`@Property("${context.name}"): 'required' must be a boolean`)
     }
 
-    const name = context.name;
+    const name = context.name
 
     // Register in shared metadata so @ClientModel can build the schemaHash.
-    context.metadata._syncProps ??= [];
+    context.metadata._syncProps ??= []
     context.metadata._syncProps.push({
       name,
       type: PROP_TYPE.PROPERTY,
-      options: { type, required, serializer },
-    });
+      options: { type, required, serializer, timestamp, autoUpdate },
+    })
 
     // addInitializer runs on each new instance after the field initializer,
     // so `this[name]` already holds the declared default value.
     context.addInitializer(function () {
       observabilityHelper(this, name, (instance, fieldName, oldValue) => {
-        instance._propertyChanged?.(fieldName, oldValue);
-      });
-    });
-  };
+        instance._propertyChanged?.(fieldName, oldValue)
+      })
+    })
+  }
 }

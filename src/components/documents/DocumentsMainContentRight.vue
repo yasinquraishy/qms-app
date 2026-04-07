@@ -63,18 +63,9 @@ function scrollToSection(sectionId) {
             </p>
           </div>
 
-          <div v-if="document.user" class="tw:flex tw:items-center tw:gap-3">
-            <div
-              class="tw:h-8 tw:w-8 tw:rounded-full tw:bg-main-hover tw:flex tw:items-center tw:justify-center tw:shrink-0"
-            >
-              <WIcon name="person" class="tw:text-secondary" size="16px" />
-            </div>
-            <div>
-              <label class="ds-label"> Owner </label>
-              <p class="tw:text-sm tw:font-medium">
-                {{ document.user.firstName }} {{ document.user.lastName }}
-              </p>
-            </div>
+          <div class="tw:flex tw:flex-col tw:-ml-3">
+            <label class="ds-label tw:ml-3"> Owner </label>
+            <UserBadgeById :userId="document.userId" />
           </div>
 
           <div class="tw:grid tw:grid-cols-2 tw:gap-4">

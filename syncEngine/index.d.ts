@@ -258,6 +258,8 @@ export interface PropertyOptions {
   type: new (...args: unknown[]) => unknown;
   /** When true, field value cannot be null/undefined/empty string. Default: false */
   required?: boolean;
+  timestamp?: boolean;
+  autoUpdate?: boolean;
   serializer?: Serializer;
 }
 

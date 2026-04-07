@@ -103,6 +103,13 @@ async function saveDraft() {
   saving.value = true
   try {
     const create = useLiveMutation(async (db) => {
+      let documentCounter = await db.DocumentCounter.where('prefix', form.value.prefix).first()
+      if (!documentCounter) {
+        documentCounter = db.DocumentCounter.create({ prefix: form.value.prefix, count: 1 })
+      } else {
+        documentCounter.count += 1
+      }
+
       const doc = db.Document.create({
         title: form.value.title,
         documentTypeId: form.value.documentTypeId,
@@ -113,7 +120,8 @@ async function saveDraft() {
         relatedStandardId: form.value.relatedStandardId,
         periodicReviewMonths: form.value.periodicReviewMonths,
         autoEffectiveOnApproval: form.value.autoEffectiveOnApproval,
-        statusId: 'DRAFT',
+        workflowVersionId: form.value.workflowVersionId,
+        statusId: 'ACTIVE',
       })
       await doc.save()
 
@@ -124,7 +132,7 @@ async function saveDraft() {
         statusId: 'DRAFT',
         sections: form.value.sections || [],
         changeSummary: form.value.changeNotes || '',
-        effectiveDate: form.value.effectiveDate || '',
+        effectiveDate: form.value.effectiveDate,
       })
       await version.save()
 

@@ -262,6 +262,10 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async save() {
+    if (!this.isDirty() && this.#action === OPERATION.UPDATE) {
+      return // early exit if no changes to save (but still allow create/delete actions)
+    }
+
     // Apply autoUpdate timestamps before saving
     const schema = ModelRegistry.getSchema(this.constructor.name)
     if (schema?.properties) {

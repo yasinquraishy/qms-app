@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 /**
  * observabilityHelper — "M1" in the plan.
@@ -18,18 +18,8 @@ export function observabilityHelper(instance, name, onSet) {
   // Capture any value already placed on the instance by a field initializer.
   const existing = Object.getOwnPropertyDescriptor(instance, name)
   const initialValue = existing?.value
-
+  let oldValue = initialValue
   const box = ref(initialValue)
-
-  // direct check in setter doesn't work for objects/arrays because of reference equality,
-  //  so we use a deep equality check in a watch to detect mutations (e.g., push, splice) and call onSet with the old value.
-  watch(
-    box,
-    (_, oldVal) => {
-      onSet(instance, name, oldVal)
-    },
-    { deep: true },
-  )
 
   Object.defineProperty(instance, name, {
     enumerable: true,
@@ -38,7 +28,11 @@ export function observabilityHelper(instance, name, onSet) {
       return box.value
     },
     set(newVal) {
+      oldValue = box.value
       box.value = newVal
+      if (JSON.stringify(oldValue) !== JSON.stringify(newVal)) {
+        onSet(instance, name, oldValue)
+      }
     },
   })
 }

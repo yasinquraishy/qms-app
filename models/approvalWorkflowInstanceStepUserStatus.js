@@ -16,6 +16,6 @@ export class ApprovalWorkflowInstanceStepUserStatus extends BaseModel {
   @Property({ type: String }) name = ''
   @Property({ type: String }) description = ''
   @Property({ type: Number }) displayOrder = 1000
-  @Property({ type: DateTime }) createdAt = DateTime.now()
-  @Property({ type: DateTime }) updatedAt = DateTime.now()
+  @Property({ type: DateTime }) createdAt = null
+  @Property({ type: DateTime }) updatedAt = null
 }

@@ -29,6 +29,6 @@ export class Supplier extends BaseModel {
   @Property({ type: String }) statusId = 'PENDING'
   @Property({ type: String }) lastEvaluationDate = ''
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = DateTime.now()
-  @Property({ type: DateTime }) updatedAt = DateTime.now()
+  @Property({ type: DateTime }) createdAt = null
+  @Property({ type: DateTime }) updatedAt = null
 }

@@ -28,6 +28,6 @@ export class AssetRequest extends BaseModel {
   @Property({ type: String }) createdBy = ''
   @Property({ type: String }) token = ''
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = DateTime.now()
-  @Property({ type: DateTime }) updatedAt = DateTime.now()
+  @Property({ type: DateTime }) createdAt = null
+  @Property({ type: DateTime }) updatedAt = null
 }

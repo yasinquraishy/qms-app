@@ -27,6 +27,6 @@ export class Comment extends BaseModel {
   @Property({ type: String }) objectType = ''
   @Property({ type: String }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = DateTime.now()
-  @Property({ type: DateTime }) updatedAt = DateTime.now()
+  @Property({ type: DateTime }) createdAt = null
+  @Property({ type: DateTime }) updatedAt = null
 }

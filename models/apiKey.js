@@ -24,6 +24,6 @@ export class ApiKey extends BaseModel {
   @Property({ type: DateTime }) lastUsedAt = null
   @Property({ type: DateTime }) expiresAt = null
   @Property({ type: DateTime }) deletedAt = null
-  @Property({ type: DateTime }) createdAt = DateTime.now()
-  @Property({ type: DateTime }) updatedAt = DateTime.now()
+  @Property({ type: DateTime }) createdAt = null
+  @Property({ type: DateTime }) updatedAt = null
 }

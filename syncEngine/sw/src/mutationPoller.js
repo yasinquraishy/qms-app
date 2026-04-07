@@ -38,7 +38,8 @@ async function poll() {
   try {
     const pending = await IndexedDB.getByIndex(TRANSACTIONS_STORE, 'status', STATUS.PENDING)
     if (pending.length > 0) {
-      await flush(pending)
+      const sorted = pending.sort((a, b) => a.createdAt - b.createdAt)
+      await flush(sorted)
       backoffMs = pollInterval
     }
   } catch (err) {

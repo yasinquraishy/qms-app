@@ -21,9 +21,9 @@ async function resetSync() {
   resetting.value = true
   try {
     await deleteAllSyncDatabases()
-    window.location.reload()
   } finally {
     resetting.value = false
+    window.location.reload()
   }
 }
 </script>

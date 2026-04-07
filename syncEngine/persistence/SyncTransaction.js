@@ -5,7 +5,6 @@ import { TransactionQueue } from './TransactionQueue.js'
 import ModelRegistry from '../core/ModelRegistry.js'
 import { LOAD_STRATEGY, TRANSACTIONS_STORE, OPERATION } from '../shared/constants.js'
 import { dehydrate, serializeValue } from './hydration.js'
-import { syncBus } from '../core/syncBus.js'
 
 export class SyncTransaction extends UpdateTransaction {
   #queueId = null
@@ -82,12 +81,6 @@ export class SyncTransaction extends UpdateTransaction {
       }
 
       this.committed = true
-      syncBus.emit({
-        modelName: this.modelName,
-        modelId: id,
-        action: this.#action,
-        type: OPERATION.COMMIT,
-      })
       return this
     } catch (err) {
       // Rollback queue entry if it was appended

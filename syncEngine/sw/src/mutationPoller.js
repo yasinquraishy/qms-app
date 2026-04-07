@@ -7,8 +7,8 @@ import { broadcastMessage } from './broadcaster.js'
 import { MSG } from '../../shared/messageTypes.js'
 
 let pollTimer = null
-let pollInterval = 5000
-let backoffMs = 5000
+let pollInterval = 3000
+let backoffMs = 3000
 const MAX_BACKOFF = 60000
 
 let _metaMap = null
@@ -18,7 +18,7 @@ export function startPolling(metaMap, config) {
   stopPolling()
   _metaMap = metaMap
   _config = config
-  pollInterval = config.pollIntervalMs || 5000
+  pollInterval ??= config.pollIntervalMs
   backoffMs = pollInterval
   scheduleNext()
 }

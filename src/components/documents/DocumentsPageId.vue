@@ -81,7 +81,7 @@ const canSubmitForReview = computed(
     canEdit.value &&
     isOwner.value &&
     ['DRAFT', 'REJECTED'].includes(selectedVersion.value?.statusId) &&
-    document.value?.workflowVersionId &&
+    !!document.value?.workflowVersionId &&
     document.value?.statusId !== 'ARCHIVED',
 )
 const canCancelReview = computed(

@@ -190,8 +190,12 @@ export class QueryBuilder {
 
     // 2. Indexed path (fast path)
     if (this.#indexName) {
-      // if value is an array and index is not compound, treat as IN query and use multi-get
-      const isArrayIN = Array.isArray(this.#indexValue) && !this.#indexName.startsWith('[')
+      // if value is an array and index is not compound or
+      // if value is a nested array and index is compound,
+      // then treat as IN query and use multi-get
+      const isArrayIN =
+        (Array.isArray(this.#indexValue) && !this.#indexName.startsWith('[')) ||
+        (Array.isArray(this.#indexValue?.[0]) && this.#indexName.startsWith('['))
 
       let records = isArrayIN
         ? await IndexedDB.getByIndexMulti(table, this.#indexName, this.#indexValue)

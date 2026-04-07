@@ -40,8 +40,7 @@ export const GraphQLSchemaGenerator = {
    * @returns {{ create: string, update: string, delete: string }}
    */
   generateMutationStrings(modelName) {
-    const { singularName, capitalSingular, pk, fields } = this._resolveSchema(modelName)
-    const capitalPk = capitalize(pk)
+    const { singularName, capitalSingular, fields } = this._resolveSchema(modelName)
 
     const create = `mutation Create${capitalSingular}($input: Create${capitalSingular}Input!) {
       create${capitalSingular}(input: $input) {
@@ -60,9 +59,7 @@ export const GraphQLSchemaGenerator = {
     }`
 
     const del = `mutation Delete${capitalSingular}($input: Delete${capitalSingular}Input!) {
-      delete${capitalSingular}(input: $input) {
-        deleted${capitalSingular}${capitalPk}
-      }
+      delete${capitalSingular}(input: $input) { clientMutationId }
     }`
 
     return { create, update, delete: del }

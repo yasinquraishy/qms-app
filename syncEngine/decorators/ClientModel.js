@@ -1,6 +1,6 @@
 import ModelRegistry from '../core/ModelRegistry.js'
 import { parseCustomIndex } from '../utils/parseCustomIndex.js'
-import { LOAD_STRATEGY } from '../shared/constants.js'
+import { LOAD_STRATEGY, PROP_TYPE } from '../shared/constants.js'
 import { DateTime } from 'luxon'
 
 /**
@@ -30,10 +30,11 @@ export function ClientModel(tableName, options = {}) {
 
   return function (Class, context) {
     const modelName = context.name
-    const properties = context.metadata?._syncProps ?? []
+    const fields = context.metadata?._syncProps ?? []
     const indexes = options.customIndex ? parseCustomIndex(options.customIndex) : []
     const primaryKey = options.primaryKey ?? 'id'
     const syncField = options.syncField
+    const properties = fields.filter((f) => f.type === PROP_TYPE.PROPERTY)
 
     if (syncField !== undefined) {
       const prop = properties.find((p) => p.name === syncField)

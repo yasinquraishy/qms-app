@@ -21,6 +21,7 @@ const collaboratorRecords = useLiveQueryWithDeps(
     const records = await db.UserOnDocument.where().exec()
     return records.filter((r) => r.documentId === documentId && !r.deletedAt)
   },
+  { initial: [] },
 )
 
 const collaboratorUserIds = computed(() => collaboratorRecords.value.map((r) => r.userId))

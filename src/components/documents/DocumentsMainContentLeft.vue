@@ -1,8 +1,6 @@
 <script setup>
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
 
-import { useLiveMutation } from '@syncEngine/index.js'
-
 const props = defineProps({
   documentId: {
     type: String,

@@ -43,11 +43,6 @@ function ApprovalWorkflowInstancesState() {
     return { workflowInstance: data.workflowInstance }
   }
 
-  async function fetchInstanceAuditLogs(documentId) {
-    const data = await get(`/v1/services/documents/${documentId}/auditLogs`, {})
-    return { auditLogs: data.auditLogs || [] }
-  }
-
   return {
     loading,
     actionLoading,
@@ -57,7 +52,6 @@ function ApprovalWorkflowInstancesState() {
     fetchInstances,
     fetchInstance,
     updateWorkflowStep,
-    fetchInstanceAuditLogs,
   }
 }
 

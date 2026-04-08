@@ -30,7 +30,14 @@ export const GraphQLSchemaGenerator = {
     const capitalSingular = capitalize(singularName)
     const pk = schema.primaryKey
     const fields = [...schema.properties.keys()].join('\n      ')
-    return { schema, singularName, capitalSingular, pk, fields }
+    const pkSchema = schema.properties.get(pk)
+    if (!pkSchema) {
+      throw new Error(
+        `[GraphQLSchemaGenerator] Primary key "${pk}" not found in properties of model "${modelName}"`,
+      )
+    }
+    const pkTypeName = pkSchema.options.uuid ? 'UUID' : pkSchema.options.type.name
+    return { schema, singularName, capitalSingular, pk, fields, pkTypeName }
   },
 
   /**
@@ -72,7 +79,8 @@ export const GraphQLSchemaGenerator = {
    * @returns {{ fetch: { query: string, variableName: string }, fetchAll: { query: string } }}
    */
   generateQueryStrings(modelName) {
-    const { schema, singularName, capitalSingular, pk, fields } = this._resolveSchema(modelName)
+    const { schema, singularName, capitalSingular, pk, fields, pkTypeName } =
+      this._resolveSchema(modelName)
     const tableName = schema.tableName
     const pluralName = pluralize(tableName)
     const allFields = [...schema.properties.keys()].join('\n      ')
@@ -83,7 +91,7 @@ export const GraphQLSchemaGenerator = {
       : null
 
     const fetch = {
-      query: `query Fetch${capitalSingular}($${pk}: ID!) {
+      query: `query Fetch${capitalSingular}($${pk}: ${pkTypeName}!) {
         ${singularName}(${pk}: $${pk}) {
           ${fields}
         }

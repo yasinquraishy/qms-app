@@ -1,6 +1,8 @@
 <script setup>
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
 
+import { useLiveMutation } from '@syncEngine/index.js'
+
 const props = defineProps({
   documentId: {
     type: String,
@@ -33,11 +35,31 @@ const canEdit = computed(
 )
 
 // ── Review Mode: Inline section comments ───────────────────────────────────
-// TODO: replace with SyncEngine Comment model query/mutation
-const comments = ref([])
-async function fetchComments() {}
-async function createComment() {}
-async function updateComment() {}
+// Load section comments from IDB — filtered by reviewer userId
+const sectionComments = useLiveQueryWithDeps(
+  [() => props.reviewMode, () => props.versionId, () => currentSession.value?.userId],
+  async (db, [isReview, versionId, currentUserId]) => {
+    if (!versionId) return []
+    const version = await db.DocumentVersion.findByPk(versionId)
+    if (!version?.sections?.length) return []
+    const sectionIds = version.sections.map((s) => s.id)
+    const allComments = (
+      await Promise.all(
+        sectionIds.map((id) =>
+          db.Comment.where('[objectType+objectId]', ['DocumentSection', id]).exec(),
+        ),
+      )
+    ).flat()
+    if (isReview) {
+      return allComments.filter((c) => c.userId === currentUserId)
+    }
+    if (['REJECTED', 'CHANGES_REQUESTED'].includes(version.statusId) && version.rejectedBy?.id) {
+      return allComments.filter((c) => c.userId === version.rejectedBy.id)
+    }
+    return []
+  },
+  { initial: [], models: 'Comment' },
+)
 
 // Local comment text per section (keyed by section ID)
 const sectionCommentText = ref({})
@@ -111,65 +133,43 @@ useEventListener('click', (event) => {
   stopEditing()
 })
 
-// Fetch comments depending on mode:
-// - reviewMode=true: fetch current reviewer's own comments
-// - reviewMode=false + rejected version: fetch rejecting reviewer's comments
+function getReviewerComment(sectionId) {
+  return sectionComments.value.find((c) => c.objectId === sectionId) || null
+}
+
+// Populate text inputs when comments are loaded or review starts
 watch(
-  [() => props.reviewMode, currentVersion],
-  async ([isReview, version]) => {
-    comments.value = []
-    sectionCommentText.value = {}
-
-    const sections = version?.sections || []
-    if (sections.length === 0) return
-
-    const objectId = sections.map((s) => s.id).join(',')
-
-    if (isReview) {
-      // TODO: replace with SyncEngine Comment model query/mutation
-      await fetchComments({
-        objectType: 'DocumentSection',
-        objectId,
-        userId: currentSession.value?.id,
-      })
-      for (const comment of comments.value) {
+  sectionComments,
+  (newComments) => {
+    if (!props.reviewMode) return
+    for (const comment of newComments) {
+      if (!(comment.objectId in sectionCommentText.value)) {
         sectionCommentText.value[comment.objectId] = comment.body
       }
-    } else if (
-      ['REJECTED', 'CHANGES_REQUESTED'].includes(version?.statusId) &&
-      version?.rejectedBy?.id
-    ) {
-      // TODO: replace with SyncEngine Comment model query/mutation
-      await fetchComments({
-        objectType: 'DocumentSection',
-        objectId,
-        userId: version.rejectedBy.id,
-      })
     }
   },
   { immediate: true },
 )
 
-function getReviewerComment(sectionId) {
-  return comments.value.find((c) => c.objectId === sectionId) || null
-}
-
 const debouncedSaveComment = useDebounceFn(async (sectionId) => {
   const text = sectionCommentText.value[sectionId]?.trim()
-  const existing = comments.value.find((c) => c.objectId === sectionId)
+  const existing = getReviewerComment(sectionId)
 
   savingComment.value[sectionId] = true
   try {
     if (existing && text) {
-      // TODO: replace with SyncEngine Comment model mutation — update existing comment
-      await updateComment(existing.id, { body: text })
+      existing.body = text
+      await existing.save()
     } else if (!existing && text) {
-      // TODO: replace with SyncEngine Comment model mutation — create new comment
-      await createComment({
-        body: text,
-        objectType: 'DocumentSection',
-        objectId: sectionId,
+      const create = useLiveMutation(async (db) => {
+        const comment = db.Comment.create({
+          body: text,
+          objectType: 'DocumentSection',
+          objectId: sectionId,
+        })
+        await comment.save()
       })
+      await create()
     }
   } finally {
     savingComment.value[sectionId] = false
@@ -343,8 +343,8 @@ const debouncedSaveComment = useDebounceFn(async (sectionId) => {
             <div class="tw:flex tw:items-center tw:gap-2 tw:mb-1">
               <WIcon name="feedback" size="16px" class="tw:text-orange-600" />
               <span class="tw:text-xs tw:font-semibold tw:text-orange-700 tw:dark:text-orange-400">
-                Reviewer Feedback — {{ getReviewerComment(section.id).user?.firstName }}
-                {{ getReviewerComment(section.id).user?.lastName }}
+                Reviewer Feedback —
+                <UserBadgeById :userId="getReviewerComment(section.id).userId" />
               </span>
             </div>
             <p

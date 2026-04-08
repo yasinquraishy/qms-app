@@ -21,7 +21,6 @@ const collaboratorRecords = useLiveQueryWithDeps(
     const records = await db.UserOnDocument.where().exec()
     return records.filter((r) => r.documentId === documentId && !r.deletedAt)
   },
-  { initial: [] },
 )
 
 const collaboratorUserIds = computed(() => collaboratorRecords.value.map((r) => r.userId))
@@ -132,7 +131,7 @@ async function toggleCollaborator(userId) {
               </QItemSection>
             </QItem>
             <div
-              v-if="!usersLoading && filteredUsers.length === 0"
+              v-if="allUsers !== undefined && filteredUsers.length === 0"
               class="tw:text-center tw:py-4 tw:text-xs tw:text-secondary"
             >
               No users found

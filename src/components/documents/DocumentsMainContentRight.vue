@@ -143,53 +143,6 @@ watch(
 
           <!-- Collaborators Section -->
           <DocumentsCollaborators :documentId="document.id" :canEdit="canEdit" />
-
-          <!-- Approvers Section -->
-          <div v-if="document.approvers?.length > 0" class="tw:pt-4 tw:border-t tw:border-divider">
-            <label class="ds-label tw:mb-2 tw:block"> Approvers </label>
-            <div class="tw:flex tw:-space-x-2">
-              <div
-                v-for="user in document.approvers.slice(0, 4)"
-                :key="user.id"
-                class="tw:w-8 tw:h-8 tw:rounded-full tw:border-2 tw:border-sidebar tw:bg-main-hover tw:flex tw:items-center tw:justify-center"
-                :title="`${user.firstName} ${user.lastName}`"
-              >
-                <span class="tw:text-[10px] tw:font-bold">
-                  {{ user.firstName[0] }}{{ user.lastName[0] }}
-                </span>
-              </div>
-              <div
-                v-if="document.approvers.length > 4"
-                class="tw:w-8 tw:h-8 tw:rounded-full tw:border-2 tw:border-sidebar tw:bg-primary tw:flex tw:items-center tw:justify-center tw:text-white"
-              >
-                <span class="tw:text-[10px] tw:font-bold">
-                  +{{ document.approvers.length - 4 }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Metadata Tags Card -->
-      <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5">
-        <h4 class="ds-label tw:text-secondary tw:mb-4">Metadata Tags</h4>
-        <div class="tw:flex tw:flex-wrap tw:gap-2">
-          <span
-            class="tw:px-2 tw:py-1 tw:bg-main-hover tw:text-secondary tw:rounded-md tw:text-[11px] tw:font-semibold tw:border tw:border-divider"
-          >
-            All Employees
-          </span>
-          <span
-            class="tw:px-2 tw:py-1 tw:bg-primary/10 tw:text-primary tw:rounded-md tw:text-[11px] tw:font-semibold tw:border tw:border-primary/20"
-          >
-            Change Control
-          </span>
-          <span
-            class="tw:px-2 tw:py-1 tw:bg-main-hover tw:text-secondary tw:rounded-md tw:text-[11px] tw:font-semibold tw:border tw:border-divider"
-          >
-            Document Control
-          </span>
         </div>
       </div>
 

@@ -32,12 +32,25 @@ const colorMap = {
   ARCHIVED: 'tw:text-gray-400',
 }
 
+const nameMap = {
+  DRAFT: 'Draft',
+  IN_REVIEW: 'In Review',
+  APPROVED: 'Approved',
+  EFFECTIVE: 'Effective',
+  OBSOLETE: 'Obsolete',
+  ARCHIVED: 'Archived',
+}
+
 function getIcon(statusId) {
   return iconMap[statusId] || 'description'
 }
 
 function getColorClass(statusId) {
   return colorMap[statusId] || 'tw:text-gray-500'
+}
+
+function getName(statusId) {
+  return nameMap[statusId] || statusId
 }
 </script>
 
@@ -57,14 +70,14 @@ function getColorClass(statusId) {
     </WCard>
 
     <!-- Status Cards -->
-    <WCard v-for="stat in stats" :key="stat.id" flat class="tw:p-4">
+    <WCard v-for="stat in stats" :key="stat.statusId" flat class="tw:p-4">
       <div class="tw:flex tw:items-center tw:gap-3">
         <div class="tw:bg-main-hover tw:rounded-lg tw:p-2">
-          <WIcon :name="getIcon(stat.id)" size="24px" :class="getColorClass(stat.id)" />
+          <WIcon :name="getIcon(stat.statusId)" size="24px" :class="getColorClass(stat.statusId)" />
         </div>
         <div>
           <div class="tw:text-2xl tw:font-bold tw:text-on-sidebar">{{ stat.count }}</div>
-          <div class="tw:text-xs tw:text-secondary">{{ stat.name }}</div>
+          <div class="tw:text-xs tw:text-secondary">{{ getName(stat.statusId) }}</div>
         </div>
       </div>
     </WCard>

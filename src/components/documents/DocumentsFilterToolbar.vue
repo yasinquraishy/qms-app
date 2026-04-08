@@ -26,22 +26,12 @@ const filters = defineModel('filters', {
 
       <!-- Document Type Filter -->
       <div class="tw:w-full tw:md:w-1/5">
-        <DocumentsDocumentTemplateSelect
-          v-model:documentTypeId="filters.documentTypeId"
-          label="Document Type"
-          bgColor="white"
-          hideBottomSpace
-        />
+        <DocumentTypeSelectMenu v-model="filters.documentTypeId" />
       </div>
 
       <!-- Department Filter -->
       <div class="tw:w-full tw:md:w-1/5">
-        <DocumentsDepartmentSelect
-          v-model:departmentId="filters.departmentId"
-          label="Department"
-          bgColor="white"
-          hideBottomSpace
-        />
+        <DepartmentSelectMenu v-model="filters.departmentId" />
       </div>
 
       <!-- Status Filter -->

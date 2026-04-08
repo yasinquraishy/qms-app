@@ -139,6 +139,7 @@ declare module 'vue' {
     DocumentTemplateStatusSelect: typeof import('./src/components/documentTemplates/DocumentTemplateStatusSelect.vue')['default']
     DocumentTypeBadge: typeof import('./src/components/badges/documentTypeBadge.vue')['default']
     DocumentTypeBadgeById: typeof import('./src/components/badges/documentTypeBadgeById.vue')['default']
+    DocumentTypeSelectMenu: typeof import('./src/components/panels/DocumentTypeSelectMenu.vue')['default']
     DocumentWorkflowPreviewDialog: typeof import('./src/components/documents/DocumentWorkflowPreviewDialog.vue')['default']
     DynamicForm: typeof import('./src/components/form/DynamicForm.js')['default']
     EditorImageDialog: typeof import('./src/components/editor/EditorImageDialog.vue')['default']

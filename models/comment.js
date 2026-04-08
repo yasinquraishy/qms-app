@@ -1,8 +1,13 @@
 import { currentSession } from '@/utils/currentSession'
-import { BaseModel, ClientModel, Property } from '@syncEngine/index'
+import { BaseModel, ClientModel, Property, Reference } from '@syncEngine/index'
 import { DateTime } from 'luxon'
+import { User } from './user'
 
-@ClientModel('comments', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('comments', {
+  primaryKey: 'id',
+  syncField: 'updatedAt',
+  customIndex: '[objectType+objectId], objectId, userId',
+})
 export class Comment extends BaseModel {
   static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
@@ -31,4 +36,7 @@ export class Comment extends BaseModel {
   createdAt = /** @type {DateTime} */ (null)
   @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true })
   updatedAt = /** @type {DateTime} */ (null)
+
+  @Reference(() => User, { nullable: false, indexed: true })
+  user = /** @type {User} */ (null) // Populated via Reference in User model
 }

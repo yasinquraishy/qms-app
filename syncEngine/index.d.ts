@@ -291,6 +291,8 @@ export interface ReferenceOptions {
   nullable?: boolean;
   /** When true an IndexedDB index is created on the FK field. */
   indexed?: boolean;
+  /** Override the default FK field name (`<fieldName>Id`). */
+  field?: string;
 }
 
 /**

@@ -8,6 +8,7 @@ import {
   IconSend,
   IconLoader2,
 } from '@tabler/icons-vue'
+import UserAvatarById from '../avatars/UserAvatarById.vue'
 
 const props = defineProps({
   documentId: { type: String, required: true },
@@ -128,9 +129,9 @@ async function handleDelete(msg) {
             class="tw:group tw:flex tw:gap-2"
             :class="msg.userId === currentUserId ? 'tw:flex-row-reverse' : 'tw:flex-row'"
           >
-            <UserAvatar
+            <UserAvatarById
               v-if="msg.userId !== currentUserId"
-              :user="msg.user"
+              :userId="msg.userId"
               class="tw:size-8 tw:shrink-0 tw:mt-1"
             />
 

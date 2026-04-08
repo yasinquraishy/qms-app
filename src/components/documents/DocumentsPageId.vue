@@ -55,9 +55,6 @@ const breadcrumbs = computed(() => [
   { label: document.value ? document.value.title : 'Loading...' },
 ])
 
-// Edit dialog state
-const showEditDialog = ref(false)
-
 // workflow preview dialog state
 const showPreviewDialog = ref(false)
 
@@ -112,11 +109,6 @@ function handleExport() {
 
 function handleReports() {
   $q.notify({ type: 'info', message: 'Reports functionality coming soon' })
-}
-
-// Edit dialog methods
-function openEditDialog() {
-  showEditDialog.value = true
 }
 
 async function handleDeleteDocument() {
@@ -317,13 +309,6 @@ async function createNewVersion() {
 
               <QMenu>
                 <QList>
-                  <QItem v-if="canEdit" clickable @click="openEditDialog">
-                    <QItemSection avatar>
-                      <WIcon name="edit" size="20px" />
-                    </QItemSection>
-                    <QItemSection>Edit Properties</QItemSection>
-                  </QItem>
-
                   <QItem
                     v-if="selectedVersion?.workflowInstanceId"
                     clickable

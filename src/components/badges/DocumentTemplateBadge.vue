@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  department: {
+  documentTemplate: {
     type: Object,
     required: true,
   },
@@ -11,6 +11,6 @@ defineProps({
   <span
     class="tw:text-sm tw:font-medium tw:mr-2 tw:px-2.5 tw:py-1 tw:rounded-md tw:border tw:border-divider"
   >
-    {{ department.name }}
+    {{ documentTemplate.name }}
   </span>
 </template>

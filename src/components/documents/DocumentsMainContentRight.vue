@@ -71,30 +71,31 @@ function scrollToSection(sectionId) {
           <div class="tw:grid tw:grid-cols-2 tw:gap-4">
             <div>
               <label class="ds-label"> Type </label>
-              <p class="tw:text-sm tw:font-medium">
-                {{ document.template?.name || 'Document' }}
-              </p>
+              <div class="tw:mt-1">
+                <DocumentTypeBadgeById
+                  :documentTypeId="document.documentTypeId"
+                  :iconOnly="false"
+                />
+              </div>
             </div>
             <div>
               <label class="ds-label"> Status </label>
-              <p class="tw:text-sm tw:font-bold tw:text-green-600">
-                {{ currentVersion?.status?.name || '-' }}
-              </p>
+              <WStatusBadge :status="currentVersion.statusId" class="size-3" />
             </div>
           </div>
 
-          <div v-if="document.department">
+          <div>
             <label class="ds-label"> Department </label>
-            <p class="tw:text-sm tw:font-medium">
-              {{ document.department.name }}
-            </p>
+            <div class="tw:mt-1">
+              <DepartmentBadgeById :departmentId="document.departmentId" />
+            </div>
           </div>
 
-          <div v-if="document.relatedStandard">
+          <div v-if="document.relatedStandardId">
             <label class="ds-label"> Related Standard </label>
-            <p class="tw:text-sm tw:font-medium">
-              {{ document.relatedStandard.name }}
-            </p>
+            <div class="tw:mt-1">
+              <RelatedStandardBadgeById :relatedStandardId="document.relatedStandardId" />
+            </div>
           </div>
 
           <div>

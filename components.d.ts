@@ -60,6 +60,7 @@ declare module 'vue' {
     AuditLogsItem: typeof import('./src/components/auditLog/AuditLogsItem.vue')['default']
     AuditLogsList: typeof import('./src/components/auditLog/AuditLogsList.vue')['default']
     BaseBadge: typeof import('./resource/js/shared/components/BaseBadge.vue')['default']
+    BaseDatePicker: typeof import('./resource/js/shared/components/BaseDatePicker.vue')['default']
     BaseSelectMenu: typeof import('./resource/js/shared/components/BaseSelectMenu.vue')['default']
     BaseSelectPanel: typeof import('./resource/js/shared/components/BaseSelectPanel.vue')['default']
     BaseSwitch: typeof import('./resource/js/shared/components/BaseSwitch.vue')['default']

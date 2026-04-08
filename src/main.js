@@ -1,4 +1,6 @@
 import '@/extensions/datetime' // Extend Luxon's DateTime with custom formatting method
+import 'v-calendar/style.css'
+import VCalendar from 'v-calendar'
 
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -48,6 +50,9 @@ app.use(Quasar, {
   },
   config: {},
 })
+
+// Use VCalendar
+app.use(VCalendar, {})
 
 // Use i18n
 app.use(i18n)

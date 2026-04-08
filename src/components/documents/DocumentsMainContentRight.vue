@@ -128,6 +128,7 @@ watch(
             <p class="tw:text-sm tw:font-medium">
               {{ formattedEffectiveDate }}
             </p>
+            <BaseDatePicker v-if="canEdit" v-model="document.effectiveDate" :required="false" />
           </div>
 
           <!-- Collaborators Section -->

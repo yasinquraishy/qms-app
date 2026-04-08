@@ -15,7 +15,7 @@ export class AssetRequestOnContact extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) assetRequestId = ''
   @Property({ type: String }) supplierContactId = ''
   @Property({ type: String }) companyId = ''

@@ -15,7 +15,7 @@ export class ApprovalWorkflowInstance extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) resourceType = ''
   @Property({ type: String }) resourceId = ''
   @Property({ type: String }) workflowVersionId = ''

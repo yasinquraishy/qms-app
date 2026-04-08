@@ -20,7 +20,7 @@ export class Comment extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) body = ''
   @Property({ type: String }) userId = ''
   @Property({ type: String }) objectId = ''

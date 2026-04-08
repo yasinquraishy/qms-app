@@ -16,7 +16,7 @@ export class DocumentLink extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) fromDocumentVersionId = ''
   @Property({ type: String }) toDocumentVersionId = ''
   @Property({ type: String }) relationshipType = ''

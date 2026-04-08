@@ -24,7 +24,7 @@ export class DocumentVersion extends BaseModel {
       this.createdBy = currentSession.value?.userId
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) companyId = ''
   @Property({ type: String }) documentId = ''
   @Property({ type: Number }) versionMajor = 1

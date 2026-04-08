@@ -20,7 +20,7 @@ export class UserOnDocument extends BaseModel {
     }
   }
 
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) userId = ''
   @Property({ type: String }) documentId = ''
   @Property({ type: String }) companyId = ''

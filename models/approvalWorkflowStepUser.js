@@ -24,7 +24,7 @@ export class ApprovalWorkflowStepUser extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) stepId = ''
   @Property({ type: String }) userId = ''
   @Property({ type: String }) companyId = ''

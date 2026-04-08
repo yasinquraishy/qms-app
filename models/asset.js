@@ -16,7 +16,7 @@ export class Asset extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) filename = ''
   @Property({ type: String }) originalFilename = ''
   @Property({ type: String }) mimeType = ''

@@ -15,7 +15,7 @@ export class Site extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) companyId = ''
   @Property({ type: String }) name = ''
   @Property({ type: String }) code = ''

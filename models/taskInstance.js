@@ -16,7 +16,7 @@ export class TaskInstance extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) assignedTo = ''
   @Property({ type: String }) taskKindId = ''
   @Property({ type: String }) statusId = 'ASSIGNED'

@@ -15,7 +15,7 @@ export class Department extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) companyId = ''
   @Property({ type: String }) code = ''
   @Property({ type: String }) name = ''

@@ -19,7 +19,7 @@ export class AuditLog extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) entityType = ''
   @Property({ type: String }) entityId = ''
   @Property({ type: String }) action = ''

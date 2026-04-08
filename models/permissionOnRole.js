@@ -16,7 +16,7 @@ export class PermissionOnRole extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) roleId = ''
   @Property({ type: String }) permissionId = ''
   @Property({ type: String }) companyId = ''

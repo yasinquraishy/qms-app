@@ -15,7 +15,7 @@ export class SupplierDocument extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) supplierId = ''
   @Property({ type: String }) documentVersionId = ''
   @Property({ type: String }) companyId = ''

@@ -44,6 +44,19 @@ function scrollToSection(sectionId) {
     activeSection.value = sectionId
   }
 }
+
+const debounceSave = useDebounceFn(() => {
+  if (!document.value || !canEdit.value) return
+  document.value.save()
+}, 500)
+
+watch(
+  document,
+  () => {
+    debounceSave()
+  },
+  { deep: true },
+)
 </script>
 
 <template>
@@ -87,14 +100,14 @@ function scrollToSection(sectionId) {
           <div>
             <label class="ds-label"> Department </label>
             <div class="tw:mt-1">
-              <DepartmentBadgeById :departmentId="document.departmentId" />
+              <DepartmentSelectMenu v-model="document.departmentId" required />
             </div>
           </div>
 
-          <div v-if="document.relatedStandardId">
+          <div>
             <label class="ds-label"> Related Standard </label>
             <div class="tw:mt-1">
-              <RelatedStandardBadgeById :relatedStandardId="document.relatedStandardId" />
+              <RelatedStandardSelectMenu v-model="document.relatedStandardId" />
             </div>
           </div>
 
@@ -106,7 +119,7 @@ function scrollToSection(sectionId) {
           <div>
             <label class="ds-label"> Auto-Effective </label>
             <p class="tw:text-sm tw:font-medium">
-              {{ document.autoEffectiveOnApproval ? 'Yes' : 'No' }}
+              <BaseSwitch v-model="document.autoEffectiveOnApproval" :disabled="!canEdit" />
             </p>
           </div>
 

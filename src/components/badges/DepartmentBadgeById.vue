@@ -17,5 +17,5 @@ const department = useLiveQueryWithDeps(
 </script>
 
 <template>
-  <DepartmentBadge v-if="department" :department="department" />
+  <DepartmentBadge v-if="department" :department="department" v-bind="$attrs" />
 </template>

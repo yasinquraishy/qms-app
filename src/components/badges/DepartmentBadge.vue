@@ -8,9 +8,7 @@ defineProps({
 </script>
 
 <template>
-  <span
-    class="tw:text-sm tw:font-medium tw:mr-2 tw:px-2.5 tw:py-1 tw:rounded-md tw:border tw:border-divider"
-  >
+  <BaseBadge v-bind="$attrs">
     {{ department.name }}
-  </span>
+  </BaseBadge>
 </template>

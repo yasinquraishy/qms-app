@@ -17,5 +17,5 @@ const relatedStandard = useLiveQueryWithDeps(
 </script>
 
 <template>
-  <RelatedStandardBadge v-if="relatedStandard" :relatedStandard="relatedStandard" />
+  <RelatedStandardBadge v-if="relatedStandard" :relatedStandard="relatedStandard" v-bind="$attrs" />
 </template>

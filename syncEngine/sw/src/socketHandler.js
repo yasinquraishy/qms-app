@@ -4,6 +4,7 @@ import { TRANSACTIONS_STORE, STATUS, TABLE_METAS_STORE } from '../../shared/cons
 import { broadcastMessage } from './broadcaster.js'
 import { MSG } from '../../shared/messageTypes.js'
 import { graphqlRequest } from './graphqlClient.js'
+import { toCamelCase } from '../../utils/changeCase.js'
 
 let socket = null
 
@@ -15,15 +16,17 @@ let socket = null
 export function connectSocket(config, metaByTable) {
   disconnectSocket()
 
-  socket = io(config.socketUrl, {
+  socket = io({
+    path: config.socketUrl,
     transports: ['websocket'],
     autoConnect: true,
   })
 
   socket.on('sync', async (payload) => {
-    const { table, action, pkValue } = payload
-    if (!table || !action) return
+    const { table: tableNameInPostgres, action, pkValue } = payload
+    if (!tableNameInPostgres || !action) return
 
+    const table = toCamelCase(tableNameInPostgres)
     const meta = metaByTable.get(table)
     if (!meta) return
 
@@ -32,7 +35,6 @@ export function connectSocket(config, metaByTable) {
       if (await hasPendingTransaction(meta.modelName, pkValue)) return
 
       let resolvedAction = action
-
       if (action === 'create' || action === 'update') {
         const responseData = await graphqlRequest(
           config.graphqlUrl,

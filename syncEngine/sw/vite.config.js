@@ -15,15 +15,21 @@ export default defineConfig({
     emptyOutDir: false, // don't wipe public/ — other static assets live there
   },
   resolve: {
-    alias: {
+    alias: [
+      // Resolve @syncEngine/* so SW files can use canonical alias imports
+      // instead of fragile relative paths.
+      {
+        find: '@syncEngine',
+        replacement: path.resolve(__dirname, '..'),
+      },
       // Hard boundary: block any imports from main-thread modules.
       // If an SW file accidentally imports these, the build will fail
       // with "module not found" instead of silently bundling them.
-      '@core': false,
-      '@persistence': false,
-      '@network': false,
-      '@decorators': false,
-      '@worker': false,
-    },
+      { find: '@core', replacement: false },
+      { find: '@persistence', replacement: false },
+      { find: '@network', replacement: false },
+      { find: '@decorators', replacement: false },
+      { find: '@worker', replacement: false },
+    ],
   },
 })

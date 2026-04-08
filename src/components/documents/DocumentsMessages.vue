@@ -1,6 +1,5 @@
 <script setup>
 import { currentSession } from '@/utils/currentSession.js'
-import { useLiveMutation } from '@/composables/useLiveQuery.js'
 import {
   IconMessages,
   IconX,

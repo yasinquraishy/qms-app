@@ -1,6 +1,14 @@
 <script setup>
-import { useDocumentMessages } from '@/composables/useDocumentMessages.js'
 import { currentSession } from '@/utils/currentSession.js'
+import { useLiveMutation } from '@/composables/useLiveQuery.js'
+import {
+  IconMessages,
+  IconX,
+  IconMessageCircle,
+  IconTrash,
+  IconSend,
+  IconLoader2,
+} from '@tabler/icons-vue'
 
 const props = defineProps({
   documentId: { type: String, required: true },
@@ -8,13 +16,19 @@ const props = defineProps({
 
 const model = defineModel({ type: Boolean, default: false })
 
-const { messages, loading, fetchMessages, sendMessage, deleteMessage, joinRoom, leaveRoom } =
-  useDocumentMessages()
+const messages = useLiveQueryWithDeps(
+  [() => props.documentId],
+  async (db, [id]) =>
+    db.Comment.where('[objectType+objectId]', ['Document', id]).orderBy('createdAt', 'asc').exec(),
+  { initial: [], models: 'Comment' },
+)
+
+const loading = computed(() => messages.value === undefined)
 
 const newMessage = ref('')
 const messagesContainer = ref(null)
 
-const currentUserId = computed(() => currentSession.value?.id)
+const currentUserId = computed(() => currentSession.value?.userId)
 
 function scrollToBottom() {
   nextTick(() => {
@@ -24,30 +38,34 @@ function scrollToBottom() {
 }
 
 watch(
-  () => messages.value.length,
+  () => messages.value?.length,
   () => scrollToBottom(),
 )
 
-watch(model, async (open) => {
-  if (open) {
-    joinRoom(props.documentId)
-    await fetchMessages(props.documentId)
-    scrollToBottom()
-  } else {
-    leaveRoom()
-  }
+watch(model, (open) => {
+  if (open) scrollToBottom()
 })
 
 async function handleSend() {
   const body = newMessage.value.trim()
   if (!body) return
   newMessage.value = ''
-  await sendMessage(props.documentId, body)
+
+  const send = useLiveMutation(async (db) => {
+    const comment = db.Comment.create({
+      body,
+      objectType: 'Document',
+      objectId: props.documentId,
+    })
+    await comment.save()
+  })
+
+  await send()
   scrollToBottom()
 }
 
-function handleDelete(id) {
-  deleteMessage(id)
+async function handleDelete(msg) {
+  await msg.delete()
 }
 </script>
 
@@ -68,12 +86,16 @@ function handleDelete(id) {
         class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:border-divider"
       >
         <div class="tw:flex tw:items-center tw:gap-2">
-          <WIcon name="forum" size="22px" class="tw:text-primary" />
+          <IconMessages :size="22" class="tw:text-primary" />
           <span class="tw:text-base tw:font-semibold tw:text-on-main">Discussion</span>
         </div>
-        <WBtn flat round dense @click="model = false">
-          <WIcon name="close" size="20px" />
-        </WBtn>
+        <button
+          type="button"
+          class="tw:p-1.5 tw:rounded-lg tw:hover:bg-main-hover tw:transition-colors tw:text-on-main"
+          @click="model = false"
+        >
+          <IconX :size="20" />
+        </button>
       </div>
 
       <!-- Messages List -->
@@ -84,7 +106,7 @@ function handleDelete(id) {
       >
         <!-- Loading -->
         <div v-if="loading" class="tw:flex tw:justify-center tw:py-8">
-          <QSpinner color="primary" size="30px" />
+          <IconLoader2 :size="30" class="tw:animate-spin tw:text-primary" />
         </div>
 
         <!-- Empty State -->
@@ -92,7 +114,7 @@ function handleDelete(id) {
           v-else-if="messages.length === 0"
           class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-12 tw:text-secondary"
         >
-          <WIcon name="chat_bubble_outline" size="48px" class="tw:mb-2 tw:opacity-40" />
+          <IconMessageCircle :size="48" class="tw:mb-2 tw:opacity-40" />
           <p class="tw:text-sm">No messages yet</p>
           <p class="tw:text-xs tw:mt-1">Start the conversation</p>
         </div>
@@ -137,17 +159,14 @@ function handleDelete(id) {
             </div>
 
             <!-- Delete own message -->
-            <WBtn
+            <button
               v-if="msg.userId === currentUserId"
-              flat
-              round
-              dense
-              size="sm"
-              class="tw:self-center tw:opacity-0 tw:group-hover:opacity-100"
-              @click="handleDelete(msg.id)"
+              type="button"
+              class="tw:self-center tw:p-1 tw:rounded-lg tw:hover:bg-main-hover tw:transition-colors tw:opacity-0 tw:group-hover:opacity-100"
+              @click="handleDelete(msg)"
             >
-              <WIcon name="delete_outline" size="16px" class="tw:text-secondary" />
-            </WBtn>
+              <IconTrash :size="16" class="tw:text-secondary" />
+            </button>
           </div>
         </template>
       </div>
@@ -155,28 +174,23 @@ function handleDelete(id) {
       <!-- Input Area -->
       <div class="tw:border-t tw:border-divider tw:px-4 tw:py-3">
         <div class="tw:flex tw:items-end tw:gap-2">
-          <QInput
+          <textarea
             v-model="newMessage"
-            type="textarea"
-            autogrow
-            :maxlength="2000"
+            maxlength="2000"
             placeholder="Type a message..."
-            dense
-            outlined
-            class="tw:flex-1"
-            :inputStyle="{ maxHeight: '120px' }"
+            rows="2"
+            class="tw:flex-1 tw:px-3 tw:py-2 tw:border tw:border-divider tw:rounded-lg tw:bg-input tw:text-on-main tw:text-sm tw:placeholder-secondary tw:resize-none tw:focus:outline-none tw:focus:border-primary tw:transition-colors"
+            style="max-height: 120px"
             @keydown.enter.exact.prevent="handleSend"
           />
-          <WBtn
-            round
-            color="primary"
-            unelevated
-            dense
-            :disable="!newMessage.trim()"
+          <BaseButton
+            variant="primary"
+            :disabled="!newMessage.trim()"
+            class="tw:p-2"
             @click="handleSend"
           >
-            <WIcon name="send" size="18px" />
-          </WBtn>
+            <IconSend :size="18" />
+          </BaseButton>
         </div>
       </div>
     </aside>

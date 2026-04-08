@@ -1,6 +1,5 @@
 <script setup>
 import { useQuasar } from 'quasar'
-import { provideDocumentMessages } from '@/composables/useDocumentMessages.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
 import { useDocuments } from '@/composables/useDocuments.js'
@@ -49,7 +48,6 @@ watch(versions, (list) => {
   selectedVersion.value = found ?? list[0]
 })
 
-provideDocumentMessages()
 const breadcrumbs = computed(() => [
   { label: 'Documents', to: getCompanyPath('/documents') },
   { label: document.value ? document.value.title : 'Loading...' },

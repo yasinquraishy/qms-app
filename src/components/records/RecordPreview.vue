@@ -31,7 +31,6 @@ const payload = computed(() => {
 async function fetchRecord() {
   error.value = null
   const data = await get(`/v1/services/records/${props.recordId}`, {
-    params: { companyId: currentCompany.value.id },
     loader: loading,
   })
   record.value = data.record

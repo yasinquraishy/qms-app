@@ -1,4 +1,3 @@
-import { currentCompany } from '@/utils/currentCompany.js'
 import { get, post, put } from '@/api'
 
 const symbol = Symbol('useDocumentTemplates')
@@ -10,16 +9,9 @@ function DocumentTemplatesState() {
 
   // ── List ──────────────────────────────────────────────────────────────────
   async function fetchDocumentTemplates() {
-    const companyId = currentCompany.value?.id
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/documentTemplates', {
-      params: { companyId },
       loader: loading,
     })
     documentTemplates.value = data.documentTemplates || []
@@ -27,23 +19,14 @@ function DocumentTemplatesState() {
 
   // ── Single document template ──────────────────────────────────────────────
   async function fetchDocumentTemplate(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    const data = await get(`/v1/services/documentTemplates/${id}`, {
-      params: { companyId },
-    })
+    const data = await get(`/v1/services/documentTemplates/${id}`, {})
     return { documentTemplate: data.documentTemplate }
   }
 
   // ── Check prefix availability ─────────────────────────────────────────────
   async function checkPrefixAvailability(prefix) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { available: false, error: 'Company ID is required' }
-
     try {
       const data = await get(`/v1/services/documentTemplates/checkPrefix/${encodeURIComponent(prefix)}`, {
-        params: { companyId },
         showError: false,
       })
       return { available: data.available }
@@ -54,12 +37,8 @@ function DocumentTemplatesState() {
 
   // ── Create ────────────────────────────────────────────────────────────────
   async function createDocumentTemplate(templateData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/documentTemplates', {
       ...templateData,
-      companyId,
     }, {
       loader: loading,
     })
@@ -70,11 +49,7 @@ function DocumentTemplatesState() {
 
   // ── Update ────────────────────────────────────────────────────────────────
   async function updateDocumentTemplate(id, templateData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await put(`/v1/services/documentTemplates/${id}`, templateData, {
-      params: { companyId },
       loader: loading,
     })
 

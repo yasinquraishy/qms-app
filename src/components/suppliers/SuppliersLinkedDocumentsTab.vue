@@ -27,9 +27,7 @@ const loadingDocs = ref(false)
 const saving = ref(false)
 
 async function fetchAvailableDocuments() {
-  const companyId = currentCompany.value?.id
   const data = await get('/v1/services/documents', {
-    params: { companyId },
     loader: loadingDocs,
   })
 

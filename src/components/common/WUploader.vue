@@ -56,8 +56,6 @@ const fileInputRef = ref(null)
 // files holds all selected files (pending, uploading, success, error)
 const files = ref([])
 
-const computedCompanyId = computed(() => currentSession.value?.companyId)
-
 const formattedMaxSize = computed(() => {
   const size = props.maxSize
   const kb = 1024
@@ -151,7 +149,7 @@ function handleFiles(fileList) {
 }
 
 async function uploadAllFiles() {
-  if (files.value.length === 0 || !computedCompanyId.value) {
+  if (files.value.length === 0) {
     return
   }
 
@@ -171,7 +169,6 @@ async function uploadAllFiles() {
   const uploadPromises = pendingFiles.map((fileObj) => {
     return uploadFile(
       fileObj.file,
-      computedCompanyId.value,
       props.fileType,
       ({ progress, status, error }) => {
         fileObj.progress = progress || 0

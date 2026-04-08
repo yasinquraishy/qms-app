@@ -203,7 +203,7 @@ async function handleAvatarSave({ file }) {
 
   try {
     // Upload to server
-    const asset = await uploadFile(file, currentSession.value.companyId, 'USERAVATAR')
+    const asset = await uploadFile(file, 'USERAVATAR')
 
     // Update user with new avatar URL
     const updateResult = await updateUser(props.id, {

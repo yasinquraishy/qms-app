@@ -53,7 +53,6 @@ function CompanySettingsState() {
     error.value = null
 
     const data = await get(`/v1/services/companies/${companyId}`, {
-      params: { companyId },
       loader: loading,
     })
     const company = data.company
@@ -122,7 +121,6 @@ function CompanySettingsState() {
         settings: formData.value.settings,
       },
       {
-        params: { companyId },
         loader: saving,
       },
     )

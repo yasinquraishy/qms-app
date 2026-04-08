@@ -112,28 +112,26 @@ async function fetchUserSession(options = {}) {
 
     // Session may not have a company yet
     const session = data.session
-    if (!companyCode.value) {
+
+    // Use activeCompanyId from session (set by backend when companyCode is passed)
+    if (!session.activeCompanyId) {
       currentSession.value = session
       return
     }
 
-    // If we have a company code, find the matching company
-    const companies = session?.companies || {}
-    const companyEntry = Object.entries(companies).find(
-      ([_, company]) => company.code === companyCode.value,
-    )
-    if (!companyEntry) {
+    const activeCompanyId = session.activeCompanyId
+    const activeCompany = session.companies?.[activeCompanyId]
+
+    if (!activeCompany) {
       currentSession.value = null
       return
     }
-    const companyId = companyEntry[0]
-    const company = companyEntry[1]
+
     const newCurrentSession = {
-      id: company.userId,
+      id: activeCompany.userId,
       ...session,
-      ...company,
-      companyId,
-      company,
+      ...activeCompany,
+      companyId: activeCompanyId,
     }
 
     currentSession.value = newCurrentSession

@@ -13,7 +13,7 @@ const uploadingDark = ref(false)
 async function handleLightSave({ file }) {
   uploadingLight.value = true
   try {
-    const asset = await uploadFile(file, currentCompany.value.id, 'COMPANYLOGO')
+    const asset = await uploadFile(file, 'COMPANYLOGO')
     model.value.companyIconUrl = asset.url
     showLightDialog.value = false
     Notify.create({
@@ -30,7 +30,7 @@ async function handleLightSave({ file }) {
 async function handleDarkSave({ file }) {
   uploadingDark.value = true
   try {
-    const asset = await uploadFile(file, currentCompany.value.id, 'COMPANYLOGO')
+    const asset = await uploadFile(file, 'COMPANYLOGO')
     model.value.companyDarkIconUrl = asset.url
     showDarkDialog.value = false
     Notify.create({

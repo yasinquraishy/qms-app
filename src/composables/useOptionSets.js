@@ -17,10 +17,7 @@ function OptionSetsState() {
    * Fetch all option sets for the company
    */
   async function fetchOptionSets() {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return
-
-    const params = { companyId }
+    const params = {}
 
     if (filters.value.search) {
       params.search = filters.value.search
@@ -38,11 +35,8 @@ function OptionSetsState() {
    */
   async function fetchOptionSet(id) {
     currentOptionSet.value = null
-    const companyId = currentCompany.value?.id
-    if (!companyId) return null
 
     const data = await get(`/v1/services/optionSets/${id}`, {
-      params: { companyId },
       loader: loading,
     })
     currentOptionSet.value = data.optionSet
@@ -53,12 +47,8 @@ function OptionSetsState() {
    * Create a new option set
    */
   async function createOptionSet(payload) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/optionSets', {
       ...payload,
-      companyId,
     }, {
       loader: loading,
       showSuccess: 'Option set created successfully',
@@ -73,12 +63,8 @@ function OptionSetsState() {
    * Update an option set
    */
   async function updateOptionSet(id, payload) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await put(`/v1/services/optionSets/${id}`, {
       ...payload,
-      companyId,
     }, {
       loader: loading,
       showSuccess: 'Option set updated successfully',
@@ -104,11 +90,7 @@ function OptionSetsState() {
    * Delete an option set
    */
   async function deleteOptionSet(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     await del(`/v1/services/optionSets/${id}`, {
-      params: { companyId },
       loader: loading,
       showSuccess: 'Option set deleted successfully',
     })

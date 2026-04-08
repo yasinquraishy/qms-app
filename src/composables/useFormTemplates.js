@@ -23,8 +23,7 @@ function FormTemplatesState() {
   })
 
   function buildFilterParams() {
-    const companyId = currentCompany.value?.id
-    const params = { companyId }
+    const params = {}
 
     Object.keys(filters.value).forEach((key) => {
       const value = filters.value[key]
@@ -45,13 +44,6 @@ function FormTemplatesState() {
 
   // Fetch form templates
   async function fetchTemplates() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/formTemplates', {
@@ -83,17 +75,9 @@ function FormTemplatesState() {
 
   // Update form template
   async function updateTemplate(id, payload) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     await put(`/v1/services/formTemplates/${id}`, payload, {
-      params: { companyId },
       loader: loading,
     })
     await fetchTemplates()
@@ -102,17 +86,9 @@ function FormTemplatesState() {
 
   // Delete form template
   async function deleteTemplate(id) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     await del(`/v1/services/formTemplates/${id}`, {
-      params: { companyId },
       loader: loading,
     })
     await fetchTemplates()
@@ -121,16 +97,7 @@ function FormTemplatesState() {
 
   // Update a record's payload
   async function updateRecord(recordId, payload) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return false
-    }
-
-    const result = await put(`/v1/services/records/${recordId}`, payload, {
-      params: { companyId },
-    })
+    const result = await put(`/v1/services/records/${recordId}`, payload, {})
 
     // Update the record in local state
     const index = templateRecords.value.findIndex((r) => r.id === recordId)
@@ -146,19 +113,11 @@ function FormTemplatesState() {
 
   // Fetch records for a specific template
   async function fetchTemplateRecords(templateId) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     if (!templateId) return
 
     error.value = null
 
     const data = await get(`/v1/services/formTemplates/${templateId}/records`, {
-      params: { companyId },
       loader: recordsLoading,
     })
     templateRecords.value = data.records || []

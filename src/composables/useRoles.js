@@ -15,8 +15,7 @@ function RolesState() {
   })
 
   function buildFilterParams() {
-    const companyId = currentCompany.value?.id
-    const params = { companyId }
+    const params = {}
 
     Object.keys(filters.value).forEach((key) => {
       const value = filters.value[key]
@@ -37,13 +36,6 @@ function RolesState() {
 
   // Fetch roles
   async function fetchRoles() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/roles', {
@@ -75,17 +67,9 @@ function RolesState() {
 
   // Fetch single role
   async function fetchRole(id) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return null
-    }
-
     error.value = null
 
     const data = await get(`/v1/services/roles/${id}`, {
-      params: { companyId },
       loader: loading,
     })
     return data.role
@@ -93,17 +77,9 @@ function RolesState() {
 
   // Update role
   async function updateRole(id, payload) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return { success: false, error: 'Company ID is required' }
-    }
-
     error.value = null
 
     await put(`/v1/services/roles/${id}`, payload, {
-      params: { companyId },
       loader: loading,
     })
 
@@ -120,17 +96,9 @@ function RolesState() {
 
   // Create role
   async function createRole(payload) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return { success: false, error: 'Company ID is required' }
-    }
-
     error.value = null
 
     const result = await post('/v1/services/roles', payload, {
-      params: { companyId },
       loader: loading,
     })
     await fetchRoles()
@@ -139,20 +107,12 @@ function RolesState() {
 
   // Deactivate role
   async function deactivateRole(id) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return false
-    }
-
     error.value = null
 
     await put(
       `/v1/services/roles/${id}`,
       { statusId: 'INACTIVE' },
       {
-        params: { companyId },
         loader: loading,
       },
     )
@@ -167,20 +127,12 @@ function RolesState() {
 
   // Activate role
   async function activateRole(id) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return false
-    }
-
     error.value = null
 
     await put(
       `/v1/services/roles/${id}`,
       { statusId: 'ACTIVE' },
       {
-        params: { companyId },
         loader: loading,
       },
     )

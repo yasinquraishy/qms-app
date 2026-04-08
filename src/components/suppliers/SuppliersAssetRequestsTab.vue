@@ -30,12 +30,9 @@ const showReviewDialog = ref(false)
 const reviewingRequestId = ref(null)
 
 async function fetchData() {
-  const companyId = currentCompany.value?.id
   loading.value = true
   const [requestsData, typesData, statusesData] = await Promise.all([
-    get(`/v1/services/suppliers/${props.supplier.id}/assetRequests`, {
-      params: { companyId },
-    }),
+    get(`/v1/services/suppliers/${props.supplier.id}/assetRequests`, {}),
     get('/v1/services/assetRequestTypes'),
     get('/v1/services/assetRequestStatuses'),
   ])

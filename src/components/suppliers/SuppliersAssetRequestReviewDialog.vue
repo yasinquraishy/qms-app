@@ -33,11 +33,8 @@ watch(show, (val) => {
 })
 
 async function fetchAssetRequest() {
-  const companyId = currentCompany.value?.id
   loading.value = true
-  const result = await get(`/v1/services/assetRequests/${props.assetRequestId}`, {
-    params: { companyId },
-  })
+  const result = await get(`/v1/services/assetRequests/${props.assetRequestId}`, {})
   loading.value = false
   if (result.error) {
     $q.notify({ type: 'negative', message: result.error })
@@ -53,17 +50,15 @@ function selectAction(selected) {
 }
 
 async function onConfirm() {
-  const companyId = currentCompany.value?.id
-  if (!companyId || !action.value) return
+  if (!action.value) return
 
   submitting.value = true
 
   let result
   if (action.value === 'accept') {
-    result = await post(`/v1/services/assetRequests/${props.assetRequestId}/accept`, { companyId })
+    result = await post(`/v1/services/assetRequests/${props.assetRequestId}/accept`, {})
   } else {
     result = await post(`/v1/services/assetRequests/${props.assetRequestId}/reject`, {
-      companyId,
       reviewNote: reviewNote.value,
     })
   }

@@ -97,7 +97,7 @@ async function handleAvatarSave({ file }) {
 
   try {
     // Upload to server
-    const asset = await uploadFile(file, currentSession.value.companyId, 'TEAMAVATAR')
+    const asset = await uploadFile(file, 'TEAMAVATAR')
 
     // Update team with new avatar URL
     const { updateGroup } = useGroups()

@@ -1,4 +1,3 @@
-import { currentCompany } from '@/utils/currentCompany.js'
 import { get, post, del } from '@/api'
 import { getSocket } from '@/api/socket.js'
 
@@ -10,25 +9,22 @@ function DocumentMessagesState() {
   const documentId = ref(null)
 
   async function fetchMessages(docId) {
-    const companyId = currentCompany.value?.id
-    if (!companyId || !docId) return
+    if (!docId) return
 
     const data = await get('/v1/services/comments', {
-      params: { companyId, objectType: 'Document', objectId: docId },
+      params: { objectType: 'Document', objectId: docId },
       loader: loading,
     })
     messages.value = data.comments || []
   }
 
   async function sendMessage(docId, body) {
-    const companyId = currentCompany.value?.id
-    if (!companyId || !docId) return { error: 'Missing required fields' }
+    if (!docId) return { error: 'Missing required fields' }
 
     const data = await post('/v1/services/comments', {
       body,
       objectType: 'Document',
       objectId: docId,
-      companyId,
     })
 
     // Add optimistically (or from response)
@@ -41,10 +37,7 @@ function DocumentMessagesState() {
   }
 
   async function deleteMessage(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    await del(`/v1/services/comments/${id}`, { params: { companyId } })
+    await del(`/v1/services/comments/${id}`, {})
     messages.value = messages.value.filter((m) => m.id !== id)
     return { success: true }
   }

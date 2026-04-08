@@ -78,11 +78,6 @@ watch(show, (val) => {
 })
 
 async function onSave() {
-  const companyId = currentCompany.value?.id
-  if (!companyId) {
-    $q.notify({ type: 'negative', message: 'Company not found' })
-    return
-  }
   if (!form.value.title?.trim()) return
   if (!form.value.contactIds?.length) return
 
@@ -97,7 +92,6 @@ async function onSave() {
       description: form.value.description || null,
       dueDate: form.value.dueDate || null,
       expiryDate: form.value.expiryDate || null,
-      companyId,
     })
   } else {
     result = await post('/v1/services/assetRequests', {
@@ -108,7 +102,6 @@ async function onSave() {
       description: form.value.description || null,
       dueDate: form.value.dueDate || null,
       expiryDate: form.value.expiryDate || null,
-      companyId,
     })
   }
 

@@ -15,8 +15,7 @@ function DepartmentsState() {
   })
 
   function buildFilterParams() {
-    const companyId = currentCompany.value?.id
-    const params = { companyId }
+    const params = {}
 
     Object.keys(filters.value).forEach((key) => {
       const value = filters.value[key]
@@ -32,13 +31,6 @@ function DepartmentsState() {
 
   // Fetch departments
   async function fetchDepartments() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/departments', {
@@ -50,12 +42,8 @@ function DepartmentsState() {
 
   // Create department
   async function createDepartment(departmentData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/departments', {
       ...departmentData,
-      companyId,
     })
 
     await fetchDepartments()
@@ -64,12 +52,7 @@ function DepartmentsState() {
 
   // Delete department
   async function deleteDepartment(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    await del(`/v1/services/departments/${id}`, {
-      params: { companyId },
-    })
+    await del(`/v1/services/departments/${id}`, {})
 
     await fetchDepartments()
     return { success: true }
@@ -77,13 +60,9 @@ function DepartmentsState() {
 
   // Update department
   async function updateDepartment(id, departmentData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
     if (!id) return { error: 'Department ID is required' }
 
-    const data = await put(`/v1/services/departments/${id}`, departmentData, {
-      params: { companyId },
-    })
+    const data = await put(`/v1/services/departments/${id}`, departmentData, {})
 
     await fetchDepartments()
     return { department: data.department }
@@ -91,14 +70,10 @@ function DepartmentsState() {
 
   // Check code availability
   async function checkCodeAvailability(code, name = '', isNameCheck = false, id = null) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     try {
       const data = await put(
         '/v1/services/departments/checkcode',
         {
-          companyId,
           code,
           name,
           isNameCheck,

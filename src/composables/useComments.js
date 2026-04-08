@@ -1,4 +1,3 @@
-import { currentCompany } from '@/utils/currentCompany.js'
 import { get, post, put, del } from '@/api'
 
 const symbol = Symbol('useComments')
@@ -8,10 +7,7 @@ function CommentsState() {
   const loading = ref(false)
 
   async function fetchComments({ objectType, objectId, userId } = {}) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return
-
-    const params = { companyId, objectType, objectId }
+    const params = { objectType, objectId }
     if (userId) params.userId = userId
 
     const data = await get('/v1/services/comments', {
@@ -22,14 +18,10 @@ function CommentsState() {
   }
 
   async function createComment({ body, objectType, objectId }) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/comments', {
       body,
       objectType,
       objectId,
-      companyId,
     })
 
     comments.value.push(data.comment)
@@ -37,10 +29,7 @@ function CommentsState() {
   }
 
   async function updateComment(id, { body }) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    const data = await put(`/v1/services/comments/${id}`, { body, companyId })
+    const data = await put(`/v1/services/comments/${id}`, { body })
 
     const index = comments.value.findIndex((c) => c.id === id)
     if (index !== -1) comments.value[index] = data.comment
@@ -49,9 +38,6 @@ function CommentsState() {
   }
 
   async function deleteComment(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     await del(`/v1/services/comments/${id}`)
 
     comments.value = comments.value.filter((c) => c.id !== id)

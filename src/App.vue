@@ -58,6 +58,12 @@ onMounted(async () => {
     return
   }
 
+  // If URL companyCode doesn't match the active company in session, re-call session to update it
+  const activeCompanyCode = currentSession.value?.activeCompanyCode
+  if (activeCompanyCode && activeCompanyCode !== companyCode) {
+    await initSession(companyCode)
+  }
+
   // Install syncEngine with company-scoped DB
   if (currentSession.value?.companyId) {
     await initSync(currentSession.value.companyId)

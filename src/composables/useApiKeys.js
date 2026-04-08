@@ -9,29 +9,17 @@ function ApiKeysState() {
   const error = ref(null)
 
   async function fetchApiKeys() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/api-keys', {
-      params: { companyId },
       loader: loading,
     })
     apiKeys.value = data.apiKeys || []
   }
 
   async function createApiKey(payload) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/api-keys', {
       ...payload,
-      companyId,
     })
 
     await fetchApiKeys()
@@ -39,15 +27,9 @@ function ApiKeysState() {
   }
 
   async function revokeApiKey(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     await put(
       `/v1/services/api-keys/${id}/revoke`,
       {},
-      {
-        params: { companyId },
-      },
     )
 
     await fetchApiKeys()
@@ -55,12 +37,7 @@ function ApiKeysState() {
   }
 
   async function deleteApiKey(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    await del(`/v1/services/api-keys/${id}`, {
-      params: { companyId },
-    })
+    await del(`/v1/services/api-keys/${id}`, {})
 
     await fetchApiKeys()
     return { success: true }

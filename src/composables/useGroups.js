@@ -14,8 +14,7 @@ function GroupsState() {
   })
 
   function buildFilterParams() {
-    const companyId = currentCompany.value?.id
-    const params = { companyId }
+    const params = {}
 
     Object.keys(filters.value).forEach((key) => {
       const value = filters.value[key]
@@ -29,13 +28,6 @@ function GroupsState() {
 
   // Fetch groups
   async function fetchGroups() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/teams', {
@@ -47,12 +39,8 @@ function GroupsState() {
 
   // Create group
   async function createGroup(groupData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/teams', {
       ...groupData,
-      companyId,
     }, {
       loader: loading,
     })
@@ -63,13 +51,9 @@ function GroupsState() {
 
   // Get single group
   async function getGroup(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     error.value = null
 
     const data = await get(`/v1/services/teams/${id}`, {
-      params: { companyId },
       loader: loading,
     })
     return { group: data.team }
@@ -77,11 +61,7 @@ function GroupsState() {
 
   // Update group
   async function updateGroup(id, groupData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await put(`/v1/services/teams/${id}`, groupData, {
-      params: { companyId },
       loader: loading,
     })
     return { group: data.team }
@@ -89,11 +69,7 @@ function GroupsState() {
 
   // Delete group
   async function deleteGroup(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     await del(`/v1/services/teams/${id}`, {
-      params: { companyId },
       loader: loading,
     })
 

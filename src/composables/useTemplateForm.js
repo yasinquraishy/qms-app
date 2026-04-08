@@ -57,11 +57,6 @@ export function useTemplateForm() {
   const isCodeChangeFromTitle = ref(false)
 
   async function createTemplate() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      return { error: 'Company ID is required' }
-    }
 
     if (!templateForm.isValid) {
       return { error: 'Form is invalid' }
@@ -71,7 +66,6 @@ export function useTemplateForm() {
 
     try {
       const data = await post('/v1/services/formTemplates', {
-        companyId,
         title: templateForm.title,
         code: templateForm.code,
         documentTypeId: templateForm.documentTypeId,
@@ -94,11 +88,6 @@ export function useTemplateForm() {
   async function checkTemplateCode(isNameCheck = false) {
     const code = templateForm.code.trim()
     const title = templateForm.title.trim()
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      return { error: 'Company ID is required' }
-    }
 
     if (isNameCheck && !title) {
       templateForm.isAvailable = null
@@ -123,7 +112,6 @@ export function useTemplateForm() {
         {
           code,
           title,
-          companyId,
           isNameCheck,
         },
         {

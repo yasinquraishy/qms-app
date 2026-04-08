@@ -2,7 +2,6 @@ import { VueRenderer } from '@tiptap/vue-3'
 import { PluginKey } from '@tiptap/pm/state'
 import tippy from 'tippy.js'
 import { get } from '@/api'
-import { currentSession } from '@/utils/currentSession'
 import MentionList from '../MentionList.vue'
 
 export const DocumentMentionPluginKey = new PluginKey('documentMention')
@@ -14,7 +13,7 @@ export const documentSuggestion = {
   async items({ query }) {
     if (!query) return []
     const data = await get('/v1/services/documents', {
-      params: { search: query, companyId: currentSession.value?.companyId },
+      params: { search: query },
     })
     return (data?.documents ?? []).slice(0, 10).map((doc) => ({
       id: doc.id,

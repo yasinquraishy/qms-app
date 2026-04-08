@@ -17,7 +17,6 @@ async function handlePreview(template) {
   previewTemplate.value = null
 
   const data = await get(`/v1/services/formTemplates/${template.id}`, {
-    params: { companyId: template.companyId },
     loader: previewLoading,
   })
   previewTemplate.value = data.formTemplate

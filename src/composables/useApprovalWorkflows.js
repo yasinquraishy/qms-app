@@ -18,18 +18,10 @@ function ApprovalWorkflowsState() {
 
   // Fetch approval workflows
   async function fetchWorkflows() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      console.error('Company ID is required')
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     try {
-      const params = { companyId }
+      const params = {}
 
       Object.keys(filters.value).forEach((key) => {
         const value = filters.value[key]
@@ -59,19 +51,10 @@ function ApprovalWorkflowsState() {
 
   // Fetch single workflow by ID
   async function fetchWorkflow(id) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      console.error('Company ID is required')
-      error.value = 'Company ID is required'
-      return null
-    }
-
     error.value = null
 
     try {
       const data = await get(`/v1/services/approvalWorkflows/${id}`, {
-        params: { companyId },
         loader: loading,
       })
       currentWorkflow.value = data.approvalWorkflow || null
@@ -86,19 +69,12 @@ function ApprovalWorkflowsState() {
 
   // Create new workflow
   async function createWorkflow(payload) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      console.error('Company ID is required')
-      return { error: 'Company ID is required' }
-    }
-
     error.value = null
 
     try {
       const data = await post(
         '/v1/services/approvalWorkflows',
-        { ...payload, companyId },
+        { ...payload },
         { loader: loading },
       )
 
@@ -113,18 +89,10 @@ function ApprovalWorkflowsState() {
 
   // Update workflow metadata (name, description, moduleId, documentTypeId)
   async function updateWorkflow(id, payload) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      console.error('Company ID is required')
-      return false
-    }
-
     error.value = null
 
     try {
       const data = await put(`/v1/services/approvalWorkflows/${id}`, payload, {
-        params: { companyId },
         loader: loading,
       })
 
@@ -140,14 +108,11 @@ function ApprovalWorkflowsState() {
 
   // Update a specific DRAFT version (steps, statusId)
   async function updateWorkflowVersion(workflowId, versionId, payload) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     try {
       const data = await put(
         `/v1/services/approvalWorkflows/${workflowId}/versions/${versionId}`,
         payload,
-        { params: { companyId }, loader: loading },
+        { loader: loading },
       )
       return { version: data.version }
     } catch (err) {
@@ -158,12 +123,8 @@ function ApprovalWorkflowsState() {
 
   // Create a new DRAFT version (copies steps from latest)
   async function createDraftVersion(workflowId, payload = {}) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     try {
       const data = await post(`/v1/services/approvalWorkflows/${workflowId}/versions`, payload, {
-        params: { companyId },
         loader: loading,
       })
       return { version: data.version }
@@ -175,18 +136,10 @@ function ApprovalWorkflowsState() {
 
   // Delete workflow (soft delete)
   async function deleteWorkflow(id) {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      console.error('Company ID is required')
-      return false
-    }
-
     error.value = null
 
     try {
       await del(`/v1/services/approvalWorkflows/${id}`, {
-        params: { companyId },
         loader: loading,
       })
 
@@ -216,13 +169,8 @@ function ApprovalWorkflowsState() {
 
   // Fetch all versions for a workflow
   async function fetchVersions(workflowId) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     try {
-      const data = await get(`/v1/services/approvalWorkflows/${workflowId}/versions`, {
-        params: { companyId },
-      })
+      const data = await get(`/v1/services/approvalWorkflows/${workflowId}/versions`, {})
       return { versions: data.versions || [] }
     } catch (err) {
       console.error('Error fetching workflow versions:', err)
@@ -232,13 +180,10 @@ function ApprovalWorkflowsState() {
 
   // Fetch a specific version with full steps
   async function fetchVersion(workflowId, versionId) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     try {
       const data = await get(
         `/v1/services/approvalWorkflows/${workflowId}/versions/${versionId}`,
-        { params: { companyId } },
+        {},
       )
       return { version: data.version || null }
     } catch (err) {
@@ -249,13 +194,8 @@ function ApprovalWorkflowsState() {
 
   // Fetch a version by ID only (no workflowId needed)
   async function fetchVersionById(versionId) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     try {
-      const data = await get(`/v1/services/approvalWorkflowVersions/${versionId}`, {
-        params: { companyId },
-      })
+      const data = await get(`/v1/services/approvalWorkflowVersions/${versionId}`, {})
       return { version: data.version || null }
     } catch (err) {
       console.error('Error fetching workflow version by ID:', err)

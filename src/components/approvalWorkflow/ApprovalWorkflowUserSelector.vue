@@ -33,12 +33,8 @@ function getUserDisplayName(user) {
 }
 
 async function fetchUsers() {
-  const companyId = currentCompany.value?.id
-  if (!companyId) return
-
   try {
     const data = await get('/v1/services/users', {
-      params: { companyId },
       loader: loading,
     })
     users.value = data.users || []

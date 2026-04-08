@@ -22,12 +22,11 @@ const loading = ref(false)
 const error = ref(null)
 
 async function fetchTemplate() {
-  if (!props.id || !currentCompany.value?.id) return
+  if (!props.id) return
 
   error.value = null
 
   const data = await get(`/v1/services/formTemplates/${props.id}`, {
-    params: { companyId: currentCompany.value.id },
     loader: loading,
   })
   template.value = data.formTemplate

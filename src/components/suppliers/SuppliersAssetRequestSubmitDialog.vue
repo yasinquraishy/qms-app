@@ -28,14 +28,12 @@ watch(show, (val) => {
 const uploadedAsset = computed(() => uploadedAssets.value[0] ?? null)
 
 async function onSubmit() {
-  const companyId = currentCompany.value?.id
-  if (!companyId || !uploadedAsset.value || !props.request) return
+  if (!uploadedAsset.value || !props.request) return
 
   submitting.value = true
 
   const result = await post(`/v1/services/assetRequests/${props.request.id}/submit`, {
     assetId: uploadedAsset.value.id,
-    companyId,
   })
 
   submitting.value = false

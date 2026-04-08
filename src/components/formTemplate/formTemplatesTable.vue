@@ -57,7 +57,6 @@ async function openPreview(row) {
   previewTemplate.value = null
 
   const data = await get(`/v1/services/formTemplates/${row.id}`, {
-    params: { companyId: currentCompany.value.id },
     loader: previewLoading,
   })
   previewTemplate.value = data.formTemplate

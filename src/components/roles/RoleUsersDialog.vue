@@ -49,14 +49,7 @@ const canUpdateRole = computed(() => isAllowed(['roles:update']))
 
 // Fetch all company users
 async function fetchAllUsers() {
-  const companyId = currentCompany.value?.id
-
-  if (!companyId) {
-    return
-  }
-
   const data = await get('/v1/services/users', {
-    params: { companyId },
     loader: loading,
   })
   allUsers.value = data.users || []
@@ -81,9 +74,7 @@ function toggleUserSelection(userId) {
 
 // Save user assignments
 async function saveUserAssignments() {
-  const companyId = currentCompany.value?.id
-
-  if (!companyId || !props.roleId) {
+  if (!props.roleId) {
     return
   }
 
@@ -93,7 +84,6 @@ async function saveUserAssignments() {
       userIds: selectedUserIds.value,
     },
     {
-      params: { companyId },
       loader: loading,
     },
   )

@@ -38,11 +38,8 @@ const filteredTemplates = computed(() => {
 })
 
 async function fetchTemplates() {
-  const companyId = currentCompany.value?.id
-  if (!companyId) return
-
   const data = await get('/v1/services/formTemplates', {
-    params: { companyId, stateId: 'ACTIVE' },
+    params: { stateId: 'ACTIVE' },
     loader: templatesLoading,
   })
   templates.value = data.formTemplates || []
@@ -52,7 +49,6 @@ async function selectTemplate(template) {
   selectedTemplate.value = template
 
   const data = await get(`/v1/services/formTemplates/${template.id}`, {
-    params: { companyId: currentCompany.value.id },
     loader: schemaLoading,
   })
   selectedTemplate.value = data.formTemplate

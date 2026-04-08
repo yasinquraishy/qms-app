@@ -16,8 +16,7 @@ function SuppliersState() {
   })
 
   function buildFilterParams() {
-    const companyId = currentCompany.value?.id
-    const params = { companyId }
+    const params = {}
 
     Object.keys(filters.value).forEach((key) => {
       const value = filters.value[key]
@@ -30,13 +29,6 @@ function SuppliersState() {
   }
 
   async function fetchSuppliers() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/suppliers', {
@@ -47,12 +39,8 @@ function SuppliersState() {
   }
 
   async function createSupplier(supplierData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/suppliers', {
       ...supplierData,
-      companyId,
     })
 
     await fetchSuppliers()
@@ -60,50 +48,32 @@ function SuppliersState() {
   }
 
   async function updateSupplier(id, supplierData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
     if (!id) return { error: 'Supplier ID is required' }
 
-    const data = await put(`/v1/services/suppliers/${id}`, supplierData, {
-      params: { companyId },
-    })
+    const data = await put(`/v1/services/suppliers/${id}`, supplierData, {})
 
     await fetchSuppliers()
     return { supplier: data.supplier }
   }
 
   async function deleteSupplier(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    await del(`/v1/services/suppliers/${id}`, {
-      params: { companyId },
-    })
+    await del(`/v1/services/suppliers/${id}`, {})
 
     await fetchSuppliers()
     return { success: true }
   }
 
   async function getSupplier(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    const data = await get(`/v1/services/suppliers/${id}`, {
-      params: { companyId },
-    })
+    const data = await get(`/v1/services/suppliers/${id}`, {})
 
     return { supplier: data.supplier }
   }
 
   async function checkCodeAvailability(code, name = '', isNameCheck = false, id = null) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     try {
       const data = await put(
         '/v1/services/suppliers/checkcode',
         {
-          companyId,
           code,
           name,
           isNameCheck,

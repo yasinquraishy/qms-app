@@ -3,7 +3,6 @@ import { PluginKey } from '@tiptap/pm/state'
 import tippy from 'tippy.js'
 import { get } from '@/api'
 import MentionList from '../MentionList.vue'
-import { currentSession } from '@/utils/currentSession'
 
 export const UserMentionPluginKey = new PluginKey('userMention')
 
@@ -14,7 +13,7 @@ export const userSuggestion = {
   async items({ query }) {
     if (!query) return []
     const data = await get('/v1/services/users', {
-      params: { search: query, companyId: currentSession.value?.companyId },
+      params: { search: query },
     })
     return (data?.users ?? []).slice(0, 10).map((user) => ({
       id: user.id,

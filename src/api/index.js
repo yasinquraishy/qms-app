@@ -7,7 +7,7 @@
 
 // ── Core ──────────────────────────────────────────────────────────────────────
 export { request, get, post, put, patch, del, upload } from './request.js'
-export { apiClient, setCompanyIdGetter } from './client.js'
+export { apiClient } from './client.js'
 
 // ── Errors ────────────────────────────────────────────────────────────────────
 export { ApiError } from './errors.js'

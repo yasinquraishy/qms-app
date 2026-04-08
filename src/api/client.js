@@ -63,26 +63,6 @@ const apiClient = axios.create({
   transformResponse: [transformResponse, ...(axios.defaults.transformResponse || [])],
 })
 
-// ── Multi-tenant company getter ───────────────────────────────────────────────
-
-/**
- * Lazily resolved function that returns the current companyId.
- * Set via `setCompanyIdGetter()` at app boot to avoid importing Vue refs here.
- * @type {(() => string|null)|null}
- */
-let getCompanyId = null
-
-/**
- * Register a function that returns the current companyId.
- * Call once at app startup:
- *   setCompanyIdGetter(() => currentCompany.value?.id)
- *
- * @param {() => string|null} fn
- */
-function setCompanyIdGetter(fn) {
-  getCompanyId = fn
-}
-
 // ── Session refresh mutex ─────────────────────────────────────────────────────
 
 let refreshPromise = null
@@ -105,17 +85,6 @@ async function refreshSession() {
 
   return refreshPromise
 }
-
-// ── Request interceptor ───────────────────────────────────────────────────────
-
-apiClient.interceptors.request.use((config) => {
-  // Inject company header for multi-tenant routing
-  const companyId = getCompanyId?.()
-  if (companyId) {
-    config.headers['X-Company-Id'] = companyId
-  }
-  return config
-})
 
 // ── Response interceptor ──────────────────────────────────────────────────────
 
@@ -215,4 +184,4 @@ apiClient.interceptors.response.use(
   },
 )
 
-export { apiClient, setCompanyIdGetter }
+export { apiClient }

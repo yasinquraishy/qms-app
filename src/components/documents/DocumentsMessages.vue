@@ -19,7 +19,9 @@ const model = defineModel({ type: Boolean, default: false })
 const messages = useLiveQueryWithDeps(
   [() => props.documentId],
   async (db, [id]) =>
-    db.Comment.where('[objectType+objectId]', ['Document', id]).orderBy('createdAt', 'asc').exec(),
+    db.Comment.where('[objectType+objectId]', ['Document', id])
+      .orderBy('createdAt', (a, b) => new Date(a) - new Date(b))
+      .exec(),
   { initial: [], models: 'Comment' },
 )
 

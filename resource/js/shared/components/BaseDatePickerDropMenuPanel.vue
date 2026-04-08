@@ -106,9 +106,10 @@ function onClickShortcut(shortcut) {
     second: parts.second,
     millisecond: parts.millisecond,
   })
-
   internalSelectedDate.value = dt.toJSDate()
-  if (props.close) props.close()
+  nextTick(() => {
+    if (props.close) props.close()
+  })
 }
 
 watch(internalSelectedDate, (newDate) => {

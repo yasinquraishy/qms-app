@@ -57,7 +57,6 @@ export function useTemplateForm() {
   const isCodeChangeFromTitle = ref(false)
 
   async function createTemplate() {
-
     if (!templateForm.isValid) {
       return { error: 'Form is invalid' }
     }

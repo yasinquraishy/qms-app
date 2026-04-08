@@ -39,11 +39,15 @@ function GroupsState() {
 
   // Create group
   async function createGroup(groupData) {
-    const data = await post('/v1/services/teams', {
-      ...groupData,
-    }, {
-      loader: loading,
-    })
+    const data = await post(
+      '/v1/services/teams',
+      {
+        ...groupData,
+      },
+      {
+        loader: loading,
+      },
+    )
 
     await fetchGroups()
     return { group: data.team }

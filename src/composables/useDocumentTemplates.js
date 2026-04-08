@@ -26,9 +26,12 @@ function DocumentTemplatesState() {
   // ── Check prefix availability ─────────────────────────────────────────────
   async function checkPrefixAvailability(prefix) {
     try {
-      const data = await get(`/v1/services/documentTemplates/checkPrefix/${encodeURIComponent(prefix)}`, {
-        showError: false,
-      })
+      const data = await get(
+        `/v1/services/documentTemplates/checkPrefix/${encodeURIComponent(prefix)}`,
+        {
+          showError: false,
+        },
+      )
       return { available: data.available }
     } catch (err) {
       return { available: false, error: err.message }
@@ -37,11 +40,15 @@ function DocumentTemplatesState() {
 
   // ── Create ────────────────────────────────────────────────────────────────
   async function createDocumentTemplate(templateData) {
-    const data = await post('/v1/services/documentTemplates', {
-      ...templateData,
-    }, {
-      loader: loading,
-    })
+    const data = await post(
+      '/v1/services/documentTemplates',
+      {
+        ...templateData,
+      },
+      {
+        loader: loading,
+      },
+    )
 
     await fetchDocumentTemplates()
     return { documentTemplate: data.documentTemplate }

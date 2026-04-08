@@ -47,12 +47,16 @@ function OptionSetsState() {
    * Create a new option set
    */
   async function createOptionSet(payload) {
-    const data = await post('/v1/services/optionSets', {
-      ...payload,
-    }, {
-      loader: loading,
-      showSuccess: 'Option set created successfully',
-    })
+    const data = await post(
+      '/v1/services/optionSets',
+      {
+        ...payload,
+      },
+      {
+        loader: loading,
+        showSuccess: 'Option set created successfully',
+      },
+    )
 
     const newOptionSet = data.optionSet
     optionSets.value.push(newOptionSet)
@@ -63,12 +67,16 @@ function OptionSetsState() {
    * Update an option set
    */
   async function updateOptionSet(id, payload) {
-    const data = await put(`/v1/services/optionSets/${id}`, {
-      ...payload,
-    }, {
-      loader: loading,
-      showSuccess: 'Option set updated successfully',
-    })
+    const data = await put(
+      `/v1/services/optionSets/${id}`,
+      {
+        ...payload,
+      },
+      {
+        loader: loading,
+        showSuccess: 'Option set updated successfully',
+      },
+    )
 
     const updatedOptionSet = data.optionSet
 

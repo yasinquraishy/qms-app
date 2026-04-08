@@ -72,11 +72,7 @@ function ApprovalWorkflowsState() {
     error.value = null
 
     try {
-      const data = await post(
-        '/v1/services/approvalWorkflows',
-        { ...payload },
-        { loader: loading },
-      )
+      const data = await post('/v1/services/approvalWorkflows', { ...payload }, { loader: loading })
 
       await fetchWorkflows()
       return { workflow: data.approvalWorkflow }

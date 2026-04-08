@@ -68,12 +68,16 @@ function SitesState() {
   // Check code availability
   async function checkCodeAvailability(code, name = '', isNameCheck = false, id = null) {
     try {
-      const data = await put('/v1/services/sites/checkcode', {
-        code,
-        name,
-        isNameCheck,
-        id,
-      }, { showError: false })
+      const data = await put(
+        '/v1/services/sites/checkcode',
+        {
+          code,
+          name,
+          isNameCheck,
+          id,
+        },
+        { showError: false },
+      )
 
       return data
     } catch (err) {

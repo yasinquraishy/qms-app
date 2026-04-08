@@ -167,19 +167,15 @@ async function uploadAllFiles() {
 
   // Create upload promises for each file
   const uploadPromises = pendingFiles.map((fileObj) => {
-    return uploadFile(
-      fileObj.file,
-      props.fileType,
-      ({ progress, status, error }) => {
-        fileObj.progress = progress || 0
-        if (status) {
-          fileObj.status = status
-        }
-        if (error) {
-          fileObj.error = error
-        }
-      },
-    )
+    return uploadFile(fileObj.file, props.fileType, ({ progress, status, error }) => {
+      fileObj.progress = progress || 0
+      if (status) {
+        fileObj.status = status
+      }
+      if (error) {
+        fileObj.error = error
+      }
+    })
       .then((asset) => {
         fileObj.status = 'success'
         fileObj.progress = 100

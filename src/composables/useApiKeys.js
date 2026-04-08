@@ -27,10 +27,7 @@ function ApiKeysState() {
   }
 
   async function revokeApiKey(id) {
-    await put(
-      `/v1/services/api-keys/${id}/revoke`,
-      {},
-    )
+    await put(`/v1/services/api-keys/${id}/revoke`, {})
 
     await fetchApiKeys()
     return { success: true }

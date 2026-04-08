@@ -49,9 +49,13 @@ function RecordsState() {
 
   // Create record
   async function createRecord(templateId, payload) {
-    const data = await post('/v1/services/records', { templateId, payload }, {
-      loader: loading,
-    })
+    const data = await post(
+      '/v1/services/records',
+      { templateId, payload },
+      {
+        loader: loading,
+      },
+    )
 
     await fetchRecords()
     return { success: true, record: data.record }

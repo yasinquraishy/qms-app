@@ -63,10 +63,7 @@ function UsersState() {
   }
 
   async function inviteUser(id) {
-    const data = await post(
-      `/v1/services/users/${id}/invite`,
-      {},
-    )
+    const data = await post(`/v1/services/users/${id}/invite`, {})
 
     return { message: data.message }
   }

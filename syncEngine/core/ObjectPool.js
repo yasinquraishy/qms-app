@@ -1,22 +1,22 @@
 /**
  * In-memory object pool — resolves model instances by (modelName, id).
- * Used by @Reference getters to hydrate foreign-key relationships.
+ * Used by getters to hydrate foreign-key relationships.
  */
 
 /** @type {Map<string, Map<*, object>>} */
-const pool = new Map();
+const pool = new Map()
 
 export const ObjectPool = {
   /**
-   * Register an instance so it can be looked up via @Reference.
+   * Register an instance so it can be looked up via.
    * Typically called in the model constructor or after hydration.
    * @param {string} modelName
    * @param {*} id
    * @param {object} instance
    */
   register(modelName, id, instance) {
-    if (!pool.has(modelName)) pool.set(modelName, new Map());
-    pool.get(modelName).set(id, instance);
+    if (!pool.has(modelName)) pool.set(modelName, new Map())
+    pool.get(modelName).set(id, instance)
   },
 
   /**
@@ -25,7 +25,7 @@ export const ObjectPool = {
    * @param {*} id
    */
   unregister(modelName, id) {
-    pool.get(modelName)?.delete(id);
+    pool.get(modelName)?.delete(id)
   },
 
   /**
@@ -35,8 +35,8 @@ export const ObjectPool = {
    * @returns {object|null}
    */
   get(modelName, id) {
-    if (id == null) return null;
-    return pool.get(modelName)?.get(id) ?? null;
+    if (id == null) return null
+    return pool.get(modelName)?.get(id) ?? null
   },
 
   /**
@@ -44,7 +44,7 @@ export const ObjectPool = {
    * @param {string} [modelName]
    */
   clear(modelName) {
-    if (modelName) pool.delete(modelName);
-    else pool.clear();
+    if (modelName) pool.delete(modelName)
+    else pool.clear()
   },
-};
+}

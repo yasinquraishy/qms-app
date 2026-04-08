@@ -241,7 +241,7 @@ export class BaseModel {
   }
 
   /**
-   * Returns true if any @Property or @Reference id field has changed since
+   * Returns true if any @Property field has changed since
    * the last save().
    */
   isDirty() {

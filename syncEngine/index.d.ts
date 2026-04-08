@@ -70,7 +70,7 @@ export declare const ModelRegistry: {
 // ---------------------------------------------------------------------------
 
 export declare const ObjectPool: {
-  /** Register an instance so @Reference getters can resolve it. */
+  /** Register an instance so getters can resolve it. */
   register(modelName: string, id: unknown, instance: object): void;
 
   /** Remove a previously registered instance. */
@@ -142,7 +142,7 @@ export declare class BaseModel {
   /** @internal Clear the modified state. Called by persistence layer after hydration or save. */
   _clearModified(): void;
 
-  /** True if any @Property or @Reference id field has changed since last save(). */
+  /** True if any @Property field has changed since last save(). */
   isDirty(): boolean;
 
   /** Shallow copy of the current dirty-field snapshot (fieldName → oldValue). */
@@ -281,51 +281,6 @@ export interface PropertyOptions {
 export declare function Property(
   options?: PropertyOptions,
 ): (target: undefined, context: ClassFieldDecoratorContext) => void;
-
-// ---------------------------------------------------------------------------
-// @Reference
-// ---------------------------------------------------------------------------
-
-export interface ReferenceOptions {
-  /** When true the FK field may be null. */
-  nullable?: boolean;
-  /** When true an IndexedDB index is created on the FK field. */
-  indexed?: boolean;
-  /** Override the default FK field name (`<fieldName>Id`). */
-  field?: string;
-}
-
-/**
- * Field decorator for foreign-key relationships.
- * Creates two instance members: `<field>Id` (observable FK) and `<field>`
- * (ObjectPool getter/setter).
- *
- * @example
- * @Reference(() => User, 'assignedIssues', { nullable: true, indexed: true })
- * assignee: User | null = null;
- */
-export declare function Reference<T extends BaseModel>(
-  modelFn: () => new (...args: unknown[]) => T,
-  inverseKey: string,
-  options?: ReferenceOptions,
-): (target: undefined, context: ClassFieldDecoratorContext) => void;
-
-// ---------------------------------------------------------------------------
-// @Action
-// ---------------------------------------------------------------------------
-
-/**
- * Method decorator. Wraps the method in a MobX action so all observable
- * mutations inside it are batched into a single reaction flush.
- *
- * @example
- * @Action
- * moveToTeam(team: Team) { ... }
- */
-export declare function Action(
-  target: Function,
-  context: ClassMethodDecoratorContext,
-): Function;
 
 // ---------------------------------------------------------------------------
 // @Computed

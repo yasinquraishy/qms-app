@@ -203,6 +203,7 @@ export declare class BaseModel {
    * @example
    * Issue.where('status', 'open').exec()                     // indexed lookup
    * Issue.where('[status+priority]', ['open', 1]).exec()      // compound index
+   * Issue.where('[status+priority]', [['open', 1], ['open', 2]]).exec()      // multiple compound index
    * Issue.where().where('name', 'foo').exec()                 // full scan + filter
    */
   static where<T extends typeof BaseModel>(

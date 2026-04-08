@@ -2,7 +2,11 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('approvalWorkflowInstances', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('approvalWorkflowInstances', {
+  primaryKey: 'id',
+  syncField: 'updatedAt',
+  customIndex: '[workflowVersionId+statusId], workflowVersionId, [resourceType+resourceId]',
+})
 export class ApprovalWorkflowInstance extends BaseModel {
   constructor(...args) {
     super(...args)

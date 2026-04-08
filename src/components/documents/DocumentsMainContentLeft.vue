@@ -30,32 +30,88 @@ const currentVersion = useLiveQueryWithDeps([() => props.versionId], async (db, 
   return id ? db.DocumentVersion.findByPk(id) : null
 })
 
+const rejectInstance = useLiveQueryWithDeps(
+  [() => currentVersion.value?.workflowInstanceId],
+  async (db, [workflowInstanceId]) => {
+    if (!workflowInstanceId) return null
+    const instance = await db.ApprovalWorkflowInstance.findByPk(workflowInstanceId)
+    if (['REJECTED', 'CHANGES_REQUESTED'].includes(instance.statusId)) {
+      return instance
+    }
+    return instance
+  },
+  { models: 'ApprovalWorkflowInstance' },
+)
+
+const rejectedInstanceStep = useLiveQueryWithDeps(
+  [() => rejectInstance.value?.id],
+  async (db, [instanceId]) => {
+    if (!instanceId) return null
+    const step = await db.ApprovalWorkflowInstanceStep.where('[workflowInstanceId+statusId]', [
+      [instanceId, 'REJECTED'],
+      [instanceId, 'CHANGES_REQUESTED'],
+    ]).first()
+    return step
+  },
+  { models: 'ApprovalWorkflowInstanceStep' },
+)
+
+const rejectedTask = useLiveQueryWithDeps(
+  [() => rejectedInstanceStep.value?.id],
+  async (db, [stepId]) => {
+    if (!stepId) return null
+    const task = await db.TaskInstance.where('[sourceType+sourceId]', [
+      'ApprovalWorkflowInstanceStep',
+      stepId,
+    ])
+      .where('statusId', 'REJECTED')
+      .first()
+    return task
+  },
+)
+
 const canEdit = computed(
-  () => isAllowed(['documents:update']) && document.value?.statusId !== 'ARCHIVED',
+  () =>
+    isAllowed(['documents:update']) && document.value?.statusId !== 'ARCHIVED' && !props.reviewMode,
 )
 
 // ── Review Mode: Inline section comments ───────────────────────────────────
 // Load section comments from IDB — filtered by reviewer userId
 const sectionComments = useLiveQueryWithDeps(
-  [() => props.reviewMode, () => props.versionId, () => currentSession.value?.userId],
-  async (db, [isReview, versionId, currentUserId]) => {
+  [
+    () => props.reviewMode,
+    () => currentSession.value?.userId,
+    () => props.versionId,
+    () => currentVersion.value?.statusId,
+    () =>
+      Array.isArray(currentVersion.value?.sections)
+        ? currentVersion.value.sections.map((s) => s.id)
+        : [],
+    () => rejectedTask.value?.assignedTo,
+  ],
+  async (db, [isReview, currentUserId, versionId, versionStatusId, sectionIds, rejectedBy]) => {
     if (!versionId) return []
-    const version = await db.DocumentVersion.findByPk(versionId)
-    if (!version?.sections?.length) return []
-    const sectionIds = version.sections.map((s) => s.id)
-    const allComments = (
-      await Promise.all(
-        sectionIds.map((id) =>
-          db.Comment.where('[objectType+objectId]', ['DocumentSection', id]).exec(),
-        ),
+
+    if (['REJECTED', 'CHANGES_REQUESTED'].includes(versionStatusId)) {
+      // Show all section comments on rejected versions (reviewer's feedback)
+      return await db.Comment.where(
+        '[objectType+objectId]',
+        sectionIds.map((id) => ['DocumentSection', id]),
       )
-    ).flat()
+        .where('userId', rejectedBy)
+        .exec()
+    }
+
     if (isReview) {
-      return allComments.filter((c) => c.userId === currentUserId)
+      // Show only reviewer's own comments during review
+      return await db.Comment.where(
+        '[objectType+objectId]',
+        sectionIds.map((id) => ['DocumentSection', id]),
+      )
+        .where('userId', currentUserId)
+        .exec()
     }
-    if (['REJECTED', 'CHANGES_REQUESTED'].includes(version.statusId) && version.rejectedBy?.id) {
-      return allComments.filter((c) => c.userId === version.rejectedBy.id)
-    }
+
     return []
   },
   { initial: [], models: 'Comment' },

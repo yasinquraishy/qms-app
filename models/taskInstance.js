@@ -2,7 +2,11 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('taskInstances', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('taskInstances', {
+  primaryKey: 'id',
+  syncField: 'updatedAt',
+  customIndex: '[entityType+entityId], [sourceType+sourceId], assignedTo',
+})
 export class TaskInstance extends BaseModel {
   static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {

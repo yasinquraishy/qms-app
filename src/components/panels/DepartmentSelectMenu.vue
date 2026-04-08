@@ -57,6 +57,7 @@ function getArray() {
             v-if="modelValue"
             :departmentId="modelValue"
             :clearable="!required"
+            selectable
             @clear="() => scope.clear(modelValue)"
           />
           <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">

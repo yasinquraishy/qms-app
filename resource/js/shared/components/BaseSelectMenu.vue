@@ -96,7 +96,7 @@ function isSelected(id) {
       leaveToClass="transform scale-95 opacity-0"
     >
       <MenuItems
-        class="tw:absolute tw:right-0 tw:mt-2 tw:w-56 tw:origin-top-right tw:rounded-md tw:bg-sidebar tw:shadow-lg tw:ring-1 tw:ring-divider/5 tw:focus:outline-none"
+        class="tw:absolute tw:z-10 tw:right-0 tw:mt-2 tw:w-56 tw:origin-top-right tw:rounded-md tw:bg-sidebar tw:shadow-lg tw:ring-1 tw:ring-divider/5 tw:focus:outline-none"
       >
         <!-- Search -->
         <div class="tw:p-1">

@@ -1,8 +1,12 @@
 <script setup>
-import { IconX } from '@tabler/icons-vue'
+import { IconX, IconChevronDown } from '@tabler/icons-vue'
 
 defineProps({
   clearable: {
+    type: Boolean,
+    default: false,
+  },
+  selectable: {
     type: Boolean,
     default: false,
   },
@@ -21,6 +25,9 @@ const emit = defineEmits(['clear'])
     <slot />
     <span v-if="clearable" class="tw:ml-1 tw:text-red-500 tw:text-xs">
       <IconX class="tw:inline-block tw:size-4" @click.prevent.stop="emit('clear')" />
+    </span>
+    <span v-else-if="selectable" class="tw:ml-1 tw:text-secondary tw:text-xs">
+      <IconChevronDown class="tw:inline-block tw:size-4" />
     </span>
   </div>
 </template>

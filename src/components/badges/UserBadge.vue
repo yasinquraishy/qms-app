@@ -1,7 +1,7 @@
 <script setup>
 defineProps({
   user: {
-    type: String,
+    type: Object,
     required: true,
   },
 })

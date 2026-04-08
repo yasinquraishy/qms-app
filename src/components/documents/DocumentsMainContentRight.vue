@@ -32,10 +32,6 @@ const documentSections = computed(() => {
   return currentVersion.value?.sections || []
 })
 
-const formattedEffectiveDate = computed(() => {
-  return currentVersion.value?.effectiveDate?.formatDate('date')
-})
-
 // Section methods
 function scrollToSection(sectionId) {
   const element = window.document.getElementById(sectionId)
@@ -45,15 +41,28 @@ function scrollToSection(sectionId) {
   }
 }
 
-const debounceSave = useDebounceFn(() => {
+const debounceSaveDocument = useDebounceFn(() => {
   if (!document.value || !canEdit.value) return
   document.value.save()
+}, 500)
+
+const debounceSaveVersion = useDebounceFn(() => {
+  if (!currentVersion.value || !canEdit.value) return
+  currentVersion.value.save()
 }, 500)
 
 watch(
   document,
   () => {
-    debounceSave()
+    debounceSaveDocument()
+  },
+  { deep: true },
+)
+
+watch(
+  currentVersion,
+  () => {
+    debounceSaveVersion()
   },
   { deep: true },
 )
@@ -125,10 +134,11 @@ watch(
 
           <div>
             <label class="ds-label"> Effective Date </label>
-            <p class="tw:text-sm tw:font-medium">
-              {{ formattedEffectiveDate }}
-            </p>
-            <BaseDatePicker v-if="canEdit" v-model="document.effectiveDate" :required="false" />
+            <BaseDatePicker
+              v-if="canEdit"
+              v-model="currentVersion.effectiveDate"
+              :required="false"
+            />
           </div>
 
           <!-- Collaborators Section -->

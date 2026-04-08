@@ -1,7 +1,6 @@
 // Decorators
 export { ClientModel } from './decorators/ClientModel.js'
 export { Property } from './decorators/Property.js'
-export { Reference } from './decorators/Reference.js'
 export { Action } from './decorators/Action.js'
 export { Computed } from './decorators/Computed.js'
 

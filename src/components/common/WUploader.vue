@@ -1,5 +1,4 @@
 <script setup>
-import { currentSession } from '@/utils/currentSession.js'
 import { uploadFile } from '@/utils/uploadService.js'
 import { useQuasar } from 'quasar'
 

@@ -1,5 +1,4 @@
 <script setup>
-import { currentCompany } from '@/utils/currentCompany.js'
 import DynamicForm from '@/components/form/DynamicForm.js'
 import { useQuasar } from 'quasar'
 import { get } from '@/api'

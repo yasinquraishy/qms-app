@@ -1,7 +1,7 @@
 <script setup>
 import { useQuasar } from 'quasar'
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { isAllowed, currentSession } from '@/utils/currentSession'
+import { isAllowed } from '@/utils/currentSession'
 import { currentCompany } from '@/utils/currentCompany'
 import { uploadFile } from '@/utils/uploadService.js'
 

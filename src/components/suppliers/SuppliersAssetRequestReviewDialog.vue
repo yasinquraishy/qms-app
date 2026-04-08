@@ -1,6 +1,5 @@
 <script setup>
 import { useQuasar } from 'quasar'
-import { currentCompany } from '@/utils/currentCompany.js'
 import { get, post } from '@/api'
 
 const props = defineProps({

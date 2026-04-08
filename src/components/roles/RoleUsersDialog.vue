@@ -1,5 +1,4 @@
 <script setup>
-import { currentCompany } from '@/utils/currentCompany.js'
 import { isAllowed } from '@/utils/currentSession'
 import { useQuasar } from 'quasar'
 import { get, put } from '@/api'

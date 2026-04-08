@@ -1,6 +1,5 @@
 <script setup>
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { currentCompany } from '@/utils/currentCompany.js'
 import { useQuasar } from 'quasar'
 import { isAllowed } from '@/utils/currentSession.js'
 import { get } from '@/api'

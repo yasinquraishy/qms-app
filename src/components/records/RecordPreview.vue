@@ -1,5 +1,4 @@
 <script setup>
-import { currentCompany } from '@/utils/currentCompany.js'
 import { get } from '@/api'
 
 const props = defineProps({

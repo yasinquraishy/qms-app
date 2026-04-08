@@ -1,7 +1,6 @@
 <script setup>
 import { useQuasar } from 'quasar'
 import { useSuppliers } from '@/composables/useSuppliers.js'
-import { currentCompany } from '@/utils/currentCompany.js'
 import { get } from '@/api'
 import { isAllowed } from '@/utils/currentSession.js'
 

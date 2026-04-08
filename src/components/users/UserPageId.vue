@@ -3,7 +3,7 @@ import { useQuasar } from 'quasar'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { isAllowed, currentSession } from '@/utils/currentSession.js'
+import { isAllowed } from '@/utils/currentSession.js'
 import { uploadFile } from '@/utils/uploadService.js'
 
 const props = defineProps({

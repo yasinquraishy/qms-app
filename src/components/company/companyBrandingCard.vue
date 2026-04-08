@@ -1,6 +1,5 @@
 <script setup>
 import { uploadFile } from '@/utils/uploadService.js'
-import { currentCompany } from '@/utils/currentCompany.js'
 import { Notify } from 'quasar'
 
 const model = defineModel({ type: Object, required: true })

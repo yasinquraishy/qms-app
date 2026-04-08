@@ -29,7 +29,14 @@ export function Property(options = {}) {
       throw new Error('@Property must be applied to a class field')
     }
 
-    const { type, required = false, serializer, timestamp = false, autoUpdate = false } = options
+    const {
+      type,
+      required = false,
+      serializer,
+      timestamp = false,
+      autoUpdate = false,
+      uuid = false,
+    } = options
 
     // type is required
     if (!type) {
@@ -49,7 +56,7 @@ export function Property(options = {}) {
     context.metadata._syncProps.push({
       name,
       type: PROP_TYPE.PROPERTY,
-      options: { type, required, serializer, timestamp, autoUpdate },
+      options: { type, required, serializer, timestamp, autoUpdate, uuid },
     })
 
     // addInitializer runs on each new instance after the field initializer,

@@ -26,7 +26,7 @@ export class Document extends BaseModel {
     }
   }
 
-  @Property({ type: String }) id = ''
+  @Property({ type: String, uuid: true }) id = ''
   @Property({ type: String }) docNumber = ''
   @Property({ type: String }) title = ''
   @Property({ type: String }) departmentId = ''

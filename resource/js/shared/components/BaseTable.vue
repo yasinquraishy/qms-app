@@ -94,14 +94,14 @@ function tdAlignClass(align) {
 
 <template>
   <div
-    class="tw:relative tw:w-full tw:rounded-xl tw:border tw:border-gray-200 tw:bg-white tw:shadow-sm tw:overflow-hidden tw:flex tw:flex-col"
+    class="tw:relative tw:w-full tw:rounded-xl tw:border tw:border-divider tw:bg-sidebar tw:shadow-sm tw:overflow-hidden tw:flex tw:flex-col"
   >
     <!-- Loading bar -->
     <div
       v-if="loading"
       class="tw:absolute tw:top-0 tw:left-0 tw:right-0 tw:h-0.5 tw:overflow-hidden tw:z-10"
     >
-      <div class="tw:h-full tw:w-2/5 tw:bg-indigo-500 tw:animate-slide" />
+      <div class="tw:h-full tw:w-2/5 tw:bg-primary tw:animate-slide" />
     </div>
 
     <!-- Scrollable container -->
@@ -116,12 +116,12 @@ function tdAlignClass(align) {
               v-for="col in columns"
               :key="col.name"
               :class="[
-                'tw:px-4 tw:py-3 tw:text-xs tw:font-bold tw:tracking-widest tw:uppercase tw:whitespace-nowrap tw:select-none tw:border-b tw:border-gray-200 tw:bg-gray-50 tw:transition-colors tw:duration-150',
+                'tw:px-4 tw:py-3 tw:text-xs tw:font-bold tw:tracking-widest tw:uppercase tw:whitespace-nowrap tw:select-none tw:border-b tw:border-divider tw:bg-main tw:transition-colors tw:duration-150',
                 thAlignClass(col.align),
-                col.sortable ? 'tw:cursor-pointer tw:hover:bg-gray-100' : 'tw:cursor-default',
+                col.sortable ? 'tw:cursor-pointer tw:hover:bg-main-hover' : 'tw:cursor-default',
                 sortColumn === col.name
-                  ? 'tw:text-indigo-600 tw:bg-indigo-50 tw:hover:bg-indigo-50'
-                  : 'tw:text-gray-500',
+                  ? 'tw:text-primary tw:bg-main-selected tw:hover:bg-main-selected'
+                  : 'tw:text-secondary',
               ]"
               @click="handleSort(col)"
             >
@@ -137,8 +137,8 @@ function tdAlignClass(align) {
                       :class="[
                         'tw:transition-opacity tw:duration-150',
                         sortColumn === col.name && sortDirection === 'asc'
-                          ? 'tw:opacity-100 tw:text-indigo-600'
-                          : 'tw:opacity-25 tw:text-gray-400',
+                          ? 'tw:opacity-100 tw:text-primary'
+                          : 'tw:opacity-25 tw:text-secondary',
                       ]"
                     />
                     <IconCaretDownFilled
@@ -146,8 +146,8 @@ function tdAlignClass(align) {
                       :class="[
                         'tw:transition-opacity tw:duration-150',
                         sortColumn === col.name && sortDirection === 'desc'
-                          ? 'tw:opacity-100 tw:text-indigo-600'
-                          : 'tw:opacity-25 tw:text-gray-400',
+                          ? 'tw:opacity-100 tw:text-primary'
+                          : 'tw:opacity-25 tw:text-secondary',
                       ]"
                     />
                   </span>
@@ -162,13 +162,13 @@ function tdAlignClass(align) {
             <tr
               v-for="(row, rowIndex) in paginatedRows"
               :key="row[rowKey] ?? rowIndex"
-              class="tw:border-b tw:border-gray-100 last:tw:border-b-0 tw:transition-colors tw:duration-100 tw:hover:bg-gray-50"
+              class="tw:border-b tw:border-divider last:tw:border-b-0 tw:transition-colors tw:duration-100 tw:hover:bg-sidebar-hover"
             >
               <td
                 v-for="col in columns"
                 :key="col.name"
                 :class="[
-                  'tw:px-4 tw:py-3 tw:text-gray-800 tw:align-middle tw:leading-snug',
+                  'tw:px-4 tw:py-3 tw:text-on-main tw:align-middle tw:leading-snug',
                   tdAlignClass(col.align),
                 ]"
               >
@@ -197,8 +197,8 @@ function tdAlignClass(align) {
 
           <tr v-else>
             <td :colspan="columns.length" class="tw:px-4 tw:py-16 tw:text-center">
-              <div class="tw:flex tw:flex-col tw:items-center tw:gap-3 tw:text-gray-400">
-                <IconTableOff :size="40" class="tw:text-gray-300" />
+              <div class="tw:flex tw:flex-col tw:items-center tw:gap-3 tw:text-secondary">
+                <IconTableOff :size="40" class="tw:text-placeholder" />
                 <span class="tw:text-sm tw:font-medium">{{ noDataLabel }}</span>
               </div>
             </td>
@@ -209,13 +209,13 @@ function tdAlignClass(align) {
 
     <!-- Pagination Footer -->
     <div
-      class="tw:px-4 tw:py-3 tw:border-t tw:border-gray-200 tw:bg-gray-50 tw:flex tw:items-center tw:justify-between sm:tw:justify-end tw:gap-6 tw:text-xs tw:text-gray-500"
+      class="tw:px-4 tw:py-3 tw:border-t tw:border-divider tw:bg-main tw:flex tw:items-center tw:justify-between sm:tw:justify-end tw:gap-6 tw:text-xs tw:text-secondary"
     >
       <div class="tw:hidden sm:tw:flex tw:items-center tw:gap-2">
         <span>Rows per page:</span>
         <select
           :value="pagination.rowsPerPage"
-          class="tw:bg-transparent tw:border-none tw:cursor-pointer tw:font-medium tw:text-gray-700 focus:tw:ring-0"
+          class="tw:bg-main tw:border-none tw:cursor-pointer tw:font-medium tw:text-on-main focus:tw:ring-0"
           @change="updatePagination({ rowsPerPage: parseInt($event.target.value), page: 1 })"
         >
           <option v-for="n in [5, 10, 25, 50]" :key="n" :value="n">{{ n }}</option>
@@ -223,18 +223,18 @@ function tdAlignClass(align) {
       </div>
 
       <div class="tw:flex tw:items-center tw:gap-4">
-        <span class="tw:font-medium tw:text-gray-700">{{ paginationLabel }}</span>
+        <span class="tw:font-medium tw:text-on-main">{{ paginationLabel }}</span>
         <div class="tw:flex tw:items-center tw:gap-1">
           <button
             :disabled="pagination.page <= 1"
-            class="tw:p-1.5 tw:rounded tw:hover:bg-gray-200 tw:disabled:opacity-30 tw:disabled:cursor-not-allowed tw:transition-colors"
+            class="tw:p-1.5 tw:rounded tw:hover:bg-main-hover tw:disabled:opacity-30 tw:disabled:cursor-not-allowed tw:transition-colors"
             @click="updatePagination({ page: pagination.page - 1 })"
           >
             <IconChevronLeft :size="16" />
           </button>
           <button
             :disabled="pagination.page >= totalPages"
-            class="tw:p-1.5 tw:rounded tw:hover:bg-gray-200 tw:disabled:opacity-30 tw:disabled:cursor-not-allowed tw:transition-colors"
+            class="tw:p-1.5 tw:rounded tw:hover:bg-main-hover tw:disabled:opacity-30 tw:disabled:cursor-not-allowed tw:transition-colors"
             @click="updatePagination({ page: pagination.page + 1 })"
           >
             <IconChevronRight :size="16" />

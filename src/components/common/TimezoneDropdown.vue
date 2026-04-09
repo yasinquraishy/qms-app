@@ -8,10 +8,6 @@ defineProps({
     type: String,
     default: '',
   },
-  rules: {
-    type: Array,
-    default: () => [],
-  },
 })
 
 const model = defineModel({ type: String, default: 'UTC' })
@@ -31,48 +27,23 @@ const timezones = computed(() => {
       .split(' ')
       .at(-1)
     const text = changeNameOfTimezone[zone] || zone
-    return { label: `${text.replaceAll('_', ' ')} (${offset})`, value: zone }
+    return { value: zone, label: `${text.replaceAll('_', ' ')} (${offset})` }
   })
 })
-
-const options = ref(timezones.value)
-
-function filterFn(val, update) {
-  if (val === '') {
-    update(() => {
-      options.value = timezones.value
-    })
-    return
-  }
-
-  update(() => {
-    const needle = val.toLowerCase()
-    options.value = timezones.value.filter((v) => v.label.toLowerCase().indexOf(needle) > -1)
-  })
-}
 </script>
 
 <template>
-  <WSelect
-    v-model="model"
-    :label="label"
-    :options="options"
-    :hint="hint"
-    :rules="rules"
-    optionLabel="label"
-    optionValue="value"
-    useInput
-    fillInput
-    hideSelected
-    inputDebounce="0"
-    emitValue
-    mapOptions
-    @filter="filterFn"
-  >
-    <template #no-option>
-      <QItem>
-        <QItemSection class="text-grey"> No results </QItemSection>
-      </QItem>
-    </template>
-  </WSelect>
+  <div class="tw:flex tw:flex-col tw:gap-1">
+    <label v-if="label" class="tw:text-xs tw:font-medium tw:text-secondary">{{ label }}</label>
+    <select
+      v-model="model"
+      class="tw:w-full tw:rounded-lg tw:border tw:border-divider tw:bg-sidebar tw:px-3 tw:py-2 tw:text-sm tw:text-on-sidebar tw:focus:border-primary tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary/30 tw:cursor-pointer"
+    >
+      <option value="">Select Timezone</option>
+      <option v-for="tz in timezones" :key="tz.value" :value="tz.value">
+        {{ tz.label }}
+      </option>
+    </select>
+    <span v-if="hint" class="tw:text-xs tw:text-secondary">{{ hint }}</span>
+  </div>
 </template>

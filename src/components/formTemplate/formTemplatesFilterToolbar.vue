@@ -24,7 +24,7 @@ const filters = defineModel('filters', {
     </div>
 
     <div class="tw:flex-1 tw:min-w-40">
-      <formTemplatesSiteSelect v-model:siteId="filters.siteId" multiple />
+      <SiteSelectMenu v-model="filters.siteId" multiple />
     </div>
     <div class="tw:flex-1 tw:min-w-40">
       <formTemplatesStatusSelect v-model:statusId="filters.statusId" />

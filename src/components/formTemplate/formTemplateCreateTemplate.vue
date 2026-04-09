@@ -1,4 +1,5 @@
 <script setup>
+import { IconArrowBack, IconArrowForward, IconCirclePlus, IconFileDescription, IconCircleCheck, IconX } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
 import { useTemplateForm } from '@/composables/useTemplateForm'
@@ -27,11 +28,8 @@ const templateRules = computed(() => ({
 
 const templateValidator = useValidator(templateRules, templateForm)
 
-const { sites, fetchSites } = useSites()
-
-onMounted(() => {
-  fetchSites()
-})
+// sites is now a live query - no need to fetch
+const { sites } = useSites()
 
 const step = ref(1)
 const selectedPreset = ref(null)
@@ -61,7 +59,6 @@ async function goToFormBuilder() {
     emit('next', result.template)
     open.value = false
   } else {
-    // Handle error (e.g. show toast)
     console.error('Failed to create template:', result.error)
   }
 }
@@ -86,7 +83,7 @@ function prevStep() {
 </script>
 
 <template>
-  <WDialog v-model="open" minWidth="540px" maxWidth="800px" :close="false" persistent>
+  <BaseDialog v-model="open" minWidth="540px" maxWidth="800px" :close="false" persistent>
     <!-- Wizard Header -->
     <template #title>
       <div class="tw:flex tw:justify-between tw:items-center tw:w-full">
@@ -96,7 +93,7 @@ function prevStep() {
             Step {{ step }}: {{ step === 1 ? 'Define Metadata' : 'Choose Template' }}
           </div>
         </div>
-        <WBtn icon="sym_o_close" flat round dense color="grey-6" @click="closeWizard" />
+        <BaseButton icon="sym_o_close" flat round dense color="grey-6" @click="closeWizard" />
       </div>
     </template>
 
@@ -105,14 +102,14 @@ function prevStep() {
       <!-- Step 1: Metadata -->
       <div v-if="step === 1" class="tw:flex tw:flex-col tw:gap-4">
         <!-- Template Name -->
-        <WInput
+        <BaseTextInput
           v-model="templateForm.title"
           name="title"
           label="Template Name"
           placeholder="e.g. Internal Quality Audit Checklist"
         >
           <template #label> Template Name <span class="tw:text-bad">*</span> </template>
-        </WInput>
+        </BaseTextInput>
 
         <!-- Document Type & ID Prefix Row -->
         <div class="tw:grid tw:grid-cols-2 tw:gap-4">
@@ -127,7 +124,7 @@ function prevStep() {
             <template #label> Document Type <span class="tw:text-bad">*</span> </template>
           </DocumentTypeSelectMenu>
 
-          <WInput
+          <BaseTextInput
             v-model="templateForm.code"
             name="code"
             label="Code"
@@ -137,20 +134,16 @@ function prevStep() {
           >
             <template #label> Code <span class="tw:text-bad">*</span> </template>
             <template #append>
-              <WIcon
+              <IconCircleCheck
                 v-if="templateForm.isAvailable === true"
-                name="check_circle"
-                color="positive"
-                size="xs"
+                class="tw:text-positive tw:w-4 tw:h-4"
               />
-              <WIcon
+              <IconX
                 v-else-if="templateForm.isAvailable === false"
-                name="cancel"
-                color="negative"
-                size="xs"
+                class="tw:text-negative tw:w-4 tw:h-4"
               />
             </template>
-          </WInput>
+          </BaseTextInput>
         </div>
 
         <!-- Training Configuration -->
@@ -159,7 +152,7 @@ function prevStep() {
           <div class="tw:flex tw:flex-col tw:gap-3">
             <div class="tw:flex tw:justify-between tw:items-center">
               <span class="tw:text-sm tw:text-on-main">Training Required?</span>
-              <QToggle v-model="templateForm.trainingRequired" color="primary" dense />
+              <BaseSwitch v-model="templateForm.trainingRequired" color="primary" />
             </div>
             <div class="tw:text-xs tw:text-secondary tw:mt-[-8px]">
               If enabled, users must link a training course when creating a record.
@@ -167,7 +160,7 @@ function prevStep() {
 
             <div class="tw:flex tw:justify-between tw:items-center">
               <span class="tw:text-sm tw:text-on-main">Retraining Required on Revision?</span>
-              <QToggle v-model="templateForm.retrainingOnRevision" color="primary" dense />
+              <BaseSwitch v-model="templateForm.retrainingOnRevision" color="primary" />
             </div>
           </div>
         </div>
@@ -177,12 +170,11 @@ function prevStep() {
           <div class="ds-label-sm tw:text-secondary tw:mb-3">Site Availability</div>
           <div v-if="sites.length > 0" class="tw:grid tw:grid-cols-2 tw:gap-2">
             <div v-for="site in sites" :key="site.id">
-              <QCheckbox
+              <BaseCheckbox
                 v-model="templateForm.selectedSites"
                 :val="site.id"
                 :label="site.name"
                 color="primary"
-                dense
               />
             </div>
           </div>
@@ -204,7 +196,7 @@ function prevStep() {
             :class="{ 'tw:border-primary tw:bg-main-hover': selectedPreset === 'blank' }"
             @click="selectBlank"
           >
-            <WIcon name="add_circle_outline" color="grey-4" size="48px" />
+            <IconCirclePlus class="tw:text-placeholder tw:w-12 tw:h-12" />
             <div class="tw:text-lg tw:font-bold tw:mt-4 tw:text-on-main">Blank Form</div>
             <div class="tw:text-xs tw:text-secondary tw:text-center">Start from a clean slate</div>
           </div>
@@ -219,7 +211,7 @@ function prevStep() {
           >
             <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
               <span class="tw:text-sm tw:font-bold tw:text-primary">{{ preset.title }}</span>
-              <WIcon name="description" color="primary" size="16px" />
+              <IconFileDescription class="tw:text-primary tw:w-4 tw:h-4" />
             </div>
             <!-- Mini Preview Area -->
             <div
@@ -239,10 +231,10 @@ function prevStep() {
     <!-- Footer Actions -->
     <template #actions>
       <div class="tw:flex tw:justify-between tw:items-center tw:w-full tw:px-6 tw:pb-6">
-        <WBtn
+        <BaseButton
           v-if="step === 2"
           label="Back"
-          icon="arrow_back"
+          :icon="IconArrowBack"
           flat
           color="grey-7"
           @click="prevStep"
@@ -250,26 +242,26 @@ function prevStep() {
         <div v-else />
 
         <div class="tw:flex tw:gap-3">
-          <WBtn
+          <BaseButton
             label="Cancel"
             outline
             color="grey-7"
             :disable="templateForm.isSubmitting"
             @click="closeWizard"
           />
-          <WBtn
+          <BaseButton
             v-if="step === 1"
             label="Next: Select Template"
-            iconRight="arrow_forward"
+            :iconRight="IconArrowForward"
             color="primary"
             unelevated
             :disable="!templateForm.isValid"
             @click="nextStep"
           />
-          <WBtn
+          <BaseButton
             v-else
             label="Design Form"
-            iconRight="sym_o_design_services"
+            :iconRight="IconFileDescription"
             color="primary"
             unelevated
             :loading="templateForm.isSubmitting"
@@ -279,9 +271,5 @@ function prevStep() {
         </div>
       </div>
     </template>
-  </WDialog>
+  </BaseDialog>
 </template>
-
-<style lang="scss" scoped>
-// Removed custom style as overflow and colors are handled by Tailwind
-</style>

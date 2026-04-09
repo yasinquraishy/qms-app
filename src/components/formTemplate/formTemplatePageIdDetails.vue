@@ -1,6 +1,6 @@
 <script setup>
+import { IconTrash, IconEdit, IconBraces, IconAlertCircle } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession'
-
 import { getCompanyPath } from '@/utils/routeHelpers'
 import { useQuasar } from 'quasar'
 
@@ -33,6 +33,7 @@ const { statusOptions, fetchFormStatuses } = useTemplateForm()
 const formData = ref({}) // Using DynamicForm requires a v-model, even if read-only
 const editingField = ref(null) // Inline editing state
 const editValue = ref(null)
+const showDeleteConfirm = ref(false)
 
 // Computed
 const formattedCreatedAt = computed(() => {
@@ -93,27 +94,25 @@ function cancelEdit() {
   editValue.value = null
 }
 
-async function handleDelete() {
-  $q.dialog({
-    title: 'Confirm Deletion',
-    message: `Are you sure you want to delete form template "${props.template.title}" (${props.template.code})? This action cannot be undone.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const success = await deleteTemplate(props.template.id)
-    if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Form template deleted successfully',
-      })
-      router.push(getCompanyPath('/templates'))
-    } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to delete form template',
-      })
-    }
-  })
+function handleDelete() {
+  showDeleteConfirm.value = true
+}
+
+async function confirmDelete() {
+  const success = await deleteTemplate(props.template.id)
+  if (success) {
+    $q.notify({
+      type: 'positive',
+      message: 'Form template deleted successfully',
+    })
+    router.push(getCompanyPath('/templates'))
+  } else {
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to delete form template',
+    })
+  }
+  showDeleteConfirm.value = false
 }
 
 // Lifecycle
@@ -127,24 +126,24 @@ onMounted(() => {
     <!-- Header Actions Section -->
     <SafeTeleport to="#main-header-actions">
       <div v-if="template" class="tw:flex tw:items-center tw:gap-3">
-        <WBtn
+        <BaseButton
           v-if="canDelete"
-          icon="delete"
+          :icon="IconTrash"
           label="Delete"
           color="null"
           outline
           class="tw:font-semibold tw:text-bad!"
           @click="handleDelete"
         />
-        <WBtn
+        <BaseButton
           v-if="canUpdate"
-          icon="edit"
+          :icon="IconEdit"
           label="Edit Template"
           outline
           class="tw:font-semibold"
           :to="getCompanyPath(`/templates/${template.id}?mode=schema`)"
         />
-        <WBtn
+        <BaseButton
           label="View records"
           outline
           class="tw:font-semibold"
@@ -157,7 +156,6 @@ onMounted(() => {
     <div class="tw:grow tw:flex tw:flex-col tw:min-w-0 tw:overflow-hidden">
       <!-- Loading State -->
       <div v-if="loading" class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:h-full">
-        <QSpinner color="primary" size="48px" />
         <div class="tw:text-sm tw:text-on-main tw:mt-4">Loading template...</div>
       </div>
 
@@ -166,9 +164,9 @@ onMounted(() => {
         v-else-if="error"
         class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:h-full"
       >
-        <WIcon name="error_outline" size="48px" class="tw:text-bad" />
+        <IconAlertCircle size="48px" class="tw:text-bad" />
         <div class="tw:text-body1 tw:text-bad tw:mt-4">{{ error }}</div>
-        <WBtn label="Try Again" color="primary" outline class="tw:mt-6" @click="emit('refresh')" />
+        <BaseButton label="Try Again" color="primary" outline class="tw:mt-6" @click="emit('refresh')" />
       </div>
 
       <div v-else-if="template" class="tw:grow tw:flex tw:flex-col tw:p-8 tw:overflow-hidden">
@@ -216,7 +214,7 @@ onMounted(() => {
     >
       <div class="tw:p-6">
         <div class="tw:flex tw:items-center tw:gap-2 tw:mb-6 tw:text-on-sidebar">
-          <WIcon name="data_object" class="tw:text-primary" />
+          <IconBraces class="tw:text-primary tw:w-5 tw:h-5" />
           <h3 class="tw:text-base tw:font-bold">Metadata Properties</h3>
         </div>
         <div class="tw:space-y-6">
@@ -235,7 +233,7 @@ onMounted(() => {
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Internal Title</label>
                 <div v-if="editingField === 'title'">
-                  <WInput
+                  <BaseTextInput
                     v-model="editValue"
                     noOutline
                     autofocus
@@ -255,7 +253,7 @@ onMounted(() => {
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Description</label>
                 <div v-if="editingField === 'description'">
-                  <WInput
+                  <BaseTextInput
                     v-model="editValue"
                     noOutline
                     autofocus
@@ -291,15 +289,11 @@ onMounted(() => {
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Status</label>
                 <div v-if="editingField === 'statusId'">
-                  <WSelect
+                  <BaseSelectMenu
                     v-model="editValue"
-                    :options="statusOptions"
-                    mapOptions
-                    emitValue
+                    :items="statusOptions"
                     dense
                     autofocus
-                    optionLabel="name"
-                    optionValue="id"
                     @update:modelValue="saveEdit"
                     @blur="cancelEdit"
                   />
@@ -316,8 +310,8 @@ onMounted(() => {
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Assigned Sites</label>
                 <div v-if="editingField === 'siteIds'">
-                  <FormTemplatesSiteSelect
-                    v-model:siteId="editValue"
+                  <SiteSelectMenu
+                    v-model="editValue"
                     :multiple="true"
                     :required="true"
                     autofocus
@@ -386,4 +380,12 @@ onMounted(() => {
       </div>
     </aside>
   </div>
+
+  <!-- Delete Confirmation -->
+  <ConfirmDialog
+    v-model="showDeleteConfirm"
+    title="Delete Template"
+    :message="`Are you sure you want to delete form template '${props.template?.title}' (${props.template?.code})? This action cannot be undone.`"
+    @confirm="confirmDelete"
+  />
 </template>

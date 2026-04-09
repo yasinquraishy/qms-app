@@ -520,11 +520,10 @@ function discardChanges() {
               <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Site Assignment</h2>
             </div>
             <div class="tw:p-6">
-              <FormTemplatesSiteSelect
-                v-model:siteId="form.siteIds"
+              <SiteSelectMenu
+                v-model="form.siteIds"
                 :required="true"
                 :multiple="true"
-                label="Assigned Sites"
               />
             </div>
           </WCard>

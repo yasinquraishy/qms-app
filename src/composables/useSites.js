@@ -1,71 +1,43 @@
-import { currentCompany } from '@/utils/currentCompany.js'
-import { get, post, put, del } from '@/api'
+import { currentSession } from '@/utils/currentSession'
+import { put } from '@/api'
 
 const symbol = Symbol('useSites')
 
 function SitesState() {
-  const sites = ref([])
-  const loading = ref(false)
-  const error = ref(null)
+  // Live query for all sites
+  const sites = useLiveQuery(async (db) => db.Site.where().exec(), { initial: [] })
 
-  // Filters
-  const filters = ref({
-    search: '',
+  // Create site mutation
+  const createSite = useLiveMutation(async (db, { name, code, address, timezone }) => {
+    const companyId = currentSession.value?.companyId || ''
+    const site = db.Site.create({
+      name,
+      code,
+      address,
+      timezone,
+      companyId,
+    })
+    await site.save()
+    return site
   })
 
-  function buildFilterParams() {
-    const params = {}
+  // Update site mutation
+  const updateSite = useLiveMutation(async (db, { id, ...updates }) => {
+    const site = await db.Site.findByPk(id)
+    if (!site) throw new Error('Site not found')
+    Object.assign(site, updates)
+    await site.save()
+    return site
+  })
 
-    Object.keys(filters.value).forEach((key) => {
-      const value = filters.value[key]
-      if (value && typeof value === 'string' && value.trim() !== '') {
-        params[key] = value.trim()
-      }
-    })
+  // Delete site mutation
+  const deleteSite = useLiveMutation(async (db, { id }) => {
+    const site = await db.Site.findByPk(id)
+    if (!site) return
+    await site.delete()
+  })
 
-    return params
-  }
-
-  // Fetch sites
-  async function fetchSites() {
-    error.value = null
-
-    const data = await get('/v1/services/sites', {
-      params: buildFilterParams(),
-      loader: loading,
-    })
-    sites.value = data.sites || []
-  }
-
-  // Create site
-  async function createSite(siteData) {
-    const data = await post('/v1/services/sites', {
-      ...siteData,
-    })
-
-    await fetchSites()
-    return { site: data.site }
-  }
-
-  // Delete site
-  async function deleteSite(id) {
-    await del(`/v1/services/sites/${id}`, {})
-
-    await fetchSites()
-    return { success: true }
-  }
-
-  // Update site
-  async function updateSite(id, siteData) {
-    if (!id) return { error: 'Site ID is required' }
-
-    const data = await put(`/v1/services/sites/${id}`, siteData, {})
-
-    await fetchSites()
-    return { site: data.site }
-  }
-
-  // Check code availability
+  // Check code availability - uses HTTP for suggested code feature
   async function checkCodeAvailability(code, name = '', isNameCheck = false, id = null) {
     try {
       const data = await put(
@@ -78,39 +50,14 @@ function SitesState() {
         },
         { showError: false },
       )
-
       return data
     } catch (err) {
       return { message: 'error', error: err.message }
     }
   }
 
-  // Watch filters and refetch
-  watch(
-    filters,
-    () => {
-      fetchSites()
-    },
-    { deep: true },
-  )
-
-  // Fetch sites when company changes
-  watch(
-    () => currentCompany.value?.id,
-    (newId) => {
-      if (newId) {
-        fetchSites()
-      }
-    },
-    { immediate: true },
-  )
-
   return {
     sites,
-    loading,
-    error,
-    filters,
-    fetchSites,
     createSite,
     updateSite,
     deleteSite,

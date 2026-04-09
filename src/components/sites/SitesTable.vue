@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { IconEdit, IconTrash } from '@tabler/icons-vue'
+
+const props = defineProps({
   rows: {
     type: Array,
     default: () => [],
@@ -28,82 +30,55 @@ const columns = [
   { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right' },
 ]
 
-function confirmDelete(row) {
+function onEdit(row) {
+  emit('edit', row)
+}
+
+function onDelete(row) {
   emit('delete', row)
 }
 
-function onEdit(row) {
-  emit('edit', row)
+function rowMenuItems(row) {
+  const items = []
+  if (props.canUpdate) {
+    items.push({ name: 'Edit', icon: IconEdit, click: () => onEdit(row) })
+  }
+  if (props.canDelete) {
+    items.push({ name: 'Delete', icon: IconTrash, click: () => onDelete(row) })
+  }
+  return items
 }
 </script>
 
 <template>
-  <WCard>
-    <WTable :rows="rows" :columns="columns" :loading="loading" class="tw:flex-1" hideTop noBorder>
+  <BaseCard>
+    <BaseTable :rows="rows" :columns="columns" :loading="loading" rowKey="id" hidePagination>
       <!-- Name Column -->
-      <template #body-cell-name="props">
-        <QTd :props="props">
-          <div class="tw:font-bold tw:text-on-main">{{ props.row.name }}</div>
-        </QTd>
+      <template #body-cell-name="{ row }">
+        <div class="tw:font-bold tw:text-on-main">{{ row.name }}</div>
       </template>
 
       <!-- Code Column -->
-      <template #body-cell-code="props">
-        <QTd :props="props">
-          <QBadge color="primary" outline label>{{ props.row.code }}</QBadge>
-        </QTd>
+      <template #body-cell-code="{ row }">
+        <BaseBadge>{{ row.code }}</BaseBadge>
       </template>
 
       <!-- Address Column -->
-      <template #body-cell-address="props">
-        <QTd :props="props">
-          <span class="tw:text-sm tw:text-secondary">{{ props.row.address || '-' }}</span>
-        </QTd>
+      <template #body-cell-address="{ row }">
+        <span class="tw:text-sm tw:text-secondary">{{ row.address || '-' }}</span>
       </template>
 
       <!-- Timezone Column -->
-      <template #body-cell-timezone="props">
-        <QTd :props="props">
-          <span class="tw:text-xs tw:text-secondary">{{ props.row.timezone }}</span>
-        </QTd>
+      <template #body-cell-timezone="{ row }">
+        <span class="tw:text-xs tw:text-secondary">{{ row.timezone }}</span>
       </template>
 
       <!-- Actions Column -->
-      <template #body-cell-actions="props">
-        <QTd :props="props">
-          <div v-if="canUpdate || canDelete" class="tw:flex tw:justify-end">
-            <WBtn flat round dense color="grey-6" icon="more_vert">
-              <QMenu>
-                <QList dense style="min-width: 140px">
-                  <QItem v-if="canUpdate" v-close-popup clickable @click="onEdit(props.row)">
-                    <QItemSection>
-                      <div class="tw:flex tw:items-center tw:gap-2">
-                        <WIcon name="edit" size="20px" color="primary" />
-                        <div>Edit</div>
-                      </div>
-                    </QItemSection>
-                  </QItem>
-
-                  <QItem
-                    v-if="canDelete"
-                    v-close-popup
-                    clickable
-                    class="tw:text-bad"
-                    @click="confirmDelete(props.row)"
-                  >
-                    <QItemSection>
-                      <div class="tw:flex tw:items-center tw:gap-2">
-                        <WIcon name="delete" size="20px" />
-                        <div>Delete</div>
-                      </div>
-                    </QItemSection>
-                  </QItem>
-                </QList>
-              </QMenu>
-            </WBtn>
-          </div>
-        </QTd>
+      <template #body-cell-actions="{ row }">
+        <div v-if="props.canUpdate || props.canDelete" class="tw:flex tw:justify-end">
+          <BaseMenu :items="rowMenuItems(row)" />
+        </div>
       </template>
-    </WTable>
-  </WCard>
+    </BaseTable>
+  </BaseCard>
 </template>

@@ -1,9 +1,7 @@
 <script setup>
-import { useDebounceFn } from '@vueuse/core'
-import { useQuasar } from 'quasar'
+import { IconCheck, IconX as IconXCross } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
-import { useDepartments } from '@/composables/useDepartments.js'
 
 const props = defineProps({
   id: {
@@ -19,10 +17,22 @@ const open = defineModel({
   default: false,
 })
 
-const { checkCodeAvailability, createDepartment, updateDepartment, departments } = useDepartments()
-const $q = useQuasar()
+// Load existing department if editing
+const department = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  if (!id) return null
+  return db.Department.findByPk(id)
+})
 
-// Dialog State (handled by defineModel above)
+// Code availability check using live query
+const codeAvailable = useLiveQueryWithDeps(
+  [() => props.id, () => form.value.code],
+  async (db, [id, code]) => {
+    if (!code || code.trim().length < 2) return true
+    const all = await db.Department.where().exec()
+    return !all.some((d) => d.code === code && d.id !== id)
+  },
+  { initial: true },
+)
 
 const form = ref({
   name: '',
@@ -40,196 +50,152 @@ const rules = computed(() => ({
 
 const validator = useValidator(rules, form)
 
-const isChecking = ref(false)
-const isAvailable = ref(null) // null | true | false
 const isSubmitting = ref(false)
-
 const isEdit = computed(() => !!props.id)
 
-// Load department data if editing
+// Populate form when department loads in edit mode
 watch(
-  () => props.id,
-  (newId) => {
-    if (newId) {
-      const department = departments.value.find((d) => d.id === newId)
-      if (department) {
-        form.value = {
-          name: department.name,
-          code: department.code,
-          siteId: department.siteId,
-          description: department.description || '',
-          displayOrder: department.displayOrder || 1000,
-        }
-        isAvailable.value = true // Existing code is valid
+  department,
+  (d) => {
+    if (d) {
+      form.value = {
+        name: d.name,
+        code: d.code,
+        siteId: d.siteId,
+        description: d.description || '',
+        displayOrder: d.displayOrder || 1000,
       }
     }
   },
   { immediate: true },
 )
 
-// Reset form when closed
+// Reset form when dialog closes
 watch(open, (val) => {
   if (!val) {
-    if (!props.id) {
-      form.value = {
-        name: '',
-        code: '',
-        siteId: null,
-        description: '',
-        displayOrder: 1000,
-      }
-      isAvailable.value = null
-    }
+    form.value = { name: '', code: '', siteId: null, description: '', displayOrder: 1000 }
   }
 })
 
-// Auto-check availability when code changes (debounced)
-const checkAvailabilityDebounced = useDebounceFn(async (newCode) => {
-  if (!newCode || newCode.trim().length < 2) return
-
-  isChecking.value = true
-  const result = await checkCodeAvailability(newCode.trim(), '', false, props.id)
-  isChecking.value = false
-  if (result && result.message === 'available') {
-    isAvailable.value = true
-  } else {
-    isAvailable.value = false
+// Auto-suggest code when name changes (create mode only)
+const getCodeSuggestion = useLiveMutation(async (db, suggested) => {
+  const all = await db.Department.where().exec()
+  let code = suggested
+  let counter = 1
+  while (all.some((d) => d.code === code)) {
+    code = `${suggested}-${counter}`
+    counter++
   }
-}, 500)
+  return code
+})
 
-watch(
-  () => form.value.code,
-  (newCode) => {
-    isAvailable.value = null
-    checkAvailabilityDebounced(newCode)
-  },
-)
-
-// Auto-suggest code when name changes
 async function onNameBlur() {
-  if (!form.value.name || form.value.code) return
+  if (!form.value.name || form.value.code || isEdit.value) return
 
-  const result = await checkCodeAvailability(null, form.value.name, true)
-  if (result && result.suggestedCode) {
-    form.value.code = result.suggestedCode
-    // Trigger code availability check explicitly as setting it programmatically might need validation
-  }
+  const suggested = form.value.name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .substring(0, 10)
+
+  form.value.code = await getCodeSuggestion(suggested)
 }
+
+const createDepartment = useLiveMutation(async (db, data) => {
+  const d = db.Department.create(data)
+  await d.save()
+  return d
+})
 
 async function onSubmit() {
   const valid = await validator.value.$validate()
-  if (!valid || isAvailable.value !== true) return
+  if (!valid || !codeAvailable.value) return
 
   isSubmitting.value = true
-  let result
-  if (isEdit.value) {
-    result = await updateDepartment(props.id, {
-      name: form.value.name,
-      siteId: form.value.siteId,
-      description: form.value.description,
-      displayOrder: form.value.displayOrder || 1000,
-    })
-  } else {
-    result = await createDepartment({
-      name: form.value.name,
-      code: form.value.code,
-      siteId: form.value.siteId,
-      description: form.value.description,
-      displayOrder: form.value.displayOrder || 1000,
-    })
-  }
-  isSubmitting.value = false
-
-  if (result.error) {
-    $q.notify({
-      type: 'negative',
-      message: result.error,
-    })
-  } else {
-    $q.notify({
-      type: 'positive',
-      message: isEdit.value ? 'Department updated successfully' : 'Department created successfully',
-    })
-    if (isEdit.value) {
-      emit('updated', result.department)
+  try {
+    if (!isEdit.value) {
+      const newDept = await createDepartment({
+        name: form.value.name,
+        code: form.value.code,
+        siteId: form.value.siteId,
+        description: form.value.description,
+        displayOrder: form.value.displayOrder || 1000,
+      })
+      emit('created', newDept)
     } else {
-      emit('created', result.department)
+      department.value.name = form.value.name
+      department.value.siteId = form.value.siteId
+      department.value.description = form.value.description
+      department.value.displayOrder = form.value.displayOrder || 1000
+      await department.value.save()
+      emit('updated', department.value)
     }
     open.value = false
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
 
 <template>
-  <WDialog v-model="open" :title="isEdit ? 'Edit Department' : 'Create New Department'">
+  <BaseDialog
+    v-model="open"
+    :title="isEdit ? 'Edit Department' : 'Create New Department'"
+    maxWidth="md"
+  >
     <div class="tw:flex tw:flex-col tw:gap-4">
-      <WInput
+      <BaseTextInput
         v-model="form.name"
         name="name"
         label="Department Name"
         placeholder="e.g. Quality Assurance"
+        :required="true"
         @blur="onNameBlur"
-      >
-        <template #label> Department Name <span class="tw:text-bad">*</span> </template>
-      </WInput>
+      />
 
-      <WInput
-        v-model="form.code"
-        name="code"
-        label="Department Code"
-        placeholder="e.g. QA"
-        hint="Unique identifier for this department."
-        :loading="isChecking"
-        :disable="isEdit"
-      >
-        <template #label> Code <span class="tw:text-bad">*</span> </template>
-        <template #append>
-          <WIcon
-            v-if="!isChecking && isAvailable === true"
-            name="check_circle"
-            color="positive"
-            size="xs"
+      <div class="tw:relative">
+        <BaseTextInput
+          v-model="form.code"
+          name="code"
+          label="Code"
+          placeholder="e.g. QA"
+          :required="true"
+          :disabled="isEdit"
+          :errorMsg="!codeAvailable ? 'Code already in use' : ''"
+        />
+        <template v-if="!isEdit && form.code">
+          <IconCheck
+            v-if="codeAvailable"
+            class="tw:absolute tw:right-3 tw:top-9 tw:size-4 tw:text-green"
           />
-          <WIcon
-            v-if="!isChecking && isAvailable === false"
-            name="cancel"
-            color="negative"
-            size="xs"
-          />
+          <IconXCross v-else class="tw:absolute tw:right-3 tw:top-9 tw:size-4 tw:text-red" />
         </template>
-      </WInput>
+      </div>
 
-      <DocumentsSiteSelect v-model:siteId="form.siteId" name="siteId" required :multiple="false">
-        <template #label> Site <span class="tw:text-bad">*</span> </template>
-      </DocumentsSiteSelect>
+      <DocumentsSiteSelect v-model:siteId="form.siteId" name="siteId" :required="true" />
 
-      <WInput
+      <BaseTextarea
         v-model="form.description"
         label="Description"
         placeholder="e.g. Quality assurance and testing department"
-        type="textarea"
-        autogrow
+        :rows="2"
       />
 
-      <WInput
+      <BaseTextInput
         v-model.number="form.displayOrder"
+        name="displayOrder"
         label="Display Order"
         placeholder="1000"
         type="number"
-        hint="Lower numbers appear first in lists"
       />
     </div>
 
-    <template #actions>
-      <WBtn flat label="Cancel" color="primary" @click="open = false" />
-      <WBtn
-        :label="isEdit ? 'Update Department' : 'Create Department'"
-        color="primary"
-        unelevated
-        :loading="isSubmitting"
-        :disable="isSubmitting"
-        @click="onSubmit"
-      />
+    <template #footer>
+      <BaseButton variant="outline" @click="open = false"> Cancel </BaseButton>
+      <BaseButton :disabled="isSubmitting" @click="onSubmit">
+        {{ isEdit ? 'Update Department' : 'Create Department' }}
+      </BaseButton>
     </template>
-  </WDialog>
+  </BaseDialog>
 </template>

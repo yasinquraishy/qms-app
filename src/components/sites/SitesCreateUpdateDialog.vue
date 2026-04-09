@@ -1,9 +1,7 @@
 <script setup>
-import { useDebounceFn } from '@vueuse/core'
-import { useQuasar } from 'quasar'
+import { IconCheck, IconX as IconXCross } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
-import { useSites } from '@/composables/useSites.js'
 
 const props = defineProps({
   id: {
@@ -19,16 +17,28 @@ const open = defineModel({
   default: false,
 })
 
-const { checkCodeAvailability, createSite, updateSite, sites } = useSites()
-const $q = useQuasar()
+// Load existing site if editing
+const site = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  if (!id) return null
+  return db.Site.findByPk(id)
+})
 
-// Dialog State (handled by defineModel above)
+// Code availability check using live query
+const codeAvailable = useLiveQueryWithDeps(
+  [() => props.id, () => form.value.code],
+  async (db, [id, code]) => {
+    if (!code || code.trim().length < 2) return true
+    const all = await db.Site.where().exec()
+    return !all.some((s) => s.code === code && s.id !== id)
+  },
+  { initial: true },
+)
 
 const form = ref({
   name: '',
   code: '',
   address: '',
-  timezone: '',
+  timezone: 'UTC',
 })
 
 const rules = computed(() => ({
@@ -38,177 +48,149 @@ const rules = computed(() => ({
 
 const validator = useValidator(rules, form)
 
-const isChecking = ref(false)
-const isAvailable = ref(null) // null | true | false
 const isSubmitting = ref(false)
-
 const isEdit = computed(() => !!props.id)
 
-// Load site data if editing
+// Populate form when site loads in edit mode
 watch(
-  () => props.id,
-  (newId) => {
-    if (newId) {
-      const site = sites.value.find((s) => s.id === newId)
-      if (site) {
-        form.value = { ...site }
-        isAvailable.value = true // Existing code is valid
+  site,
+  (s) => {
+    if (s) {
+      form.value = {
+        name: s.name,
+        code: s.code,
+        address: s.address,
+        timezone: s.timezone || 'UTC',
       }
     }
   },
   { immediate: true },
 )
 
-// Reset form when closed
-watch(open, (val) => {
-  if (!val) {
-    if (!props.id) {
-      form.value = {
-        name: '',
-        code: '',
-        address: '',
-        timezone: '',
-      }
-      isAvailable.value = null
-    }
+const getCodeSuggestion = useLiveMutation(async (db, suggested) => {
+  const all = await db.Site.where().exec()
+
+  // Ensure uniqueness
+  let code = suggested
+  let counter = 1
+  while (all.some((s) => s.code === code)) {
+    code = `${suggested}-${counter}`
+    counter++
   }
+
+  return code
 })
 
-// Auto-check availability when code changes (debounced)
-const checkAvailabilityDebounced = useDebounceFn(async (newCode) => {
-  if (!newCode || newCode.trim().length < 2) return
-
-  isChecking.value = true
-  const result = await checkCodeAvailability(newCode.trim(), '', false, props.id)
-  isChecking.value = false
-  if (result && result.message === 'available') {
-    isAvailable.value = true
-  } else {
-    isAvailable.value = false
-  }
-}, 500)
-
-watch(
-  () => form.value.code,
-  (newCode) => {
-    isAvailable.value = null
-    checkAvailabilityDebounced(newCode)
-  },
-)
-
-// Auto-suggest code when name changes
+// Auto-suggest code when name changes (create mode only)
 async function onNameBlur() {
-  if (!form.value.name || form.value.code) return
+  if (!form.value.name || form.value.code || isEdit.value) return
 
-  const result = await checkCodeAvailability(null, form.value.name, true)
-  if (result && result.suggestedCode) {
-    form.value.code = result.suggestedCode
-    // Trigger code availability check explicitly as setting it programmatically might need validation
-  }
+  const suggested = form.value.name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .substring(0, 10)
+
+  form.value.code = await getCodeSuggestion(suggested)
 }
+
+const createSite = useLiveMutation(async (db, newSite) => {
+  const created = db.Site.create(newSite)
+  await created.save()
+  return created
+})
 
 async function onSubmit() {
   const valid = await validator.value.$validate()
-  if (!valid || isAvailable.value !== true) return
+  if (!valid || !codeAvailable.value) return
 
   isSubmitting.value = true
-  let result
-  if (isEdit.value) {
-    result = await updateSite(props.id, {
-      name: form.value.name,
-      address: form.value.address,
-      timezone: form.value.timezone || 'UTC',
-    })
-  } else {
-    result = await createSite({
-      name: form.value.name,
-      code: form.value.code,
-      address: form.value.address,
-      timezone: form.value.timezone || 'UTC',
-    })
-  }
-  isSubmitting.value = false
-
-  if (result.error) {
-    $q.notify({
-      type: 'negative',
-      message: result.error,
-    })
-  } else {
-    $q.notify({
-      type: 'positive',
-      message: isEdit.value ? 'Site updated successfully' : 'Site created successfully',
-    })
-    if (isEdit.value) {
-      emit('updated', result.site)
+  try {
+    if (!isEdit.value) {
+      const newSite = await createSite({
+        name: form.value.name,
+        code: form.value.code,
+        address: form.value.address,
+        timezone: form.value.timezone || 'UTC',
+      })
+      emit('created', newSite)
     } else {
-      emit('created', result.site)
+      site.value.name = form.value.name
+      site.value.address = form.value.address
+      site.value.timezone = form.value.timezone || 'UTC'
+      await site.value.save()
+      emit('updated', site.value)
     }
     open.value = false
+  } finally {
+    isSubmitting.value = false
   }
 }
+
+// Reset form when dialog closes
+watch(open, (val) => {
+  if (!val) {
+    form.value = { name: '', code: '', address: '', timezone: 'UTC' }
+  }
+})
 </script>
 
 <template>
-  <WDialog v-model="open" :title="isEdit ? 'Edit Site' : 'Create New Site'">
+  <BaseDialog v-model="open" :title="isEdit ? 'Edit Site' : 'Create New Site'" maxWidth="md">
     <div class="tw:flex tw:flex-col tw:gap-4">
-      <WInput
+      <BaseTextInput
         v-model="form.name"
         name="name"
         label="Site Name"
         placeholder="e.g. New York Headquarters"
+        :required="true"
         @blur="onNameBlur"
-      >
-        <template #label> Site Name <span class="tw:text-bad">*</span> </template>
-      </WInput>
+      />
 
-      <WInput
-        v-model="form.code"
-        name="code"
-        label="Site Code"
-        placeholder="e.g. NY-HQ"
-        hint="Unique identifier for this site."
-        :loading="isChecking"
-        :disable="isEdit"
-      >
-        <template #label> Code <span class="tw:text-bad">*</span> </template>
-        <template #append>
-          <WIcon
-            v-if="!isChecking && isAvailable === true"
-            name="check_circle"
-            color="positive"
-            size="xs"
+      <div class="tw:relative">
+        <BaseTextInput
+          v-model="form.code"
+          name="code"
+          label="Code"
+          placeholder="e.g. NY-HQ"
+          :required="true"
+          :disabled="isEdit"
+          :errorMsg="!codeAvailable ? 'Code already in use' : ''"
+        />
+        <template v-if="!isEdit && form.code">
+          <IconCheck
+            v-if="codeAvailable"
+            class="tw:absolute tw:right-3 tw:top-9 tw:size-4 tw:text-green"
           />
-          <WIcon
-            v-if="!isChecking && isAvailable === false"
-            name="cancel"
-            color="negative"
-            size="xs"
-          />
+          <IconXCross v-else class="tw:absolute tw:right-3 tw:top-9 tw:size-4 tw:text-red" />
         </template>
-      </WInput>
+      </div>
 
-      <WInput
+      <BaseTextarea
         v-model="form.address"
         label="Address"
         placeholder="e.g. 123 Main St, New York, NY"
-        type="textarea"
-        autogrow
+        :rows="2"
       />
 
-      <TimezoneDropdown v-model="form.timezone" hint="Select primary timezone for this site." />
+      <TimezoneDropdown v-model="form.timezone" />
     </div>
 
-    <template #actions>
-      <WBtn flat label="Cancel" color="primary" @click="open = false" />
-      <WBtn
-        :label="isEdit ? 'Update Site' : 'Create Site'"
-        color="primary"
-        unelevated
-        :loading="isSubmitting"
-        :disable="isSubmitting"
+    <template #footer>
+      <button
+        class="tw:rounded-lg tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
+        @click="open = false"
+      >
+        Cancel
+      </button>
+      <button
+        class="tw:rounded-lg tw:bg-primary tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-white tw:hover:bg-primary/90 tw:transition-colors tw:disabled:opacity-50"
+        :disabled="isSubmitting"
         @click="onSubmit"
-      />
+      >
+        {{ isEdit ? 'Update Site' : 'Create Site' }}
+      </button>
     </template>
-  </WDialog>
+  </BaseDialog>
 </template>

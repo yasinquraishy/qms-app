@@ -135,32 +135,32 @@ defineExpose({
 </script>
 
 <template>
-  <div :class="{ flex: inline, 'flex-row-reverse': labelRight }">
-    <div v-if="label || slots.label || instructions" class="mb-4">
+  <div :class="{ 'tw:flex': inline, 'tw:flex-row-reverse': labelRight }">
+    <div v-if="label || slots.label || instructions" class="tw:mb-4">
       <label
         v-if="label || slots.label"
-        class="dark:text-white"
-        :class="{ 'inline-block': inline }"
+        class="tw:dark:text-white"
+        :class="{ 'tw:inline-block': inline }"
         :for="name"
       >
         <slot name="label">
           {{ label }}
-          <span v-if="required" class="text-red">*</span>
+          <span v-if="required" class="tw:text-red">*</span>
         </slot>
       </label>
-      <p v-if="instructions" class="text-14 text-grey-5 dark:text-grey-4 mb-2">
+      <p v-if="instructions" class="tw:text-14 tw:text-grey-5 tw:dark:text-grey-4 tw:mb-2">
         {{ instructions }}
       </p>
     </div>
     <div
       v-if="showFocusRing"
-      class="relative rounded-xl transition-all duration-300"
-      :class="isFocused ? 'ring-2 ring-primary/20 bg-main/50' : 'bg-main/30'"
+      class="tw:relative tw:rounded-xl tw:transition-all tw:duration-300"
+      :class="isFocused ? 'tw:ring-2 tw:ring-primary/20 tw:bg-main/50' : 'tw:bg-main/30'"
     >
       <textarea
         :id="id"
         ref="inputEl"
-        class="disabled:text-grey-5 w-full resize-none rounded-xl border-none bg-transparent focus:ring-0 focus:outline-0 disabled:cursor-not-allowed transition-[border,box-shadow] duration-300"
+        class="tw:disabled:text-grey-5 tw:w-full tw:resize-none tw:rounded-xl tw:border-none tw:bg-transparent tw:focus:ring-0 tw:focus:outline-0 tw:disabled:cursor-not-allowed tw:transition-[border,box-shadow] tw:duration-300"
         :class="inputClass"
         :name="name"
         :value="modelValue"
@@ -183,7 +183,7 @@ defineExpose({
       v-else
       :id="id"
       ref="inputEl"
-      class="disabled:text-grey-5 w-full resize-none rounded-xl border border-divider bg-transparent focus:ring-0 focus:outline-0 disabled:cursor-not-allowed transition-[border,box-shadow] duration-300"
+      class="tw:disabled:text-grey-5 tw:w-full tw:resize-none tw:rounded-xl tw:bg-transparent tw:focus:ring-0 tw:focus:outline-0 tw:disabled:cursor-not-allowed tw:transition-[border,box-shadow] tw:duration-300"
       :class="inputClass"
       :name="name"
       :value="modelValue"
@@ -200,6 +200,6 @@ defineExpose({
       @focus="handleFocus"
       @blur="handleBlur"
     />
-    <p v-if="errorMsg" class="text-12 mt-2 text-red">{{ errorMsg }}</p>
+    <p v-if="errorMsg" class="tw:text-12 tw:mt-2 tw:text-red">{{ errorMsg }}</p>
   </div>
 </template>

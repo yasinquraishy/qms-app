@@ -207,6 +207,11 @@ function selectVersion(version) {
   selectedVersionId.value = version.id
   selectedStepIndex.value = 0
 }
+
+function handleVersionSelect(version, close) {
+  selectVersion(version)
+  close()
+}
 </script>
 
 <template>
@@ -247,10 +252,7 @@ function selectVersion(version) {
                   :key="version.id"
                   class="tw:w-full tw:text-left tw:px-3 tw:py-2 tw:hover:bg-main-hover tw:transition-colors"
                   :class="version.id === selectedVersionId ? 'tw:bg-primary/5 tw:text-primary' : ''"
-                  @click="
-                    selectVersion(version)
-                    close()
-                  "
+                  @click="handleVersionSelect(version, close)"
                 >
                   <div class="tw:text-sm">
                     v{{ version.versionLabel || `${version.versionMajor}.${version.versionMinor}` }}

@@ -1,6 +1,6 @@
 <script setup>
 import { micromark } from 'micromark'
-import { XMarkIcon } from '@heroicons/vue/24/outline'
+import { IconX } from '@tabler/icons-vue'
 
 // --- Props & models ---
 const props = defineProps({
@@ -127,22 +127,22 @@ const inline = computed(() => props.labelLeft || props.labelRight)
 
 const cssClass = computed(() => {
   let c =
-    'w-full rounded-lg border border-divider bg-sidebar text-sm text-main-text placeholder-main-text-muted transition-[border-color,box-shadow] duration-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-main-unselected'
-  if (props.size === 'sm') c += ' py-1.5 text-12'
-  else c += ' py-2.5'
+    'tw:w-full tw:rounded-lg tw:border tw:border-divider tw:bg-sidebar tw:text-sm tw:text-main-text tw:placeholder-main-text-muted tw:transition-[border-color,box-shadow] tw:duration-200 tw:focus:outline-none tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/30 tw:disabled:cursor-not-allowed tw:disabled:opacity-60 tw:disabled:bg-main-unselected'
+  if (props.size === 'sm') c += ' tw:py-1.5 tw:text-12'
+  else c += ' tw:py-2.5'
 
   // Left padding - conditional based on icon slot
   if (slots.icon) {
-    c += props.size === 'sm' ? ' pl-8' : ' pl-10'
+    c += props.size === 'sm' ? ' tw:pl-8' : ' tw:pl-10'
   } else {
-    c += ' pl-3'
+    c += ' tw:pl-3'
   }
 
   // Right padding - conditional based on clear button
   if (props.clearBtn) {
-    c += ' pr-10'
+    c += ' tw:pr-10'
   } else {
-    c += ' pr-3'
+    c += ' tw:pr-3'
   }
 
   if (props.inputClass) c += ' ' + props.inputClass
@@ -162,43 +162,43 @@ defineExpose({
 </script>
 
 <template>
-  <div :class="{ 'flex items-center': inline, 'flex-row-reverse': labelRight }">
+  <div :class="{ 'tw:flex tw:items-center': inline, 'tw:flex-row-reverse': labelRight }">
     <div
       v-if="label || slots.label || instructions"
-      :class="labelWrapperClass ? labelWrapperClass : 'mb-1'"
+      :class="labelWrapperClass ? labelWrapperClass : 'tw:mb-1'"
     >
       <label
         v-if="label || slots.label"
-        class="dark:text-white"
+        class="tw:dark:text-white"
         :class="{
-          'inline-block': !inline,
-          '-mb-2': !inline && size === 'md',
-          'text-12': size === 'sm',
-          'mr-2': labelLeft,
-          'ml-2': labelRight,
+          'tw:inline-block': !inline,
+          'tw:-mb-2': !inline && size === 'md',
+          'tw:text-12': size === 'sm',
+          'tw:mr-2': labelLeft,
+          'tw:ml-2': labelRight,
         }"
         :for="name"
       >
         <slot name="label">
           {{ label }}
-          <span v-if="required" class="text-red">*</span>
+          <span v-if="required" class="tw:text-red">*</span>
         </slot>
       </label>
       <div
         v-if="instructions"
-        class="text-grey-5 dark:text-grey-4 max-w-none dark:prose-invert [&>p>a]:underline"
+        class="tw:text-grey-5 tw:dark:text-grey-4 tw:max-w-none tw:dark:prose-invert [&>p>a]:tw:underline"
         :class="{
-          'text-14 mb-4': size === 'md',
-          'text-12': size === 'sm',
+          'tw:text-14 tw:mb-4': size === 'md',
+          'tw:text-12': size === 'sm',
         }"
         v-html="micromark(instructions).replace('href=', 'target=\'_blank\' href=')"
       />
     </div>
-    <div class="relative w-full">
+    <div class="tw:relative tw:w-full">
       <div
         v-if="slots.icon"
-        class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-main-text-hover z-1"
-        :class="{ 'size-4': size === 'sm', 'size-5': size === 'md' }"
+        class="tw:pointer-events-none tw:absolute tw:left-3 tw:top-1/2 tw:-translate-y-1/2 tw:text-main-text-hover tw:z-1"
+        :class="{ 'tw:size-4': size === 'sm', 'tw:size-5': size === 'md' }"
       >
         <slot name="icon" />
       </div>
@@ -225,13 +225,13 @@ defineExpose({
       <BaseButton
         v-if="showClearBtn"
         variant="transparent"
-        class="absolute right-1 top-1/2 -translate-y-1/2"
+        class="tw:absolute tw:right-1 tw:top-1/2 tw:-translate-y-1/2"
         @click="clear"
       >
-        <XMarkIcon class="size-5" />
+        <IconX class="tw:size-5" />
       </BaseButton>
     </div>
 
-    <p v-if="errorMsg" class="text-14 mt-2 text-red">{{ errorMsg }}</p>
+    <p v-if="errorMsg" class="tw:text-14 tw:mt-2 tw:text-red">{{ errorMsg }}</p>
   </div>
 </template>

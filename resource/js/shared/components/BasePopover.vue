@@ -187,7 +187,7 @@ const arrowOrientation = computed(() => {
   <template v-if="disabled">
     <div><slot name="button" /></div>
   </template>
-  <Popover v-else v-slot="{ open }" class="tw:relative tw:w-min">
+  <Popover v-else v-slot="{ open }" class="tw:relative tw:w-fit">
     <PopoverButton ref="triggerRef" as="div" @click.stop>
       <div>
         <slot name="button" :open="open" />

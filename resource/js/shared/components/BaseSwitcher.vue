@@ -27,8 +27,7 @@ const modelValue = defineModel({
       :is="switchItem.icon"
       v-for="switchItem in switches"
       :key="switchItem.value"
-      size="20px"
-      class="tw:cursor-pointer! tw:p-2 tw:rounded-md tw:transition-all tw:duration-200"
+      class="tw:size-8 tw:cursor-pointer! tw:p-2 tw:rounded-md tw:transition-all tw:duration-200"
       :class="
         modelValue === switchItem.value
           ? 'tw:bg-primary tw:text-white'

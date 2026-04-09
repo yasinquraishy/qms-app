@@ -114,7 +114,10 @@ function rowMenuItems(workflow) {
     </template>
 
     <template #body-cell-statusId="{ row }">
-      <ApprovalWorkflowStatusBadge :status="workflowMetaMap[row.id]?.version?.statusId" showDot />
+      <ApprovalWorkflowVersionStatusBadgeById
+        :statusId="workflowMetaMap[row.id]?.version?.statusId"
+        showDot
+      />
     </template>
 
     <template #body-cell-createdAt="{ row }">

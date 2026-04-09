@@ -3,24 +3,24 @@ import { useDebounceFn } from '@vueuse/core'
 import { IconNote, IconUsers, IconInfoCircle, IconAlertCircle } from '@tabler/icons-vue'
 
 const props = defineProps({
-  step: { type: Object, required: true },
+  stepId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
 })
 
+const step = useLiveQueryWithDeps([() => props.stepId], async (db, [stepId]) => {
+  if (!stepId) return null
+  return await db.ApprovalWorkflowStep.findByPk(stepId)
+})
+
 const debouncedStepSave = useDebounceFn(async () => {
-  if (!props.step || !props.canUpdate) return
-  await props.step.save()
+  if (!step.value || !props.canUpdate) return
+  await step.value.save()
 }, 800)
 
-let lastStepId = null
 watch(
-  () => props.step,
-  (s) => {
+  step,
+  () => {
     if (!props.canUpdate) return
-    if (s?.id !== lastStepId) {
-      lastStepId = s?.id
-      return
-    }
     debouncedStepSave()
   },
   { deep: true },
@@ -28,7 +28,7 @@ watch(
 
 // Step roles and step users counts for warning/error callouts
 const stepRoles = useLiveQueryWithDeps(
-  [() => props.step?.id],
+  [() => props.stepId],
   async (db, [stepId]) => {
     if (!stepId) return []
     return await db.ApprovalWorkflowStepRole.where('stepId', stepId).exec()
@@ -37,7 +37,7 @@ const stepRoles = useLiveQueryWithDeps(
 )
 
 const stepUsers = useLiveQueryWithDeps(
-  [() => props.step?.id],
+  [() => props.stepId],
   async (db, [stepId]) => {
     if (!stepId) return []
     return await db.ApprovalWorkflowStepUser.where('stepId', stepId).exec()
@@ -52,7 +52,7 @@ const approverTab = ref('roles')
 </script>
 
 <template>
-  <div class="tw:space-y-10">
+  <div v-if="step" class="tw:space-y-10">
     <!-- Step Details -->
     <div class="tw:space-y-6">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary tw:mb-2">

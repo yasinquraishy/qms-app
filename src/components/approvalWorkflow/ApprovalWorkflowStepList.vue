@@ -3,18 +3,35 @@ import { IconPlus } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany.js'
 
 const props = defineProps({
-  steps: { type: Array, default: () => [] },
   versionId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
+  autoAddStep: { type: Boolean, default: false },
 })
 
-const selectedIndex = defineModel('selectedIndex', {
-  type: Number,
-  default: 0,
+const stepId = defineModel('stepId', {
+  type: String,
+  default: null,
 })
 
-function selectStep(index) {
-  selectedIndex.value = index
+const steps = useLiveQueryWithDeps(
+  [() => props.versionId],
+  async (db, [vId]) => {
+    if (!vId) return []
+    return db.ApprovalWorkflowStep.where('workflowVersionId', vId).orderBy('stepOrder').exec()
+  },
+  { initial: [] },
+)
+
+// Auto-add first step when autoAddStep is enabled and version has no steps
+watch(steps, async (newSteps) => {
+  if (props.autoAddStep && props.canUpdate && newSteps?.length === 0 && props.versionId) {
+    await nextTick()
+    await addStep()
+  }
+})
+
+function selectStep(step) {
+  stepId.value = step.id
 }
 
 const createStep = useLiveMutation(async (db, { versionId, order, settings }) => {
@@ -35,25 +52,27 @@ const createStep = useLiveMutation(async (db, { versionId, order, settings }) =>
 
 async function addStep() {
   const s = currentCompany.value?.settings || {}
-  const order = props.steps.length + 1
-  await createStep({ versionId: props.versionId, order, settings: s })
-  selectedIndex.value = order - 1
+  const order = steps.value.length + 1
+  const step = await createStep({ versionId: props.versionId, order, settings: s })
+  if (step) stepId.value = step.id
 }
 
 async function removeStep(index) {
-  const step = props.steps[index]
+  const step = steps.value[index]
   if (!step) return
+  const wasSelected = stepId.value === step.id
   await step.delete()
   // Reorder remaining
-  const remaining = props.steps.filter((_, i) => i !== index)
+  const remaining = steps.value.filter((_, i) => i !== index)
   await Promise.all(
     remaining.map((s, i) => {
       s.stepOrder = i + 1
       return s.save()
     }),
   )
-  if (selectedIndex.value >= props.steps.length - 1) {
-    selectedIndex.value = Math.max(0, props.steps.length - 2)
+  if (wasSelected) {
+    const newIndex = Math.max(0, index - 1)
+    stepId.value = remaining[newIndex]?.id ?? null
   }
 }
 
@@ -62,18 +81,18 @@ async function moveStepUp(index) {
 }
 
 async function moveStepDown(index) {
-  if (index < props.steps.length - 1) await swapSteps(index, index + 1)
+  if (index < steps.value.length - 1) await swapSteps(index, index + 1)
 }
 
 async function swapSteps(fromIndex, toIndex) {
-  const a = props.steps[fromIndex]
-  const b = props.steps[toIndex]
+  const a = steps.value[fromIndex]
+  const b = steps.value[toIndex]
   if (!a || !b) return
   const tmpOrder = a.stepOrder
   a.stepOrder = b.stepOrder
   b.stepOrder = tmpOrder
   await Promise.all([a.save(), b.save()])
-  selectedIndex.value = toIndex
+  stepId.value = a.id
 }
 
 defineExpose({ addStep })
@@ -100,11 +119,11 @@ defineExpose({ addStep })
         :key="step.id ?? index"
         :step="step"
         :index="index"
-        :isSelected="index === selectedIndex"
+        :isSelected="step.id === stepId"
         :isFirst="index === 0"
         :isLast="index === steps.length - 1"
         :canUpdate="canUpdate"
-        @select="selectStep(index)"
+        @select="selectStep(step)"
         @remove="removeStep(index)"
         @moveUp="moveStepUp(index)"
         @moveDown="moveStepDown(index)"

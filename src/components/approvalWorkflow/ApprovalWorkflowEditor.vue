@@ -1,5 +1,5 @@
 <script setup>
-import { IconHistory, IconLock, IconChevronDown, IconCheck } from '@tabler/icons-vue'
+import { IconHistory, IconLock, IconCheck } from '@tabler/icons-vue'
 import { useQuasar } from 'quasar'
 import { isAllowed } from '@/utils/currentSession'
 import { getCompanyPath } from '@/utils/routeHelpers'
@@ -7,6 +7,7 @@ import { useApprovalWorkflows } from '@/composables/useApprovalWorkflows.js'
 
 const props = defineProps({
   id: { type: String, required: true },
+  autoAddStep: { type: Boolean, default: true },
 })
 
 const $q = useQuasar()
@@ -27,14 +28,8 @@ const versions = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-const versionStatuses = useLiveQuery((db) => db.ApprovalWorkflowVersionStatus.where().exec(), {
-  initial: [],
-})
-
 const selectedVersionId = ref(null)
-const selectedStepIndex = ref(0)
-const stepListRef = ref(null)
-const autoStepAdded = ref(false)
+const selectedStepId = ref(null)
 
 watch(
   versions,
@@ -50,37 +45,13 @@ watch(
   () => props.id,
   () => {
     selectedVersionId.value = null
-    autoStepAdded.value = false
-    selectedStepIndex.value = 0
+    selectedStepId.value = null
   },
 )
 
 const selectedVersion = computed(
   () => versions.value?.find((v) => v.id === selectedVersionId.value) ?? null,
 )
-
-const steps = useLiveQueryWithDeps(
-  [() => selectedVersionId.value],
-  async (db, [vId]) => {
-    if (!vId) return []
-    return db.ApprovalWorkflowStep.where('workflowVersionId', vId).orderBy('stepOrder').exec()
-  },
-  { initial: [] },
-)
-
-// Auto-add first step when a draft version has no steps
-watch(steps, async (newSteps) => {
-  if (
-    !autoStepAdded.value &&
-    canUpdate.value &&
-    newSteps?.length === 0 &&
-    selectedVersionId.value
-  ) {
-    autoStepAdded.value = true
-    await nextTick()
-    stepListRef.value?.addStep()
-  }
-})
 
 // --- Computed ---
 const breadcrumbItems = computed(() => [
@@ -93,10 +64,6 @@ const versionLabel = computed(() => {
   if (!v) return ''
   return v.versionLabel || `${v.versionMajor}.${v.versionMinor}`
 })
-
-function getVersionStatusName(statusId) {
-  return versionStatuses.value.find((s) => s.id === statusId)?.name ?? statusId
-}
 
 const isViewingOldVersion = computed(() => {
   if (!selectedVersion.value) return false
@@ -116,10 +83,6 @@ const canCreateDraft = computed(() => {
   const haveDraftVersion = versions.value.some((v) => v.statusId === 'DRAFT')
   return isAllowed(['approvalWorkflows:update']) && !haveDraftVersion
 })
-
-const selectedStep = computed(() =>
-  steps.value ? (steps.value[selectedStepIndex.value] ?? null) : null,
-)
 
 // --- Handlers ---
 const saving = ref(false)
@@ -144,14 +107,12 @@ async function handleSave(statusOverride) {
   if (!selectedVersion.value || !workflow.value) return
 
   // Validate each step has at least one role or reviewer
-  const stepsWithoutAssignees = steps.value.filter(() => {
-    // We can't check roles/users here without async queries; skip validation for now
-    return false
-  })
+  // TODO: need to do publishing in backend
+  const stepsWithoutAssignees = []
   if (stepsWithoutAssignees.length > 0) {
     $q.notify({
       type: 'warning',
-      message: 'Each step must have at least one role or reviewer assigned',
+      message: '  // TODO: need to do publishing in backend',
       position: 'top',
     })
     return
@@ -190,7 +151,6 @@ async function handleCreateDraft(majorBump = false) {
     $q.notify({ type: 'positive', message: 'New draft version created', position: 'top' })
     // Reset so watch(versions) will auto-select the new draft
     selectedVersionId.value = null
-    autoStepAdded.value = false
   } catch {
     $q.notify({ type: 'negative', message: 'Failed to create draft version', position: 'top' })
   } finally {
@@ -205,7 +165,6 @@ function goBack() {
 function selectVersion(version) {
   if (version.id === selectedVersionId.value) return
   selectedVersionId.value = version.id
-  selectedStepIndex.value = 0
 }
 
 function handleVersionSelect(version, close) {
@@ -235,10 +194,14 @@ function handleVersionSelect(version, close) {
           <!-- Version Selector -->
           <BasePopover placement="bottom-end">
             <template #button>
-              <BaseButton variant="outline" size="sm" :isOpen="false">
-                v{{ versionLabel }} ({{ getVersionStatusName(selectedVersion?.statusId) }})
-                <IconChevronDown :size="16" class="tw:ml-1" />
-              </BaseButton>
+              <ApprovalWorkflowVersionStatusBadgeById
+                v-if="selectedVersion?.statusId"
+                :statusId="selectedVersion.statusId"
+                class="tw:ml-2"
+                selectable
+              >
+                <template #icon> v{{ versionLabel }} </template>
+              </ApprovalWorkflowVersionStatusBadgeById>
             </template>
             <template #content="{ close }">
               <div class="tw:w-64 tw:py-2">
@@ -254,11 +217,17 @@ function handleVersionSelect(version, close) {
                   :class="version.id === selectedVersionId ? 'tw:bg-primary/5 tw:text-primary' : ''"
                   @click="handleVersionSelect(version, close)"
                 >
-                  <div class="tw:text-sm">
-                    v{{ version.versionLabel || `${version.versionMajor}.${version.versionMinor}` }}
-                    <span class="tw:text-secondary tw:text-xs tw:ml-1">
-                      — {{ getVersionStatusName(version.statusId) }}
-                    </span>
+                  <div class="tw:flex tw:flex-nowrap tw:items-center tw:text-sm">
+                    <span
+                      >v{{
+                        version.versionLabel || `${version.versionMajor}.${version.versionMinor}`
+                      }}</span
+                    >
+                    <ApprovalWorkflowVersionStatusBadgeById
+                      v-if="version.statusId"
+                      :statusId="version.statusId"
+                      class="tw:ml-1"
+                    />
                     <span v-if="version.isCurrent" class="tw:text-primary tw:font-bold tw:ml-1"
                       >(Current)</span
                     >
@@ -367,17 +336,16 @@ function handleVersionSelect(version, close) {
       <div v-if="selectedVersion" class="tw:flex tw:flex-1 tw:overflow-hidden">
         <!-- Left Pane: Step List -->
         <ApprovalWorkflowStepList
-          ref="stepListRef"
-          v-model:selectedIndex="selectedStepIndex"
-          :steps="steps"
+          v-model:stepId="selectedStepId"
           :versionId="selectedVersionId"
           :canUpdate="canUpdate"
+          :autoAddStep="autoAddStep"
         />
 
         <!-- Right Pane: Step Editor -->
         <div class="tw:flex-1 tw:overflow-y-auto tw:bg-main tw:p-8">
-          <div v-if="selectedStep" class="tw:max-w-4xl tw:mx-auto tw:space-y-10">
-            <ApprovalWorkflowStepEditor :step="selectedStep" :canUpdate="canUpdate" />
+          <div v-if="selectedStepId" class="tw:max-w-4xl tw:mx-auto tw:space-y-10">
+            <ApprovalWorkflowStepEditor :stepId="selectedStepId" :canUpdate="canUpdate" />
           </div>
 
           <div

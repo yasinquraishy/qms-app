@@ -13,11 +13,14 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   rowKey: { type: String, default: 'id' },
   noDataLabel: { type: String, default: 'No data available' },
+  hidePagination: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['row-click'])
 
 const pagination = defineModel('pagination', {
   type: Object,
-  default: () => ({ page: 1, rowsPerPage: 5, sortBy: null, descending: false }),
+  default: () => ({ page: 1, rowsPerPage: 5, sortBy: null, descending: false, total: null }),
 })
 
 const sortColumn = computed(() => pagination.value.sortBy ?? null)
@@ -62,13 +65,14 @@ const paginatedRows = computed(() => {
 })
 
 const totalPages = computed(() => {
-  const rpp = pagination.value.rowsPerPage
-  return rpp > 0 ? Math.ceil(props.rows.length / rpp) : 1
+  const { rowsPerPage, total: initialTotal } = pagination.value
+  const total = initialTotal || props.rows.length
+  return rowsPerPage > 0 ? Math.ceil(total / rowsPerPage) : 1
 })
 
 const paginationLabel = computed(() => {
-  const { page, rowsPerPage } = pagination.value
-  const total = props.rows.length
+  const { page, rowsPerPage, total: initialTotal } = pagination.value
+  const total = initialTotal || props.rows.length
   if (total === 0) return '0-0 of 0'
   const start = (page - 1) * rowsPerPage + 1
   const end = Math.min(page * rowsPerPage, total)
@@ -163,12 +167,13 @@ function tdAlignClass(align) {
               v-for="(row, rowIndex) in paginatedRows"
               :key="row[rowKey] ?? rowIndex"
               class="tw:border-b tw:border-divider last:tw:border-b-0 tw:transition-colors tw:duration-100 tw:hover:bg-sidebar-hover"
+              @click.prevent="emit('row-click', row, rowIndex)"
             >
               <td
                 v-for="col in columns"
                 :key="col.name"
                 :class="[
-                  'tw:px-4 tw:py-3 tw:text-on-main tw:align-middle tw:leading-snug',
+                  'tw:whitespace-nowrap tw:px-4 tw:py-3 tw:text-on-main tw:align-middle tw:leading-snug',
                   tdAlignClass(col.align),
                 ]"
               >
@@ -209,9 +214,10 @@ function tdAlignClass(align) {
 
     <!-- Pagination Footer -->
     <div
+      v-if="!hidePagination"
       class="tw:px-4 tw:py-3 tw:border-t tw:border-divider tw:bg-main tw:flex tw:items-center tw:justify-between sm:tw:justify-end tw:gap-6 tw:text-xs tw:text-secondary"
     >
-      <div class="tw:hidden sm:tw:flex tw:items-center tw:gap-2">
+      <div class="sm:tw:flex tw:items-center tw:gap-2">
         <span>Rows per page:</span>
         <select
           :value="pagination.rowsPerPage"

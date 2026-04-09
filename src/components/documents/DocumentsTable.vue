@@ -1,4 +1,6 @@
 <script setup>
+import { IconDotsVertical, IconEye, IconArchive } from '@tabler/icons-vue'
+
 const props = defineProps({
   rows: {
     type: Array,
@@ -85,105 +87,84 @@ function getVersionLabel(version) {
 </script>
 
 <template>
-  <WCard>
-    <WTable :rows="rows" :columns="columns" :loading="loading" class="tw:flex-1" hideTop noBorder>
-      <!-- Doc Number Column -->
-      <template #body-cell-docNumber="scope">
-        <QTd :props="scope">
-          <QBadge color="primary" outline>{{ scope.row.docNumber }}</QBadge>
-        </QTd>
-      </template>
+  <BaseTable :rows="rows" :columns="columns" :loading="loading">
+    <!-- Doc Number Column -->
+    <template #body-cell-docNumber="{ row }">
+      <BaseBadge>{{ row.docNumber }}</BaseBadge>
+    </template>
 
-      <!-- Title Column -->
-      <template #body-cell-title="scope">
-        <QTd :props="scope">
-          <div
-            class="tw:font-bold tw:text-on-main tw:cursor-pointer tw:hover:text-primary"
-            @click="emit('view', scope.row)"
-          >
-            {{ scope.row.title }}
-          </div>
-        </QTd>
-      </template>
+    <!-- Title Column -->
+    <template #body-cell-title="{ row }">
+      <div
+        class="tw:font-bold tw:text-on-main tw:cursor-pointer tw:hover:text-primary"
+        @click="emit('view', row)"
+      >
+        {{ row.title }}
+      </div>
+    </template>
 
-      <!-- Department Column -->
-      <template #body-cell-department="scope">
-        <QTd :props="scope">
-          <DepartmentBadgeById :departmentId="scope.row.departmentId" />
-        </QTd>
-      </template>
+    <!-- Department Column -->
+    <template #body-cell-department="{ row }">
+      <DepartmentBadgeById :departmentId="row.departmentId" />
+    </template>
 
-      <!-- Current Version Column -->
-      <template #body-cell-current="scope">
-        <QTd :props="scope">
-          <WStatusBadge
-            v-if="scope.value"
-            :version="getVersionLabel(scope.value)"
-            :status="scope.value.statusId"
-            variant="document"
-            showIcon
-          />
-          <span v-else class="tw:text-sm tw:text-secondary">-</span>
-        </QTd>
-      </template>
+    <!-- Current Version Column -->
+    <template #body-cell-current="{ value }">
+      <DocumentsStatusBadge
+        v-if="value"
+        :version="getVersionLabel(value)"
+        :status="value.statusId"
+      />
+      <span v-else class="tw:text-sm tw:text-secondary">-</span>
+    </template>
 
-      <!-- Latest Version Column -->
-      <template #body-cell-latest="scope">
-        <QTd :props="scope">
-          <WStatusBadge
-            v-if="scope.value"
-            :version="getVersionLabel(scope.value)"
-            :status="scope.value.statusId"
-            variant="document"
-            showIcon
-          />
-          <span v-else class="tw:text-sm tw:text-secondary">-</span>
-        </QTd>
-      </template>
+    <!-- Latest Version Column -->
+    <template #body-cell-latest="{ value }">
+      <DocumentsStatusBadge
+        v-if="value"
+        :version="getVersionLabel(value)"
+        :status="value.statusId"
+      />
+      <span v-else class="tw:text-sm tw:text-secondary">-</span>
+    </template>
 
-      <!-- Owner Column -->
-      <template #body-cell-owner="scope">
-        <QTd :props="scope">
-          <UserBadgeById :userId="scope.row.userId" />
-        </QTd>
-      </template>
+    <!-- Owner Column -->
+    <template #body-cell-owner="{ row }">
+      <UserBadgeById :userId="row.userId" />
+    </template>
 
-      <!-- Actions Column -->
-      <template #body-cell-actions="scope">
-        <QTd :props="scope">
-          <div class="tw:flex tw:justify-end">
-            <WBtn flat round dense color="grey-6" icon="more_vert">
-              <QMenu>
-                <QList dense style="min-width: 140px">
-                  <QItem v-close-popup clickable @click="emit('view', scope.row)">
-                    <QItemSection>
-                      <div class="tw:flex tw:items-center tw:gap-2">
-                        <WIcon name="visibility" size="20px" color="primary" />
-                        <div>View</div>
-                      </div>
-                    </QItemSection>
-                  </QItem>
-
-                  <QItem
-                    v-if="canArchive && scope.row.statusId !== 'ARCHIVED'"
-                    v-close-popup
-                    clickable
-                    class="tw:text-bad"
-                    @click="emit('archive', scope.row)"
-                  >
-                    <QItemSection>
-                      <div class="tw:flex tw:items-center tw:gap-2">
-                        <WIcon name="inventory_2" size="20px" />
-                        <div>Archive</div>
-                      </div>
-                    </QItemSection>
-                  </QItem>
-                </QList>
-              </QMenu>
-            </WBtn>
-          </div>
-        </QTd>
-      </template>
-    </WTable>
-  </WCard>
+    <!-- Actions Column -->
+    <template #body-cell-actions="{ row }">
+      <div class="tw:flex tw:justify-end">
+        <BasePopover placement="bottom-end" :arrow="false">
+          <template #button>
+            <button
+              class="tw:p-1.5 tw:rounded tw:hover:bg-main-hover tw:text-secondary tw:transition-colors"
+            >
+              <IconDotsVertical :size="16" />
+            </button>
+          </template>
+          <template #content="{ close }">
+            <div class="tw:flex tw:flex-col tw:py-1 tw:min-w-36">
+              <button
+                class="tw:flex tw:items-center tw:gap-2 tw:px-3 tw:py-2 tw:text-sm tw:text-on-sidebar tw:hover:bg-sidebar-hover tw:transition-colors"
+                @click="(emit('view', row), close())"
+              >
+                <IconEye :size="16" class="tw:text-primary" />
+                View
+              </button>
+              <button
+                v-if="canArchive && row.statusId !== 'ARCHIVED'"
+                class="tw:flex tw:items-center tw:gap-2 tw:px-3 tw:py-2 tw:text-sm tw:text-bad tw:hover:bg-sidebar-hover tw:transition-colors"
+                @click="(emit('archive', row), close())"
+              >
+                <IconArchive :size="16" />
+                Archive
+              </button>
+            </div>
+          </template>
+        </BasePopover>
+      </div>
+    </template>
+  </BaseTable>
 </template>

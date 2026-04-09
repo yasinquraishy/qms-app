@@ -67,6 +67,7 @@ declare module 'vue' {
     BaseDatePickerDropMenuPanel: typeof import('./resource/js/shared/components/BaseDatePickerDropMenuPanel.vue')['default']
     BaseDateTimeDropMenu: typeof import('./resource/js/shared/components/BaseDateTimeDropMenu.vue')['default']
     BaseDateTimePicker: typeof import('./resource/js/shared/components/BaseDateTimePicker.vue')['default']
+    BaseDialog: typeof import('./resource/js/shared/components/BaseDialog.vue')['default']
     BasePopover: typeof import('./resource/js/shared/components/BasePopover.vue')['default']
     BaseSelectMenu: typeof import('./resource/js/shared/components/BaseSelectMenu.vue')['default']
     BaseSwitch: typeof import('./resource/js/shared/components/BaseSwitch.vue')['default']

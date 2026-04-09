@@ -55,7 +55,7 @@ declare module 'vue' {
     ApprovalWorkflowStepEditor: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowStepEditor.vue')['default']
     ApprovalWorkflowStepList: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowStepList.vue')['default']
     ApprovalWorkflowUserSelector: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowUserSelector.vue')['default']
-    ApprovalWorkflowVersionStatusBadgeById: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowVersionStatusBadgeById.vue')['default']
+    ApprovalWorkflowVersionStatusBadgeById: typeof import('./src/components/badges/ApprovalWorkflowVersionStatusBadgeById.vue')['default']
     AuditLogsHome: typeof import('./src/components/auditLog/AuditLogsHome.vue')['default']
     AuditLogsIndex: typeof import('./src/components/auditLog/AuditLogsIndex.vue')['default']
     AuditLogsItem: typeof import('./src/components/auditLog/AuditLogsItem.vue')['default']

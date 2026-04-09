@@ -86,6 +86,7 @@ declare module 'vue' {
     ConfigOptions: typeof import('./src/components/form-builder/config/ConfigOptions.vue')['default']
     ConfigState: typeof import('./src/components/form-builder/config/ConfigState.vue')['default']
     ConfigStyling: typeof import('./src/components/form-builder/config/ConfigStyling.vue')['default']
+    ConfirmDialog: typeof import('./resource/js/shared/components/ConfirmDialog.vue')['default']
     DepartmentBadge: typeof import('./src/components/badges/DepartmentBadge.vue')['default']
     DepartmentBadgeById: typeof import('./src/components/badges/DepartmentBadgeById.vue')['default']
     DepartmentsCreateUpdateDialog: typeof import('./src/components/departments/DepartmentsCreateUpdateDialog.vue')['default']

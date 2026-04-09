@@ -1,4 +1,13 @@
 <script setup>
+import {
+  IconUsers,
+  IconClock,
+  IconArrowUp,
+  IconArrowDown,
+  IconTrash,
+  IconDots,
+} from '@tabler/icons-vue'
+
 const props = defineProps({
   step: {
     type: Object,
@@ -28,13 +37,43 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'remove', 'moveUp', 'moveDown'])
 
+const roleCount = useLiveQueryWithDeps(
+  [() => props.step?.id],
+  async (db, [stepId]) => {
+    if (!stepId) return 0
+    const all = await db.ApprovalWorkflowStepRole.where().exec()
+    return all.filter((sr) => sr.stepId === stepId).length
+  },
+  { initial: 0 },
+)
+
+const userCount = useLiveQueryWithDeps(
+  [() => props.step?.id],
+  async (db, [stepId]) => {
+    if (!stepId) return 0
+    const all = await db.ApprovalWorkflowStepUser.where().exec()
+    return all.filter((su) => su.stepId === stepId).length
+  },
+  { initial: 0 },
+)
+
 const approverLabel = computed(() => {
-  const roles = props.step.roleIds?.length || 0
-  const users = props.step.reviewerIds?.length || 0
+  const roles = roleCount.value || 0
+  const users = userCount.value || 0
   const parts = []
   if (roles > 0) parts.push(`${roles} Role${roles !== 1 ? 's' : ''}`)
   if (users > 0) parts.push(`${users} User${users !== 1 ? 's' : ''}`)
   return parts.length > 0 ? parts.join(', ') : 'No approvers'
+})
+
+const menuItems = computed(() => {
+  const items = []
+  if (!props.isFirst)
+    items.push({ name: 'Move Up', icon: IconArrowUp, click: () => emit('moveUp') })
+  if (!props.isLast)
+    items.push({ name: 'Move Down', icon: IconArrowDown, click: () => emit('moveDown') })
+  items.push({ name: 'Delete', icon: IconTrash, click: () => emit('remove') })
+  return items
 })
 </script>
 
@@ -77,11 +116,11 @@ const approverLabel = computed(() => {
 
         <div class="tw:flex tw:items-center tw:gap-3 tw:text-xs tw:text-secondary">
           <span class="tw:flex tw:items-center tw:gap-1">
-            <WIcon icon="groups" size="16px" />
+            <IconUsers :size="16" />
             {{ approverLabel }}
           </span>
           <span v-if="step.slaDays" class="tw:flex tw:items-center tw:gap-1">
-            <WIcon icon="schedule" size="16px" />
+            <IconClock :size="16" />
             {{ step.slaDays }} Day{{ step.slaDays !== 1 ? 's' : '' }}
           </span>
         </div>
@@ -92,31 +131,16 @@ const approverLabel = computed(() => {
         v-if="canUpdate"
         class="tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity tw:shrink-0"
       >
-        <WBtn icon="more_vert" flat round dense size="sm" color="grey-6">
-          <QMenu>
-            <QList dense style="min-width: 140px">
-              <QItem v-if="!isFirst" v-close-popup clickable @click.stop="emit('moveUp')">
-                <QItemSection side>
-                  <WIcon icon="arrow_upward" size="18px" />
-                </QItemSection>
-                <QItemSection>Move Up</QItemSection>
-              </QItem>
-              <QItem v-if="!isLast" v-close-popup clickable @click.stop="emit('moveDown')">
-                <QItemSection side>
-                  <WIcon icon="arrow_downward" size="18px" />
-                </QItemSection>
-                <QItemSection>Move Down</QItemSection>
-              </QItem>
-              <QSeparator v-if="!isFirst || !isLast" />
-              <QItem v-close-popup clickable class="tw:text-bad" @click.stop="emit('remove')">
-                <QItemSection side>
-                  <WIcon icon="delete" size="18px" class="tw:text-bad" />
-                </QItemSection>
-                <QItemSection>Delete</QItemSection>
-              </QItem>
-            </QList>
-          </QMenu>
-        </WBtn>
+        <BaseMenu :items="menuItems">
+          <template #trigger>
+            <button
+              class="tw:p-1 tw:rounded tw:hover:bg-main-hover tw:text-secondary tw:transition-colors"
+              @click.stop
+            >
+              <IconDots :size="18" />
+            </button>
+          </template>
+        </BaseMenu>
       </div>
     </div>
   </div>

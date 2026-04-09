@@ -1,32 +1,51 @@
 <script setup>
-import { useRoles } from '@/composables/useRoles.js'
+import { IconSearch, IconX } from '@tabler/icons-vue'
 
-defineProps({
+const props = defineProps({
+  stepId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
 })
 
-const roleIds = defineModel('roleIds', { type: Array, default: () => [] })
+const search = ref('')
 
-const { roles, loading, filters } = useRoles()
+const roles = useLiveQuery((db) => db.Role.where('isActive', true).exec(), { initial: [] })
 
-const selectedRoles = computed(() => {
-  return roles.value.filter((role) => roleIds.value.includes(role.id))
+const stepRoles = useLiveQueryWithDeps(
+  [() => props.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return await db.ApprovalWorkflowStepRole.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+const roleIds = computed(() => stepRoles.value.map((sr) => sr.roleId))
+const selectedRoles = computed(() => roles.value.filter((role) => roleIds.value.includes(role.id)))
+const filteredRoles = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return roles.value
+  return roles.value.filter((r) => r.name.toLowerCase().includes(q))
 })
 
-function toggleRole(roleId) {
-  const index = roleIds.value.indexOf(roleId)
-  if (index === -1) {
-    roleIds.value = [...roleIds.value, roleId]
+const createStepRole = useLiveMutation(async (db, { stepId, roleId }) => {
+  const sr = db.ApprovalWorkflowStepRole.create({ stepId, roleId })
+  await sr.save()
+})
+
+async function toggleRole(roleId) {
+  if (!props.canUpdate) return
+  const existing = stepRoles.value.find((sr) => sr.roleId === roleId)
+  if (existing) {
+    await existing.delete()
   } else {
-    roleIds.value = roleIds.value.filter((id) => id !== roleId)
+    await createStepRole({ stepId: props.stepId, roleId })
   }
 }
 
-function removeRole(roleId) {
-  const index = roleIds.value.indexOf(roleId)
-  if (index !== -1) {
-    roleIds.value = roleIds.value.filter((id) => id !== roleId)
-  }
+async function removeRole(roleId) {
+  if (!props.canUpdate) return
+  const existing = stepRoles.value.find((sr) => sr.roleId === roleId)
+  if (existing) await existing.delete()
 }
 </script>
 
@@ -37,11 +56,11 @@ function removeRole(roleId) {
       <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-2">
         Select Roles
       </label>
-      <WInput v-model="filters.search" placeholder="Search roles (e.g. Quality Manager...)" dense>
-        <template #prepend>
-          <WIcon icon="search" size="18px" class="tw:text-secondary" />
+      <BaseTextInput v-model="search" placeholder="Search roles (e.g. Quality Manager...)">
+        <template #icon>
+          <IconSearch :size="18" class="tw:text-secondary" />
         </template>
-      </WInput>
+      </BaseTextInput>
     </div>
 
     <!-- Selected Chips -->
@@ -57,20 +76,15 @@ function removeRole(roleId) {
           class="tw:text-secondary tw:hover:text-bad tw:transition-colors"
           @click="removeRole(role.id)"
         >
-          <WIcon icon="close" size="14px" />
+          <IconX :size="14" />
         </button>
       </div>
-    </div>
-
-    <!-- Loading -->
-    <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:py-4">
-      <QSpinner color="primary" size="24px" />
     </div>
 
     <!-- Role List -->
     <div v-else class="tw:max-h-48 tw:overflow-y-auto tw:space-y-1">
       <div
-        v-for="role in roles"
+        v-for="role in filteredRoles"
         :key="role.id"
         class="tw:flex tw:items-center tw:gap-3 tw:p-2 tw:rounded-lg tw:transition-colors"
         :class="[
@@ -81,11 +95,9 @@ function removeRole(roleId) {
         ]"
         @click="canUpdate && toggleRole(role.id)"
       >
-        <QCheckbox
+        <BaseCheckbox
           :modelValue="roleIds.includes(role.id)"
-          color="primary"
-          dense
-          :disable="!canUpdate"
+          :disabled="!canUpdate"
           @click.stop
           @update:modelValue="canUpdate && toggleRole(role.id)"
         />
@@ -98,7 +110,7 @@ function removeRole(roleId) {
       </div>
 
       <div
-        v-if="roles.length === 0 && !loading"
+        v-if="filteredRoles.length === 0"
         class="tw:text-center tw:py-4 tw:text-sm tw:text-secondary"
       >
         No roles found

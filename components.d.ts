@@ -49,6 +49,7 @@ declare module 'vue' {
     ApprovalWorkflowsList: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowsList.vue')['default']
     ApprovalWorkflowsModuleSelect: typeof import('./src/components/approvalWorkflow/approvalWorkflowsModuleSelect.vue')['default']
     ApprovalWorkflowsStatusSelect: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowsStatusSelect.vue')['default']
+    ApprovalWorkflowsStatusSelectMenu: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowsStatusSelectMenu.vue')['default']
     ApprovalWorkflowsTable: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowsTable.vue')['default']
     ApprovalWorkflowStatusBadge: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowStatusBadge.vue')['default']
     ApprovalWorkflowStepCard: typeof import('./src/components/approvalWorkflow/ApprovalWorkflowStepCard.vue')['default']

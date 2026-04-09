@@ -97,7 +97,6 @@ export default {
     "provide": true,
     "provideApiKeys": true,
     "provideApprovalWorkflowInstances": true,
-    "provideApprovalWorkflows": true,
     "provideAuditLogs": true,
     "provideAuth": true,
     "provideCompanySettings": true,

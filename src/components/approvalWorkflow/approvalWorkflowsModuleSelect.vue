@@ -1,65 +1,39 @@
 <script setup>
-import { get } from '@/api'
-
-const props = defineProps({
+defineProps({
   required: {
     type: Boolean,
     default: false,
   },
 })
 
-const moduleId = defineModel('moduleId', {
+const modelValue = defineModel({
   type: [String, null],
+  default: null,
 })
 
-const modules = ref([])
-const loading = ref(false)
-
-const isClearable = computed(() => {
-  return !props.required && moduleId.value !== null
+const modules = useLiveQuery((db) => db.Module.where().orderBy('displayOrder').exec(), {
+  initial: [],
 })
 
-async function fetchModules() {
-  const data = await get('/v1/services/modules', {
-    loader: loading,
-  })
-
-  const mappedData = (data.modules || []).map((m) => ({
-    label: m.name,
-    value: m.id,
-  }))
-
-  if (props.required) {
-    modules.value = mappedData
-    if (!moduleId.value && mappedData.length > 0) {
-      moduleId.value = mappedData[0].value
-    }
-  } else {
-    modules.value = [{ label: 'All Modules', value: null }, ...mappedData]
-  }
+function getModule(id) {
+  return modules.value.find((m) => m.id === id) ?? null
 }
-
-onMounted(() => {
-  fetchModules()
-})
 </script>
 
 <template>
-  <WSelect
-    v-model="moduleId"
-    :options="modules"
-    :loading="loading"
-    outlined
-    dense
-    emitValue
-    mapOptions
-    optionLabel="label"
-    optionValue="value"
-    :clearable="isClearable"
-    v-bind="$attrs"
-  >
-    <template v-if="$slots.label" #label>
-      <slot name="label" />
+  <BaseSelectMenu v-model="modelValue" :items="modules" :required="required">
+    <template #button="scope">
+      <slot name="button" v-bind="scope">
+        <BaseBadge
+          v-if="modelValue"
+          :clearable="!required"
+          selectable
+          @clear="() => scope.clear(modelValue)"
+        >
+          {{ getModule(modelValue)?.name ?? modelValue }}
+        </BaseBadge>
+        <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">Select Module</span>
+      </slot>
     </template>
-  </WSelect>
+  </BaseSelectMenu>
 </template>

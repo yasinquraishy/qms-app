@@ -20,7 +20,7 @@ const filters = defineModel('filters', {
     </SafeTeleport>
 
     <div class="tw:flex-1 tw:min-w-40">
-      <formTemplatesDocumentTypeSelect v-model:documentTypeId="filters.documentTypeId" multiple />
+      <DocumentTypeSelectMenu v-model="filters.documentTypeId" multiple />
     </div>
 
     <div class="tw:flex-1 tw:min-w-40">

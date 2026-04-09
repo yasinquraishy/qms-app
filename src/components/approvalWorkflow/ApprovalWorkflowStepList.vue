@@ -1,13 +1,11 @@
 <script setup>
+import { IconPlus } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany.js'
 
-defineProps({
+const props = defineProps({
+  steps: { type: Array, default: () => [] },
+  versionId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
-})
-
-const steps = defineModel({
-  type: Array,
-  default: () => [],
 })
 
 const selectedIndex = defineModel('selectedIndex', {
@@ -19,58 +17,62 @@ function selectStep(index) {
   selectedIndex.value = index
 }
 
-function addStep() {
-  if (!steps.value) return
-  const newOrder = steps.value.length + 1
-  const s = currentCompany.value?.settings || {}
-  steps.value.push({
-    name: `Step ${newOrder}`,
+const createStep = useLiveMutation(async (db, { versionId, order, settings }) => {
+  const s = settings || {}
+  const step = db.ApprovalWorkflowStep.create({
+    workflowVersionId: versionId,
+    name: `Step ${order}`,
     description: '',
-    stepOrder: newOrder,
+    stepOrder: order,
     approvalRule: s.defaultApprovalWorkflowApprovalRule ?? 'ALL',
     slaDays: s.defaultSla ?? null,
     requireComments: s.defaultApprovalWorkflowRequireComment ?? false,
     requireEsignature: s.defaultApprovalWorkflowRequireSignature ?? false,
-    roleIds: [],
-    reviewerIds: [],
   })
-  selectedIndex.value = steps.value.length - 1
+  await step.save()
+  return step
+})
+
+async function addStep() {
+  const s = currentCompany.value?.settings || {}
+  const order = props.steps.length + 1
+  await createStep({ versionId: props.versionId, order, settings: s })
+  selectedIndex.value = order - 1
 }
 
-function removeStep(index) {
-  if (!steps.value) return
-  steps.value.splice(index, 1)
-  // Reorder
-  steps.value.forEach((step, i) => {
-    step.stepOrder = i + 1
-  })
-  // Adjust selection
-  if (selectedIndex.value >= steps.value.length) {
-    selectedIndex.value = Math.max(0, steps.value.length - 1)
+async function removeStep(index) {
+  const step = props.steps[index]
+  if (!step) return
+  await step.delete()
+  // Reorder remaining
+  const remaining = props.steps.filter((_, i) => i !== index)
+  await Promise.all(
+    remaining.map((s, i) => {
+      s.stepOrder = i + 1
+      return s.save()
+    }),
+  )
+  if (selectedIndex.value >= props.steps.length - 1) {
+    selectedIndex.value = Math.max(0, props.steps.length - 2)
   }
 }
 
-function moveStepUp(index) {
-  if (index > 0) {
-    moveStepInternal(index, index - 1)
-  }
+async function moveStepUp(index) {
+  if (index > 0) await swapSteps(index, index - 1)
 }
 
-function moveStepDown(index) {
-  if (index < steps.value.length - 1) {
-    moveStepInternal(index, index + 1)
-  }
+async function moveStepDown(index) {
+  if (index < props.steps.length - 1) await swapSteps(index, index + 1)
 }
 
-function moveStepInternal(fromIndex, toIndex) {
-  if (!steps.value) return
-  if (toIndex < 0 || toIndex >= steps.value.length) return
-  const [moved] = steps.value.splice(fromIndex, 1)
-  steps.value.splice(toIndex, 0, moved)
-  // Reorder
-  steps.value.forEach((step, i) => {
-    step.stepOrder = i + 1
-  })
+async function swapSteps(fromIndex, toIndex) {
+  const a = props.steps[fromIndex]
+  const b = props.steps[toIndex]
+  if (!a || !b) return
+  const tmpOrder = a.stepOrder
+  a.stepOrder = b.stepOrder
+  b.stepOrder = tmpOrder
+  await Promise.all([a.save(), b.save()])
   selectedIndex.value = toIndex
 }
 
@@ -87,7 +89,7 @@ defineExpose({ addStep })
       <span
         class="tw:text-xs tw:font-medium tw:text-secondary tw:bg-main tw:px-2 tw:py-0.5 tw:rounded"
       >
-        {{ steps.length }} Step{{ steps.length !== 1 ? 's' : '' }}
+        {{ steps?.length ?? 0 }} Step{{ (steps?.length ?? 0) !== 1 ? 's' : '' }}
       </span>
     </div>
 
@@ -95,7 +97,7 @@ defineExpose({ addStep })
     <div class="tw:flex-1 tw:overflow-y-auto tw:p-4 tw:space-y-3">
       <ApprovalWorkflowStepCard
         v-for="(step, index) in steps"
-        :key="index"
+        :key="step.id ?? index"
         :step="step"
         :index="index"
         :isSelected="index === selectedIndex"
@@ -114,7 +116,7 @@ defineExpose({ addStep })
         class="tw:w-full tw:py-4 tw:border-2 tw:border-dashed tw:border-divider tw:rounded-xl tw:flex tw:items-center tw:justify-center tw:gap-2 tw:text-secondary tw:hover:text-primary tw:hover:border-primary tw:hover:bg-primary/5 tw:transition-all"
         @click="addStep"
       >
-        <WIcon icon="add_circle" size="20px" />
+        <IconPlus :size="20" />
         <span class="tw:text-sm tw:font-bold">Add Step</span>
       </button>
     </div>

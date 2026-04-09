@@ -1,5 +1,5 @@
 <script setup>
-import { useApprovalWorkflows } from '@/composables/useApprovalWorkflows.js'
+import { IconSitemap, IconLayoutList, IconLayoutRows } from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers'
 import { useCompanyLocalStorage } from '@/utils/useCompanyLocalStorage'
 import { isAllowed } from '@/utils/currentSession.js'
@@ -9,13 +9,13 @@ const router = useRouter()
 const showCreateDialog = ref(false)
 const viewMode = useCompanyLocalStorage('approval-workflows-view-mode', 'table')
 
+const filters = ref({ search: '', statusId: null })
+
 const canCreateWorkflow = computed(() => isAllowed(['approvalWorkflows:create']))
 
-const { filters } = useApprovalWorkflows()
-
 const viewSwitches = [
-  { icon: 'view_agenda', value: 'list', tooltip: 'List View' },
-  { icon: 'table_rows', value: 'table', tooltip: 'Table View' },
+  { icon: IconLayoutList, value: 'list', tooltip: 'List View' },
+  { icon: IconLayoutRows, value: 'table', tooltip: 'Table View' },
 ]
 
 function handleWorkflowCreated(workflow) {
@@ -28,21 +28,15 @@ function handleWorkflowCreated(workflow) {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="account_tree" class="tw:text-primary" size="24px" />
+        <IconSitemap class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Approval Workflows</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
-        v-if="canCreateWorkflow"
-        label="Create Workflow"
-        icon="add"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        @click="showCreateDialog = true"
-      />
+      <BaseButton v-if="canCreateWorkflow" @click="showCreateDialog = true">
+        Create Workflow
+      </BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -57,14 +51,14 @@ function handleWorkflowCreated(workflow) {
 
     <ApprovalWorkflowsFilterToolbar v-model:filters="filters">
       <template #actions>
-        <WSwitcher v-model="viewMode" :switches="viewSwitches" />
+        <BaseSwitcher v-model="viewMode" :switches="viewSwitches" />
       </template>
     </ApprovalWorkflowsFilterToolbar>
 
     <!-- Content Views -->
-    <ApprovalWorkflowsTable v-if="viewMode === 'table'" />
+    <ApprovalWorkflowsTable v-if="viewMode === 'table'" :filters="filters" />
     <div v-else class="tw:flex-1 tw:overflow-y-auto">
-      <ApprovalWorkflowsList />
+      <ApprovalWorkflowsList :filters="filters" />
     </div>
   </div>
 

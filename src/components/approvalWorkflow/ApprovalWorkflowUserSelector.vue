@@ -1,29 +1,37 @@
 <script setup>
-import { get } from '@/api'
+import { IconSearch, IconX } from '@tabler/icons-vue'
 
-defineProps({
+const props = defineProps({
+  stepId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
 })
 
-const reviewerIds = defineModel('reviewerIds', { type: Array, default: () => [] })
+const search = ref('')
 
-const users = ref([])
-const loading = ref(false)
-const searchQuery = ref('')
+const users = useLiveQuery((db) => db.User.where().exec(), { initial: [] })
+
+const stepUsers = useLiveQueryWithDeps(
+  [() => props.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return await db.ApprovalWorkflowStepUser.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+const reviewerIds = computed(() => stepUsers.value.map((su) => su.userId))
+
+const selectedUsers = computed(() => users.value.filter((u) => reviewerIds.value.includes(u.id)))
 
 const filteredUsers = computed(() => {
-  if (!searchQuery.value.trim()) return users.value
-  const query = searchQuery.value.toLowerCase()
+  const q = search.value.trim().toLowerCase()
+  if (!q) return users.value
   return users.value.filter(
-    (user) =>
-      user.firstName?.toLowerCase().includes(query) ||
-      user.lastName?.toLowerCase().includes(query) ||
-      user.email?.toLowerCase().includes(query),
+    (u) =>
+      u.firstName?.toLowerCase().includes(q) ||
+      u.lastName?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q),
   )
-})
-
-const selectedUsers = computed(() => {
-  return users.value.filter((user) => reviewerIds.value.includes(user.id))
 })
 
 function getUserDisplayName(user) {
@@ -31,37 +39,26 @@ function getUserDisplayName(user) {
   return parts.length > 0 ? parts.join(' ') : user.email
 }
 
-async function fetchUsers() {
-  try {
-    const data = await get('/v1/services/users', {
-      loader: loading,
-    })
-    users.value = data.users || []
-  } catch (err) {
-    console.error('Error fetching users:', err)
-    users.value = []
-  }
-}
-
-function toggleUser(userId) {
-  const index = reviewerIds.value.indexOf(userId)
-  if (index === -1) {
-    reviewerIds.value = [...reviewerIds.value, userId]
-  } else {
-    reviewerIds.value = reviewerIds.value.filter((id) => id !== userId)
-  }
-}
-
-function removeUser(userId) {
-  const index = reviewerIds.value.indexOf(userId)
-  if (index !== -1) {
-    reviewerIds.value = reviewerIds.value.filter((id) => id !== userId)
-  }
-}
-
-onMounted(() => {
-  fetchUsers()
+const createStepUser = useLiveMutation(async (db, { stepId, userId }) => {
+  const su = db.ApprovalWorkflowStepUser.create({ stepId, userId })
+  await su.save()
 })
+
+async function toggleUser(userId) {
+  if (!props.canUpdate) return
+  const existing = stepUsers.value.find((su) => su.userId === userId)
+  if (existing) {
+    await existing.delete()
+  } else {
+    await createStepUser({ stepId: props.stepId, userId })
+  }
+}
+
+async function removeUser(userId) {
+  if (!props.canUpdate) return
+  const existing = stepUsers.value.find((su) => su.userId === userId)
+  if (existing) await existing.delete()
+}
 </script>
 
 <template>
@@ -71,11 +68,11 @@ onMounted(() => {
       <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-2">
         Select Users
       </label>
-      <WInput v-model="searchQuery" placeholder="Search users by name or email..." dense>
-        <template #prepend>
-          <WIcon icon="search" size="18px" class="tw:text-secondary" />
+      <BaseTextInput v-model="search" placeholder="Search users by name or email...">
+        <template #icon>
+          <IconSearch :size="18" class="tw:text-secondary" />
         </template>
-      </WInput>
+      </BaseTextInput>
     </div>
 
     <!-- Selected Chips -->
@@ -93,18 +90,13 @@ onMounted(() => {
           class="tw:text-secondary tw:hover:text-bad tw:transition-colors"
           @click="removeUser(user.id)"
         >
-          <WIcon icon="close" size="14px" />
+          <IconX :size="14" />
         </button>
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:py-4">
-      <QSpinner color="primary" size="24px" />
-    </div>
-
     <!-- User List -->
-    <div v-else class="tw:max-h-48 tw:overflow-y-auto tw:space-y-1">
+    <div class="tw:max-h-48 tw:overflow-y-auto tw:space-y-1">
       <div
         v-for="user in filteredUsers"
         :key="user.id"
@@ -117,11 +109,9 @@ onMounted(() => {
         ]"
         @click="canUpdate && toggleUser(user.id)"
       >
-        <QCheckbox
+        <BaseCheckbox
           :modelValue="reviewerIds.includes(user.id)"
-          color="primary"
-          dense
-          :disable="!canUpdate"
+          :disabled="!canUpdate"
           @click.stop
           @update:modelValue="canUpdate && toggleUser(user.id)"
         />
@@ -134,7 +124,7 @@ onMounted(() => {
       </div>
 
       <div
-        v-if="filteredUsers.length === 0 && !loading"
+        v-if="filteredUsers.length === 0"
         class="tw:text-center tw:py-4 tw:text-sm tw:text-secondary"
       >
         No users found

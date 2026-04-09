@@ -63,7 +63,7 @@ function decrementReviewMonths() {
         <!-- Document Type -->
         <div class="tw:space-y-2">
           <DocumentsDocumentTypeSelect
-            v-model:documentTypeId="form.documentTypeId"
+            v-model="form.documentTypeId"
             name="documentTypeId"
             required
             label="Document Type *"

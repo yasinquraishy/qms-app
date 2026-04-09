@@ -307,11 +307,7 @@ function handleVersionSelect(version, close) {
             >
               Module
             </label>
-            <ApprovalWorkflowsModuleSelect
-              v-model="workflow.moduleId"
-              required
-              :disabled="!canUpdate"
-            />
+            <ModuleSelectMenu v-model="workflow.moduleId" required :disabled="!canUpdate" />
           </div>
           <div class="tw:flex-1">
             <label

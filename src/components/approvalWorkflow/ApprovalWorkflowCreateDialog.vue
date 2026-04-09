@@ -110,7 +110,7 @@ function resetForm() {
             <label class="tw:block tw:text-xs tw:font-semibold tw:text-secondary tw:mb-1.5">
               Module <span class="tw:text-bad">*</span>
             </label>
-            <ApprovalWorkflowsModuleSelect v-model="form.moduleId" required />
+            <ModuleSelectMenu v-model="form.moduleId" required />
           </div>
 
           <!-- Document Type -->

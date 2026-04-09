@@ -72,6 +72,8 @@ declare module 'vue' {
     BaseSelectMenu: typeof import('./resource/js/shared/components/BaseSelectMenu.vue')['default']
     BaseSwitch: typeof import('./resource/js/shared/components/BaseSwitch.vue')['default']
     BaseTable: typeof import('./resource/js/shared/components/BaseTable.vue')['default']
+    BaseTextarea: typeof import('./resource/js/shared/components/BaseTextarea.vue')['default']
+    BaseTextInput: typeof import('./resource/js/shared/components/BaseTextInput.vue')['default']
     BaseTimePicker: typeof import('./resource/js/shared/components/BaseTimePicker.vue')['default']
     CompanyBrandingCard: typeof import('./src/components/company/companyBrandingCard.vue')['default']
     CompanyDefaultsCard: typeof import('./src/components/company/companyDefaultsCard.vue')['default']

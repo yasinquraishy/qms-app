@@ -15,55 +15,53 @@ const modelValue = defineModel({
   default: null,
 })
 
-const documentTypes = useLiveQuery((db) => db.DocumentType.where().orderBy('displayOrder').exec(), {
-  initial: [],
-})
+const statuses = useLiveQuery(
+  (db) => db.DocumentVersionStatus.where().orderBy('displayOrder').exec(),
+  { initial: [] },
+)
 
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []
 }
+
+function getStatus(id) {
+  return statuses.value.find((s) => s.id === id) ?? null
+}
 </script>
 
 <template>
-  <BaseSelectMenu
-    v-model="modelValue"
-    :items="documentTypes"
-    :required="required"
-    :multiple="multiple"
-  >
+  <BaseSelectMenu v-model="modelValue" :items="statuses" :required="required" :multiple="multiple">
     <template #button="scope">
       <slot name="button" v-bind="scope">
         <!-- MULTIPLE MODE -->
         <template v-if="multiple">
           <div v-if="getArray().length" class="tw:flex tw:flex-wrap tw:gap-1">
-            <DocumentTypeBadgeById
+            <BaseBadge
               v-for="id in getArray()"
               :key="id"
-              :documentTypeId="id"
               :clearable="!required || getArray().length > 1"
-              :iconOnly="false"
               @clear="() => scope.clear(id)"
-            />
+            >
+              {{ getStatus(id)?.name ?? id }}
+            </BaseBadge>
           </div>
 
           <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
-            Select Document Types
+            Select Statuses
           </span>
         </template>
 
         <!-- SINGLE MODE -->
         <template v-else>
-          <DocumentTypeBadgeById
+          <BaseBadge
             v-if="modelValue"
-            :documentTypeId="modelValue"
             :clearable="!required"
-            :iconOnly="false"
             selectable
             @clear="() => scope.clear(modelValue)"
-          />
-          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
-            Select Document Type
-          </span>
+          >
+            {{ getStatus(modelValue)?.name ?? modelValue }}
+          </BaseBadge>
+          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder"> Select Status </span>
         </template>
       </slot>
     </template>

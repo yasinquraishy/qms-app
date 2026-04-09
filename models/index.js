@@ -30,6 +30,7 @@ import { DocumentVersion } from './documentVersion'
 import { DocumentVersionStatus } from './documentVersionStatus'
 import { FormStatus } from './formStatus'
 import { FormTemplate } from './formTemplate'
+import { Module } from './module'
 import { Notification } from './notification'
 import { NotificationType } from './notificationType'
 import { OptionSet } from './optionSet'
@@ -94,6 +95,7 @@ export const db = {
   DocumentVersionStatus,
   FormStatus,
   FormTemplate,
+  Module,
   Notification,
   NotificationType,
   OptionSet,

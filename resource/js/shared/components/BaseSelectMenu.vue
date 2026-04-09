@@ -16,6 +16,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  nullLabel: {
+    type: String,
+    default: 'All',
+  },
 })
 
 const selected = defineModel({
@@ -29,6 +33,21 @@ const search = shallowRef('')
  */
 function getArray() {
   return Array.isArray(selected.value) ? selected.value : []
+}
+
+const showNullable = computed(() => !props.required && !props.multiple)
+
+const isNullableSelected = computed(() => {
+  if (props.multiple) return getArray().length === 0
+  return selected.value === null || selected.value === undefined
+})
+
+function toggleNullable() {
+  if (props.multiple) {
+    selected.value = []
+  } else {
+    selected.value = null
+  }
 }
 
 const filtered = computed(() => {
@@ -83,7 +102,10 @@ function isSelected(id) {
   <Menu as="div" class="tw:relative tw:inline-block tw:text-left">
     <div>
       <MenuButton>
-        <slot name="button" :selected="selected" :clear="clear" />
+        <BaseBadge v-if="showNullable && isNullableSelected" selectable>
+          {{ nullLabel }}
+        </BaseBadge>
+        <slot v-else name="button" :selected="selected" :clear="clear" />
       </MenuButton>
     </div>
 
@@ -96,7 +118,7 @@ function isSelected(id) {
       leaveToClass="transform scale-95 opacity-0"
     >
       <MenuItems
-        class="tw:absolute tw:z-10 tw:right-0 tw:mt-2 tw:w-56 tw:origin-top-right tw:rounded-md tw:bg-sidebar tw:shadow-lg tw:ring-1 tw:ring-divider/5 tw:focus:outline-none"
+        class="tw:absolute tw:z-10 tw:right-0 tw:mt-2 tw:w-56 tw:origin-top-right tw:rounded-md tw:bg-sidebar tw:shadow-lg tw:ring-1 tw:ring-divider/5 tw:focus:outline-none tw:overflow-hidden"
       >
         <!-- Search -->
         <div class="tw:p-1">
@@ -110,6 +132,23 @@ function isSelected(id) {
 
         <!-- Items -->
         <slot name="items">
+          <!-- Nullable "All" item -->
+          <MenuItem v-if="showNullable" v-slot="{ active }">
+            <button
+              :class="[
+                active
+                  ? 'tw:bg-primary/10 tw:text-primary'
+                  : isNullableSelected
+                    ? 'tw:bg-primary/20 tw:text-primary'
+                    : 'tw:text-on-sidebar',
+                'tw:group tw:flex tw:w-full tw:items-center tw:px-2 tw:py-2 tw:text-sm',
+              ]"
+              @click="toggleNullable"
+            >
+              {{ nullLabel }}
+            </button>
+          </MenuItem>
+
           <MenuItem v-for="item in filtered" :key="item.id" v-slot="{ active }">
             <component
               :is="item.as || 'button'"
@@ -119,7 +158,7 @@ function isSelected(id) {
                   : isSelected(item.id)
                     ? 'tw:bg-primary/20 tw:text-primary'
                     : 'tw:text-on-sidebar',
-                'tw:group tw:flex tw:w-full tw:items-center tw:rounded-md tw:px-2 tw:py-2 tw:text-sm',
+                'tw:group tw:flex tw:w-full tw:items-center tw:px-2 tw:py-2 tw:text-sm',
               ]"
               @click="toggleSelection(item.id)"
             >

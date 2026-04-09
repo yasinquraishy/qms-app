@@ -26,7 +26,11 @@ const filters = defineModel('filters', {
 
       <!-- Document Type Filter -->
       <div class="tw:w-full tw:md:w-1/5">
-        <DocumentTypeSelectMenu v-model="filters.documentTypeId" />
+        <DocumentTypeSelectMenu
+          v-model="filters.documentTypeId"
+          :multiple="false"
+          :required="false"
+        />
       </div>
 
       <!-- Department Filter -->

@@ -360,7 +360,6 @@ watch(
               </div>
               <WBtn
                 label="View All Users"
-                size="sm"
                 flat
                 color="primary"
                 class="tw:font-semibold"
@@ -393,7 +392,6 @@ watch(
               icon="select_all"
               flat
               color="primary"
-              size="sm"
               class="tw:font-semibold"
               @click="selectAll"
             />

@@ -24,7 +24,7 @@ const typeLabel = {
       <div
         class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-gray-100 tw:flex tw:items-center tw:justify-center"
       >
-        <QIcon name="description" class="tw:text-secondary" size="sm" />
+        <QIcon name="description" class="tw:text-secondary" />
       </div>
       <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Documents</h3>
       <QBadge v-if="documents.length" color="grey-5" textColor="grey-8" class="tw:rounded-full">
@@ -40,7 +40,7 @@ const typeLabel = {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-primary/10 tw:flex tw:items-center tw:justify-center tw:shrink-0"
         >
-          <QIcon name="description" color="primary" size="sm" />
+          <QIcon name="description" color="primary" />
         </div>
         <div class="tw:flex-1 tw:min-w-0">
           <p class="tw:text-sm tw:font-medium tw:text-on-main tw:truncate">
@@ -60,7 +60,6 @@ const typeLabel = {
           dense
           icon="open_in_new"
           color="secondary"
-          size="sm"
           title="Open document"
           :href="doc.asset.url"
           target="_blank"

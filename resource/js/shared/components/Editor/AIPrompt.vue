@@ -37,7 +37,7 @@ function insert() {
         <QForm class="q-pa-sm" @submit.prevent="request">
           <WInput v-model="prompt" type="textarea" label="Enter prompt" />
           <div class="row justify-end q-mt-sm">
-            <WBtn label="Request" size="sm" flat type="submit" />
+            <WBtn label="Request" flat type="submit" />
           </div>
         </QForm>
       </QMenu>

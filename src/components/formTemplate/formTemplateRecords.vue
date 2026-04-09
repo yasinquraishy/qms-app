@@ -613,30 +613,15 @@ async function handleExport(format) {
   <div class="tw:flex tw:flex-col tw:h-full tw:p-6">
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:gap-1">
-        <WBtn
-          icon="download"
-          label="CSV"
-          outline
-          size="sm"
-          color="primary"
-          @click="handleExport('csv')"
-        />
+        <WBtn icon="download" label="CSV" outline color="primary" @click="handleExport('csv')" />
         <WBtn
           icon="download"
           label="Excel"
           outline
-          size="sm"
           color="primary"
           @click="handleExport('excel')"
         />
-        <WBtn
-          icon="download"
-          label="PDF"
-          outline
-          size="sm"
-          color="primary"
-          @click="handleExport('pdf')"
-        />
+        <WBtn icon="download" label="PDF" outline color="primary" @click="handleExport('pdf')" />
       </div>
     </SafeTeleport>
 

@@ -198,14 +198,12 @@ const orderedQuarters = computed(() => {
     />
     <div v-if="props.showShortcuts" class="tw:flex tw:flex-col tw:pr-2 tw:pt-8">
       <div class="tw:flex tw:flex-col tw:gap-2 tw:pr-2 tw:pt-4">
-        <BaseButton variant="outline" size="sm" @click="onClickShortcut('TODAY')">
-          Today
-        </BaseButton>
-        <BaseButton variant="outline" size="sm" @click="onClickShortcut('ENDOFMONTH')">
+        <BaseButton variant="outline" @click="onClickShortcut('TODAY')"> Today </BaseButton>
+        <BaseButton variant="outline" @click="onClickShortcut('ENDOFMONTH')">
           End of month
         </BaseButton>
         <template v-for="quarter in orderedQuarters" :key="quarter.id">
-          <BaseButton variant="outline" size="sm" @click="onClickShortcut(quarter.id)">
+          <BaseButton variant="outline" @click="onClickShortcut(quarter.id)">
             {{ quarter.label }}
           </BaseButton>
         </template>

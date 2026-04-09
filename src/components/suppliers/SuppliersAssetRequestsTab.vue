@@ -106,7 +106,7 @@ onMounted(() => {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-gray-100 tw:flex tw:items-center tw:justify-center"
         >
-          <QIcon name="request_quote" class="tw:text-secondary" size="sm" />
+          <QIcon name="request_quote" class="tw:text-secondary" />
         </div>
         <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Asset Requests</h3>
         <QBadge
@@ -126,7 +126,6 @@ onMounted(() => {
         icon="add"
         color="primary"
         outline
-        size="sm"
         @click="openCreateDialog"
       />
     </div>
@@ -146,7 +145,7 @@ onMounted(() => {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-primary/10 tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:mt-0.5"
         >
-          <QIcon name="assignment" color="primary" size="sm" />
+          <QIcon name="assignment" color="primary" />
         </div>
 
         <div class="tw:flex-1 tw:min-w-0">
@@ -192,7 +191,6 @@ onMounted(() => {
             dense
             icon="upload_file"
             color="positive"
-            size="sm"
             title="Submit request"
             @click="openSubmitDialog(request)"
           />
@@ -203,28 +201,11 @@ onMounted(() => {
             dense
             icon="rate_review"
             color="primary"
-            size="sm"
             title="Review document"
             @click="openReviewDialog(request)"
           />
-          <WBtn
-            flat
-            round
-            dense
-            icon="edit"
-            color="secondary"
-            size="sm"
-            @click="openEditDialog(request)"
-          />
-          <WBtn
-            flat
-            round
-            dense
-            icon="delete"
-            color="negative"
-            size="sm"
-            @click="onDeleteRequest(request)"
-          />
+          <WBtn flat round dense icon="edit" color="secondary" @click="openEditDialog(request)" />
+          <WBtn flat round dense icon="delete" color="negative" @click="onDeleteRequest(request)" />
         </div>
       </div>
     </div>

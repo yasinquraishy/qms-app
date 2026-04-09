@@ -50,10 +50,10 @@ function handleCancel() {
     <slot />
 
     <template #footer>
-      <BaseButton v-if="cancel" variant="outline" size="sm" @click="handleCancel">
+      <BaseButton v-if="cancel" variant="outline" @click="handleCancel">
         {{ cancelLabel }}
       </BaseButton>
-      <BaseButton variant="primary" size="sm" @click="handleOk">
+      <BaseButton variant="primary" @click="handleOk">
         {{ okLabel }}
       </BaseButton>
     </template>

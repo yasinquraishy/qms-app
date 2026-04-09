@@ -76,7 +76,7 @@ function handleDelete() {
 
         <!-- Action Buttons -->
         <div class="tw:flex tw:items-center tw:gap-2">
-          <WBtn flat round icon="more_vert" size="sm" class="tw:text-secondary">
+          <WBtn flat round icon="more_vert" class="tw:text-secondary">
             <QMenu>
               <QList dense style="min-width: 160px">
                 <QItem v-close-popup clickable @click="navigateToTemplate()">

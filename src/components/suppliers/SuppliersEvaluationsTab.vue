@@ -17,7 +17,7 @@ defineProps({
       <div
         class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-gray-100 tw:flex tw:items-center tw:justify-center"
       >
-        <QIcon name="analytics" class="tw:text-secondary" size="sm" />
+        <QIcon name="analytics" class="tw:text-secondary" />
       </div>
       <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Evaluations</h3>
     </div>

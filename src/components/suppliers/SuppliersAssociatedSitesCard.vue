@@ -17,7 +17,7 @@ defineProps({
       <div
         class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-primary/10 tw:flex tw:items-center tw:justify-center"
       >
-        <QIcon name="location_on" color="primary" size="sm" />
+        <QIcon name="location_on" color="primary" />
       </div>
       <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Associated Sites</h3>
     </div>

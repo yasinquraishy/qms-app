@@ -132,8 +132,8 @@ function resetForm() {
     </div>
 
     <template #footer="{ close }">
-      <BaseButton variant="outline" size="sm" @click="close">Cancel</BaseButton>
-      <BaseButton size="sm" :isLoading="loading" :disabled="!isFormValid" @click="handleSubmit">
+      <BaseButton variant="outline" @click="close">Cancel</BaseButton>
+      <BaseButton :isLoading="loading" :disabled="!isFormValid" @click="handleSubmit">
         Create Workflow
       </BaseButton>
     </template>

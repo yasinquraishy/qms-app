@@ -239,16 +239,13 @@ function handleVersionSelect(version, close) {
 
           <div class="tw:h-6 tw:w-px tw:bg-divider"></div>
 
-          <BaseButton variant="outline" size="sm" @click="goBack">Cancel</BaseButton>
+          <BaseButton variant="outline" @click="goBack">Cancel</BaseButton>
           <template v-if="canUpdate">
-            <BaseButton size="sm" :isLoading="saving" @click="handleSave('PUBLISHED')">
-              Publish
-            </BaseButton>
+            <BaseButton :isLoading="saving" @click="handleSave('PUBLISHED')"> Publish </BaseButton>
           </template>
           <template v-else-if="!isViewingOldVersion">
             <BaseButton
               v-if="canCreateDraft"
-              size="sm"
               :isLoading="creatingDraft"
               @click="handleCreateDraft(false)"
             >
@@ -273,7 +270,6 @@ function handleVersionSelect(version, close) {
         </span>
         <BaseButton
           variant="text-link"
-          size="sm"
           @click="selectVersion(versions.find((v) => v.isCurrent) || versions[0])"
         >
           Back to current

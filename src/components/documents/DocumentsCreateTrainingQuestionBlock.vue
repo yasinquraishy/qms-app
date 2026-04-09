@@ -44,7 +44,7 @@ function removeAnswer(index) {
         <span class="ds-label tw:text-on-sidebar"> Question 1 </span>
       </div>
 
-      <WBtn icon="delete" flat round size="sm" color="red" />
+      <WBtn icon="delete" flat round color="red" />
     </div>
     <div class="tw:p-6 tw:space-y-6">
       <div class="tw:space-y-2 tw:text-start">
@@ -86,7 +86,7 @@ function removeAnswer(index) {
           </div>
         </div>
 
-        <WBtn flat size="sm" @click="addAnswer">
+        <WBtn flat @click="addAnswer">
           <WIcon name="add" class="tw:text-sm!" />
           Add Answer
         </WBtn>

@@ -105,7 +105,7 @@ function onFieldClick(fieldType) {
       class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:border-divider"
     >
       <div class="tw:text-lg tw:font-bold tw:text-on-sidebar">Components</div>
-      <WBtn flat round icon="sym_o_home" :to="getCompanyPath('/templates')" size="sm" />
+      <WBtn flat round icon="sym_o_home" :to="getCompanyPath('/templates')" />
     </div>
 
     <div class="tw:px-4 tw:py-2 tw:bg-main/30">

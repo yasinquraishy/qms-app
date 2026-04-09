@@ -125,14 +125,7 @@ function getLinkTypeBadgeColor(linkType) {
   <div class="tw:p-6">
     <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">
       <h3 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Document Links</h3>
-      <WBtn
-        label="Add Link"
-        icon="add_link"
-        color="primary"
-        outline
-        size="sm"
-        @click="openAddDialog"
-      />
+      <WBtn label="Add Link" icon="add_link" color="primary" outline @click="openAddDialog" />
     </div>
 
     <!-- Links List -->
@@ -156,15 +149,7 @@ function getLinkTypeBadgeColor(linkType) {
             {{ link.relationshipType }}
           </QBadge>
         </div>
-        <WBtn
-          flat
-          round
-          dense
-          icon="delete"
-          color="negative"
-          size="sm"
-          @click="onDeleteLink(link)"
-        />
+        <WBtn flat round dense icon="delete" color="negative" @click="onDeleteLink(link)" />
       </div>
     </div>
 

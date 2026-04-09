@@ -106,7 +106,7 @@ async function onConfirm() {
             v-if="assetRequest.asset"
             class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:bg-main-hover tw:rounded-lg tw:border tw:border-divider"
           >
-            <QIcon name="insert_drive_file" color="primary" size="sm" />
+            <QIcon name="insert_drive_file" color="primary" />
             <div class="tw:flex-1 tw:min-w-0">
               <p class="tw:text-sm tw:text-on-main tw:truncate">
                 {{
@@ -124,7 +124,6 @@ async function onConfirm() {
               dense
               icon="open_in_new"
               color="secondary"
-              size="sm"
               :href="assetRequest.asset.url"
               target="_blank"
               title="Open file"
@@ -158,13 +157,13 @@ async function onConfirm() {
           <div
             class="tw:flex tw:items-center tw:gap-2 tw:p-3 tw:bg-green-50 tw:rounded-lg tw:border tw:border-green-200"
           >
-            <QIcon name="check_circle" color="positive" size="sm" />
+            <QIcon name="check_circle" color="positive" />
             <p class="tw:text-sm tw:text-on-main">
               The document will be marked as <strong>Accepted</strong> and the supplier will be
               notified.
             </p>
           </div>
-          <WBtn flat label="Back" size="sm" @click="action = null" />
+          <WBtn flat label="Back" @click="action = null" />
         </div>
 
         <!-- Reject form -->
@@ -172,7 +171,7 @@ async function onConfirm() {
           <div
             class="tw:flex tw:items-center tw:gap-2 tw:p-3 tw:bg-red-50 tw:rounded-lg tw:border tw:border-red-200"
           >
-            <QIcon name="cancel" color="negative" size="sm" />
+            <QIcon name="cancel" color="negative" />
             <p class="tw:text-sm tw:text-on-main">
               Please provide a reason for rejection. This will be included in the email to the
               supplier.
@@ -187,7 +186,7 @@ async function onConfirm() {
             autogrow
             :rows="3"
           />
-          <WBtn flat label="Back" size="sm" @click="action = null" />
+          <WBtn flat label="Back" @click="action = null" />
         </div>
       </template>
     </div>

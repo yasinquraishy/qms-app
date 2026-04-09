@@ -356,7 +356,7 @@ function copyJson() {
               class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:border-divider tw:bg-main/50"
             >
               <div class="tw:text-lg tw:font-bold tw:text-on-sidebar">Field Settings</div>
-              <WBtn flat round dense icon="close" size="sm" @click="closeRightDrawer" />
+              <WBtn flat round dense icon="close" @click="closeRightDrawer" />
             </div>
             <div class="tw:flex tw:flex-col tw:grow tw:overflow-y-auto">
               <FormFieldConfig v-model:field="selectedField" :path="selectedFieldPath" />
@@ -389,7 +389,6 @@ function copyJson() {
                 icon="content_copy"
                 label="Copy JSON"
                 color="primary"
-                size="sm"
                 @click="copyJson"
               />
             </div>

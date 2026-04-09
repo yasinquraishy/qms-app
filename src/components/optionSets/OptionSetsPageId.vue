@@ -169,7 +169,6 @@ function goBack() {
                   icon="add"
                   label="Add Option"
                   color="primary"
-                  size="sm"
                   @click="addOption"
                 />
               </div>
@@ -231,7 +230,6 @@ function goBack() {
                     flat
                     round
                     icon="delete_outline"
-                    size="sm"
                     class="tw:opacity-0 tw:group-hover:opacity-100 tw:hover:text-bad tw:hover:bg-red-50 tw:transition-all tw:text-bad!"
                     @click="removeOption(idx)"
                   />

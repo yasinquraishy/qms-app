@@ -41,7 +41,7 @@ const currentRisk = computed(() => riskConfig[props.supplier.riskLevel] || riskC
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-sky-100 tw:flex tw:items-center tw:justify-center"
         >
-          <QIcon name="verified_user" class="tw:text-sky-600" size="sm" />
+          <QIcon name="verified_user" class="tw:text-sky-600" />
         </div>
         <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Risk Profile</h3>
       </div>

@@ -92,7 +92,6 @@ function moveSectionDown(index) {
               flat
               dense
               round
-              size="sm"
               icon="expand_less"
               :disable="index === 0"
               @click="moveSectionUp(index)"
@@ -101,7 +100,6 @@ function moveSectionDown(index) {
               flat
               dense
               round
-              size="sm"
               icon="expand_more"
               :disable="index === sections.length - 1"
               @click="moveSectionDown(index)"

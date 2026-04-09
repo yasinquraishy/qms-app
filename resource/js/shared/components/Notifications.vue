@@ -75,9 +75,7 @@ const avatarText = (value) => {
             <div class="text-subtitle1">Notifications</div>
           </QItemSection>
           <QItemSection v-if="props.notifications.length" side>
-            <QChip color="primary" size="sm" class="q-px-sm">
-              {{ props.notifications.length }} New
-            </QChip>
+            <QChip color="primary" class="q-px-sm"> {{ props.notifications.length }} New </QChip>
           </QItemSection>
         </QItem>
 

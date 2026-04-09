@@ -95,7 +95,6 @@ function removeOption(index) {
             flat
             round
             dense
-            size="sm"
             icon="sym_o_delete"
             color="negative"
             @click="removeOption(index)"

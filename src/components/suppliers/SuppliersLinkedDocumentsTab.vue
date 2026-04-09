@@ -100,7 +100,7 @@ async function onRemoveDocument(supplierDocument) {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-gray-100 tw:flex tw:items-center tw:justify-center"
         >
-          <QIcon name="link" class="tw:text-secondary" size="sm" />
+          <QIcon name="link" class="tw:text-secondary" />
         </div>
         <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Linked Documents</h3>
         <QBadge
@@ -120,7 +120,6 @@ async function onRemoveDocument(supplierDocument) {
         icon="add_link"
         color="primary"
         outline
-        size="sm"
         @click="openAddDialog"
       />
     </div>
@@ -134,7 +133,7 @@ async function onRemoveDocument(supplierDocument) {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-primary/10 tw:flex tw:items-center tw:justify-center tw:shrink-0"
         >
-          <QIcon name="article" color="primary" size="sm" />
+          <QIcon name="article" color="primary" />
         </div>
         <div class="tw:flex-1 tw:min-w-0">
           <p class="tw:text-sm tw:font-medium tw:text-on-main tw:truncate">
@@ -162,7 +161,6 @@ async function onRemoveDocument(supplierDocument) {
           dense
           icon="link_off"
           color="negative"
-          size="sm"
           @click="onRemoveDocument(ld)"
         />
       </div>

@@ -223,7 +223,7 @@ watch(
                   </QBadge>
                 </div>
                 <p class="tw:text-secondary tw:flex tw:items-center tw:gap-2">
-                  <QIcon name="domain" size="sm" />
+                  <QIcon name="domain" />
                   {{ organizationName }}
                 </p>
                 <p class="tw:text-secondary tw:text-sm tw:mt-1">Team Details</p>
@@ -257,7 +257,6 @@ watch(
                       dense
                       round
                       icon="content_copy"
-                      size="sm"
                       class="tw:ml-2 tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity"
                       @click="copyToClipboard(id)"
                     />

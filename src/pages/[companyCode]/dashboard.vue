@@ -158,12 +158,7 @@ function getPriorityColor(priority) {
               <div class="stat-icon-wrapper" :class="`bg-${stat.color}-1`">
                 <WIcon :icon="stat.icon" :color="stat.color" size="24px" />
               </div>
-              <QChip
-                :color="stat.trend > 0 ? 'positive' : 'negative'"
-                textColor="white"
-                size="sm"
-                dense
-              >
+              <QChip :color="stat.trend > 0 ? 'positive' : 'negative'" textColor="white" dense>
                 <WIcon
                   :icon="stat.trend > 0 ? 'arrow_upward' : 'arrow_downward'"
                   size="12px"
@@ -215,12 +210,12 @@ function getPriorityColor(priority) {
                   </QItemLabel>
                 </QItemSection>
                 <QItemSection side>
-                  <QChip :color="getStatusColor(audit.status)" textColor="white" size="sm" outline>
+                  <QChip :color="getStatusColor(audit.status)" textColor="white" outline>
                     {{ audit.status }}
                   </QChip>
                 </QItemSection>
                 <QItemSection side>
-                  <WBtn flat round icon="more_vert" color="grey-6" size="sm" />
+                  <WBtn flat round icon="more_vert" color="grey-6" />
                 </QItemSection>
               </QItem>
             </QList>
@@ -293,9 +288,7 @@ function getPriorityColor(priority) {
       <QCardSection class="tw:flex tw:items-center tw:pb-0">
         <div class="tw:text-lg tw:font-medium tw:text-on-main">Pending Tasks</div>
         <QSpace />
-        <QChip color="warning" textColor="white" size="sm">
-          {{ pendingTasks.length }} pending
-        </QChip>
+        <QChip color="warning" textColor="white"> {{ pendingTasks.length }} pending </QChip>
       </QCardSection>
       <QCardSection>
         <QTable
@@ -324,28 +317,16 @@ function getPriorityColor(priority) {
           </template>
           <template #body-cell-priority="props">
             <QTd :props="props">
-              <QChip
-                :color="getPriorityColor(props.row.priority)"
-                textColor="white"
-                size="sm"
-                dense
-              >
+              <QChip :color="getPriorityColor(props.row.priority)" textColor="white" dense>
                 {{ props.row.priority }}
               </QChip>
             </QTd>
           </template>
           <template #body-cell-actions="props">
             <QTd :props="props">
-              <WBtn flat round size="sm" icon="visibility" color="primary" tooltip="View Details" />
-              <WBtn flat round size="sm" icon="edit" color="grey-7" tooltip="Edit Task" />
-              <WBtn
-                flat
-                round
-                size="sm"
-                icon="check_circle"
-                color="positive"
-                tooltip="Mark Complete"
-              />
+              <WBtn flat round icon="visibility" color="primary" tooltip="View Details" />
+              <WBtn flat round icon="edit" color="grey-7" tooltip="Edit Task" />
+              <WBtn flat round icon="check_circle" color="positive" tooltip="Mark Complete" />
             </QTd>
           </template>
         </QTable>

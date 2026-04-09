@@ -1,5 +1,5 @@
 <script setup>
-import { IconSearch, IconX } from '@tabler/icons-vue'
+import { IconSearch } from '@tabler/icons-vue'
 
 const props = defineProps({
   stepId: { type: String, required: true },
@@ -8,7 +8,7 @@ const props = defineProps({
 
 const search = ref('')
 
-const roles = useLiveQuery((db) => db.Role.where('isActive', true).exec(), { initial: [] })
+const roles = useLiveQuery((db) => db.Role.where('statusId', 'ACTIVE').exec(), { initial: [] })
 
 const stepRoles = useLiveQueryWithDeps(
   [() => props.stepId],
@@ -65,24 +65,17 @@ async function removeRole(roleId) {
 
     <!-- Selected Chips -->
     <div v-if="selectedRoles.length > 0" class="tw:flex tw:flex-wrap tw:gap-2">
-      <div
+      <BaseChip
         v-for="role in selectedRoles"
         :key="role.id"
-        class="tw:flex tw:items-center tw:gap-2 tw:bg-main-hover tw:px-3 tw:py-1.5 tw:rounded-full tw:border tw:border-divider"
-      >
-        <span class="tw:text-xs tw:font-medium tw:text-on-main">{{ role.name }}</span>
-        <button
-          v-if="canUpdate"
-          class="tw:text-secondary tw:hover:text-bad tw:transition-colors"
-          @click="removeRole(role.id)"
-        >
-          <IconX :size="14" />
-        </button>
-      </div>
+        :label="role.name"
+        :removable="canUpdate"
+        @remove="removeRole(role.id)"
+      />
     </div>
 
     <!-- Role List -->
-    <div v-else class="tw:max-h-48 tw:overflow-y-auto tw:space-y-1">
+    <div class="tw:max-h-48 tw:overflow-y-auto tw:space-y-1">
       <div
         v-for="role in filteredRoles"
         :key="role.id"

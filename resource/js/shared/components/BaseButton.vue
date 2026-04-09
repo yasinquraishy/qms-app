@@ -57,7 +57,7 @@ const props = defineProps({
 
 const variantClassMap = {
   primary:
-    'tw:gap-1.5 tw:bg-primary tw:text-primary-text tw:border tw:border-primary tw:hover:enabled:bg-primary-hover tw:hover:enabled:border-primary-hover tw:focus:enabled:ring-2 tw:focus:enabled:ring-primary/30 tw:focus:enabled:ring-offset-2 tw:transition-[border,background-color,color,opacity,box-shadow] tw:duration-200',
+    'tw:gap-1.5 tw:bg-primary tw:text-on-primary tw:border tw:border-primary tw:hover:enabled:bg-primary-hover tw:hover:enabled:border-primary-hover tw:focus:enabled:ring-2 tw:focus:enabled:ring-primary/30 tw:focus:enabled:ring-offset-2 tw:transition-[border,background-color,color,opacity,box-shadow] tw:duration-200',
   danger:
     'tw:bg-bad tw:text-white tw:hover:enabled:brightness-90 tw:focus:enabled:ring-2 tw:focus:enabled:ring-danger/30 tw:focus:enabled:ring-offset-2 tw:transition-[background-color,box-shadow] tw:duration-200',
   warning:

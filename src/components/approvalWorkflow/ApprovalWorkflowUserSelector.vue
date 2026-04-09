@@ -1,5 +1,5 @@
 <script setup>
-import { IconSearch, IconX } from '@tabler/icons-vue'
+import { IconSearch } from '@tabler/icons-vue'
 
 const props = defineProps({
   stepId: { type: String, required: true },
@@ -77,22 +77,13 @@ async function removeUser(userId) {
 
     <!-- Selected Chips -->
     <div v-if="selectedUsers.length > 0" class="tw:flex tw:flex-wrap tw:gap-2">
-      <div
+      <BaseChip
         v-for="user in selectedUsers"
         :key="user.id"
-        class="tw:flex tw:items-center tw:gap-2 tw:bg-main-hover tw:px-3 tw:py-1.5 tw:rounded-full tw:border tw:border-divider"
-      >
-        <span class="tw:text-xs tw:font-medium tw:text-on-main">
-          {{ getUserDisplayName(user) }}
-        </span>
-        <button
-          v-if="canUpdate"
-          class="tw:text-secondary tw:hover:text-bad tw:transition-colors"
-          @click="removeUser(user.id)"
-        >
-          <IconX :size="14" />
-        </button>
-      </div>
+        :label="getUserDisplayName(user)"
+        :removable="canUpdate"
+        @remove="removeUser(user.id)"
+      />
     </div>
 
     <!-- User List -->

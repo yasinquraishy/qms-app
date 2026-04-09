@@ -63,6 +63,7 @@ declare module 'vue' {
     BaseBadge: typeof import('./resource/js/shared/components/BaseBadge.vue')['default']
     BaseButton: typeof import('./resource/js/shared/components/BaseButton.vue')['default']
     BaseCheckbox: typeof import('./resource/js/shared/components/BaseCheckbox.vue')['default']
+    BaseChip: typeof import('./resource/js/shared/components/BaseChip.vue')['default']
     BaseDatePicker: typeof import('./resource/js/shared/components/BaseDatePicker.vue')['default']
     BaseDatePickerDropMenu: typeof import('./resource/js/shared/components/BaseDatePickerDropMenu.vue')['default']
     BaseDatePickerDropMenuPanel: typeof import('./resource/js/shared/components/BaseDatePickerDropMenuPanel.vue')['default']

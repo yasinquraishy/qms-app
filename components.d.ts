@@ -80,6 +80,8 @@ declare module 'vue' {
     BaseTextarea: typeof import('./resource/js/shared/components/BaseTextarea.vue')['default']
     BaseTextInput: typeof import('./resource/js/shared/components/BaseTextInput.vue')['default']
     BaseTimePicker: typeof import('./resource/js/shared/components/BaseTimePicker.vue')['default']
+    BaseToast: typeof import('./resource/js/shared/components/BaseToast.vue')['default']
+    BaseToastContainer: typeof import('./resource/js/shared/components/BaseToastContainer.vue')['default']
     CompanyBrandingCard: typeof import('./src/components/company/companyBrandingCard.vue')['default']
     CompanyDefaultsCard: typeof import('./src/components/company/companyDefaultsCard.vue')['default']
     CompanyInfoCard: typeof import('./src/components/company/companyInfoCard.vue')['default']

@@ -1,12 +1,12 @@
 <script setup>
-import { useQuasar, copyToClipboard } from 'quasar'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
+import { useToast } from '@shared/composables/useToast.js'
 
 const show = defineModel({ type: Boolean, default: false })
 
 const { createApiKey } = useApiKeys()
-const $q = useQuasar()
+const toast = useToast()
 
 const form = ref({
   name: '',
@@ -39,7 +39,7 @@ async function handleSubmit() {
       createdKey.value = result.key
     } else {
       resetAndClose()
-      $q.notify({ type: 'positive', message: 'API key created successfully' })
+      toast.notify({ type: 'positive', message: 'API key created successfully' })
     }
   } finally {
     loading.value = false
@@ -48,8 +48,8 @@ async function handleSubmit() {
 
 function handleCopyKey() {
   if (createdKey.value) {
-    copyToClipboard(createdKey.value)
-    $q.notify({ type: 'positive', message: 'API key copied to clipboard' })
+    navigator.clipboard.writeText(createdKey.value)
+    toast.notify({ type: 'positive', message: 'API key copied to clipboard' })
   }
 }
 

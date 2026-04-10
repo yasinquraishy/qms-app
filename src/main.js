@@ -4,7 +4,8 @@ import VCalendar from 'v-calendar'
 
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { Quasar, Notify, Dialog, Loading } from 'quasar'
+import { Quasar, Dialog, Loading } from 'quasar'
+import { useToast } from '@shared/composables/useToast.js'
 
 import App from './App.vue'
 import router from './router'
@@ -44,7 +45,6 @@ const app = createApp(App)
 // Use Quasar
 app.use(Quasar, {
   plugins: {
-    Notify,
     Dialog,
     Loading,
   },
@@ -66,6 +66,8 @@ app.mount('#app')
 // ── API layer wiring ──────────────────────────────────────────────────────────
 
 // 1. Notification adapter — bridge API layer events to Quasar toasts
+const toast = useToast()
+
 registerNotifyHandler(({ type, message, fields }) => {
   // If there are validation field errors, format them nicely
   let displayMessage = message
@@ -88,7 +90,7 @@ registerNotifyHandler(({ type, message, fields }) => {
     }
   }
 
-  Notify.create({
+  toast.notify({
     type,
     message: displayMessage,
     position: 'top',

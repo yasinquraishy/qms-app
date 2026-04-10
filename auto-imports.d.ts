@@ -336,6 +336,7 @@ declare global {
   const useTitle: typeof import('@vueuse/core').useTitle
   const useToNumber: typeof import('@vueuse/core').useToNumber
   const useToString: typeof import('@vueuse/core').useToString
+  const useToast: typeof import('./resource/js/shared/composables/useToast.js').useToast
   const useToggle: typeof import('@vueuse/core').useToggle
   const useTooltipData: typeof import('./resource/js/shared/composables/useTooltipData.js').useTooltipData
   const useTransition: typeof import('@vueuse/core').useTransition

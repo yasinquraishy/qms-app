@@ -74,6 +74,8 @@ onMounted(async () => {
 </script>
 
 <template>
+  <BaseToastContainer />
+
   <!-- Full-screen loader overlay -->
   <div v-if="loading" class="fixed-full flex flex-center bg-dark" style="z-index: 9999">
     <div class="tw:text-center">

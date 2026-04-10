@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  user: {
+  team: {
     type: Object,
     required: true,
   },
@@ -10,8 +10,11 @@ defineProps({
 <template>
   <BaseBadge v-bind="$attrs">
     <template #icon>
-      <UserAvatar :user="user" :showBadge="false" class="tw:size-5" />
+      <span
+        class="tw:inline-block tw:size-2.5 tw:rounded-full tw:flex-shrink-0"
+        :style="{ backgroundColor: team.color || '#6366f1' }"
+      />
     </template>
-    {{ user.firstName }} {{ user.lastName }}
+    {{ team.name }}
   </BaseBadge>
 </template>

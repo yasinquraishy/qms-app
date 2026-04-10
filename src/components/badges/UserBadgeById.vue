@@ -17,5 +17,5 @@ const user = useLiveQueryWithDeps(
 </script>
 
 <template>
-  <UserBadge v-if="user" :user="user" />
+  <UserBadge v-if="user" :user="user" v-bind="$attrs" />
 </template>

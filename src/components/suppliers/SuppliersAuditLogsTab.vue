@@ -1,4 +1,6 @@
 <script setup>
+import { IconHistory } from '@tabler/icons-vue'
+
 defineProps({
   supplier: {
     type: Object,
@@ -17,12 +19,12 @@ defineProps({
       <div
         class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-gray-100 tw:flex tw:items-center tw:justify-center"
       >
-        <QIcon name="history" class="tw:text-secondary" />
+        <IconHistory :size="20" class="tw:text-secondary" />
       </div>
       <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Audit Logs</h3>
     </div>
     <div class="tw:py-12 tw:text-center">
-      <QIcon name="history" size="40px" class="tw:text-secondary/50 tw:mb-2" />
+      <IconHistory :size="40" class="tw:text-secondary/50 tw:mb-2" />
       <p class="tw:text-secondary tw:text-sm">No audit logs available for this supplier.</p>
     </div>
   </div>

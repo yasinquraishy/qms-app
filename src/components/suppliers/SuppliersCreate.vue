@@ -1,30 +1,30 @@
 <script setup>
-import { useDebounceFn } from '@vueuse/core'
-import { useQuasar } from 'quasar'
-import { required, helpers } from '@vuelidate/validators'
-import { useValidator } from '@shared/composables/validator.js'
-import { useSuppliers } from '@/composables/useSuppliers.js'
+import {
+  IconTruck,
+  IconInfoCircle,
+  IconMapPin,
+  IconMail,
+  IconShieldCheck,
+  IconFileCheck,
+  IconPlus,
+  IconX,
+  IconChevronRight,
+} from '@tabler/icons-vue'
+import { put } from '@/api'
+import { uploadFiles } from '@/utils/uploadService.js'
+import { useToast } from '@shared/composables/useToast.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
-import { validateUUID } from '@/utils/validators.js'
-
-const props = defineProps({
-  id: {
-    type: String,
-    default: null,
-  },
-})
 
 const router = useRouter()
-const $q = useQuasar()
-const { checkCodeAvailability, createSupplier, updateSupplier, suppliers, fetchSuppliers } =
-  useSuppliers()
+const toast = useToast()
 
 const saving = ref(false)
-const loading = ref(false)
 const isChecking = ref(false)
 const isAvailable = ref(null)
-
-const categoryOptions = ['Raw Materials', 'Component', 'Service', 'Software']
+const codeError = ref(null)
+const nameError = ref(null)
+const categoryError = ref(null)
+const generalError = ref(null)
 
 const countryOptions = [
   'United States',
@@ -37,12 +37,6 @@ const countryOptions = [
   'Australia',
   'India',
   'Brazil',
-]
-
-const riskOptions = [
-  { label: 'Low', value: 'Low', description: 'Standard Commodities', color: 'positive' },
-  { label: 'Medium', value: 'Medium', description: 'Specialized Components', color: 'warning' },
-  { label: 'High', value: 'High', description: 'Critical Infrastructure', color: 'negative' },
 ]
 
 function getDefaultForm() {
@@ -63,108 +57,83 @@ function getDefaultForm() {
 
 const form = ref(getDefaultForm())
 
-const rules = computed(() => ({
-  name: { required: helpers.withMessage('Required', required) },
-  code: { required: helpers.withMessage('Required', required) },
-  category: { required: helpers.withMessage('Required', required) },
-}))
-
-const validator = useValidator(rules, form)
+// ─── Certificate / license files ──────────────────────────────────────────────
 
 const certificateFiles = ref([])
 const licenseFiles = ref([])
-const certificateUploaderRef = ref(null)
-const licenseUploaderRef = ref(null)
 
-const isEditMode = computed(() => validateUUID(props.id))
-const pageTitle = computed(() => (isEditMode.value ? 'Edit Supplier' : 'New Supplier Onboarding'))
+function onCertificateChange(e) {
+  certificateFiles.value = [...certificateFiles.value, ...Array.from(e.target.files)]
+  e.target.value = null
+}
 
-// Load supplier data when editing
-onMounted(async () => {
-  if (isEditMode.value) {
-    loading.value = true
-    await fetchSuppliers()
-    loading.value = false
+function onLicenseChange(e) {
+  licenseFiles.value = [...licenseFiles.value, ...Array.from(e.target.files)]
+  e.target.value = null
+}
 
-    const supplier = suppliers.value.find((s) => s.id === props.id)
-    if (!supplier) {
-      $q.notify({ type: 'negative', message: 'Supplier not found' })
-      goBack()
-      return
-    }
+function removeCertificate(index) {
+  certificateFiles.value.splice(index, 1)
+}
 
-    form.value = {
-      name: supplier.name || '',
-      code: supplier.code || '',
-      category: supplier.category || null,
-      streetAddress: supplier.streetAddress || '',
-      city: supplier.city || '',
-      stateProvince: supplier.stateProvince || '',
-      zipPostalCode: supplier.zipPostalCode || '',
-      country: supplier.country || null,
-      riskLevel: supplier.riskLevel || null,
-      contacts:
-        supplier.contacts?.map((c) => ({
-          email: c.email || '',
-          phoneNumber: c.phoneNumber || '',
-          isPrimary: c.isPrimary || false,
-        })) || [],
-      siteIds: supplier.sites?.map((s) => s.id) || [],
-    }
+function removeLicense(index) {
+  licenseFiles.value.splice(index, 1)
+}
 
-    const certs = supplier.documents?.filter((d) => d.documentType === 'certificate') || []
-    const lics = supplier.documents?.filter((d) => d.documentType === 'license') || []
-    certificateFiles.value = certs.map((d) => d.asset).filter(Boolean)
-    licenseFiles.value = lics.map((d) => d.asset).filter(Boolean)
+// ─── Code availability check ──────────────────────────────────────────────────
 
-    isAvailable.value = true
-  }
-})
-
-// Debounced code availability check
-const checkAvailabilityDebounced = useDebounceFn(async (newCode) => {
-  if (!newCode || newCode.trim().length < 2) return
-
+const checkAvailabilityDebounced = useDebounceFn(async (code) => {
+  if (!code || code.trim().length < 2) return
   isChecking.value = true
-  const result = await checkCodeAvailability(newCode.trim(), '', false)
-  isChecking.value = false
-  if (result && result.message === 'available') {
-    isAvailable.value = true
-  } else {
-    isAvailable.value = false
+  codeError.value = null
+  try {
+    const data = await put('/v1/services/suppliers/checkcode', {
+      code: code.trim(),
+      name: '',
+      isNameCheck: false,
+    })
+    isAvailable.value = data?.message === 'available'
+    if (!isAvailable.value) codeError.value = 'Code already in use'
+  } catch {
+    isAvailable.value = null
+  } finally {
+    isChecking.value = false
   }
 }, 500)
 
 watch(
   () => form.value.code,
-  (newCode) => {
-    if (isEditMode.value) return
+  (code) => {
     isAvailable.value = null
-    checkAvailabilityDebounced(newCode)
+    codeError.value = null
+    checkAvailabilityDebounced(code)
   },
 )
 
-// Auto-suggest code from name
 async function onNameBlur() {
   if (!form.value.name || form.value.code) return
-
-  const result = await checkCodeAvailability(null, form.value.name, true)
-  if (result && result.suggestedCode) {
-    form.value.code = result.suggestedCode
+  try {
+    const data = await put('/v1/services/suppliers/checkcode', {
+      code: null,
+      name: form.value.name,
+      isNameCheck: true,
+    })
+    if (data?.suggestedCode) form.value.code = data.suggestedCode
+  } catch {
+    // ignore
   }
 }
 
-// Contacts management
+// ─── Contacts management ──────────────────────────────────────────────────────
+
 function addContact() {
   form.value.contacts.push({ email: '', phoneNumber: '', isPrimary: false })
 }
 
 function removeContact(index) {
-  const contact = form.value.contacts[index]
+  const wasPrimary = form.value.contacts[index].isPrimary
   form.value.contacts.splice(index, 1)
-
-  // If removed contact was primary, assign primary to the first remaining contact
-  if (contact.isPrimary && form.value.contacts.length > 0) {
+  if (wasPrimary && form.value.contacts.length > 0) {
     form.value.contacts[0].isPrimary = true
   }
 }
@@ -175,83 +144,136 @@ function setPrimary(index) {
   })
 }
 
-const hasPrimaryContact = computed(() => {
-  return form.value.contacts.some((c) => c.isPrimary && (c.email?.trim() || c.phoneNumber?.trim()))
+const hasPrimaryContact = computed(() =>
+  form.value.contacts.some((c) => c.isPrimary && (c.email?.trim() || c.phoneNumber?.trim())),
+)
+
+// ─── Create mutation ──────────────────────────────────────────────────────────
+
+const createSupplier = useLiveMutation(async (db, payload) => {
+  // 1. Create Supplier
+  const supplier = db.Supplier.create({
+    name: payload.name,
+    code: payload.code,
+    category: payload.category,
+    streetAddress: payload.streetAddress,
+    city: payload.city,
+    stateProvince: payload.stateProvince,
+    zipPostalCode: payload.zipPostalCode,
+    country: payload.country,
+    riskLevel: payload.riskLevel,
+    statusId: 'PENDING',
+  })
+  await supplier.save()
+
+  // 2. Create contacts
+  for (const c of payload.contacts) {
+    const contact = db.SupplierContact.create({
+      supplierId: supplier.id,
+      email: c.email,
+      phoneNumber: c.phoneNumber,
+      isPrimary: c.isPrimary,
+    })
+    await contact.save()
+  }
+
+  // 3. Assign sites
+  for (const siteId of payload.siteIds) {
+    const link = db.SupplierOnSite.create({ supplierId: supplier.id, siteId })
+    await link.save()
+  }
+
+  // 4. Upload and attach compliance docs
+  if (payload.certificateAssets?.length) {
+    for (const asset of payload.certificateAssets) {
+      const doc = db.SupplierAsset.create({
+        supplierId: supplier.id,
+        assetId: asset.id,
+        documentType: 'certificate',
+      })
+      await doc.save()
+    }
+  }
+  if (payload.licenseAssets?.length) {
+    for (const asset of payload.licenseAssets) {
+      const doc = db.SupplierAsset.create({
+        supplierId: supplier.id,
+        assetId: asset.id,
+        documentType: 'license',
+      })
+      await doc.save()
+    }
+  }
+
+  return supplier
 })
 
-async function saveSupplier() {
-  const valid = await validator.value.$validate()
-  if (!valid || isAvailable.value !== true) return
+// ─── Validation & submit ──────────────────────────────────────────────────────
 
+function validate() {
+  let valid = true
+  nameError.value = null
+  codeError.value = null
+  categoryError.value = null
+  generalError.value = null
+
+  if (!form.value.name.trim()) {
+    nameError.value = 'Required'
+    valid = false
+  }
+  if (!form.value.code.trim()) {
+    codeError.value = 'Required'
+    valid = false
+  }
+  if (!form.value.category) {
+    categoryError.value = 'Required'
+    valid = false
+  }
+  if (isAvailable.value !== true && form.value.code.trim()) {
+    codeError.value = 'Check availability first'
+    valid = false
+  }
   if (!hasPrimaryContact.value) {
-    $q.notify({
-      type: 'negative',
-      message: 'At least one primary contact with email or phone is required',
-    })
-    return
+    generalError.value = 'At least one primary contact with email or phone is required'
+    valid = false
   }
+  return valid
+}
 
-  // Upload any pending files before submitting
-  if (certificateUploaderRef.value) {
-    await certificateUploaderRef.value.uploadAllFiles()
-  }
-  if (licenseUploaderRef.value) {
-    await licenseUploaderRef.value.uploadAllFiles()
-  }
+async function saveSupplier() {
+  if (!validate()) return
 
   saving.value = true
-
-  // Build documents array from uploaded files
-  const documents = [
-    ...certificateFiles.value.map((asset) => ({
-      assetId: asset.id,
-      documentType: 'certificate',
-    })),
-    ...licenseFiles.value.map((asset) => ({
-      assetId: asset.id,
-      documentType: 'license',
-    })),
-  ]
-
-  // Build contacts array (filter out empty entries)
-  const contacts = form.value.contacts.filter((c) => c.email?.trim() || c.phoneNumber?.trim())
-
-  const payload = {
-    name: form.value.name.trim(),
-    category: form.value.category,
-    streetAddress: form.value.streetAddress?.trim() || null,
-    city: form.value.city?.trim() || null,
-    stateProvince: form.value.stateProvince?.trim() || null,
-    zipPostalCode: form.value.zipPostalCode?.trim() || null,
-    country: form.value.country || null,
-    riskLevel: form.value.riskLevel || null,
-    contacts: contacts.length > 0 ? contacts : undefined,
-    documents: documents.length > 0 ? documents : undefined,
-    siteIds: form.value.siteIds,
-  }
-
   try {
-    let result
-    if (isEditMode.value) {
-      result = await updateSupplier(props.id, payload)
-    } else {
-      result = await createSupplier({
-        ...payload,
-        code: form.value.code.trim(),
-      })
-    }
+    const [certificateAssets, licenseAssets] = await Promise.all([
+      certificateFiles.value.length
+        ? uploadFiles(certificateFiles.value, 'ASSET')
+        : Promise.resolve([]),
+      licenseFiles.value.length ? uploadFiles(licenseFiles.value, 'ASSET') : Promise.resolve([]),
+    ])
 
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({
-        type: 'positive',
-        message: isEditMode.value
-          ? 'Supplier updated successfully'
-          : 'Supplier created successfully',
-      })
-      router.push(getCompanyPath('/suppliers'))
-    }
+    const contacts = form.value.contacts.filter((c) => c.email?.trim() || c.phoneNumber?.trim())
+
+    await createSupplier({
+      name: form.value.name.trim(),
+      code: form.value.code.trim(),
+      category: form.value.category,
+      streetAddress: form.value.streetAddress?.trim() || '',
+      city: form.value.city?.trim() || '',
+      stateProvince: form.value.stateProvince?.trim() || '',
+      zipPostalCode: form.value.zipPostalCode?.trim() || '',
+      country: form.value.country || '',
+      riskLevel: form.value.riskLevel || '',
+      contacts,
+      siteIds: form.value.siteIds,
+      certificateAssets,
+      licenseAssets,
+    })
+
+    toast.notify({ type: 'positive', message: 'Supplier created successfully' })
+    router.push(getCompanyPath('/suppliers'))
+  } catch (err) {
+    generalError.value = err.message || 'Failed to create supplier'
   } finally {
     saving.value = false
   }
@@ -260,51 +282,33 @@ async function saveSupplier() {
 function goBack() {
   router.push(getCompanyPath('/suppliers'))
 }
-
-function discardChanges() {
-  $q.dialog({
-    title: 'Discard Changes',
-    message: 'Are you sure you want to discard all changes?',
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    goBack()
-  })
-}
 </script>
 
 <template>
   <div class="tw:flex tw:flex-col tw:h-full">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="local_shipping" class="tw:text-primary" size="24px" />
+        <IconTruck class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">
-          {{ pageTitle }}
+          New Supplier Onboarding
         </h2>
       </div>
     </SafeTeleport>
 
-    <!-- Loading overlay -->
-    <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:h-full">
-      <QSpinner color="primary" size="50px" />
-    </div>
-
     <!-- Scrollable content -->
-    <div v-else class="tw:flex-1 tw:overflow-y-auto tw:pb-24">
+    <div class="tw:flex-1 tw:overflow-y-auto tw:pb-24">
       <div class="tw:max-w-5xl tw:mx-auto tw:px-6 tw:py-8">
         <!-- Breadcrumbs -->
-        <div class="tw:mb-4 tw:flex tw:items-center tw:text-sm tw:text-secondary tw:gap-2">
+        <div class="tw:mb-4 tw:flex tw:items-center tw:text-sm tw:text-secondary tw:gap-1">
           <span class="tw:cursor-pointer tw:hover:underline" @click="goBack">Suppliers</span>
-          <WIcon name="chevron_right" size="16px" />
-          <span class="tw:text-on-sidebar tw:font-medium">{{
-            isEditMode ? 'Edit' : 'Onboarding'
-          }}</span>
+          <IconChevronRight :size="14" />
+          <span class="tw:text-on-sidebar tw:font-medium">Onboarding</span>
         </div>
 
         <!-- Page Header -->
         <div class="tw:mb-8">
           <h1 class="tw:text-3xl tw:font-black tw:text-on-sidebar tw:tracking-tight">
-            {{ pageTitle }}
+            New Supplier Onboarding
           </h1>
           <p class="tw:text-secondary tw:mt-2 tw:max-w-2xl">
             Complete the profile below to initiate the technical qualification and quality assurance
@@ -312,84 +316,77 @@ function discardChanges() {
           </p>
         </div>
 
+        <!-- General error -->
+        <div
+          v-if="generalError"
+          class="tw:mb-6 tw:rounded-lg tw:bg-red-50 tw:border tw:border-red-200 tw:px-4 tw:py-3 tw:text-sm tw:text-red-600"
+        >
+          {{ generalError }}
+        </div>
+
         <!-- Form Sections -->
         <div class="tw:space-y-8">
           <!-- Row 1: Basic Information + Contact Details -->
           <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-8">
             <!-- Basic Information -->
-            <WCard>
+            <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
               <div
                 class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
               >
-                <WIcon name="info" class="tw:text-primary" size="22px" />
+                <IconInfoCircle :size="20" class="tw:text-primary" />
                 <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Basic Information</h2>
               </div>
               <div class="tw:p-6 tw:flex tw:flex-col tw:gap-4">
-                <WInput
-                  v-model="form.name"
-                  name="name"
-                  label="Supplier Name"
-                  placeholder="e.g. Global Logistics Corp"
-                  outlined
-                  dense
-                  @blur="onNameBlur"
-                >
-                  <template #label> Supplier Name <span class="tw:text-bad">*</span> </template>
-                </WInput>
+                <div>
+                  <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">
+                    Supplier Name <span class="tw:text-bad">*</span>
+                  </label>
+                  <BaseTextInput
+                    v-model="form.name"
+                    placeholder="e.g. Global Logistics Corp"
+                    @blur="onNameBlur"
+                  />
+                  <p v-if="nameError" class="tw:text-xs tw:text-bad tw:mt-1">{{ nameError }}</p>
+                </div>
 
-                <WInput
-                  v-model="form.code"
-                  name="code"
-                  label="Supplier Code"
-                  placeholder="e.g. SUP-2024-001"
-                  hint="Unique identifier for this supplier."
-                  outlined
-                  dense
-                  :loading="isChecking"
-                  :disable="isEditMode"
-                >
-                  <template #label> Supplier Code <span class="tw:text-bad">*</span> </template>
-                  <template #append>
-                    <WIcon
-                      v-if="!isChecking && isAvailable === true"
-                      name="check_circle"
-                      color="positive"
-                      size="xs"
+                <div>
+                  <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">
+                    Supplier Code <span class="tw:text-bad">*</span>
+                  </label>
+                  <div class="tw:relative">
+                    <BaseTextInput v-model="form.code" placeholder="e.g. SUP-2024-001" />
+                    <div
+                      v-if="isChecking"
+                      class="tw:absolute tw:right-2 tw:top-1/2 tw:-translate-y-1/2 tw:animate-spin tw:rounded-full tw:size-4 tw:border-2 tw:border-primary tw:border-t-transparent"
                     />
-                    <WIcon
-                      v-if="!isChecking && isAvailable === false"
-                      name="cancel"
-                      color="negative"
-                      size="xs"
-                    />
-                  </template>
-                </WInput>
+                  </div>
+                  <p v-if="codeError" class="tw:text-xs tw:text-bad tw:mt-1">{{ codeError }}</p>
+                  <p v-else-if="isAvailable === true" class="tw:text-xs tw:text-green-600 tw:mt-1">
+                    Code available
+                  </p>
+                </div>
 
-                <WSelect
-                  v-model="form.category"
-                  name="category"
-                  label="Category"
-                  :options="categoryOptions"
-                  emitValue
-                  mapOptions
-                  outlined
-                  dense
-                >
-                  <template #label> Category <span class="tw:text-bad">*</span> </template>
-                </WSelect>
+                <div>
+                  <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">
+                    Category <span class="tw:text-bad">*</span>
+                  </label>
+                  <SupplierCategorySelectMenu v-model="form.category" :required="true" />
+                  <p v-if="categoryError" class="tw:text-xs tw:text-bad tw:mt-1">
+                    {{ categoryError }}
+                  </p>
+                </div>
               </div>
-            </WCard>
+            </div>
 
             <!-- Contact Details -->
-            <WCard>
+            <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
               <div
                 class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
               >
-                <WIcon name="contact_page" class="tw:text-primary" size="22px" />
+                <IconMail :size="20" class="tw:text-primary" />
                 <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Contact Details</h2>
               </div>
               <div class="tw:p-6 tw:flex tw:flex-col tw:gap-4">
-                <!-- Contacts -->
                 <div v-if="form.contacts.length > 0" class="tw:space-y-3">
                   <div
                     class="tw:text-xs tw:font-bold tw:uppercase tw:text-secondary tw:tracking-wide"
@@ -399,144 +396,96 @@ function discardChanges() {
                   <div
                     v-for="(contact, index) in form.contacts"
                     :key="index"
-                    class="tw:flex tw:flex-col tw:gap-3 tw:items-stretch tw:p-4 tw:border tw:border-divider tw:rounded-lg"
+                    class="tw:flex tw:flex-col tw:gap-3 tw:p-4 tw:border tw:border-divider tw:rounded-lg"
                   >
-                    <WInput
-                      v-model="contact.email"
-                      label="Email"
-                      placeholder="email@supplier.com"
-                      type="email"
-                      outlined
-                      dense
-                    >
-                      <template #label>Email</template>
-                    </WInput>
-                    <WInput
-                      v-model="contact.phoneNumber"
-                      label="Phone"
-                      placeholder="+1 (555) 000-0000"
-                      outlined
-                      dense
-                    >
-                      <template #label>Phone</template>
-                    </WInput>
+                    <BaseTextInput v-model="contact.email" placeholder="email@supplier.com" />
+                    <BaseTextInput v-model="contact.phoneNumber" placeholder="+1 (555) 000-0000" />
                     <div class="tw:flex tw:items-center tw:justify-between">
-                      <QToggle
+                      <BaseSwitch
                         :modelValue="contact.isPrimary"
                         label="Primary"
-                        dense
-                        :disable="contact.isPrimary"
+                        :disabled="contact.isPrimary"
                         @update:modelValue="setPrimary(index)"
                       />
-                      <WBtn
+                      <BaseButton
                         v-if="form.contacts.length > 1"
-                        flat
-                        round
-                        dense
-                        icon="close"
-                        color="negative"
+                        variant="text"
+                        iconOnly
+                        size="sm"
                         @click="removeContact(index)"
-                      />
+                      >
+                        <IconX :size="16" />
+                      </BaseButton>
                     </div>
                   </div>
                 </div>
-
-                <WBtn
-                  flat
-                  dense
-                  icon="add"
-                  label="Add Contact"
-                  color="primary"
-                  @click="addContact"
-                />
+                <BaseButton variant="text-link" size="sm" @click="addContact">
+                  <IconPlus :size="14" />
+                  Add Contact
+                </BaseButton>
               </div>
-            </WCard>
+            </div>
           </div>
 
-          <!-- Row 2: Registered Address (full width) -->
-          <WCard>
+          <!-- Row 2: Registered Address -->
+          <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
             <div
               class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
             >
-              <WIcon name="location_on" class="tw:text-primary" size="22px" />
+              <IconMapPin :size="20" class="tw:text-primary" />
               <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Registered Address</h2>
             </div>
             <div class="tw:p-6 tw:grid tw:grid-cols-1 tw:md:grid-cols-3 tw:gap-4">
               <div class="tw:md:col-span-2">
-                <WInput
-                  v-model="form.streetAddress"
-                  label="Street Address"
-                  placeholder="123 Industrial Parkway"
-                  outlined
-                  dense
-                >
-                  <template #label>Street Address</template>
-                </WInput>
+                <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">Street Address</label>
+                <BaseTextInput v-model="form.streetAddress" placeholder="123 Industrial Parkway" />
               </div>
-
-              <WInput v-model="form.city" label="City" placeholder="New York" outlined dense>
-                <template #label>City</template>
-              </WInput>
-
-              <WInput
-                v-model="form.stateProvince"
-                label="State/Province"
-                placeholder="NY"
-                outlined
-                dense
-              >
-                <template #label>State/Province</template>
-              </WInput>
-
-              <WInput
-                v-model="form.zipPostalCode"
-                label="Zip/Postal Code"
-                placeholder="10001"
-                outlined
-                dense
-              >
-                <template #label>Zip/Postal Code</template>
-              </WInput>
-
-              <WSelect
-                v-model="form.country"
-                label="Country"
-                :options="countryOptions"
-                clearable
-                outlined
-                dense
-              >
-                <template #label>Country</template>
-              </WSelect>
+              <div>
+                <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">City</label>
+                <BaseTextInput v-model="form.city" placeholder="New York" />
+              </div>
+              <div>
+                <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">State/Province</label>
+                <BaseTextInput v-model="form.stateProvince" placeholder="NY" />
+              </div>
+              <div>
+                <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">Zip/Postal Code</label>
+                <BaseTextInput v-model="form.zipPostalCode" placeholder="10001" />
+              </div>
+              <div>
+                <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">Country</label>
+                <select
+                  v-model="form.country"
+                  class="tw:w-full tw:rounded-md tw:border tw:border-border tw:bg-white tw:px-3 tw:py-2 tw:text-sm tw:text-on-sidebar tw:outline-none focus:tw:ring-2 focus:tw:ring-primary"
+                >
+                  <option :value="null">-- Select country --</option>
+                  <option v-for="opt in countryOptions" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+              </div>
             </div>
-          </WCard>
+          </div>
 
           <!-- Site Assignment -->
-          <WCard>
+          <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
             <div
               class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
             >
-              <WIcon name="location_on" class="tw:text-primary" size="22px" />
+              <IconMapPin :size="20" class="tw:text-primary" />
               <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Site Assignment</h2>
             </div>
             <div class="tw:p-6">
-              <FormTemplatesSiteSelect
-                v-model:siteId="form.siteIds"
-                :required="true"
-                :multiple="true"
-                label="Assigned Sites"
-              />
+              <SiteSelectMenu v-model="form.siteIds" :multiple="true" />
             </div>
-          </WCard>
+          </div>
 
           <!-- Row 3: Risk Assessment + Compliance Documents -->
           <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-3 tw:gap-8">
             <!-- Risk Assessment -->
-            <WCard>
+            <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
               <div
                 class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
               >
-                <WIcon name="shield" class="tw:text-primary" size="22px" />
+                <IconShieldCheck :size="20" class="tw:text-primary" />
                 <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Risk Assessment</h2>
               </div>
               <div class="tw:p-6">
@@ -545,64 +494,82 @@ function discardChanges() {
                 >
                   Self-Declared Risk Level
                 </div>
-                <div class="tw:flex tw:flex-col tw:gap-3">
-                  <label
-                    v-for="option in riskOptions"
-                    :key="option.value"
-                    class="tw:flex tw:items-center tw:gap-3 tw:p-4 tw:rounded-lg tw:border tw:border-divider tw:cursor-pointer tw:transition-colors"
-                    :class="
-                      form.riskLevel === option.value
-                        ? 'tw:bg-primary/5 tw:border-primary'
-                        : 'tw:hover:bg-main-hover'
-                    "
-                  >
-                    <input
-                      v-model="form.riskLevel"
-                      type="radio"
-                      :value="option.value"
-                      class="tw:accent-primary"
-                    />
-                    <div class="tw:flex tw:flex-col">
-                      <span class="tw:text-sm tw:font-bold tw:text-on-sidebar">{{
-                        option.label
-                      }}</span>
-                      <span
-                        class="tw:text-[10px] tw:text-secondary tw:uppercase tw:font-bold tw:tracking-tight"
-                      >
-                        {{ option.description }}
-                      </span>
-                    </div>
-                  </label>
-                </div>
+                <SupplierRiskLevelSelectMenu v-model="form.riskLevel" />
               </div>
-            </WCard>
+            </div>
 
             <!-- Compliance Documents -->
-            <WCard class="tw:lg:col-span-2">
+            <div
+              class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden tw:lg:col-span-2"
+            >
               <div
                 class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
               >
-                <WIcon name="verified_user" class="tw:text-primary" size="22px" />
+                <IconFileCheck :size="20" class="tw:text-primary" />
                 <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Compliance Documents</h2>
               </div>
-              <div class="tw:p-6 tw:space-y-4">
-                <WUploader
-                  ref="certificateUploaderRef"
-                  v-model="certificateFiles"
-                  label="Certificates"
-                  accept="application/pdf,image/*"
-                  fileType="ASSET"
-                />
+              <div class="tw:p-6 tw:space-y-6">
+                <!-- Certificates -->
+                <div>
+                  <label class="tw:block tw:text-sm tw:font-medium tw:mb-2">Certificates</label>
+                  <div v-if="certificateFiles.length" class="tw:mb-2 tw:space-y-1">
+                    <div
+                      v-for="(file, i) in certificateFiles"
+                      :key="i"
+                      class="tw:flex tw:items-center tw:justify-between tw:text-sm tw:text-secondary"
+                    >
+                      <span class="tw:truncate">{{ file.name }}</span>
+                      <BaseButton variant="text" iconOnly size="xs" @click="removeCertificate(i)">
+                        <IconX :size="14" />
+                      </BaseButton>
+                    </div>
+                  </div>
+                  <label
+                    class="tw:inline-flex tw:items-center tw:gap-1 tw:text-sm tw:text-primary tw:cursor-pointer tw:hover:underline"
+                  >
+                    <IconPlus :size="14" />
+                    Add Certificate
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      multiple
+                      class="tw:hidden"
+                      @change="onCertificateChange"
+                    />
+                  </label>
+                </div>
 
-                <WUploader
-                  ref="licenseUploaderRef"
-                  v-model="licenseFiles"
-                  label="Licenses"
-                  accept="application/pdf,image/*"
-                  fileType="ASSET"
-                />
+                <!-- Licenses -->
+                <div>
+                  <label class="tw:block tw:text-sm tw:font-medium tw:mb-2">Licenses</label>
+                  <div v-if="licenseFiles.length" class="tw:mb-2 tw:space-y-1">
+                    <div
+                      v-for="(file, i) in licenseFiles"
+                      :key="i"
+                      class="tw:flex tw:items-center tw:justify-between tw:text-sm tw:text-secondary"
+                    >
+                      <span class="tw:truncate">{{ file.name }}</span>
+                      <BaseButton variant="text" iconOnly size="xs" @click="removeLicense(i)">
+                        <IconX :size="14" />
+                      </BaseButton>
+                    </div>
+                  </div>
+                  <label
+                    class="tw:inline-flex tw:items-center tw:gap-1 tw:text-sm tw:text-primary tw:cursor-pointer tw:hover:underline"
+                  >
+                    <IconPlus :size="14" />
+                    Add License
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      multiple
+                      class="tw:hidden"
+                      @change="onLicenseChange"
+                    />
+                  </label>
+                </div>
               </div>
-            </WCard>
+            </div>
           </div>
         </div>
       </div>
@@ -610,7 +577,7 @@ function discardChanges() {
 
     <!-- Sticky Footer Action Bar -->
     <div
-      class="tw:relative tw:bottom-0 tw:right-0 tw:w-full tw:lg:w-[calc(100%-16rem)] tw:bg-main/80 tw:backdrop-blur-md tw:border-t tw:border-divider tw:px-6 tw:py-4 tw:z-50"
+      class="tw:sticky tw:bottom-0 tw:w-full tw:bg-main/80 tw:backdrop-blur-md tw:border-t tw:border-divider tw:px-6 tw:py-4 tw:z-50"
     >
       <div class="tw:max-w-5xl tw:mx-auto tw:flex tw:items-center tw:justify-between">
         <div class="tw:flex tw:items-center tw:gap-2 tw:text-sm tw:text-secondary">
@@ -618,21 +585,14 @@ function discardChanges() {
           Unsaved changes
         </div>
         <div class="tw:flex tw:items-center tw:gap-4">
-          <WBtn
-            flat
-            label="Discard Changes"
-            color="secondary"
-            :disable="saving"
-            @click="discardChanges"
-          />
-          <WBtn
-            :label="isEditMode ? 'Save Changes' : 'Submit for Onboarding'"
-            color="primary"
-            icon="save"
-            :loading="saving"
-            :disable="saving"
-            @click="saveSupplier"
-          />
+          <BaseButton variant="secondary" :disabled="saving" @click="goBack"> Cancel </BaseButton>
+          <BaseButton :disabled="saving" @click="saveSupplier">
+            <div
+              v-if="saving"
+              class="tw:animate-spin tw:rounded-full tw:size-4 tw:border-2 tw:border-white tw:border-t-transparent"
+            />
+            <span>{{ saving ? 'Saving...' : 'Submit for Onboarding' }}</span>
+          </BaseButton>
         </div>
       </div>
     </div>

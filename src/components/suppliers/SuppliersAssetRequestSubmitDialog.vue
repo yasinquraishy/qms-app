@@ -1,6 +1,8 @@
 <script setup>
-import { useQuasar } from 'quasar'
+import { IconUpload, IconX } from '@tabler/icons-vue'
+import { uploadFile } from '@/utils/uploadService.js'
 import { post } from '@/api'
+import { useToast } from '@shared/composables/useToast.js'
 
 const props = defineProps({
   request: {
@@ -13,71 +15,128 @@ const emit = defineEmits(['submitted'])
 
 const show = defineModel({ type: Boolean, default: false })
 
-const $q = useQuasar()
+const toast = useToast()
 
-const uploadedAssets = ref([])
+const selectedFile = ref(null)
+const uploadedAsset = ref(null)
+const uploading = ref(false)
 const submitting = ref(false)
 
 watch(show, (val) => {
   if (val) {
-    uploadedAssets.value = []
+    selectedFile.value = null
+    uploadedAsset.value = null
+    uploading.value = false
+    submitting.value = false
   }
 })
 
-const uploadedAsset = computed(() => uploadedAssets.value[0] ?? null)
+function onFileChange(e) {
+  const file = e.target.files?.[0]
+  if (file) {
+    selectedFile.value = file
+  }
+}
+
+function removeFile() {
+  selectedFile.value = null
+  uploadedAsset.value = null
+}
+
+async function onUpload() {
+  if (!selectedFile.value) return
+  uploading.value = true
+  try {
+    uploadedAsset.value = await uploadFile(selectedFile.value, 'ASSET')
+  } catch (err) {
+    toast.notify({ type: 'negative', message: err.message || 'Upload failed' })
+  } finally {
+    uploading.value = false
+  }
+}
 
 async function onSubmit() {
   if (!uploadedAsset.value || !props.request) return
 
   submitting.value = true
 
-  const result = await post(`/v1/services/assetRequests/${props.request.id}/submit`, {
-    assetId: uploadedAsset.value.id,
-  })
+  try {
+    const result = await post(`/v1/services/assetRequests/${props.request.id}/submit`, {
+      assetId: uploadedAsset.value.id,
+    })
 
-  submitting.value = false
-
-  if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
-  } else {
-    $q.notify({ type: 'positive', message: 'Asset request submitted successfully' })
-    show.value = false
-    emit('submitted')
+    if (result.error) {
+      toast.notify({ type: 'negative', message: result.error })
+    } else {
+      toast.notify({ type: 'positive', message: 'Asset request submitted successfully' })
+      show.value = false
+      emit('submitted')
+    }
+  } catch (err) {
+    toast.notify({ type: 'negative', message: err.message || 'Failed to submit' })
+  } finally {
+    submitting.value = false
   }
 }
 </script>
 
 <template>
-  <WDialog v-model="show" title="Submit Asset Request" persistent>
+  <BaseDialog v-model="show" title="Submit Asset Request" :persistent="true">
     <div class="tw:p-4 tw:space-y-4">
-      <!-- Request context -->
       <div v-if="request" class="tw:bg-main-hover tw:rounded-lg tw:p-3 tw:space-y-1">
         <p class="tw:text-sm tw:font-medium tw:text-on-main">{{ request.title }}</p>
-        <p v-if="request.requestType" class="tw:text-xs tw:text-secondary">
-          {{ request.requestType.name }}
-        </p>
       </div>
 
-      <!-- Uploader -->
-      <WUploader
-        v-model="uploadedAssets"
-        label="Upload Document"
-        :multiple="false"
-        fileType="ASSET"
-        accept="image/*,application/pdf,.docx,.doc,.xlsx,.xls,.csv"
-      />
+      <div>
+        <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-1">
+          Upload Document
+        </label>
+        <div
+          v-if="selectedFile"
+          class="tw:flex tw:items-center tw:gap-2 tw:p-2 tw:border tw:border-divider tw:rounded-lg"
+        >
+          <span class="tw:text-sm tw:text-on-main tw:flex-1 tw:truncate">{{
+            selectedFile.name
+          }}</span>
+          <BaseButton v-if="!uploadedAsset" variant="text" iconOnly size="xs" @click="removeFile">
+            <IconX :size="14" />
+          </BaseButton>
+        </div>
+        <div v-else>
+          <label
+            class="tw:inline-flex tw:items-center tw:gap-1 tw:text-sm tw:text-primary tw:cursor-pointer tw:hover:underline"
+          >
+            <IconUpload :size="14" />
+            Choose File
+            <input
+              type="file"
+              accept="image/*,application/pdf,.docx,.doc,.xlsx,.xls,.csv"
+              class="tw:hidden"
+              @change="onFileChange"
+            />
+          </label>
+        </div>
+        <div v-if="selectedFile && !uploadedAsset" class="tw:mt-2">
+          <BaseButton :disabled="uploading" size="sm" @click="onUpload">
+            <div
+              v-if="uploading"
+              class="tw:animate-spin tw:rounded-full tw:size-3 tw:border-2 tw:border-white tw:border-t-transparent"
+            />
+            <span>{{ uploading ? 'Uploading...' : 'Upload' }}</span>
+          </BaseButton>
+        </div>
+      </div>
     </div>
 
-    <template #actions>
-      <WBtn flat label="Cancel" @click="show = false" />
-      <WBtn
-        color="primary"
-        label="Submit"
-        unelevated
-        :loading="submitting"
-        :disable="!uploadedAsset"
-        @click="onSubmit"
-      />
-    </template>
-  </WDialog>
+    <div class="tw:flex tw:justify-end tw:gap-2 tw:px-4 tw:pb-4">
+      <BaseButton variant="ghost" @click="show = false">Cancel</BaseButton>
+      <BaseButton :disabled="!uploadedAsset || submitting" @click="onSubmit">
+        <div
+          v-if="submitting"
+          class="tw:animate-spin tw:rounded-full tw:size-4 tw:border-2 tw:border-white tw:border-t-transparent"
+        />
+        <span>{{ submitting ? 'Submitting...' : 'Submit' }}</span>
+      </BaseButton>
+    </div>
+  </BaseDialog>
 </template>

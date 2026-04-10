@@ -25,22 +25,24 @@ const approvalRuleOptions = [
         </h3>
 
         <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-6">
-          <WInput
+          <BaseTextInput
             v-model.number="model.settings.defaultSla"
             label="Default SLA (days)"
             type="number"
             hint="Applied to new workflow steps"
           />
-          <WSelect
-            v-model="model.settings.defaultApprovalWorkflowApprovalRule"
-            label="Default Approval Rule"
-            :options="approvalRuleOptions"
-            optionLabel="label"
-            optionValue="value"
-            emitValue
-            mapOptions
-            hint="ALL or ANY approvers required"
-          />
+          <div class="tw:flex tw:flex-col tw:gap-1">
+            <label class="tw:text-sm tw:font-medium tw:text-secondary">Default Approval Rule</label>
+            <select
+              v-model="model.settings.defaultApprovalWorkflowApprovalRule"
+              class="tw:w-full tw:px-3 tw:py-2 tw:text-sm tw:rounded-lg tw:border tw:border-divider tw:bg-main tw:text-on-main tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary"
+            >
+              <option v-for="opt in approvalRuleOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+            <p class="tw:text-xs tw:text-secondary">ALL or ANY approvers required</p>
+          </div>
         </div>
 
         <div class="tw:flex tw:flex-col tw:gap-4">
@@ -51,10 +53,7 @@ const approvalRuleOptions = [
               </div>
               <div class="tw:text-xs tw:text-secondary">Workflow steps require an e-signature</div>
             </div>
-            <QToggle
-              v-model="model.settings.defaultApprovalWorkflowRequireSignature"
-              color="primary"
-            />
+            <BaseSwitch v-model="model.settings.defaultApprovalWorkflowRequireSignature" />
           </div>
           <div class="tw:flex tw:items-center tw:justify-between">
             <div>
@@ -63,15 +62,12 @@ const approvalRuleOptions = [
               </div>
               <div class="tw:text-xs tw:text-secondary">Workflow steps require a comment</div>
             </div>
-            <QToggle
-              v-model="model.settings.defaultApprovalWorkflowRequireComment"
-              color="primary"
-            />
+            <BaseSwitch v-model="model.settings.defaultApprovalWorkflowRequireComment" />
           </div>
         </div>
       </div>
 
-      <QSeparator />
+      <hr class="tw:border-divider" />
 
       <!-- Document Template Defaults -->
       <div class="tw:flex tw:flex-col tw:gap-5">
@@ -80,19 +76,19 @@ const approvalRuleOptions = [
         </h3>
 
         <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-3 tw:gap-6">
-          <WInput
+          <BaseTextInput
             v-model.number="model.settings.defaultDocumentTemplatePeriodicReviewMonths"
             label="Periodic Review (months)"
             type="number"
             hint="How often documents are reviewed"
           />
-          <WInput
+          <BaseTextInput
             v-model.number="model.settings.defaultDocumentTemplateReviewLimitDays"
             label="Review Limit (days)"
             type="number"
             hint="Days allowed for review"
           />
-          <WInput
+          <BaseTextInput
             v-model.number="model.settings.defaultDocumentTemplateApprovalLimitDays"
             label="Approval Limit (days)"
             type="number"
@@ -110,10 +106,7 @@ const approvalRuleOptions = [
                 New document templates include training
               </div>
             </div>
-            <QToggle
-              v-model="model.settings.defaultDocumentTemplateTrainingAvailable"
-              color="primary"
-            />
+            <BaseSwitch v-model="model.settings.defaultDocumentTemplateTrainingAvailable" />
           </div>
           <div class="tw:flex tw:items-center tw:justify-between">
             <div>
@@ -124,10 +117,7 @@ const approvalRuleOptions = [
                 Users must complete training after version updates
               </div>
             </div>
-            <QToggle
-              v-model="model.settings.defaultDocumentTemplateRetrainingOnVersion"
-              color="primary"
-            />
+            <BaseSwitch v-model="model.settings.defaultDocumentTemplateRetrainingOnVersion" />
           </div>
           <div class="tw:flex tw:items-center tw:justify-between">
             <div>
@@ -138,22 +128,19 @@ const approvalRuleOptions = [
                 Documents become effective immediately upon approval
               </div>
             </div>
-            <QToggle
-              v-model="model.settings.defaultDocumentTemplateAutoEffectiveOnApproval"
-              color="primary"
-            />
+            <BaseSwitch v-model="model.settings.defaultDocumentTemplateAutoEffectiveOnApproval" />
           </div>
         </div>
       </div>
 
-      <QSeparator />
+      <hr class="tw:border-divider" />
 
       <!-- Asset Request Defaults -->
       <div class="tw:flex tw:flex-col tw:gap-5">
         <h3 class="tw:text-xs tw:font-bold tw:uppercase tw:tracking-widest tw:text-secondary">
           Asset Request Defaults
         </h3>
-        <WInput
+        <BaseTextInput
           v-model.number="model.settings.defaultAssetRequestDueDays"
           label="Default Due In (days)"
           type="number"

@@ -1,4 +1,6 @@
 <script setup>
+import { IconCalendar, IconHistory, IconInfoCircle } from '@tabler/icons-vue'
+
 const props = defineProps({
   company: {
     type: Object,
@@ -66,7 +68,7 @@ const formattedUpdatedAt = computed(() => {
             <p
               class="tw:text-sm tw:font-medium tw:text-on-sidebar tw:flex tw:items-center tw:gap-2"
             >
-              <WIcon icon="calendar_today" size="16px" class="tw:text-secondary" />
+              <IconCalendar :size="16" class="tw:text-secondary" />
               {{ formattedCreatedAt }}
             </p>
           </div>
@@ -81,7 +83,7 @@ const formattedUpdatedAt = computed(() => {
             <p
               class="tw:text-sm tw:font-medium tw:text-on-sidebar tw:flex tw:items-center tw:gap-2"
             >
-              <WIcon icon="history" size="16px" class="tw:text-secondary" />
+              <IconHistory :size="16" class="tw:text-secondary" />
               {{ formattedUpdatedAt }}
             </p>
           </div>
@@ -92,7 +94,7 @@ const formattedUpdatedAt = computed(() => {
     <!-- Help Info Box -->
     <div class="tw:rounded-xl tw:bg-primary/5 tw:p-6 tw:border tw:border-primary/10">
       <div class="tw:flex tw:items-start tw:gap-3">
-        <WIcon icon="info" class="tw:text-primary" size="24px" />
+        <IconInfoCircle class="tw:text-primary tw:size-6 tw:shrink-0" />
         <div class="tw:flex tw:flex-col tw:gap-1">
           <p class="tw:text-sm tw:font-bold tw:text-primary">Need help?</p>
           <p class="tw:text-xs tw:text-secondary tw:leading-relaxed">

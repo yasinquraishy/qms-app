@@ -1,8 +1,6 @@
 import { currentCompany } from '@/utils/currentCompany.js'
 import { get, patch } from '@/api'
 
-const symbol = Symbol('useCompanySettings')
-
 function CompanySettingsState() {
   const formData = ref({
     name: '',
@@ -208,12 +206,6 @@ function CompanySettingsState() {
   }
 }
 
-export function provideCompanySettings() {
-  const state = CompanySettingsState()
-  provide(symbol, state)
-  return state
-}
-
 export function useCompanySettings() {
-  return inject(symbol)
+  return CompanySettingsState()
 }

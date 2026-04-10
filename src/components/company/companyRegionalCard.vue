@@ -31,16 +31,18 @@ const firstDayOfWeekOptions = [
       />
 
       <!-- First Day of Week -->
-      <WSelect
-        v-model="model.defaultFirstDayOfWeek"
-        label="First Day of Week"
-        :options="firstDayOfWeekOptions"
-        optionLabel="label"
-        optionValue="value"
-        emitValue
-        mapOptions
-        hint="Used for calendar views"
-      />
+      <div class="tw:flex tw:flex-col tw:gap-1">
+        <label class="tw:text-sm tw:font-medium tw:text-secondary">First Day of Week</label>
+        <select
+          v-model.number="model.defaultFirstDayOfWeek"
+          class="tw:w-full tw:px-3 tw:py-2 tw:text-sm tw:rounded-lg tw:border tw:border-divider tw:bg-main tw:text-on-main tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary"
+        >
+          <option v-for="opt in firstDayOfWeekOptions" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+        <p class="tw:text-xs tw:text-secondary">Used for calendar views</p>
+      </div>
     </div>
   </div>
 </template>

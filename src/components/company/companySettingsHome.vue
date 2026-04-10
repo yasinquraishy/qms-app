@@ -1,37 +1,24 @@
 <script setup>
+import { IconSettings, IconDeviceFloppy } from '@tabler/icons-vue'
 import { useCompanySettings } from '@/composables/useCompanySettings.js'
-import { Notify } from 'quasar'
+import { useToast } from '@shared/composables/useToast.js'
 
 const { formData, loading, saving, isDirty, saveSettings, discardChanges } = useCompanySettings()
+const toast = useToast()
 
 async function handleSave() {
   const success = await saveSettings()
 
   if (success) {
-    Notify.create({
-      type: 'positive',
-      message: 'Company settings updated successfully',
-      position: 'top',
-      timeout: 2000,
-    })
+    toast.notify({ type: 'positive', message: 'Company settings updated successfully' })
   } else {
-    Notify.create({
-      type: 'negative',
-      message: 'Failed to update company settings',
-      position: 'top',
-      timeout: 3000,
-    })
+    toast.notify({ type: 'negative', message: 'Failed to update company settings' })
   }
 }
 
 function handleDiscard() {
   discardChanges()
-  Notify.create({
-    type: 'info',
-    message: 'Changes discarded',
-    position: 'top',
-    timeout: 2000,
-  })
+  toast.notify({ type: 'info', message: 'Changes discarded' })
 }
 </script>
 
@@ -39,29 +26,28 @@ function handleDiscard() {
   <div class="tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="settings" class="tw:text-primary" size="24px" />
+        <IconSettings class="tw:text-primary tw:size-6" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Company Settings</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:gap-2">
-        <WBtn label="Discard" outline :disable="!isDirty || saving" @click="handleDiscard" />
-        <WBtn
-          label="Save Changes"
-          color="primary"
-          unelevated
-          icon="save"
-          :loading="saving"
-          :disable="!isDirty || saving"
-          @click="handleSave"
-        />
+        <BaseButton variant="outline" :disabled="!isDirty || saving" @click="handleDiscard">
+          Discard
+        </BaseButton>
+        <BaseButton :disabled="!isDirty || saving" @click="handleSave">
+          <IconDeviceFloppy class="tw:size-4" />
+          {{ saving ? 'Saving...' : 'Save Changes' }}
+        </BaseButton>
       </div>
     </SafeTeleport>
 
     <!-- Page Content -->
     <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:h-full">
-      <QSpinner size="48px" color="primary" />
+      <div
+        class="tw:animate-spin tw:rounded-full tw:size-12 tw:border-4 tw:border-primary tw:border-t-transparent"
+      />
     </div>
 
     <div v-else class="tw:flex tw:flex-col tw:gap-8 tw:max-w-6xl">

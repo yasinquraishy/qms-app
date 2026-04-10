@@ -1,14 +1,5 @@
 <script setup>
-import { required, helpers } from '@vuelidate/validators'
-import { useValidator } from '@shared/composables/validator.js'
-
 const model = defineModel({ type: Object, required: true })
-
-const rules = computed(() => ({
-  name: { required: helpers.withMessage('Company name is required', required) },
-}))
-
-useValidator(rules, model)
 </script>
 
 <template>
@@ -23,19 +14,14 @@ useValidator(rules, model)
     <!-- Card Content -->
     <div class="tw:p-6 tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-6">
       <!-- Company Name -->
-      <WInput
-        v-model="model.name"
-        name="name"
-        label="Company Name"
-        placeholder="Enter company name"
-      />
+      <BaseTextInput v-model="model.name" label="Company Name" placeholder="Enter company name" />
 
       <!-- Company Code (Disabled) -->
-      <WInput
+      <BaseTextInput
         v-model="model.code"
         label="Company Code"
         placeholder="Company code"
-        :disable="true"
+        :disabled="true"
         class="tw:opacity-70"
         hint="System-generated code (read-only)"
       />

@@ -2,8 +2,13 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('documentTemplates', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('documentTemplates', {
+  primaryKey: 'id',
+  syncField: 'updatedAt',
+  customIndex: 'departmentId',
+})
 export class DocumentTemplate extends BaseModel {
+  static paranoid = true
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation

@@ -1,5 +1,5 @@
 <script setup>
-import { IconLocation } from '@tabler/icons-vue'
+import { IconMapPin } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 
 const showDialog = ref(false)
@@ -23,7 +23,9 @@ const sites = useLiveQueryWithDeps(
       const q = search.toLowerCase()
       results = results.filter((s) => s.name.toLowerCase().includes(q))
     }
-    return results.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+    return results.sort(
+      (a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0),
+    )
   },
   { initial: [] },
 )
@@ -51,7 +53,7 @@ async function confirmDeleteSite() {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <IconLocation class="tw:text-primary" :size="24" />
+        <IconMapPin class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Sites</h2>
       </div>
     </SafeTeleport>

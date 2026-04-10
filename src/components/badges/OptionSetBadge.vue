@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  documentTemplate: {
+  optionSet: {
     type: Object,
     required: true,
   },
@@ -8,5 +8,5 @@ defineProps({
 </script>
 
 <template>
-  <BaseBadge v-bind="$attrs">{{ documentTemplate.name }}</BaseBadge>
+  <BaseBadge v-bind="$attrs">{{ optionSet.name }}</BaseBadge>
 </template>

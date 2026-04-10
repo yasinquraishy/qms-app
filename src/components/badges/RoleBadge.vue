@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  documentTemplate: {
+  role: {
     type: Object,
     required: true,
   },
@@ -8,5 +8,5 @@ defineProps({
 </script>
 
 <template>
-  <BaseBadge v-bind="$attrs">{{ documentTemplate.name }}</BaseBadge>
+  <BaseBadge v-bind="$attrs">{{ role.name }}</BaseBadge>
 </template>

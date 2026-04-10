@@ -153,13 +153,8 @@ function decrementReviewMonths() {
         <h2 class="tw:text-xl tw:font-bold tw:text-on-sidebar">Site Availability</h2>
       </div>
       <div class="tw:max-w-2xl">
-        <DocumentsSiteSelect
-          v-model:siteId="form.siteId"
-          name="siteId"
-          :required="true"
-          label="Site *"
-          hideBottomSpace
-        />
+        <label>Site *</label>
+        <SiteSelectMenu v-model="form.siteId" :required="true" />
         <p class="tw:text-xs tw:text-secondary tw:mt-2">
           Select which site this document will be available at.
         </p>

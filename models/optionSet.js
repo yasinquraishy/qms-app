@@ -19,7 +19,7 @@ export class OptionSet extends BaseModel {
   @Property({ type: String }) companyId = ''
   @Property({ type: String }) name = ''
   @Property({ type: String }) description = ''
-  @Property({ type: Object }) options = null
+  @Property({ type: Array }) options = []
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

@@ -1,5 +1,5 @@
 <script setup>
-import { IconCorporate } from '@tabler/icons-vue'
+import { IconBuilding } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 
 const showDialog = ref(false)
@@ -52,7 +52,7 @@ async function confirmDeleteDepartment() {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <IconCorporate class="tw:text-primary" :size="24" />
+        <IconBuilding class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Departments</h2>
       </div>
     </SafeTeleport>

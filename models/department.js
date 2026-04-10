@@ -2,7 +2,7 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('departments', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('departments', { primaryKey: 'id', syncField: 'updatedAt', customIndex: 'siteId' })
 export class Department extends BaseModel {
   constructor(...args) {
     super(...args)

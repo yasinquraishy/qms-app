@@ -21,6 +21,19 @@ export function observabilityHelper(instance, name, onSet) {
   let oldValue = initialValue
   const box = ref(initialValue)
 
+  // Array or object field changes won't be detected by the setter,
+  // so we need to watch the box for deep changes.
+  watch(
+    box,
+    (newVal) => {
+      if (JSON.stringify(oldValue) !== JSON.stringify(newVal)) {
+        onSet(instance, name, oldValue)
+        oldValue = newVal
+      }
+    },
+    { deep: true },
+  )
+
   Object.defineProperty(instance, name, {
     enumerable: true,
     configurable: true,
@@ -28,11 +41,7 @@ export function observabilityHelper(instance, name, onSet) {
       return box.value
     },
     set(newVal) {
-      oldValue = box.value
       box.value = newVal
-      if (JSON.stringify(oldValue) !== JSON.stringify(newVal)) {
-        onSet(instance, name, oldValue)
-      }
     },
   })
 }

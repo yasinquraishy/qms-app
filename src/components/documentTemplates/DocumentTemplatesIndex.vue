@@ -1,6 +1,4 @@
 <script setup>
-import { provideDocumentTemplates } from '@/composables/useDocumentTemplates.js'
-
 defineProps({
   id: {
     type: String,
@@ -10,8 +8,6 @@ defineProps({
 
 const route = useRoute()
 const mode = computed(() => route.query.mode)
-
-provideDocumentTemplates()
 </script>
 
 <template>

@@ -1,5 +1,5 @@
 <script setup>
-import { IconCheck, IconX as IconXCross } from '@tabler/icons-vue'
+import { IconCheck, IconX as IconXCross, IconMapPin } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
 
@@ -15,6 +15,13 @@ const emit = defineEmits(['created', 'updated'])
 const open = defineModel({
   type: Boolean,
   default: false,
+})
+
+const form = ref({
+  name: '',
+  code: '',
+  address: '',
+  timezone: null,
 })
 
 // Load existing site if editing
@@ -33,13 +40,6 @@ const codeAvailable = useLiveQueryWithDeps(
   },
   { initial: true },
 )
-
-const form = ref({
-  name: '',
-  code: '',
-  address: '',
-  timezone: 'UTC',
-})
 
 const rules = computed(() => ({
   name: { required: helpers.withMessage('Required', required) },
@@ -60,7 +60,7 @@ watch(
         name: s.name,
         code: s.code,
         address: s.address,
-        timezone: s.timezone || 'UTC',
+        timezone: s.timezone,
       }
     }
   },
@@ -101,6 +101,11 @@ const createSite = useLiveMutation(async (db, newSite) => {
   return created
 })
 
+const getDisplayOrder = useLiveMutation(async (db) => {
+  const lastItem = await db.Site.where().orderBy('displayOrder', 'desc').first()
+  return (lastItem?.displayOrder || 0) + 1000
+})
+
 async function onSubmit() {
   const valid = await validator.value.$validate()
   if (!valid || !codeAvailable.value) return
@@ -112,13 +117,14 @@ async function onSubmit() {
         name: form.value.name,
         code: form.value.code,
         address: form.value.address,
-        timezone: form.value.timezone || 'UTC',
+        timezone: form.value.timezone,
+        displayOrder: await getDisplayOrder(),
       })
       emit('created', newSite)
     } else {
       site.value.name = form.value.name
       site.value.address = form.value.address
-      site.value.timezone = form.value.timezone || 'UTC'
+      site.value.timezone = form.value.timezone
       await site.value.save()
       emit('updated', site.value)
     }
@@ -131,13 +137,23 @@ async function onSubmit() {
 // Reset form when dialog closes
 watch(open, (val) => {
   if (!val) {
-    form.value = { name: '', code: '', address: '', timezone: 'UTC' }
+    form.value = { name: '', code: '', address: '', timezone: null }
   }
 })
 </script>
 
 <template>
-  <BaseDialog v-model="open" :title="isEdit ? 'Edit Site' : 'Create New Site'" maxWidth="md">
+  <BaseDialog v-model="open" maxWidth="md">
+    <template #title>
+      <div class="tw:flex tw:items-center tw:gap-3">
+        <div
+          class="tw:w-9 tw:h-9 tw:bg-primary/10 tw:text-primary tw:rounded-xl tw:flex tw:items-center tw:justify-center"
+        >
+          <IconMapPin class="tw:size-5 tw:text-primary" />
+        </div>
+        <span>{{ isEdit ? 'Edit Site' : 'Create New Site' }}</span>
+      </div>
+    </template>
     <div class="tw:flex tw:flex-col tw:gap-4">
       <BaseTextInput
         v-model="form.name"

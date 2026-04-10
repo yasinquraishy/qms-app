@@ -2,7 +2,11 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('rolesOnUsers', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('rolesOnUsers', {
+  primaryKey: 'id',
+  syncField: 'updatedAt',
+  customIndex: '[roleId+userId], roleId, userId',
+})
 export class RoleOnUser extends BaseModel {
   static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {

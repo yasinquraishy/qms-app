@@ -1,5 +1,5 @@
 <script setup>
-const props = defineProps({
+defineProps({
   required: {
     type: Boolean,
     default: false,
@@ -8,10 +8,6 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  siteId: {
-    type: [String, null],
-    default: null,
-  },
 })
 
 const modelValue = defineModel({
@@ -19,14 +15,7 @@ const modelValue = defineModel({
   default: null,
 })
 
-const departments = useLiveQueryWithDeps(
-  [() => props.siteId],
-  async (db, [siteId]) => {
-    if (siteId) return db.Department.where('siteId', siteId).exec()
-    return db.Department.where().exec()
-  },
-  { initial: [] },
-)
+const sites = useLiveQuery((db) => db.Site.where().exec(), { initial: [] })
 
 /**
  * Normalize model for easier handling
@@ -39,7 +28,7 @@ function getArray() {
 <template>
   <BaseSelectMenu
     v-model="modelValue"
-    :items="departments"
+    :items="sites"
     :required="required"
     :multiple="multiple"
   >
@@ -48,31 +37,30 @@ function getArray() {
         <!-- MULTIPLE MODE -->
         <template v-if="multiple">
           <div v-if="getArray().length" class="tw:flex tw:flex-wrap tw:gap-1">
-            <DepartmentBadgeById
-              v-for="id in getArray()"
-              :key="id"
-              :departmentId="id"
+            <SiteBadgeById
+              v-for="siteId in getArray()"
+              :key="siteId"
+              :siteId="siteId"
               :clearable="!required || getArray().length > 1"
-              @clear="() => scope.clear(id)"
+              @clear="() => scope.clear(siteId)"
             />
           </div>
-
           <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
-            Select Departments
+            Select Sites
           </span>
         </template>
 
         <!-- SINGLE MODE -->
         <template v-else>
-          <DepartmentBadgeById
+          <SiteBadgeById
             v-if="modelValue"
-            :departmentId="modelValue"
+            :siteId="modelValue"
             :clearable="!required"
             selectable
             @clear="() => scope.clear(modelValue)"
           />
           <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
-            Select Department
+            Select Site
           </span>
         </template>
       </slot>

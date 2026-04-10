@@ -1,5 +1,5 @@
 <script setup>
-const props = defineProps({
+defineProps({
   required: {
     type: Boolean,
     default: false,
@@ -8,10 +8,6 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  siteId: {
-    type: [String, null],
-    default: null,
-  },
 })
 
 const modelValue = defineModel({
@@ -19,60 +15,41 @@ const modelValue = defineModel({
   default: null,
 })
 
-const departments = useLiveQueryWithDeps(
-  [() => props.siteId],
-  async (db, [siteId]) => {
-    if (siteId) return db.Department.where('siteId', siteId).exec()
-    return db.Department.where().exec()
-  },
-  { initial: [] },
-)
+const templates = useLiveQuery(async (db) => db.DocumentTemplate.where().exec(), { initial: [] })
 
-/**
- * Normalize model for easier handling
- */
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []
 }
 </script>
 
 <template>
-  <BaseSelectMenu
-    v-model="modelValue"
-    :items="departments"
-    :required="required"
-    :multiple="multiple"
-  >
+  <BaseSelectMenu v-model="modelValue" :items="templates" :required="required" :multiple="multiple">
     <template #button="scope">
       <slot name="button" v-bind="scope">
-        <!-- MULTIPLE MODE -->
         <template v-if="multiple">
           <div v-if="getArray().length" class="tw:flex tw:flex-wrap tw:gap-1">
-            <DepartmentBadgeById
-              v-for="id in getArray()"
-              :key="id"
-              :departmentId="id"
+            <DocumentTemplateBadgeById
+              v-for="templateId in getArray()"
+              :key="templateId"
+              :documentTemplateId="templateId"
               :clearable="!required || getArray().length > 1"
-              @clear="() => scope.clear(id)"
+              @clear="() => scope.clear(templateId)"
             />
           </div>
-
           <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
-            Select Departments
+            Select Templates
           </span>
         </template>
-
-        <!-- SINGLE MODE -->
         <template v-else>
-          <DepartmentBadgeById
+          <DocumentTemplateBadgeById
             v-if="modelValue"
-            :departmentId="modelValue"
+            :documentTemplateId="modelValue"
             :clearable="!required"
             selectable
             @clear="() => scope.clear(modelValue)"
           />
           <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
-            Select Department
+            Select Template
           </span>
         </template>
       </slot>

@@ -1,4 +1,6 @@
 <script setup>
+import { IconSearch } from '@tabler/icons-vue'
+
 const filters = defineModel('filters', {
   type: Object,
   required: true,
@@ -7,15 +9,16 @@ const filters = defineModel('filters', {
 
 <template>
   <div class="tw:flex tw:mb-2">
-    <WInput
+    <BaseTextInput
       v-model="filters.search"
+      name="search"
       placeholder="Search option sets..."
-      dense
+      clearBtn
       class="tw:w-full tw:md:w-1/3"
     >
-      <template #prepend>
-        <WIcon name="search" />
+      <template #icon>
+        <IconSearch :size="16" />
       </template>
-    </WInput>
+    </BaseTextInput>
   </div>
 </template>

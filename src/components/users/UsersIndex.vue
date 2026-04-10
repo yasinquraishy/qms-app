@@ -1,5 +1,4 @@
 <script setup>
-import { provideUsers } from '@/composables/useUsers.js'
 import UserPageId from './UserPageId.vue'
 
 defineProps({
@@ -8,8 +7,6 @@ defineProps({
     default: undefined,
   },
 })
-
-provideUsers()
 </script>
 
 <template>

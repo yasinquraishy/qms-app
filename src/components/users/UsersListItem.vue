@@ -29,24 +29,20 @@ function onClick() {
 </script>
 
 <template>
-  <WCard flat bordered class="tw:p-3 tw:cursor-pointer" @click="onClick">
-    <div class="tw:flex tw:items-center tw:gap-3">
-      <!-- Avatar -->
-      <UserAvatar :user="userForAvatar" class="tw:size-14" />
+  <div
+    class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:bg-sidebar tw:rounded-lg tw:border tw:border-divider tw:cursor-pointer tw:hover:border-primary/30 tw:transition-colors"
+    @click="onClick"
+  >
+    <UserAvatar :user="userForAvatar" class="tw:size-14" />
 
-      <!-- User Info -->
-      <div class="tw:flex-1 tw:min-w-0">
-        <div class="tw:text-lg tw:font-bold tw:text-on-main">
-          {{ user.firstName }} {{ user.lastName }}
-        </div>
-        <div class="tw:text-sm tw:text-secondary">{{ user.email }}</div>
-        <div class="tw:text-xs tw:text-secondary tw:mt-1">{{ roleNames }}</div>
+    <div class="tw:flex-1 tw:min-w-0">
+      <div class="tw:text-lg tw:font-bold tw:text-on-main">
+        {{ user.firstName }} {{ user.lastName }}
       </div>
-
-      <!-- Actions (Optional) -->
-      <div class="tw:flex-none">
-        <!-- Add actions here if needed, e.g., edit or delete -->
-      </div>
+      <div class="tw:text-sm tw:text-secondary">{{ user.email }}</div>
+      <div class="tw:text-xs tw:text-secondary tw:mt-1">{{ roleNames }}</div>
     </div>
-  </WCard>
+
+    <div class="tw:flex-none"></div>
+  </div>
 </template>

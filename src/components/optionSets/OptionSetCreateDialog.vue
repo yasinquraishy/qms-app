@@ -1,13 +1,21 @@
 <script setup>
+import { IconChecklist } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
-import { useOptionSets } from '@/composables/useOptionSets.js'
 
-const show = defineModel({ type: Boolean, default: false })
+const props = defineProps({
+  id: {
+    type: [String, Number],
+    default: null,
+  },
+})
 
-const router = useRouter()
-const route = useRoute()
-const { createOptionSet } = useOptionSets()
+const emit = defineEmits(['created'])
+
+const open = defineModel({
+  type: Boolean,
+  default: false,
+})
 
 const form = ref({
   name: '',
@@ -15,76 +23,111 @@ const form = ref({
 })
 
 const rules = computed(() => ({
-  name: { required: helpers.withMessage('Name is required', required) },
+  name: { required: helpers.withMessage('Required', required) },
 }))
 
 const validator = useValidator(rules, form)
 
-const loading = ref(false)
+const isSubmitting = ref(false)
+const isEdit = computed(() => !!props.id)
 
-async function handleSubmit() {
+// Load existing option set if editing
+const optionSet = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  if (!id) return null
+  return db.OptionSet.findByPk(id)
+})
+
+// Populate form when option set loads in edit mode
+watch(
+  optionSet,
+  (os) => {
+    if (os) {
+      form.value = {
+        name: os.name,
+        description: os.description || '',
+      }
+    }
+  },
+  { immediate: true },
+)
+
+// Reset form when dialog closes
+watch(open, (val) => {
+  if (!val) {
+    form.value = { name: '', description: '' }
+  }
+})
+
+const createOptionSet = useLiveMutation(async (db, data) => {
+  const os = db.OptionSet.create(data)
+  await os.save()
+  return os
+})
+
+async function onSubmit() {
   const valid = await validator.value.$validate()
   if (!valid) return
 
-  loading.value = true
+  isSubmitting.value = true
   try {
-    const newSet = await createOptionSet(form.value)
-    show.value = false
-    form.value = { name: '', description: '' }
-    router.push({ params: { ...route.params, id: newSet.id } })
+    if (!isEdit.value) {
+      const newSet = await createOptionSet({
+        name: form.value.name,
+        description: form.value.description,
+      })
+      emit('created', newSet)
+    } else {
+      optionSet.value.name = form.value.name
+      optionSet.value.description = form.value.description
+      await optionSet.value.save()
+    }
+    open.value = false
   } finally {
-    loading.value = false
+    isSubmitting.value = false
   }
 }
 </script>
 
 <template>
-  <QDialog v-model="show" transitionShow="scale" transitionHide="scale">
-    <div class="tw:bg-main tw:rounded-2xl tw:overflow-hidden tw:shadow-2xl tw:max-w-md tw:w-full">
-      <div class="tw:p-5 tw:flex tw:flex-col tw:gap-4">
-        <div class="tw:flex tw:items-center tw:gap-3">
-          <div
-            class="tw:w-10 tw:h-10 tw:bg-primary/10 tw:text-primary tw:rounded-xl tw:flex tw:items-center tw:justify-center"
-          >
-            <WIcon icon="add_circle" size="24px" />
-          </div>
-          <div class="tw:text-2xl tw:font-bold tw:text-on-main">Create Option Set</div>
+  <BaseDialog v-model="open" maxWidth="md">
+    <template #title>
+      <div class="tw:flex tw:items-center tw:gap-3">
+        <div
+          class="tw:w-9 tw:h-9 tw:bg-primary/10 tw:text-primary tw:rounded-xl tw:flex tw:items-center tw:justify-center"
+        >
+          <IconChecklist class="tw:size-5 tw:text-primary" />
         </div>
-
-        <div class="tw:text-sm tw:text-secondary tw:leading-relaxed">
-          Reusable option sets can be used across multiple forms for dropdowns, checkboxes, and
-          radio groups.
-        </div>
-
-        <QForm class="tw:flex tw:flex-col tw:gap-4" @submit="handleSubmit">
-          <WInput
-            v-model="form.name"
-            name="name"
-            label="Name"
-            placeholder="e.g., Priority Levels"
-            autofocus
-          />
-          <WInput
-            v-model="form.description"
-            label="Description"
-            placeholder="Briefly describe what these options are for"
-            type="textarea"
-            class="tw:h-24"
-          />
-        </QForm>
-
-        <div class="tw:flex tw:justify-end tw:gap-3 tw:mt-7 tw:mp-2">
-          <WBtn flat label="Cancel" color="grey-7" @click="show = false" />
-          <WBtn
-            label="Create Set"
-            color="primary"
-            unelevated
-            class="tw:px-6 tw:font-bold"
-            :loading="loading"
-            @click="handleSubmit"
-          />
-        </div>
+        <span>{{ isEdit ? 'Edit Option Set' : 'Create Option Set' }}</span>
       </div>
+    </template>
+
+    <div class="tw:flex tw:flex-col tw:gap-4">
+      <div class="tw:text-sm tw:text-secondary tw:leading-relaxed">
+        Reusable option sets can be used across multiple forms for dropdowns, checkboxes, and
+        radio groups.
+      </div>
+
+      <BaseTextInput
+        v-model="form.name"
+        name="name"
+        label="Name"
+        placeholder="e.g., Priority Levels"
+        :required="true"
+      />
+
+      <BaseTextarea
+        v-model="form.description"
+        label="Description"
+        placeholder="Briefly describe what these options are for"
+        :rows="2"
+      />
     </div>
-  </QDialog>
+
+    <template #footer>
+      <BaseButton variant="outline" @click="open = false"> Cancel </BaseButton>
+      <BaseButton :disabled="isSubmitting" @click="onSubmit">
+        {{ isEdit ? 'Update' : 'Create Set' }}
+      </BaseButton>
+    </template>
+  </BaseDialog>
 </template>

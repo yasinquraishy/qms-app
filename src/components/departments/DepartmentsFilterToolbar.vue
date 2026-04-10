@@ -24,7 +24,7 @@ const filters = defineModel('filters', {
       </div>
 
       <div class="tw:w-full tw:md:w-1/4">
-        <DocumentsSiteSelect v-model:siteId="filters.siteId" :required="false" />
+        <SiteSelectMenu v-model="filters.siteId" :required="false" />
       </div>
     </div>
   </div>

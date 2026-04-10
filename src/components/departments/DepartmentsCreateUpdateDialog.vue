@@ -1,5 +1,5 @@
 <script setup>
-import { IconCheck, IconX as IconXCross } from '@tabler/icons-vue'
+import { IconCheck, IconX as IconXCross, IconBuilding } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
 
@@ -15,6 +15,13 @@ const emit = defineEmits(['created', 'updated'])
 const open = defineModel({
   type: Boolean,
   default: false,
+})
+
+const form = ref({
+  name: '',
+  code: '',
+  siteId: null,
+  description: '',
 })
 
 // Load existing department if editing
@@ -33,14 +40,6 @@ const codeAvailable = useLiveQueryWithDeps(
   },
   { initial: true },
 )
-
-const form = ref({
-  name: '',
-  code: '',
-  siteId: null,
-  description: '',
-  displayOrder: 1000,
-})
 
 const rules = computed(() => ({
   name: { required: helpers.withMessage('Required', required) },
@@ -63,7 +62,6 @@ watch(
         code: d.code,
         siteId: d.siteId,
         description: d.description || '',
-        displayOrder: d.displayOrder || 1000,
       }
     }
   },
@@ -73,7 +71,7 @@ watch(
 // Reset form when dialog closes
 watch(open, (val) => {
   if (!val) {
-    form.value = { name: '', code: '', siteId: null, description: '', displayOrder: 1000 }
+    form.value = { name: '', code: '', siteId: null, description: '' }
   }
 })
 
@@ -108,6 +106,11 @@ const createDepartment = useLiveMutation(async (db, data) => {
   return d
 })
 
+const getDisplayOrder = useLiveMutation(async (db) => {
+  const lastItem = await db.Department.where().orderBy('displayOrder', 'desc').first()
+  return (lastItem?.displayOrder || 0) + 1000
+})
+
 async function onSubmit() {
   const valid = await validator.value.$validate()
   if (!valid || !codeAvailable.value) return
@@ -120,14 +123,13 @@ async function onSubmit() {
         code: form.value.code,
         siteId: form.value.siteId,
         description: form.value.description,
-        displayOrder: form.value.displayOrder || 1000,
+        displayOrder: await getDisplayOrder(),
       })
       emit('created', newDept)
     } else {
       department.value.name = form.value.name
       department.value.siteId = form.value.siteId
       department.value.description = form.value.description
-      department.value.displayOrder = form.value.displayOrder || 1000
       await department.value.save()
       emit('updated', department.value)
     }
@@ -139,11 +141,17 @@ async function onSubmit() {
 </script>
 
 <template>
-  <BaseDialog
-    v-model="open"
-    :title="isEdit ? 'Edit Department' : 'Create New Department'"
-    maxWidth="md"
-  >
+  <BaseDialog v-model="open" maxWidth="md">
+    <template #title>
+      <div class="tw:flex tw:items-center tw:gap-3">
+        <div
+          class="tw:w-9 tw:h-9 tw:bg-primary/10 tw:text-primary tw:rounded-xl tw:flex tw:items-center tw:justify-center"
+        >
+          <IconBuilding class="tw:size-5 tw:text-primary" />
+        </div>
+        <span>{{ isEdit ? 'Edit Department' : 'Create New Department' }}</span>
+      </div>
+    </template>
     <div class="tw:flex tw:flex-col tw:gap-4">
       <BaseTextInput
         v-model="form.name"
@@ -173,21 +181,13 @@ async function onSubmit() {
         </template>
       </div>
 
-      <DocumentsSiteSelect v-model:siteId="form.siteId" name="siteId" :required="true" />
+      <SiteSelectMenu v-model="form.siteId" :required="true" />
 
       <BaseTextarea
         v-model="form.description"
         label="Description"
         placeholder="e.g. Quality assurance and testing department"
         :rows="2"
-      />
-
-      <BaseTextInput
-        v-model.number="form.displayOrder"
-        name="displayOrder"
-        label="Display Order"
-        placeholder="1000"
-        type="number"
       />
     </div>
 

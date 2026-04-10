@@ -1,5 +1,5 @@
 <script setup>
-import { IconEdit, IconTrash, IconLocation } from '@tabler/icons-vue'
+import { IconEdit, IconTrash } from '@tabler/icons-vue'
 
 const props = defineProps({
   rows: {
@@ -26,7 +26,13 @@ const columns = [
   { name: 'name', label: 'DEPARTMENT NAME', field: 'name', align: 'left', sortable: true },
   { name: 'code', label: 'CODE', field: 'code', align: 'left', sortable: true },
   { name: 'site', label: 'SITE', field: 'site', align: 'left', sortable: false },
-  { name: 'description', label: 'DESCRIPTION', field: 'description', align: 'left', sortable: false },
+  {
+    name: 'description',
+    label: 'DESCRIPTION',
+    field: 'description',
+    align: 'left',
+    sortable: false,
+  },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
 
@@ -57,14 +63,15 @@ function rowMenuItems(row) {
     </template>
 
     <template #body-cell-code="{ row }">
-      <span class="tw:inline-flex tw:items-center tw:rounded tw:border tw:border-primary tw:px-2 tw:py-0.5 tw:text-xs tw:font-medium tw:text-primary">{{ row.code }}</span>
+      <span
+        class="tw:inline-flex tw:items-center tw:rounded tw:border tw:border-primary tw:px-2 tw:py-0.5 tw:text-xs tw:font-medium tw:text-primary"
+        >{{ row.code }}</span
+      >
     </template>
 
     <template #body-cell-site="{ row }">
-      <div class="tw:flex tw:items-center tw:gap-2">
-        <IconLocation :size="16" class="tw:text-secondary" />
-        <span class="tw:text-sm tw:text-secondary">{{ row.site?.name || '—' }}</span>
-      </div>
+      <SiteBadgeById v-if="row.siteId" :siteId="row.siteId" />
+      <span v-else class="tw:text-sm tw:text-secondary">—</span>
     </template>
 
     <template #body-cell-description="{ row }">

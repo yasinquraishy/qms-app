@@ -53,7 +53,7 @@ function toggleNullable(close) {
 const filtered = computed(() => {
   const query = search.value.toLowerCase()
 
-  return props.items.filter((item) => item.name.toLowerCase().includes(query)).slice(0, 5)
+  return props.items.filter((item) => item.name.toLowerCase().includes(query)).slice(0, 7)
 })
 
 function toggleSelection(id, close) {
@@ -117,6 +117,10 @@ function isSelected(id) {
           placeholder="Search..."
           class="tw:w-full tw:px-2 tw:py-1 tw:mb-2 tw:border tw:border-divider tw:rounded-md tw:focus:ring-1 tw:focus:ring-primary tw:focus:outline-none tw:bg-sidebar tw:text-sm"
         />
+      </div>
+
+      <div class="tw:p-2 tw:text-on-main/60">
+        Total: {{ props.items.length }} {{ props.items.length === 1 ? 'item' : 'items' }}
       </div>
 
       <!-- Items -->

@@ -15,7 +15,7 @@ const filters = defineModel('filters', {
           v-model="filters.search"
           name="search"
           placeholder="Search sites..."
-          clear-btn
+          clearBtn
         >
           <template #icon>
             <IconSearch :size="16" />

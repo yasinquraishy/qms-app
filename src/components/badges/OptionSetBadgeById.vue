@@ -1,17 +1,10 @@
 <script setup>
 const props = defineProps({
-  options: {
-    type: Array,
-    default: () => [],
-  },
   optionSetId: {
     type: String,
     default: null,
   },
 })
-
-// Use WSelect attrs
-const attrs = useAttrs()
 
 const optionSet = useLiveQueryWithDeps(
   [() => props.optionSetId],
@@ -21,13 +14,8 @@ const optionSet = useLiveQueryWithDeps(
   },
   { initial: null },
 )
-
-const computedOptions = computed(() => {
-  if (optionSet.value?.options) return optionSet.value.options
-  return props.options || []
-})
 </script>
 
 <template>
-  <WSelect v-bind="attrs" :options="computedOptions" />
+  <OptionSetBadge v-if="optionSet" :optionSet="optionSet" v-bind="$attrs" />
 </template>

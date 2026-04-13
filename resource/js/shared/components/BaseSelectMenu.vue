@@ -1,4 +1,5 @@
 <script setup>
+import { IconSearch } from '@tabler/icons-vue'
 import { computed, shallowRef } from 'vue'
 
 const props = defineProps({
@@ -53,7 +54,7 @@ function toggleNullable(close) {
 const filtered = computed(() => {
   const query = search.value.toLowerCase()
 
-  return props.items.filter((item) => item.name.toLowerCase().includes(query)).slice(0, 7)
+  return props.items.filter((item) => item.name.toLowerCase().includes(query))
 })
 
 function toggleSelection(id, close) {
@@ -109,52 +110,84 @@ function isSelected(id) {
     </template>
 
     <template #content="{ close }">
-      <!-- Search -->
-      <div class="tw:p-1">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Search..."
-          class="tw:w-full tw:px-2 tw:py-1 tw:mb-2 tw:border tw:border-divider tw:rounded-md tw:focus:ring-1 tw:focus:ring-primary tw:focus:outline-none tw:bg-sidebar tw:text-sm"
-        />
-      </div>
-
-      <div class="tw:p-2 tw:text-on-main/60">
-        Total: {{ props.items.length }} {{ props.items.length === 1 ? 'item' : 'items' }}
-      </div>
-
-      <!-- Items -->
-      <slot name="items" :close="close">
-        <div class="tw:flex tw:flex-col tw:space-y-0.5">
-          <!-- Nullable "All" item -->
-          <button
-            v-if="showNullable"
-            :class="[
-              isNullableSelected
-                ? 'tw:bg-primary/20 tw:text-primary'
-                : 'tw:text-on-sidebar tw:hover:bg-primary/10',
-              'tw:group tw:w-full tw:text-left tw:px-2 tw:py-2 tw:text-sm tw:transition-colors',
-            ]"
-            @click="toggleNullable(close)"
-          >
-            {{ nullLabel }}
-          </button>
-
-          <button
-            v-for="item in filtered"
-            :key="item.id"
-            :class="[
-              isSelected(item.id)
-                ? 'tw:bg-primary/20 tw:text-primary'
-                : 'tw:text-on-sidebar tw:hover:bg-primary/10',
-              'tw:group tw:w-full tw:text-left tw:px-2 tw:py-2 tw:text-sm  tw:transition-colors',
-            ]"
-            @click="toggleSelection(item.id, close)"
-          >
-            {{ item.name }}
-          </button>
+      <div
+        class="tw:w-64 tw:bg-white tw:rounded-xl tw:shadow-xl tw:border tw:border-divider tw:overflow-hidden"
+      >
+        <!-- Search Header -->
+        <div class="tw:p-3 tw:border-b tw:border-divider tw:bg-sidebar/50">
+          <div class="tw:relative">
+            <IconSearch
+              class="tw:absolute tw:left-2.5 tw:top-2.5 tw:size-4 tw:text-secondary tw:pointer-events-none"
+            />
+            <input
+              v-model="search"
+              type="text"
+              autofocus
+              placeholder="Search..."
+              class="tw:w-full tw:pl-9 tw:pr-3 tw:py-2 tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:text-sm tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary/20 tw:focus:border-primary tw:transition-all"
+            />
+          </div>
         </div>
-      </slot>
+
+        <!-- Count Summary -->
+        <div
+          class="tw:px-4 tw:py-2 tw:text-[11px] tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:bg-white"
+        >
+          {{ search ? `${filtered.length} of ${props.items.length}` : props.items.length }}
+          {{ props.items.length === 1 ? 'item' : 'items' }}
+        </div>
+
+        <!-- Items -->
+        <slot name="items" :close="close">
+          <div class="tw:max-h-64 tw:overflow-y-auto tw:p-1">
+            <!-- Nullable "All" item -->
+            <button
+              v-if="showNullable"
+              class="tw:w-full tw:flex tw:items-center tw:justify-between tw:px-3 tw:py-2.5 tw:rounded-lg tw:text-sm tw:transition-colors"
+              :class="
+                isNullableSelected
+                  ? 'tw:bg-primary/10 tw:text-primary'
+                  : 'tw:text-on-main tw:hover:bg-sidebar'
+              "
+              @click="toggleNullable(close)"
+            >
+              <span class="tw:font-medium">{{ nullLabel }}</span>
+              <div
+                v-if="isNullableSelected"
+                class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-primary tw:shrink-0"
+              />
+            </button>
+
+            <button
+              v-for="item in filtered"
+              :key="item.id"
+              class="tw:w-full tw:flex tw:items-center tw:justify-between tw:px-3 tw:py-2.5 tw:rounded-lg tw:text-sm tw:transition-colors"
+              :class="
+                isSelected(item.id)
+                  ? 'tw:bg-primary/10 tw:text-primary'
+                  : 'tw:text-on-main tw:hover:bg-sidebar'
+              "
+              @click="toggleSelection(item.id, close)"
+            >
+              <span class="tw:font-medium">{{ item.name }}</span>
+              <div
+                v-if="isSelected(item.id)"
+                class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-primary tw:shrink-0"
+              />
+            </button>
+
+            <div
+              v-if="filtered.length === 0"
+              class="tw:px-4 tw:py-8 tw:text-center tw:text-secondary tw:text-sm"
+            >
+              No matches found
+            </div>
+          </div>
+        </slot>
+
+        <!-- Footer slot -->
+        <slot name="footer" />
+      </div>
     </template>
   </BasePopover>
 </template>

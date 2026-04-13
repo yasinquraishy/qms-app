@@ -10,6 +10,7 @@ import { get } from '@/api'
 
 // Composables
 const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 const { updateTemplate, templates: rows, loading, deleteTemplate } = useFormTemplates()
 const { statusOptions, fetchFormStatuses } = useTemplateForm()
@@ -95,15 +96,9 @@ async function handleDelete(template) {
   }).onOk(async () => {
     const success = await deleteTemplate(template.id)
     if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Form template deleted successfully',
-      })
+      toast.success('Form template deleted successfully')
     } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to delete form template',
-      })
+      toast.error('Failed to delete form template')
     }
   })
 }

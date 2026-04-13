@@ -5,6 +5,7 @@ import { isAllowed } from '@/utils/currentSession.js'
 
 const { records, loading, filters, deleteRecord, fetchRecords, createRecord } = useRecords()
 const $q = useQuasar()
+const toast = useToast()
 
 const showAddDialog = ref(false)
 
@@ -23,25 +24,16 @@ async function onDeleteRecord(row) {
   }).onOk(async () => {
     const result = await deleteRecord(row.id)
     if (result.error) {
-      $q.notify({
-        type: 'negative',
-        message: result.error,
-      })
+      toast.error(result.error)
     } else {
-      $q.notify({
-        type: 'positive',
-        message: 'Record deleted successfully',
-      })
+      toast.success('Record deleted successfully')
     }
   })
 }
 
 function onRecordCreated() {
   showAddDialog.value = false
-  $q.notify({
-    type: 'positive',
-    message: 'Record created successfully',
-  })
+  toast.success('Record created successfully')
 }
 </script>
 

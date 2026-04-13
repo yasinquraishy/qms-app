@@ -25,6 +25,7 @@ const emit = defineEmits(['refresh', 'update', 'delete'])
 
 // Composables
 const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 const { updateTemplate, deleteTemplate } = useFormTemplates()
 const { statusOptions, fetchFormStatuses } = useTemplateForm()
@@ -75,16 +76,10 @@ async function saveEdit() {
 
   if (success) {
     emit('refresh')
-    $q.notify({
-      type: 'positive',
-      message: 'Template updated successfully',
-    })
+    toast.success('Template updated successfully')
     cancelEdit()
   } else {
-    $q.notify({
-      type: 'negative',
-      message: 'Failed to update template',
-    })
+    toast.error('Failed to update template')
   }
 }
 
@@ -102,16 +97,10 @@ async function handleDelete() {
   }).onOk(async () => {
     const success = await deleteTemplate(props.template.id)
     if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Form template deleted successfully',
-      })
+      toast.success('Form template deleted successfully')
       router.push(getCompanyPath('/templates'))
     } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to delete form template',
-      })
+      toast.error('Failed to delete form template')
     }
   })
 }

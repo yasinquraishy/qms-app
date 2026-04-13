@@ -1,5 +1,4 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
 
@@ -17,7 +16,7 @@ const open = defineModel({
   default: false,
 })
 
-const $q = useQuasar()
+const toast = useToast()
 
 // Form state
 const newSection = ref({ title: '', sectionType: 'text' })
@@ -56,7 +55,7 @@ async function handleAddSection() {
     props.currentVersion.sections.push(section)
   }
 
-  $q.notify({ type: 'positive', message: 'Section added successfully' })
+  toast.success('Section added successfully')
   emit('sectionAdded', section)
   open.value = false
 }

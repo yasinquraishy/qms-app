@@ -12,6 +12,7 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 const { deactivateRole, activateRole } = useRoles()
 
@@ -31,15 +32,9 @@ function handleDeactivate() {
   }).onOk(async () => {
     const success = await deactivateRole(props.role.id)
     if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Role deactivated successfully',
-      })
+      toast.success('Role deactivated successfully')
     } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to deactivate role',
-      })
+      toast.error('Failed to deactivate role')
     }
   })
 }
@@ -53,15 +48,9 @@ function handleActivate() {
   }).onOk(async () => {
     const success = await activateRole(props.role.id)
     if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Role activated successfully',
-      })
+      toast.success('Role activated successfully')
     } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to activate role',
-      })
+      toast.error('Failed to activate role')
     }
   })
 }

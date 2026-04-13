@@ -1,10 +1,9 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import DynamicForm from '@/components/form/DynamicForm.js'
 import { get, post } from '@/api'
 
 const route = useRoute()
-const $q = useQuasar()
+const toast = useToast()
 const templateId = route.params.templateId
 
 const schema = ref(null)
@@ -39,10 +38,7 @@ async function onSubmit() {
     recordNumber.value = data.record.recordNumber
     success.value = true
     model.value = {} // Reset form
-    $q.notify({
-      type: 'positive',
-      message: 'Form submitted successfully',
-    })
+    toast.success('Form submitted successfully')
   } finally {
     submitting.value = false
   }

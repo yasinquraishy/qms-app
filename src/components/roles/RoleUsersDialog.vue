@@ -1,6 +1,5 @@
 <script setup>
 import { isAllowed } from '@/utils/currentSession'
-import { useQuasar } from 'quasar'
 import { get, put } from '@/api'
 
 const props = defineProps({
@@ -25,7 +24,7 @@ const open = defineModel({
   default: false,
 })
 
-const $q = useQuasar()
+const toast = useToast()
 const allUsers = ref([])
 const selectedUserIds = ref([])
 const loading = ref(false)
@@ -87,11 +86,7 @@ async function saveUserAssignments() {
     },
   )
 
-  $q.notify({
-    type: 'positive',
-    message: 'User assignments updated successfully',
-    position: 'top',
-  })
+  toast.success('User assignments updated successfully')
 
   open.value = false
   emit('saved')

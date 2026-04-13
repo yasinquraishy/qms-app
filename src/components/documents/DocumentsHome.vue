@@ -5,6 +5,7 @@ import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const router = useRouter()
 const $q = useQuasar()
+const toast = useToast()
 
 const filters = ref({
   search: '',
@@ -77,7 +78,7 @@ async function onArchiveDocument(row) {
   }).onOk(async () => {
     row.statusId = 'ARCHIVED'
     await row.save()
-    $q.notify({ type: 'positive', message: 'Document archived successfully' })
+    toast.success('Document archived successfully')
   })
 }
 </script>

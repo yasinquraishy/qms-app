@@ -2,7 +2,6 @@
 import { useApprovalWorkflowInstances } from '@/composables/useApprovalWorkflowInstances.js'
 import { post } from '@/api'
 import { currentCompany } from '@/utils/currentCompany.js'
-import { useQuasar } from 'quasar'
 
 const props = defineProps({
   action: {
@@ -15,7 +14,7 @@ const props = defineProps({
 
 const emit = defineEmits(['done'])
 
-const $q = useQuasar()
+const toast = useToast()
 const { actionLoading, updateWorkflowStep } = useApprovalWorkflowInstances()
 const approverAction = inject('approverAction', null)
 
@@ -62,10 +61,7 @@ onMounted(() => {
       action_failed: 'Workflow action failed. Please try again.',
       no_verification_pending: 'No verification was pending.',
     }
-    $q.notify({
-      type: 'negative',
-      message: errorMessages[esignError] || 'E-sign verification failed.',
-    })
+    toast.error(errorMessages[esignError] || 'E-sign verification failed.')
     return
   }
 
@@ -75,10 +71,7 @@ onMounted(() => {
       REJECT: 'rejected',
       REQUEST_CHANGES: 'changes requested',
     }
-    $q.notify({
-      type: 'positive',
-      message: `Step ${actionLabels[esignCompleted] || 'action completed'} successfully`,
-    })
+    toast.success(`Step ${actionLabels[esignCompleted] || 'action completed'} successfully`)
     onDone()
   }
 })
@@ -137,7 +130,7 @@ async function submitApprove(esign) {
 
     await updateWorkflowStep(props.activeStep.workflowInstanceId, 'approve', payload)
 
-    $q.notify({ type: 'positive', message: 'Step approved successfully' })
+    toast.success('Step approved successfully')
     showEsignDialog.value = false
     pendingAction.value = null
     onDone()
@@ -158,11 +151,11 @@ async function submitFeedback(esign) {
     const result = await updateWorkflowStep(props.activeStep.workflowInstanceId, action, payload)
 
     if (result.error) {
-      $q.notify({ type: 'negative', message: result.error || `Failed to ${action} step` })
+      toast.error(result.error || `Failed to ${action} step`)
       return
     }
 
-    $q.notify({ type: 'positive', message: `Step ${actionLabel} successfully` })
+    toast.success(`Step ${actionLabel} successfully`)
     showFeedbackDialog.value = false
     pendingAction.value = null
     comment.value = ''

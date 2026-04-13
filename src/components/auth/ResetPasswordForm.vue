@@ -1,10 +1,9 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { useAuth } from '@/composables/useAuth.js'
 
 const router = useRouter()
 const route = useRoute()
-const $q = useQuasar()
+const toast = useToast()
 const { confirmPasswordReset, loading } = useAuth()
 
 const password = ref('')
@@ -15,11 +14,7 @@ const token = ref('')
 onMounted(() => {
   token.value = route.query.token || ''
   if (!token.value) {
-    $q.notify({
-      type: 'negative',
-      message: 'Invalid or missing reset token',
-      position: 'top',
-    })
+    toast.error('Invalid or missing reset token')
     router.push('/signin')
   }
 })
@@ -48,32 +43,20 @@ async function handleSubmit() {
   // Validate password
   const passwordError = validatePassword(password.value)
   if (passwordError) {
-    $q.notify({
-      type: 'negative',
-      message: passwordError,
-      position: 'top',
-    })
+    toast.error(passwordError)
     return
   }
 
   // Validate confirm password
   const confirmPasswordError = validateConfirmPassword(confirmPassword.value)
   if (confirmPasswordError) {
-    $q.notify({
-      type: 'negative',
-      message: confirmPasswordError,
-      position: 'top',
-    })
+    toast.error(confirmPasswordError)
     return
   }
 
   await confirmPasswordReset(token.value, password.value)
 
-  $q.notify({
-    type: 'positive',
-    message: 'Password updated successfully',
-    position: 'top',
-  })
+  toast.success('Password updated successfully')
 
   // Redirect to login page after successful reset
   setTimeout(() => {

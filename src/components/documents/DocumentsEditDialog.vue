@@ -1,6 +1,4 @@
 <script setup>
-import { useQuasar } from 'quasar'
-
 const props = defineProps({
   document: {
     type: Object,
@@ -19,7 +17,7 @@ const open = defineModel({
   default: false,
 })
 
-const $q = useQuasar()
+const toast = useToast()
 
 // Form state
 const editForm = ref({
@@ -86,7 +84,7 @@ async function onSubmit() {
     props.currentVersion.effectiveDate = editForm.value.effectiveDate
     await props.currentVersion.save()
 
-    $q.notify({ type: 'positive', message: 'Document updated successfully' })
+    toast.success('Document updated successfully')
     emit('updated')
     open.value = false
   } finally {

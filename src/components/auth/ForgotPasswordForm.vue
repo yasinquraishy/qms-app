@@ -1,9 +1,8 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { useAuth } from '@/composables/useAuth.js'
 
 const router = useRouter()
-const $q = useQuasar()
+const toast = useToast()
 const { requestPasswordReset, loading } = useAuth()
 
 const email = ref('')
@@ -16,20 +15,12 @@ function isValidEmail(emailValue) {
 
 async function handleSubmit() {
   if (!email.value) {
-    $q.notify({
-      type: 'negative',
-      message: 'Please enter your email address',
-      position: 'top',
-    })
+    toast.error('Please enter your email address')
     return
   }
 
   if (!isValidEmail(email.value)) {
-    $q.notify({
-      type: 'negative',
-      message: 'Please enter a valid email address',
-      position: 'top',
-    })
+    toast.error('Please enter a valid email address')
     return
   }
 

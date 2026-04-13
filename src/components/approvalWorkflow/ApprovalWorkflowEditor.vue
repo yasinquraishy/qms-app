@@ -1,6 +1,5 @@
 <script setup>
 import { IconHistory, IconLock, IconCheck } from '@tabler/icons-vue'
-import { useQuasar } from 'quasar'
 import { isAllowed } from '@/utils/currentSession'
 import { getCompanyPath } from '@/utils/routeHelpers'
 import { useApprovalWorkflows } from '@/composables/useApprovalWorkflows.js'
@@ -10,7 +9,7 @@ const props = defineProps({
   autoAddStep: { type: Boolean, default: true },
 })
 
-const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 const { createDraftVersion } = useApprovalWorkflows()
 
@@ -89,19 +88,11 @@ const saving = ref(false)
 
 async function handleSave(statusOverride) {
   if (isViewingOldVersion.value) {
-    $q.notify({
-      type: 'warning',
-      message: 'Switch to the current version to make edits',
-      position: 'top',
-    })
+    toast.warning('Switch to the current version to make edits')
     return
   }
   if (!isDraftVersion.value) {
-    $q.notify({
-      type: 'warning',
-      message: 'This version is locked. Create a new draft to make changes.',
-      position: 'top',
-    })
+    toast.warning('This version is locked. Create a new draft to make changes.')
     return
   }
   if (!selectedVersion.value || !workflow.value) return
@@ -110,11 +101,7 @@ async function handleSave(statusOverride) {
   // TODO: need to do publishing in backend
   const stepsWithoutAssignees = []
   if (stepsWithoutAssignees.length > 0) {
-    $q.notify({
-      type: 'warning',
-      message: '  // TODO: need to do publishing in backend',
-      position: 'top',
-    })
+    toast.warning('  // TODO: need to do publishing in backend')
     return
   }
 
@@ -127,16 +114,13 @@ async function handleSave(statusOverride) {
     selectedVersion.value.statusId = statusOverride
     await selectedVersion.value.save()
 
-    $q.notify({
-      type: 'positive',
-      message:
-        statusOverride === 'PUBLISHED'
-          ? 'Workflow published successfully'
-          : 'Workflow saved successfully',
-      position: 'top',
-    })
+    toast.success(
+      statusOverride === 'PUBLISHED'
+        ? 'Workflow published successfully'
+        : 'Workflow saved successfully',
+    )
   } catch {
-    $q.notify({ type: 'negative', message: 'Failed to save workflow', position: 'top' })
+    toast.error('Failed to save workflow')
   } finally {
     saving.value = false
   }
@@ -148,11 +132,11 @@ async function handleCreateDraft(majorBump = false) {
   creatingDraft.value = true
   try {
     await createDraftVersion(props.id, { majorBump })
-    $q.notify({ type: 'positive', message: 'New draft version created', position: 'top' })
+    toast.success('New draft version created')
     // Reset so watch(versions) will auto-select the new draft
     selectedVersionId.value = null
   } catch {
-    $q.notify({ type: 'negative', message: 'Failed to create draft version', position: 'top' })
+    toast.error('Failed to create draft version')
   } finally {
     creatingDraft.value = false
   }

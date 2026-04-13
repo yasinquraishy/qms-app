@@ -1,10 +1,9 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { useAuth } from '@/composables/useAuth.js'
 
 const router = useRouter()
 const route = useRoute()
-const $q = useQuasar()
+const toast = useToast()
 const { validateInvitation, acceptInvitation, loading } = useAuth()
 
 const password = ref('')
@@ -19,11 +18,7 @@ const validating = ref(true)
 onMounted(async () => {
   token.value = route.query.token || ''
   if (!token.value) {
-    $q.notify({
-      type: 'negative',
-      message: 'Invalid or missing invitation token',
-      position: 'top',
-    })
+    toast.error('Invalid or missing invitation token')
     router.push('/signin')
     return
   }
@@ -68,23 +63,19 @@ function validateConfirmPassword(confirmPasswordValue) {
 async function handleSubmit() {
   const passwordError = validatePasswordValue(password.value)
   if (passwordError) {
-    $q.notify({ type: 'negative', message: passwordError, position: 'top' })
+    toast.error(passwordError)
     return
   }
 
   const confirmPasswordError = validateConfirmPassword(confirmPassword.value)
   if (confirmPasswordError) {
-    $q.notify({ type: 'negative', message: confirmPasswordError, position: 'top' })
+    toast.error(confirmPasswordError)
     return
   }
 
   const result = await acceptInvitation(token.value, password.value)
   if (result) {
-    $q.notify({
-      type: 'positive',
-      message: 'Welcome! Your account is now active.',
-      position: 'top',
-    })
+    toast.success('Welcome! Your account is now active.')
 
     setTimeout(() => {
       router.push('/signin')

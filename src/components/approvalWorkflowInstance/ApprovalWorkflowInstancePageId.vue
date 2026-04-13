@@ -1,5 +1,4 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { useApprovalWorkflowInstances } from '@/composables/useApprovalWorkflowInstances.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
@@ -8,7 +7,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const $q = useQuasar()
+const toast = useToast()
 const { loading, fetchInstance } = useApprovalWorkflowInstances()
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -30,7 +29,7 @@ const breadcrumbs = computed(() => [
 async function loadData() {
   const instanceResult = await fetchInstance(props.id)
   if (instanceResult.error) {
-    $q.notify({ type: 'negative', message: instanceResult.error })
+    toast.error(instanceResult.error)
     return
   }
   instance.value = instanceResult.workflowInstance

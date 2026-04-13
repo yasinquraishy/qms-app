@@ -14,6 +14,7 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
+const toast = useToast()
 
 const links = useLiveQueryWithDeps(
   [() => props.versionId],
@@ -60,7 +61,7 @@ function getTargetDocument(link) {
 
 async function onAddLink() {
   if (!linkForm.value.targetDocumentId) {
-    $q.notify({ type: 'warning', message: 'Select a document to link' })
+    toast.warning('Select a document to link')
     return
   }
 
@@ -86,11 +87,11 @@ async function onAddLink() {
 
   try {
     await add()
-    $q.notify({ type: 'positive', message: 'Link created' })
+    toast.success('Link created')
     showAddDialog.value = false
     linkForm.value = { targetDocumentId: '', linkType: 'RELATED' }
   } catch (err) {
-    $q.notify({ type: 'negative', message: err.message || 'Failed to create link' })
+    toast.error(err.message || 'Failed to create link')
   }
 }
 
@@ -101,7 +102,7 @@ async function onDeleteLink(link) {
     cancel: true,
   }).onOk(async () => {
     await link.delete()
-    $q.notify({ type: 'positive', message: 'Link removed' })
+    toast.success('Link removed')
   })
 }
 

@@ -1,5 +1,4 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { useTaskInstances } from '@/composables/useTaskInstances.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
@@ -8,7 +7,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const $q = useQuasar()
+const toast = useToast()
 const { loading, fetchInstance } = useTaskInstances()
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -26,7 +25,7 @@ const canActOnStep = computed(() => instance.value?.statusId === 'ASSIGNED')
 async function loadData() {
   const result = await fetchInstance(props.id)
   if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
+    toast.error(result.error)
     return
   }
   instance.value = result.taskInstance

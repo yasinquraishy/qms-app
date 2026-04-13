@@ -36,7 +36,7 @@ export class Document extends BaseModel {
   @Property({ type: String, required: true }) siteId = ''
   @Property({ type: String }) statusId = 'DRAFT'
   @Property({ type: String, required: true }) companyId = ''
-  @Property({ type: String }) workflowVersionId = ''
+  @Property({ type: String, required: true }) workflowVersionId = ''
   @Property({ type: String, required: true }) prefix = ''
   @Property({ type: String }) relatedStandardId = ''
   @Property({ type: Number, required: true }) periodicReviewMonths = 12

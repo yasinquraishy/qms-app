@@ -1,5 +1,4 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
 import { useDocuments } from '@/composables/useDocuments.js'
@@ -11,7 +10,7 @@ const props = defineProps({
   },
 })
 
-const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 const { cancelReview, setEffective } = useDocuments()
 
@@ -102,11 +101,11 @@ function selectVersion(version) {
 }
 
 function handleExport() {
-  $q.notify({ type: 'info', message: 'Export functionality coming soon' })
+  toast.notify({ type: 'info', message: 'Export functionality coming soon' })
 }
 
 function handleReports() {
-  $q.notify({ type: 'info', message: 'Reports functionality coming soon' })
+  toast.notify({ type: 'info', message: 'Reports functionality coming soon' })
 }
 
 async function handleDeleteDocument() {
@@ -127,18 +126,18 @@ function handleSubmitForReview() {
 async function handleCancelReview() {
   const result = await cancelReview(selectedVersion.value.workflowInstanceId)
   if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
+    toast.error(result.error)
   } else {
-    $q.notify({ type: 'positive', message: 'Review cancelled successfully' })
+    toast.success('Review cancelled successfully')
   }
 }
 
 async function handleSetEffective() {
   const result = await setEffective(props.id, selectedVersion.value.id)
   if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
+    toast.error(result.error)
   } else {
-    $q.notify({ type: 'positive', message: 'Document set as effective' })
+    toast.success('Document set as effective')
   }
 }
 

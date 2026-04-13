@@ -1,6 +1,5 @@
 <script setup>
 import { useDocuments } from '@/composables/useDocuments.js'
-import { useQuasar } from 'quasar'
 
 const props = defineProps({
   documentId: { type: String, required: true },
@@ -10,7 +9,7 @@ const emit = defineEmits(['confirm'])
 const show = defineModel('show', { type: Boolean, default: false })
 
 const { submitForReview } = useDocuments()
-const $q = useQuasar()
+const toast = useToast()
 
 // ── Local data from IDB ───────────────────────────────────────────────────
 const document = useLiveQueryWithDeps([() => props.documentId], async (db, [documentId]) =>
@@ -68,10 +67,10 @@ async function confirm() {
   try {
     const result = await submitForReview(props.documentId)
     if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
+      toast.error(result.error)
       return
     }
-    $q.notify({ type: 'positive', message: 'Document submitted for review' })
+    toast.success('Document submitted for review')
     emit('confirm')
   } finally {
     show.value = false

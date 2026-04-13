@@ -1,6 +1,4 @@
 <script setup>
-import { useQuasar } from 'quasar'
-
 const props = defineProps({
   mode: {
     type: String,
@@ -11,7 +9,7 @@ const props = defineProps({
 
 const emit = defineEmits(['authenticated'])
 
-const $q = useQuasar()
+const toast = useToast()
 
 const loadingGoogle = ref(false)
 const loadingMicrosoft = ref(false)
@@ -50,22 +48,16 @@ function loginWithMicrosoft() {
 
 async function submitForm() {
   if (!isFormValid.value) {
-    $q.notify({
-      type: 'negative',
-      message: isSignup.value
+    toast.error(
+      isSignup.value
         ? 'Please fill in all fields correctly'
         : 'Please enter both email and password',
-      position: 'top',
-    })
+    )
     return
   }
 
   if (isSignup.value && password.value !== confirmPassword.value) {
-    $q.notify({
-      type: 'negative',
-      message: 'Passwords do not match',
-      position: 'top',
-    })
+    toast.error('Passwords do not match')
     return
   }
 
@@ -113,27 +105,17 @@ async function submitForm() {
           ? 'Registration failed. Please try again.'
           : 'Login failed. Please try again.')
 
-      $q.notify({
-        type: 'negative',
-        message: errorMessage,
-        position: 'top',
-      })
+      toast.error(errorMessage)
     } else {
-      $q.notify({
-        type: 'negative',
-        message: isSignup.value
+      toast.error(
+        isSignup.value
           ? 'Registration failed. Please try again.'
           : 'Login failed. Please try again.',
-        position: 'top',
-      })
+      )
     }
   } catch (error) {
     console.error('Auth error:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Network error. Please check your connection and try again.',
-      position: 'top',
-    })
+    toast.error('Network error. Please check your connection and try again.')
   } finally {
     loadingLogin.value = false
   }

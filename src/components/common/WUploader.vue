@@ -1,6 +1,5 @@
 <script setup>
 import { uploadFile } from '@/utils/uploadService.js'
-import { useQuasar } from 'quasar'
 
 const props = defineProps({
   fileType: {
@@ -48,7 +47,7 @@ const emit = defineEmits(['uploaded', 'error', 'cancel'])
 // v-model for uploaded files only
 const uploadedFiles = defineModel({ type: Array, default: () => [] })
 
-const $q = useQuasar()
+const toast = useToast()
 
 const isDragging = ref(false)
 const fileInputRef = ref(null)
@@ -122,11 +121,7 @@ function handleFiles(fileList) {
   for (const file of newFiles) {
     // Validate file size
     if (file.size > props.maxSize) {
-      $q.notify({
-        type: 'negative',
-        message: `File "${file.name}" exceeds maximum allowed size of ${formattedMaxSize.value}`,
-        position: 'top',
-      })
+      toast.error(`File "${file.name}" exceeds maximum allowed size of ${formattedMaxSize.value}`)
       emit('error', new Error(`File too large: ${file.name}`))
       continue
     }
@@ -210,19 +205,11 @@ async function uploadAllFiles() {
       emit('uploaded', r.asset)
     })
 
-    $q.notify({
-      type: 'positive',
-      message: `${successful.length} file(s) uploaded successfully`,
-      position: 'top',
-    })
+    toast.success(`${successful.length} file(s) uploaded successfully`)
   }
 
   if (failed.length > 0) {
-    $q.notify({
-      type: 'negative',
-      message: `${failed.length} file(s) failed to upload`,
-      position: 'top',
-    })
+    toast.error(`${failed.length} file(s) failed to upload`)
   }
 }
 

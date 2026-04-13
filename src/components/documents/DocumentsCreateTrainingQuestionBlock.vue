@@ -1,4 +1,6 @@
 <script setup>
+import { IconTrash, IconPlus, IconGripVertical, IconX } from '@tabler/icons-vue'
+
 const form = defineModel({
   type: Object,
   default: () => ({
@@ -37,22 +39,23 @@ function removeAnswer(index) {
       class="tw:px-6 tw:py-3 tw:border-b tw:border-divider tw:bg-main-hover tw:flex tw:items-center tw:justify-between"
     >
       <div class="tw:flex tw:items-center tw:gap-3">
-        <WIcon
-          name="drag_indicator"
-          class="tw:text-secondary tw:text-sm! tw:cursor-grab tw:active:cursor-grabbing tw:hover:text-on-sidebar tw:transition-colors drag-handle"
+        <IconGripVertical
+          :size="16"
+          class="tw:text-secondary tw:cursor-grab tw:active:cursor-grabbing tw:hover:text-on-sidebar tw:transition-colors drag-handle"
         />
         <span class="ds-label tw:text-on-sidebar"> Question 1 </span>
       </div>
 
-      <WBtn icon="delete" flat round color="red" />
+      <BaseButton variant="danger" iconOnly size="xs">
+        <IconTrash :size="16" />
+      </BaseButton>
     </div>
     <div class="tw:p-6 tw:space-y-6">
       <div class="tw:space-y-2 tw:text-start">
         <label class="tw:text-sm tw:font-medium tw:text-on-sidebar">Question Text</label>
-        <WInput
+        <BaseTextInput
           v-model="form.questionText"
           placeholder="eg. What is the correct procedure for reporting a minor deviation?"
-          class="tw:mt-1"
         />
       </div>
       <div class="tw:text-start tw:space-y-2">
@@ -74,22 +77,22 @@ function removeAnswer(index) {
               type="radio"
               @change="form.correctAnswer = index"
             />
-            <WInput
+            <BaseTextInput
               v-model="form.answers[index]"
               placeholder="Write the answer"
               class="tw:flex-1"
             />
 
             <button class="tw:text-secondary tw:hover:text-on-sidebar" @click="removeAnswer(index)">
-              <WIcon icon="close" class="tw:text-sm!" />
+              <IconX :size="14" />
             </button>
           </div>
         </div>
 
-        <WBtn flat @click="addAnswer">
-          <WIcon name="add" class="tw:text-sm!" />
+        <BaseButton variant="text-link" size="sm" @click="addAnswer">
+          <IconPlus :size="16" />
           Add Answer
-        </WBtn>
+        </BaseButton>
       </div>
     </div>
   </div>

@@ -286,5 +286,7 @@ export class BaseModel {
       await transaction.commit()
       this._clearModified()
     }
+
+    this.#action = OPERATION.UPDATE
   }
 }

@@ -85,8 +85,8 @@ watch(
             </p>
           </div>
 
-          <div class="tw:flex tw:flex-col tw:-ml-3">
-            <label class="ds-label tw:ml-3"> Owner </label>
+          <div class="tw:flex tw:flex-col">
+            <label class="ds-label tw:mb-2"> Owner </label>
             <UserBadgeById :userId="document.userId" />
           </div>
 
@@ -100,8 +100,10 @@ watch(
                 />
               </div>
             </div>
-            <div>
+
+            <div class="tw:flex tw:flex-col tw:w-fit">
               <label class="ds-label"> Status </label>
+
               <WStatusBadge :status="currentVersion.statusId" class="size-3" />
             </div>
           </div>

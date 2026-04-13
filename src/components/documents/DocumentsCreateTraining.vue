@@ -1,4 +1,5 @@
 <script setup>
+import { IconCirclePlus } from '@tabler/icons-vue'
 import { useSortable } from '@vueuse/integrations/useSortable'
 
 // Props can be added here if needed in future
@@ -46,7 +47,7 @@ useSortable(questionBlockContainer, {
             class="tw:w-full tw:py-6 tw:border-2 tw:border-dashed tw:border-divider tw:rounded-xl tw:text-secondary tw:hover:text-primary tw:hover:border-primary tw:hover:bg-primary/5 tw:transition-all tw:flex tw:items-center tw:justify-center tw:gap-2 tw:font-semibold"
             @click="addQuestion"
           >
-            <WIcon name="add_circle" />
+            <IconCirclePlus :size="20" />
             Add Another Question
           </button>
         </div>

@@ -98,6 +98,28 @@ function isSelected(id) {
   }
   return selected.value === id
 }
+
+watch(
+  () => props.items,
+  () => {
+    if (
+      props.required &&
+      !selected.value &&
+      props.items.length > 0 &&
+      (Array.isArray(selected.value) ? selected.value.length === 0 : true)
+    ) {
+      if (props.multiple) {
+        if (getArray().length === 0 && props.items.length > 0) {
+          selected.value = [props.items[0].id]
+        }
+      } else {
+        if ((selected.value === null || selected.value === undefined) && props.items.length > 0) {
+          selected.value = props.items[0].id
+        }
+      }
+    }
+  },
+)
 </script>
 
 <template>

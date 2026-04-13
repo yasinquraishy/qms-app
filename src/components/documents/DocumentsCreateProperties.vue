@@ -1,4 +1,14 @@
 <script setup>
+import {
+  IconFileText,
+  IconMapPin,
+  IconHierarchy,
+  IconAdjustments,
+  IconMinus,
+  IconPlus,
+  IconX,
+} from '@tabler/icons-vue'
+
 const form = defineModel({
   type: Object,
   required: true,
@@ -9,7 +19,18 @@ const selectedTemplate = defineModel('selectedTemplate', {
   default: null,
 })
 
-watch(selectedTemplate, (template) => {
+// Resolve template object from ID via SyncEngine
+const resolvedTemplate = useLiveQueryWithDeps(
+  [() => form.value.documentTemplateId],
+  async (db, [templateId]) => {
+    if (!templateId) return null
+    return db.DocumentTemplate.findByPk(templateId)
+  },
+  { initial: null },
+)
+
+watch(resolvedTemplate, (template) => {
+  selectedTemplate.value = template
   if (!template) return
   form.value.prefix = template.prefix
   form.value.relatedStandardId = template.relatedStandardId
@@ -56,66 +77,43 @@ function decrementReviewMonths() {
     <!-- Document Details Section -->
     <section class="tw:bg-sidebar tw:rounded-2xl tw:shadow-sm tw:border tw:border-divider tw:p-8">
       <div class="tw:flex tw:items-center tw:gap-2 tw:mb-6">
-        <WIcon name="description" class="tw:text-primary" />
+        <IconFileText class="tw:text-primary tw:size-5" />
         <h2 class="tw:text-xl tw:font-bold tw:text-on-sidebar">Document Details</h2>
       </div>
       <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-6">
         <!-- Document Type -->
         <div class="tw:space-y-2">
-          <DocumentsDocumentTypeSelect
-            v-model="form.documentTypeId"
-            name="documentTypeId"
-            required
-            label="Document Type *"
-            hideBottomSpace
-          />
+          <label class="tw:text-sm tw:font-medium tw:text-secondary">Document Type *</label>
+          <DocumentTypeSelectMenu v-model="form.documentTypeId" :required="true" />
         </div>
 
         <!-- Document Template -->
         <div class="tw:space-y-2">
-          <DocumentsDocumentTemplateSelect
-            v-model:documentTemplateId="form.documentTemplateId"
-            v-model:documentTemplate="selectedTemplate"
-            name="documentTemplateId"
-            label="Document Template"
-            nullLabel="N/A"
-            hideBottomSpace
-          />
+          <label class="tw:text-sm tw:font-medium tw:text-secondary">Document Template</label>
+          <DocumentTemplateSelectMenu v-model="form.documentTemplateId" />
         </div>
 
         <!-- Document Title -->
         <div class="tw:space-y-2">
-          <WInput
+          <BaseTextInput
             v-model="form.title"
             name="title"
             label="Document Title *"
             placeholder="e.g. Clean Room Sterilization Protocol"
-            outlined
-            dense
-            hideBottomSpace
+            :required="true"
           />
         </div>
 
         <!-- Department -->
         <div class="tw:space-y-2">
-          <DocumentsDepartmentSelect
-            v-model:departmentId="form.departmentId"
-            label="Department"
-            hideBottomSpace
-            required
-          />
+          <label class="tw:text-sm tw:font-medium tw:text-secondary">Department *</label>
+          <DepartmentSelectMenu v-model="form.departmentId" :required="true" />
         </div>
 
         <!-- Effective Date -->
         <div class="tw:space-y-2">
-          <WDateTimeInput
-            v-model="form.effectiveDate"
-            label="Effective Date"
-            mode="date"
-            outlined
-            dense
-            hideBottomSpace
-          />
+          <label class="tw:text-sm tw:font-medium tw:text-secondary">Effective Date</label>
+          <BaseDatePicker v-model="form.effectiveDate" />
         </div>
 
         <!-- Tags -->
@@ -131,7 +129,7 @@ function decrementReviewMonths() {
             >
               {{ tag }}
               <button class="tw:hover:text-primary-dark" @click="removeTag(index)">
-                <WIcon name="close" size="14px" />
+                <IconX :size="14" />
               </button>
             </span>
             <input
@@ -149,7 +147,7 @@ function decrementReviewMonths() {
     <!-- Site Availability -->
     <section class="tw:bg-sidebar tw:rounded-2xl tw:shadow-sm tw:border tw:border-divider tw:p-8">
       <div class="tw:flex tw:items-center tw:gap-2 tw:mb-6">
-        <WIcon name="location_on" class="tw:text-primary" />
+        <IconMapPin class="tw:text-primary tw:size-5" />
         <h2 class="tw:text-xl tw:font-bold tw:text-on-sidebar">Site Availability</h2>
       </div>
       <div class="tw:max-w-2xl">
@@ -164,7 +162,7 @@ function decrementReviewMonths() {
     <!-- Workflow Setup Section -->
     <section class="tw:bg-sidebar tw:rounded-2xl tw:shadow-sm tw:border tw:border-divider tw:p-8">
       <div class="tw:flex tw:items-center tw:gap-2 tw:mb-6">
-        <WIcon name="account_tree" class="tw:text-primary" />
+        <IconHierarchy class="tw:text-primary tw:size-5" />
         <h2 class="tw:text-xl tw:font-bold tw:text-on-sidebar">Workflow Setup</h2>
       </div>
 
@@ -174,37 +172,29 @@ function decrementReviewMonths() {
     <!-- Advanced Settings Section -->
     <section class="tw:bg-sidebar tw:rounded-2xl tw:shadow-sm tw:border tw:border-divider tw:p-8">
       <div class="tw:flex tw:items-center tw:gap-2 tw:mb-6">
-        <WIcon name="tune" class="tw:text-primary" />
+        <IconAdjustments class="tw:text-primary tw:size-5" />
         <h2 class="tw:text-xl tw:font-bold tw:text-on-sidebar">Advanced Settings</h2>
       </div>
 
       <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-6">
         <div class="tw:space-y-2">
-          <WInput
+          <BaseTextInput
             v-model="prefix"
             name="prefix"
             label="Document Prefix *"
             placeholder="e.g. SOP, DOC-{SITE_CODE}"
-            outlined
-            dense
-          >
-            <template #hint>
-              <span class="tw:text-xs tw:text-secondary tw:italic">
-                Supports placeholders: {SITE_CODE}, {DEPARTMENT_CODE} (e.g. "DOC",
-                "SOP-{SITE_CODE}", "DOC-{SITE_CODE}-{DEPARTMENT_CODE}").
-              </span>
-            </template>
-          </WInput>
+            :required="true"
+          />
+          <p class="tw:text-xs tw:text-secondary tw:italic">
+            Supports placeholders: {SITE_CODE}, {DEPARTMENT_CODE} (e.g. "DOC", "SOP-{SITE_CODE}",
+            "DOC-{SITE_CODE}-{DEPARTMENT_CODE}").
+          </p>
         </div>
 
         <!-- Related Standard -->
         <div class="tw:space-y-2">
-          <DocumentsRelatedStandardSelect
-            v-model:relatedStandardId="form.relatedStandardId"
-            label="Related Standard"
-            nullLabel="N/A"
-            hideBottomSpace
-          />
+          <label class="tw:text-sm tw:font-medium tw:text-secondary">Related Standard</label>
+          <RelatedStandardSelectMenu v-model="form.relatedStandardId" />
         </div>
 
         <!-- Periodic Review Frequency -->
@@ -220,7 +210,7 @@ function decrementReviewMonths() {
                 class="tw:px-3 tw:py-2 tw:hover:bg-sidebar tw:text-secondary"
                 @click="decrementReviewMonths"
               >
-                <WIcon name="remove" size="18px" />
+                <IconMinus :size="18" />
               </button>
               <input
                 v-model.number="form.periodicReviewMonths"
@@ -233,7 +223,7 @@ function decrementReviewMonths() {
                 class="tw:px-3 tw:py-2 tw:hover:bg-sidebar tw:text-secondary"
                 @click="incrementReviewMonths"
               >
-                <WIcon name="add" size="18px" />
+                <IconPlus :size="18" />
               </button>
             </div>
             <span class="tw:text-sm tw:font-medium tw:text-secondary">months</span>
@@ -248,7 +238,7 @@ function decrementReviewMonths() {
             <p class="tw:text-sm tw:font-bold tw:text-on-sidebar">Automatically make effective</p>
             <p class="tw:text-xs tw:text-secondary">Skip manual release after final approval</p>
           </div>
-          <QToggle v-model="form.autoEffectiveOnApproval" color="primary" />
+          <BaseSwitch v-model="form.autoEffectiveOnApproval" />
         </div>
       </div>
     </section>

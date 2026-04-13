@@ -10,9 +10,15 @@ let pollTimer = null
 let pollInterval = 3000
 let backoffMs = 3000
 const MAX_BACKOFF = 60000
+let maxAttempt = 3
 
 let _metaMap = null
 let _config = null
+
+/**
+ * @type {Map<string, number>}
+ */
+const attempMap = new Map()
 
 export function startPolling(metaMap, config) {
   stopPolling()
@@ -86,9 +92,10 @@ async function flush(entries) {
         },
       })
     } catch (err) {
+      const entryCount = attempMap.get(entry.id) || 0
       const status = err?.status
       const isPermanent = status === 400 || status === 409 || status === 422
-      if (isPermanent) {
+      if (isPermanent || entryCount >= maxAttempt) {
         await rollbackEntry(entry, meta)
         await IndexedDB.delete(TRANSACTIONS_STORE, entry.id)
         await broadcastMessage({
@@ -105,6 +112,8 @@ async function flush(entries) {
           },
         })
         continue
+      } else {
+        attempMap.set(entry.id, entryCount + 1)
       }
       await broadcastMessage({
         type: MSG.ERROR,

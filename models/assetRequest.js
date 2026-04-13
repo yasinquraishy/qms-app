@@ -16,6 +16,10 @@ export class AssetRequest extends BaseModel {
       this.companyId = currentSession.value?.companyId || ''
     }
 
+    if (!this.createdBy) {
+      this.createdBy = currentSession.value?.userId
+    }
+
     if (!this.id) {
       this.id = crypto.randomUUID()
     }

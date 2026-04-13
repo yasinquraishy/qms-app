@@ -16,6 +16,10 @@ export class Notification extends BaseModel {
       this.userId = currentSession.value?.userId || ''
     }
 
+    if (!this.createdBy) {
+      this.createdBy = currentSession.value?.userId
+    }
+
     if (!this.id) {
       this.id = crypto.randomUUID()
     }

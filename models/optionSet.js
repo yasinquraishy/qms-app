@@ -15,9 +15,9 @@ export class OptionSet extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) companyId = ''
-  @Property({ type: String }) name = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String, required: true }) name = ''
   @Property({ type: String }) description = ''
   @Property({ type: Array }) options = []
   @Property({ type: DateTime }) deletedAt = null

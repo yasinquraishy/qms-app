@@ -16,7 +16,7 @@ export class Asset extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String }) filename = ''
   @Property({ type: String }) originalFilename = ''
   @Property({ type: String }) mimeType = ''
@@ -25,7 +25,7 @@ export class Asset extends BaseModel {
   @Property({ type: String }) storagePath = ''
   @Property({ type: String }) fileType = 'ASSET'
   @Property({ type: String }) uploadedBy = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String }) thumbnailUrl = ''
   @Property({ type: Boolean }) isExternal = false
   @Property({ type: String }) bucket = ''

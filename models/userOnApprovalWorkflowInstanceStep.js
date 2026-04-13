@@ -22,11 +22,11 @@ export class UserOnApprovalWorkflowInstanceStep extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) approvalWorkflowInstanceStepId = ''
-  @Property({ type: String }) userId = ''
-  @Property({ type: String }) statusId = 'PENDING'
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) approvalWorkflowInstanceStepId = ''
+  @Property({ type: String, required: true }) userId = ''
+  @Property({ type: String, required: true }) statusId = 'PENDING'
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

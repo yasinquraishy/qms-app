@@ -20,12 +20,12 @@ export class SupplierAsset extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) companyId = ''
-  @Property({ type: String }) supplierId = ''
-  @Property({ type: String }) assetId = ''
-  @Property({ type: String }) requestId = ''
-  @Property({ type: String }) documentType = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String, required: true }) supplierId = ''
+  @Property({ type: String, required: true }) assetId = ''
+  @Property({ type: String, required: true }) requestId = ''
+  @Property({ type: String, required: true }) documentType = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

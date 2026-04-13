@@ -20,16 +20,16 @@ export class ApprovalWorkflowStep extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) workflowVersionId = ''
-  @Property({ type: String }) name = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) workflowVersionId = ''
+  @Property({ type: String, required: true }) name = ''
   @Property({ type: String }) description = ''
-  @Property({ type: Number }) stepOrder = 0
-  @Property({ type: String }) approvalRule = 'ALL'
-  @Property({ type: Number }) slaDays = null
+  @Property({ type: Number, required: true }) stepOrder = 0
+  @Property({ type: String, required: true }) approvalRule = 'ALL'
+  @Property({ type: Number }) slaDays = 10
   @Property({ type: Boolean }) requireComments = false
   @Property({ type: Boolean }) requireEsignature = false
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

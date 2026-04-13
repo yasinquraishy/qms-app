@@ -664,7 +664,7 @@ import { ClientModel, BaseModel, Property, Computed } from '@syncEngine/index.js
 class DocumentVersion extends BaseModel {
   static paranoid = true // soft-delete via deletedAt field
 
-  @Property({ type: String }) id = null
+  @Property({ type: String, required: true }) id = null
   @Property({ type: String }) documentId = null
   @Property({ type: String }) statusId = null
   @Property({ type: Number }) versionMajor = 0

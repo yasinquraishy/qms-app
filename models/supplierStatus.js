@@ -3,8 +3,8 @@ import { DateTime } from 'luxon'
 
 @ClientModel('supplierStatuses', { primaryKey: 'id', syncField: 'updatedAt' })
 export class SupplierStatus extends BaseModel {
-  @Property({ type: String }) id = ''
-  @Property({ type: String }) name = ''
+  @Property({ type: String, required: true }) id = ''
+  @Property({ type: String, required: true }) name = ''
   @Property({ type: String }) description = ''
   @Property({ type: Number }) displayOrder = 1000
   @Property({ type: DateTime, required: true, timestamp: true })

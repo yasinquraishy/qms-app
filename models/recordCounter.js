@@ -12,7 +12,7 @@ export class RecordCounter extends BaseModel {
       this.companyId = currentSession.value?.companyId || ''
     }
   }
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String }) documentTypeId = ''
   @Property({ type: Number }) currentValue = 1
   @Property({ type: DateTime }) deletedAt = null

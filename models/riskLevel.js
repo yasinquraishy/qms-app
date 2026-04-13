@@ -3,8 +3,8 @@ import { DateTime } from 'luxon'
 
 @ClientModel('riskLevels', { primaryKey: 'id', syncField: 'updatedAt' })
 export class RiskLevel extends BaseModel {
-  @Property({ type: String }) id = ''
-  @Property({ type: String }) name = ''
+  @Property({ type: String, required: true }) id = ''
+  @Property({ type: String, required: true }) name = ''
   @Property({ type: String }) description = ''
   @Property({ type: String }) color = ''
   @Property({ type: Number }) order = 0

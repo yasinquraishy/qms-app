@@ -16,15 +16,15 @@ export class User extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) firstName = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) firstName = ''
   @Property({ type: String }) lastName = ''
-  @Property({ type: String }) email = ''
-  @Property({ type: String }) userStatusId = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) email = ''
+  @Property({ type: String, required: true }) userStatusId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String }) jobTitle = ''
   @Property({ type: String }) languageId = ''
-  @Property({ type: String }) timeZone = ''
+  @Property({ type: String, required: true }) timeZone = ''
   @Property({ type: Boolean }) inviteSent = false
   @Property({ type: String }) color = '#2563eb'
   @Property({ type: String }) avatar = ''

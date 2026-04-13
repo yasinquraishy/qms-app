@@ -20,15 +20,15 @@ export class Record extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) companyId = ''
-  @Property({ type: String }) templateId = ''
-  @Property({ type: String }) documentTypeId = ''
-  @Property({ type: String }) recordNumber = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String, required: true }) templateId = ''
+  @Property({ type: String, required: true }) documentTypeId = ''
+  @Property({ type: String, required: true }) recordNumber = ''
   @Property({ type: String }) statusId = 'DRAFT'
   @Property({ type: Object }) payload = null
   @Property({ type: String }) submissionIp = ''
-  @Property({ type: String }) userId = ''
+  @Property({ type: String, required: true }) userId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

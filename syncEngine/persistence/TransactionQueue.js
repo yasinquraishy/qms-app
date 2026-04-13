@@ -10,7 +10,7 @@ import { TRANSACTIONS_STORE, STATUS, OPERATION, LOAD_STRATEGY } from '../shared/
   customIndex: 'status, [modelName+modelId]',
 })
 class TransactionQueue extends BaseModel {
-  @Property({ type: String }) id = ''
+  @Property({ type: String, required: true }) id = ''
   @Property({ type: String }) modelName = ''
   @Property({ type: String }) modelId = ''
   @Property({ type: Object }) changes = {} // { fieldName: serializedOldValue } — for rollback

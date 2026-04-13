@@ -20,10 +20,10 @@ export class UserOnDocument extends BaseModel {
     }
   }
 
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) userId = ''
-  @Property({ type: String }) documentId = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) userId = ''
+  @Property({ type: String, required: true }) documentId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)
   @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true })

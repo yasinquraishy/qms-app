@@ -16,12 +16,12 @@ export class DocumentLink extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String }) fromDocumentVersionId = ''
   @Property({ type: String }) toDocumentVersionId = ''
   @Property({ type: String }) relationshipType = ''
   @Property({ type: String }) createdBy = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

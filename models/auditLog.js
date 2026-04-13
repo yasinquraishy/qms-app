@@ -19,7 +19,7 @@ export class AuditLog extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String }) entityType = ''
   @Property({ type: String }) entityId = ''
   @Property({ type: String }) action = ''
@@ -28,7 +28,7 @@ export class AuditLog extends BaseModel {
   @Property({ type: String }) performedBy = ''
   @Property({ type: DateTime }) performedAt = null
   @Property({ type: String }) ipAddress = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

@@ -15,12 +15,12 @@ export class FormTemplate extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String }) title = ''
-  @Property({ type: String }) code = ''
+  @Property({ type: String, required: true }) code = ''
   @Property({ type: Object }) schema = null
-  @Property({ type: String }) documentTypeId = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) documentTypeId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String }) statusId = 'DRAFT'
   @Property({ type: Number }) version = 1
   @Property({ type: Object }) config = null

@@ -3,8 +3,8 @@ import { DateTime } from 'luxon'
 
 @ClientModel('permissions', { primaryKey: 'id', syncField: 'updatedAt' })
 export class Permission extends BaseModel {
-  @Property({ type: String }) id = ''
-  @Property({ type: String }) name = ''
+  @Property({ type: String, required: true }) id = ''
+  @Property({ type: String, required: true }) name = ''
   @Property({ type: String }) description = ''
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

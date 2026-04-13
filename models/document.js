@@ -26,20 +26,20 @@ export class Document extends BaseModel {
     }
   }
 
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) docNumber = ''
-  @Property({ type: String }) title = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) docNumber = ''
+  @Property({ type: String, required: true }) title = ''
   @Property({ type: String }) departmentId = ''
-  @Property({ type: String }) documentTypeId = ''
+  @Property({ type: String, required: true }) documentTypeId = ''
   @Property({ type: String }) documentTemplateId = ''
-  @Property({ type: String }) userId = ''
-  @Property({ type: String }) siteId = ''
+  @Property({ type: String, required: true }) userId = ''
+  @Property({ type: String, required: true }) siteId = ''
   @Property({ type: String }) statusId = 'DRAFT'
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String }) workflowVersionId = ''
-  @Property({ type: String }) prefix = ''
+  @Property({ type: String, required: true }) prefix = ''
   @Property({ type: String }) relatedStandardId = ''
-  @Property({ type: Number }) periodicReviewMonths = 12
+  @Property({ type: Number, required: true }) periodicReviewMonths = 12
   @Property({ type: Boolean }) autoEffectiveOnApproval = true
   @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true })
   updatedAt = /** @type {DateTime} */ (null)

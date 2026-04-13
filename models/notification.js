@@ -20,14 +20,14 @@ export class Notification extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) companyId = ''
-  @Property({ type: String }) userId = ''
-  @Property({ type: String }) notificationTypeId = ''
-  @Property({ type: String }) title = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String, required: true }) userId = ''
+  @Property({ type: String, required: true }) notificationTypeId = ''
+  @Property({ type: String, required: true }) title = ''
   @Property({ type: String }) message = ''
-  @Property({ type: String }) resourceType = ''
-  @Property({ type: String }) resourceId = ''
+  @Property({ type: String, required: true }) resourceType = ''
+  @Property({ type: String, required: true }) resourceId = ''
   @Property({ type: Boolean }) isRead = false
   @Property({ type: DateTime }) readAt = null
   @Property({ type: String }) createdBy = ''

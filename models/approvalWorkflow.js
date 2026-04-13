@@ -15,12 +15,12 @@ export class ApprovalWorkflow extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) name = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) name = ''
   @Property({ type: String }) description = ''
-  @Property({ type: String }) moduleId = ''
-  @Property({ type: String }) documentTypeId = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) moduleId = ''
+  @Property({ type: String, required: true }) documentTypeId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String }) statusId = 'ACTIVE'
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })

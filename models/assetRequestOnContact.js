@@ -15,10 +15,10 @@ export class AssetRequestOnContact extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) assetRequestId = ''
-  @Property({ type: String }) supplierContactId = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) assetRequestId = ''
+  @Property({ type: String, required: true }) supplierContactId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

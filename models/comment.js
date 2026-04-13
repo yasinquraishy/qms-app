@@ -24,12 +24,12 @@ export class Comment extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String }) body = ''
-  @Property({ type: String }) userId = ''
-  @Property({ type: String }) objectId = ''
-  @Property({ type: String }) objectType = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) userId = ''
+  @Property({ type: String, required: true }) objectId = ''
+  @Property({ type: String, required: true }) objectType = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

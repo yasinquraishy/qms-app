@@ -20,11 +20,11 @@ export class SupplierContact extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) companyId = ''
-  @Property({ type: String }) supplierId = ''
-  @Property({ type: String }) email = ''
-  @Property({ type: String }) phoneNumber = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String, required: true }) supplierId = ''
+  @Property({ type: String, required: true }) email = ''
+  @Property({ type: String, required: true }) phoneNumber = ''
   @Property({ type: Boolean }) isPrimary = false
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })

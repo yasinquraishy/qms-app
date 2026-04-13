@@ -17,9 +17,9 @@ export class ApiKey extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) userId = ''
-  @Property({ type: String }) name = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) userId = ''
+  @Property({ type: String, required: true }) name = ''
   @Property({ type: String }) label = ''
   @Property({ type: Boolean }) revoked = false
   @Property({ type: DateTime }) lastUsedAt = null

@@ -20,17 +20,17 @@ export class TaskInstance extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) assignedTo = ''
-  @Property({ type: String }) taskKindId = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) assignedTo = ''
+  @Property({ type: String, required: true }) taskKindId = ''
   @Property({ type: String }) statusId = 'ASSIGNED'
-  @Property({ type: String }) priorityId = ''
-  @Property({ type: String }) dueDate = ''
-  @Property({ type: String }) entityType = ''
-  @Property({ type: String }) entityId = ''
-  @Property({ type: String }) sourceType = ''
-  @Property({ type: String }) sourceId = ''
-  @Property({ type: String }) companyId = ''
+  @Property({ type: String, required: true }) priorityId = ''
+  @Property({ type: DateTime, required: true }) dueDate = /** @type {DateTime} */ (null)
+  @Property({ type: String, required: true }) entityType = ''
+  @Property({ type: String, required: true }) entityId = ''
+  @Property({ type: String, required: true }) sourceType = ''
+  @Property({ type: String, required: true }) sourceId = ''
+  @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

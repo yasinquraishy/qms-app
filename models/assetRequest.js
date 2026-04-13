@@ -20,17 +20,16 @@ export class AssetRequest extends BaseModel {
       this.id = crypto.randomUUID()
     }
   }
-  @Property({ type: String, uuid: true }) id = ''
-  @Property({ type: String }) supplierId = ''
-  @Property({ type: String }) companyId = ''
-  @Property({ type: String }) requestTypeId = ''
-  @Property({ type: String }) title = ''
+  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) supplierId = ''
+  @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String, required: true }) requestTypeId = ''
+  @Property({ type: String, required: true }) title = ''
   @Property({ type: String }) description = ''
-  @Property({ type: String }) dueDate = ''
-  @Property({ type: String }) expiryDate = ''
+  @Property({ type: DateTime, required: true }) dueDate = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) expiryDate = /** @type {DateTime} */ (null)
   @Property({ type: String }) statusId = 'PENDING'
-  @Property({ type: String }) createdBy = ''
-  @Property({ type: String }) token = ''
+  @Property({ type: String, required: true }) createdBy = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

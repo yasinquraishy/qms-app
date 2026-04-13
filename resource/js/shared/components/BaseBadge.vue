@@ -12,7 +12,7 @@ const emit = defineEmits(['clear'])
 
 <template>
   <div
-    class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1 tw:rounded-full tw:border-current/20 tw:shadow tw:text-sm tw:font-medium tw:w-fit tw:transition-all tw:duration-200"
+    class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1 tw:rounded-full tw:border tw:border-current/20 tw:text-sm tw:font-medium tw:w-fit tw:transition-all tw:duration-200"
   >
     <div
       v-if="showDot"

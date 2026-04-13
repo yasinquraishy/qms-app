@@ -22,7 +22,7 @@ const scheme = (id) =>
 </script>
 
 <template>
-  <BaseBadge v-bind="$attrs" :class="scheme(status.id).class" showDot>
+  <BaseBadge v-bind="$attrs" :class="scheme(status.id).class" :showDot="showDot">
     {{ status.name || status.id || '—' }}
   </BaseBadge>
 </template>

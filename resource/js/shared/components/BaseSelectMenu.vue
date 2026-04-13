@@ -147,7 +147,7 @@ function isSelected(id) {
               :class="
                 isNullableSelected
                   ? 'tw:bg-primary/10 tw:text-primary'
-                  : 'tw:text-on-main tw:hover:bg-sidebar'
+                  : 'tw:text-on-main tw:hover:bg-primary/5'
               "
               @click="toggleNullable(close)"
             >
@@ -165,7 +165,7 @@ function isSelected(id) {
               :class="
                 isSelected(item.id)
                   ? 'tw:bg-primary/10 tw:text-primary'
-                  : 'tw:text-on-main tw:hover:bg-sidebar'
+                  : 'tw:text-on-main tw:hover:bg-primary/5'
               "
               @click="toggleSelection(item.id, close)"
             >

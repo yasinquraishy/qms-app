@@ -18,11 +18,6 @@ const contacts = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-const primaryContact = computed(() => {
-  if (!contacts.value?.length) return null
-  return contacts.value.find((c) => c.isPrimary) || contacts.value[0]
-})
-
 const addContact = useLiveMutation(async (db, { supplierId }) => {
   const isFirst = contacts.value.length === 0
   const contact = db.SupplierContact.create({
@@ -141,10 +136,7 @@ async function setPrimary(contact) {
           </div>
         </div>
       </div>
-      <div v-else class="tw:py-8 tw:text-center">
-        <IconMail :size="40" class="tw:text-secondary/50 tw:mb-2" />
-        <p class="tw:text-secondary tw:text-sm">No contact details available.</p>
-      </div>
+      <BaseEmptyState v-else :icon="IconMail" title="No contact details available." />
     </div>
   </div>
 </template>

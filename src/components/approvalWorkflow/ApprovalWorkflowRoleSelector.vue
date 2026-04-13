@@ -102,12 +102,7 @@ async function removeRole(roleId) {
         </div>
       </div>
 
-      <div
-        v-if="filteredRoles.length === 0"
-        class="tw:text-center tw:py-4 tw:text-sm tw:text-secondary"
-      >
-        No roles found
-      </div>
+      <BaseEmptyState v-if="filteredRoles.length === 0" dense title="No roles found" />
     </div>
   </div>
 </template>

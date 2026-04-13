@@ -43,14 +43,12 @@ function navigateToWorkflow(workflow) {
       />
     </div>
 
-    <div
+    <BaseEmptyState
       v-else-if="filteredWorkflows.length === 0"
-      class="tw:col-span-3 tw:text-center tw:py-12 tw:text-secondary"
-    >
-      <p class="tw:text-sm">
-        No workflows found. Create your first approval workflow to get started.
-      </p>
-    </div>
+      class="tw:col-span-3"
+      title="No workflows found"
+      description="Create your first approval workflow to get started."
+    />
 
     <!-- Workflow Cards -->
     <ApprovalWorkflowCard

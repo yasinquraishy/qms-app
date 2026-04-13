@@ -1,4 +1,11 @@
 <script setup>
+defineProps({
+  languageId: {
+    type: String,
+    default: null,
+  },
+})
+
 const LANGUAGE_MAP = {
   'en-US': 'English (US)',
   'en-GB': 'English (UK)',
@@ -10,13 +17,6 @@ const LANGUAGE_MAP = {
   zh: 'Chinese',
   ja: 'Japanese',
 }
-
-defineProps({
-  languageId: {
-    type: String,
-    default: null,
-  },
-})
 </script>
 
 <template>

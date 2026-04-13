@@ -1,6 +1,7 @@
 import { shallowRef, watch, onScopeDispose } from 'vue'
 import { syncBus } from '@syncEngine/core/syncBus.js'
 import { db } from '@models/index'
+import { ValidationError } from '@syncEngine/index'
 
 const DEFAULT_DEBOUNCE = 50
 
@@ -99,10 +100,19 @@ export function useLiveQueryWithDeps(
  * @returns {(args: any[]) => Promise<T>} mutate function that runs the mutation and logs errors
  */
 export function useLiveMutation(mutationFn) {
+  const toast = useToast()
   async function mutate(...args) {
     try {
       return await mutationFn(db, ...args)
     } catch (err) {
+      if (err instanceof ValidationError) {
+        // Handle validation errors gracefully (e.g. show toast) instead of logging as an error
+        toast.notify({
+          message: 'Validation error: ' + err.errors.map((e) => e.message).join(', '),
+          type: 'error',
+        })
+        return
+      }
       console.error(err)
     }
   }

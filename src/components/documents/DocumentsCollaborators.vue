@@ -131,12 +131,11 @@ async function toggleCollaborator(userId) {
                 </QItemLabel>
               </QItemSection>
             </QItem>
-            <div
+            <BaseEmptyState
               v-if="allUsers !== undefined && filteredUsers.length === 0"
-              class="tw:text-center tw:py-4 tw:text-xs tw:text-secondary"
-            >
-              No users found
-            </div>
+              dense
+              title="No users found"
+            />
           </QList>
         </QMenu>
       </button>

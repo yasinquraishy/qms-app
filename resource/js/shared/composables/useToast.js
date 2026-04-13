@@ -76,6 +76,18 @@ function dismiss(id) {
   toasts.value = toasts.value.filter((t) => t.id !== id)
 }
 
+function success(message, options = {}) {
+  return notify({ ...options, type: 'positive', message })
+}
+
+function error(message, options = {}) {
+  return notify({ ...options, type: 'negative', message })
+}
+
+function warning(message, options = {}) {
+  return notify({ ...options, type: 'warning', message })
+}
+
 /**
  * Dismiss all active toasts.
  */
@@ -88,5 +100,5 @@ function dismissAll() {
 }
 
 export function useToast() {
-  return { toasts, notify, dismiss, dismissAll }
+  return { toasts, notify, dismiss, dismissAll, success, error, warning }
 }

@@ -28,7 +28,7 @@ export class Supplier extends BaseModel {
   @Property({ type: String }) country = ''
   @Property({ type: String }) riskLevel = ''
   @Property({ type: String }) statusId = 'PENDING'
-  @Property({ type: String }) lastEvaluationDate = ''
+  @Property({ type: String }) lastEvaluationDate = null
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

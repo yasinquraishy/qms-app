@@ -23,9 +23,6 @@ defineProps({
       </div>
       <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Audit Logs</h3>
     </div>
-    <div class="tw:py-12 tw:text-center">
-      <IconHistory :size="40" class="tw:text-secondary/50 tw:mb-2" />
-      <p class="tw:text-secondary tw:text-sm">No audit logs available for this supplier.</p>
-    </div>
+    <BaseEmptyState :icon="IconHistory" title="No audit logs available for this supplier." />
   </div>
 </template>

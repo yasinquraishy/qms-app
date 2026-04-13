@@ -32,7 +32,7 @@ export class DocumentTemplate extends BaseModel {
   @Property({ type: Number }) approvalLimitDays = 7
   @Property({ type: Boolean }) autoEffectiveOnApproval = true
   @Property({ type: Boolean }) showSectionTitles = true
-  @Property({ type: Object }) sections = null
+  @Property({ type: Array }) sections = []
   @Property({ type: String }) relatedStandardId = ''
   @Property({ type: String }) statusId = 'ACTIVE'
   @Property({ type: DateTime }) deletedAt = null

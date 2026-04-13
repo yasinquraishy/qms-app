@@ -160,13 +160,12 @@ function onRemoveDocument(entry) {
       </div>
     </div>
 
-    <div v-else class="tw:py-12 tw:text-center">
-      <IconLinkOff :size="40" class="tw:text-secondary/50 tw:mb-2" />
-      <p class="tw:text-secondary tw:text-sm">No documents linked to this supplier.</p>
-      <p class="tw:text-secondary/70 tw:text-xs tw:mt-1">
-        Link documents from your document management system.
-      </p>
-    </div>
+    <BaseEmptyState
+      v-else
+      :icon="IconLinkOff"
+      title="No documents linked to this supplier."
+      description="Link documents from your document management system."
+    />
   </div>
 
   <!-- Add Document Dialog -->

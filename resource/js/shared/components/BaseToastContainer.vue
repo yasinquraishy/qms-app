@@ -14,6 +14,17 @@ const positionClasses = {
   center: 'tw:top-1/2 tw:left-1/2 tw:-translate-x-1/2 tw:-translate-y-1/2 tw:flex-col',
 }
 
+// Slide direction based on which edge the position is near
+const slideFrom = {
+  top: 'tw:opacity-0 tw:-translate-y-full',
+  'top-right': 'tw:opacity-0 tw:translate-x-full',
+  'top-left': 'tw:opacity-0 tw:-translate-x-full',
+  bottom: 'tw:opacity-0 tw:translate-y-full',
+  'bottom-right': 'tw:opacity-0 tw:translate-x-full',
+  'bottom-left': 'tw:opacity-0 tw:-translate-x-full',
+  center: 'tw:opacity-0 tw:scale-95',
+}
+
 const groupedToasts = computed(() => {
   const groups = {}
   for (const toast of toasts.value) {
@@ -37,11 +48,11 @@ const groupedToasts = computed(() => {
     >
       <TransitionGroup
         enterActiveClass="tw:transition-all tw:duration-300 tw:ease-out"
-        enterFromClass="tw:opacity-0 tw:-translate-y-3 tw:scale-95"
-        enterToClass="tw:opacity-100 tw:translate-y-0 tw:scale-100"
+        :enterFromClass="slideFrom[position] || slideFrom.top"
+        enterToClass="tw:opacity-100 tw:translate-x-0 tw:translate-y-0 tw:scale-100"
         leaveActiveClass="tw:transition-all tw:duration-200 tw:ease-in"
-        leaveFromClass="tw:opacity-100 tw:translate-y-0 tw:scale-100"
-        leaveToClass="tw:opacity-0 tw:-translate-y-3 tw:scale-95"
+        leaveFromClass="tw:opacity-100 tw:translate-x-0 tw:translate-y-0 tw:scale-100"
+        :leaveToClass="slideFrom[position] || slideFrom.top"
         moveClass="tw:transition-all tw:duration-300 tw:ease-out"
       >
         <BaseToast

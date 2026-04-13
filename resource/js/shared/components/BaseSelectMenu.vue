@@ -100,7 +100,7 @@ function isSelected(id) {
 </script>
 
 <template>
-  <BasePopover placement="bottom">
+  <BasePopover placement="bottom" :arrow="false" :flip="true">
     <template #button>
       <BaseBadge v-if="showNullable && isNullableSelected" selectable>
         {{ nullLabel }}

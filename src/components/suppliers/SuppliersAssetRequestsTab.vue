@@ -183,13 +183,12 @@ function formatDate(value) {
     </div>
 
     <!-- Empty -->
-    <div v-else class="tw:py-12 tw:text-center">
-      <IconClipboardList :size="40" class="tw:text-secondary/50 tw:mb-2" />
-      <p class="tw:text-secondary tw:text-sm">No asset requests yet.</p>
-      <p class="tw:text-secondary/70 tw:text-xs tw:mt-1">
-        Create a request to track documents needed from this supplier.
-      </p>
-    </div>
+    <BaseEmptyState
+      v-else
+      :icon="IconClipboardList"
+      title="No asset requests yet."
+      description="Create a request to track documents needed from this supplier."
+    />
 
     <SuppliersAssetRequestDialog
       v-model="showDialog"

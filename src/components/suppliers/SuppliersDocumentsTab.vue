@@ -68,9 +68,11 @@ const typeLabel = {
         </a>
       </div>
     </div>
-    <div v-else class="tw:py-12 tw:text-center">
-      <IconFileDescription :size="40" class="tw:text-secondary/50 tw:mb-2" />
-      <p class="tw:text-secondary tw:text-sm">No documents attached to this supplier.</p>
-    </div>
+
+    <BaseEmptyState
+      v-else
+      :icon="IconFileDescription"
+      title="No documents attached to this supplier."
+    />
   </div>
 </template>

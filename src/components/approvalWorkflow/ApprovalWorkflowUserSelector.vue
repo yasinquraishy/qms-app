@@ -114,12 +114,7 @@ async function removeUser(userId) {
         </div>
       </div>
 
-      <div
-        v-if="filteredUsers.length === 0"
-        class="tw:text-center tw:py-4 tw:text-sm tw:text-secondary"
-      >
-        No users found
-      </div>
+      <BaseEmptyState v-if="filteredUsers.length === 0" dense title="No users found" />
     </div>
   </div>
 </template>

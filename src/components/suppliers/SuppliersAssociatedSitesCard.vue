@@ -37,7 +37,7 @@ async function onAddSites(siteIds) {
   }
 }
 
-const showSiteSelect = ref(false)
+const siteIds = computed(() => supplierSites.value.map((s) => s.siteId))
 </script>
 
 <template>
@@ -55,19 +55,19 @@ const showSiteSelect = ref(false)
         </div>
         <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Associated Sites</h3>
       </div>
-      <BaseButton
-        v-if="canUpdate"
-        variant="text-link"
-        size="sm"
-        @click="showSiteSelect = !showSiteSelect"
+
+      <SiteSelectMenu
+        :modelValue="siteIds"
+        :required="true"
+        :multiple="true"
+        @update:modelValue="onAddSites"
       >
-        + Add Site
-      </BaseButton>
+        <template #button>
+          <BaseButton v-if="canUpdate" variant="text-link" size="sm"> + Add Site </BaseButton>
+        </template>
+      </SiteSelectMenu>
     </div>
     <div class="tw:p-6">
-      <div v-if="showSiteSelect" class="tw:mb-4">
-        <SiteSelectMenu :multiple="true" @update:modelValue="onAddSites" />
-      </div>
       <div v-if="supplierSites.length" class="tw:flex tw:flex-wrap tw:gap-2">
         <div v-for="link in supplierSites" :key="link.id" class="tw:relative">
           <SiteBadgeById :siteId="link.siteId" />

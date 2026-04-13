@@ -23,9 +23,6 @@ defineProps({
       </div>
       <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Evaluations</h3>
     </div>
-    <div class="tw:py-12 tw:text-center">
-      <IconChartBar :size="40" class="tw:text-secondary/50 tw:mb-2" />
-      <p class="tw:text-secondary tw:text-sm">No evaluations available for this supplier.</p>
-    </div>
+    <BaseEmptyState :icon="IconChartBar" title="No evaluations available for this supplier." />
   </div>
 </template>

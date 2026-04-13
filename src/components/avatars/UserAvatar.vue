@@ -12,6 +12,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  bordered: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const attrs = useAttrs()
@@ -73,8 +77,8 @@ const textSizeClass = computed(() => {
 <template>
   <div class="tw:relative tw:inline-block" :class="attrs.class">
     <div
-      class="tw:rounded-full tw:flex tw:items-center tw:justify-center tw:text-white tw:font-bold tw:border-4 tw:border-sidebar tw:shadow-sm tw:cursor-pointer tw:aspect-square tw:w-full tw:h-full"
-      :class="[textSizeClass]"
+      class="tw:rounded-full tw:flex tw:items-center tw:justify-center tw:text-white tw:font-bold tw:border-sidebar tw:shadow-sm tw:cursor-pointer tw:aspect-square tw:w-full tw:h-full"
+      :class="[textSizeClass, { 'tw:border-4': bordered }]"
       :style="{ backgroundColor: user?.color || '#2563eb' }"
     >
       <img

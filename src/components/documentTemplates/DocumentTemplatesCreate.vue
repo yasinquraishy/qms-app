@@ -1,11 +1,5 @@
 <script setup>
-import {
-  IconFileDescription,
-  IconInfoCircle,
-  IconSettings,
-  IconCircleCheck,
-  IconCircleX,
-} from '@tabler/icons-vue'
+import { IconInfoCircle, IconSettings, IconCircleCheck, IconCircleX } from '@tabler/icons-vue'
 import { required, minValue, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
@@ -21,6 +15,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const toast = useToast()
 
 const saving = ref(false)
 const checkingPrefix = ref(false)
@@ -183,16 +178,21 @@ async function saveTemplate() {
   if (prefixAvailable.value === false) return
 
   saving.value = true
+  let docId
   try {
     if (isEditMode.value && existingTemplate.value) {
       const t = existingTemplate.value
+      docId = t.id
       Object.assign(t, form.value)
       await t.save()
+      toast.success('Document template updated successfully')
     } else {
-      await createTemplate(form.value)
+      const t = await createTemplate(form.value)
+      docId = t.id
+      toast.success('Document template created successfully')
     }
-    router.push(getCompanyPath('/document-templates'))
-  } catch (err) {
+    router.push(getCompanyPath(`/document-templates/${docId}`))
+  } catch {
     // BaseModel validation errors are caught here
   } finally {
     saving.value = false

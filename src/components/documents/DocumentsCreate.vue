@@ -93,9 +93,25 @@ const rules = computed(() => ({
 const validator = useValidator(rules, form)
 
 const createDocument = useLiveMutation(async (db, formData) => {
-  let documentCounter = await db.DocumentCounter.where('prefix', formData.prefix).first()
+  // Resolve placeholders in prefix → {SITE_CODE}, {DEPARTMENT_CODE}
+  let resolvedPrefix = formData.prefix
+
+  if (/\{SITE_CODE\}/i.test(resolvedPrefix)) {
+    const site = await db.Site.findByPk(formData.siteId)
+    if (!site) throw new Error(`Site not found: ${formData.siteId}`)
+    resolvedPrefix = resolvedPrefix.replace(/\{SITE_CODE\}/gi, site.code)
+  }
+
+  if (/\{DEPARTMENT_CODE\}/i.test(resolvedPrefix)) {
+    const department = await db.Department.findByPk(formData.departmentId)
+    if (!department) throw new Error(`Department not found: ${formData.departmentId}`)
+    resolvedPrefix = resolvedPrefix.replace(/\{DEPARTMENT_CODE\}/gi, department.code)
+  }
+
+  // Get or create counter scoped to the resolved prefix
+  let documentCounter = await db.DocumentCounter.where('prefix', resolvedPrefix).first()
   if (!documentCounter) {
-    documentCounter = db.DocumentCounter.create({ prefix: formData.prefix, currentValue: 1 })
+    documentCounter = db.DocumentCounter.create({ prefix: resolvedPrefix, currentValue: 1 })
   } else {
     documentCounter.currentValue += 1
   }
@@ -112,7 +128,7 @@ const createDocument = useLiveMutation(async (db, formData) => {
     autoEffectiveOnApproval: formData.autoEffectiveOnApproval,
     workflowVersionId: formData.workflowVersionId,
     statusId: 'ACTIVE',
-    docNumber: `${formData.prefix}-${String(documentCounter.currentValue).padStart(3, '0')}`,
+    docNumber: `${resolvedPrefix}-${String(documentCounter.currentValue).padStart(3, '0')}`,
   })
   await doc.save()
   await documentCounter.save()

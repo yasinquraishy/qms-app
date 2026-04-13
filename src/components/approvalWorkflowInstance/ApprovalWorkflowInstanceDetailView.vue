@@ -1,26 +1,68 @@
 <script setup>
+import { IconFileAlert } from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
-import { useApprovalWorkflowInstances } from '@/composables/useApprovalWorkflowInstances.js'
 import { DateTime } from 'luxon'
 
 const props = defineProps({
-  instance: { type: Object, required: true },
+  instanceId: { type: String, required: true },
 })
 
 const router = useRouter()
-const { fetchInstanceAuditLogs } = useApprovalWorkflowInstances()
 
-// ─── State ────────────────────────────────────────────────────────────────────
-const auditLogs = ref([])
+const instance = useLiveQueryWithDeps([() => props.instanceId], async (db, [instanceId]) => {
+  if (!instanceId) return null
+  return db.ApprovalWorkflowInstance.findByPk(instanceId)
+})
 
-// ─── Computed ─────────────────────────────────────────────────────────────────
-const doc = computed(() => props.instance?.resource)
-const workflowVersion = computed(() => props.instance?.workflowVersion)
-const steps = computed(() => props.instance?.steps || [])
-const statusLabel = computed(() => props.instance?.status?.name || 'Unknown')
+const steps = useLiveQueryWithDeps(
+  [() => props.instanceId],
+  async (db, [instanceId]) => {
+    if (!instanceId) return []
+    return db.ApprovalWorkflowInstanceStep.where('workflowInstanceId', instanceId)
+      .orderBy('stepNumber')
+      .exec()
+  },
+  { initial: [] },
+)
+
+const auditLogs = useLiveQueryWithDeps(
+  [() => props.instanceId],
+  async (db, [instanceId]) => {
+    if (!instanceId) return []
+    return db.AuditLog.where('[entityType+entityId]', ['ApprovalWorkflowInstance', instanceId])
+      .orderBy('performedAt', 'desc')
+      .exec()
+  },
+  { initial: [] },
+)
+
+const doc = useLiveQueryWithDeps([() => instance.value?.resourceId], async (db, [resourceId]) => {
+  if (!resourceId) return null
+  return db.Document.findByPk(resourceId)
+})
+
+const workflowVersion = useLiveQueryWithDeps(
+  [() => instance.value?.workflowVersionId],
+  async (db, [wvId]) => {
+    if (!wvId) return null
+    return db.ApprovalWorkflowVersion.findByPk(wvId)
+  },
+)
+
+const instanceStatus = useLiveQueryWithDeps(
+  [() => instance.value?.statusId],
+  async (db, [statusId]) => {
+    if (!statusId) return null
+    return db.ApprovalWorkflowInstanceStatus.findByPk(statusId)
+  },
+)
+
+const loading = computed(() => instance.value === undefined)
+
+const statusLabel = computed(() => instanceStatus.value?.name || 'Unknown')
 
 const statusColor = computed(() => {
-  const id = props.instance?.statusId
+  const id = instance.value?.statusId
   if (id === 'COMPLETED') return 'emerald'
   if (id === 'REJECTED') return 'red'
   if (id === 'CHANGES_REQUESTED') return 'orange'
@@ -36,9 +78,9 @@ const progressPercent = computed(() => {
 const completedSteps = computed(() => steps.value.filter((s) => s.statusId === 'APPROVED').length)
 
 const elapsedTime = computed(() => {
-  if (!props.instance?.startedAt) return 'N/A'
-  const start = props.instance.startedAt
-  const end = props.instance.completedAt || DateTime.now()
+  if (!instance.value?.startedAt) return 'N/A'
+  const start = instance.value.startedAt
+  const end = instance.value.completedAt || DateTime.now()
   const diff = end.diff(start, ['hours', 'minutes'])
   const hours = Math.floor(diff.hours)
   const minutes = Math.floor(diff.minutes)
@@ -46,55 +88,65 @@ const elapsedTime = computed(() => {
   return `${minutes}m`
 })
 
-// ─── Actions ──────────────────────────────────────────────────────────────────
-async function loadAuditLogs() {
-  if (!props.instance?.resource?.id) return
-
-  const result = await fetchInstanceAuditLogs(props.instance.resource.id)
-  if (!result.error) {
-    auditLogs.value = result.auditLogs
-  }
-}
-
-// ─── Lifecycle ────────────────────────────────────────────────────────────────
-watch(
-  () => props.instance?.resource?.id,
-  (newDocId) => {
-    if (newDocId) {
-      loadAuditLogs()
-    }
+const breadcrumbs = computed(() => [
+  { label: 'Approvals Inbox', to: getCompanyPath('/workflow-instances') },
+  {
+    label: doc.value?.title || 'Document',
+    to: doc.value?.id ? getCompanyPath(`/documents/${doc.value.id}`) : undefined,
   },
-  { immediate: true },
-)
+  { label: 'Approval' },
+])
 </script>
 
 <template>
-  <div class="tw:max-w-350 tw:mx-auto tw:w-full tw:p-4 tw:lg:p-8">
-    <div class="tw:flex tw:flex-col tw:lg:grid tw:lg:grid-cols-12 tw:gap-8">
-      <!-- ─── Main Column ─────────────────────────────────────────────── -->
-      <div class="tw:lg:col-span-8 tw:space-y-6">
-        <ApprovalWorkflowInstanceDocumentSummary
-          :doc="doc"
-          :workflowVersion="workflowVersion"
-          :statusLabel="statusLabel"
-          :statusColor="statusColor"
-          @viewDocument="router.push(getCompanyPath(`/documents/${doc?.id}`))"
-        />
+  <div class="tw:min-h-screen tw:bg-main">
+    <SafeTeleport to="#main-header-title">
+      <BaseBreadcrumbs v-if="instance" :items="breadcrumbs" />
+    </SafeTeleport>
 
-        <ApprovalWorkflowInstanceTimeline :steps="steps" />
+    <!-- Loading -->
+    <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:min-h-[60vh]">
+      <div
+        class="tw:size-10 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      />
+    </div>
+
+    <!-- Main Content -->
+    <div v-else-if="instance" class="tw:max-w-350 tw:mx-auto tw:w-full tw:p-4 tw:lg:p-8">
+      <div class="tw:flex tw:flex-col tw:lg:grid tw:lg:grid-cols-12 tw:gap-8">
+        <!-- ─── Main Column ─────────────────────────────────────────────── -->
+        <div class="tw:lg:col-span-8 tw:space-y-6">
+          <ApprovalWorkflowInstanceDocumentSummary
+            :doc="doc"
+            :workflowVersion="workflowVersion"
+            :statusLabel="statusLabel"
+            :statusColor="statusColor"
+            @viewDocument="router.push(getCompanyPath(`/documents/${doc?.id}`))"
+          />
+
+          <ApprovalWorkflowInstanceTimeline :steps="steps" />
+        </div>
+
+        <!-- ─── Sidebar Column ──────────────────────────────────────────── -->
+        <div class="tw:lg:col-span-4 tw:space-y-6">
+          <ApprovalWorkflowInstanceHealthCard
+            :progressPercent="progressPercent"
+            :elapsedTime="elapsedTime"
+            :completedSteps="completedSteps"
+            :totalSteps="steps.length"
+          />
+
+          <ApprovalWorkflowInstanceAuditTrail :auditLogs="auditLogs" />
+        </div>
       </div>
+    </div>
 
-      <!-- ─── Sidebar Column ──────────────────────────────────────────── -->
-      <div class="tw:lg:col-span-4 tw:space-y-6">
-        <ApprovalWorkflowInstanceHealthCard
-          :progressPercent="progressPercent"
-          :elapsedTime="elapsedTime"
-          :completedSteps="completedSteps"
-          :totalSteps="steps.length"
-        />
-
-        <ApprovalWorkflowInstanceAuditTrail :auditLogs="auditLogs" />
-      </div>
+    <!-- Not Found -->
+    <div
+      v-else
+      class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:min-h-[60vh] tw:text-center"
+    >
+      <BaseEmptyState :icon="IconFileAlert" title="Approval instance not found" />
     </div>
   </div>
 </template>

@@ -1,7 +1,5 @@
 <script setup>
-import { currentCompany } from '@/utils/currentCompany.js'
 import DynamicForm from '@/components/form/DynamicForm.js'
-import { useQuasar } from 'quasar'
 import { get } from '@/api'
 
 const props = defineProps({
@@ -12,7 +10,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['created', 'close'])
-const $q = useQuasar()
+const toast = useToast()
 
 // Dialog state
 const step = ref('select') // 'select' | 'form' | 'success'
@@ -38,11 +36,8 @@ const filteredTemplates = computed(() => {
 })
 
 async function fetchTemplates() {
-  const companyId = currentCompany.value?.id
-  if (!companyId) return
-
   const data = await get('/v1/services/formTemplates', {
-    params: { companyId, stateId: 'ACTIVE' },
+    params: { stateId: 'ACTIVE' },
     loader: templatesLoading,
   })
   templates.value = data.formTemplates || []
@@ -52,7 +47,6 @@ async function selectTemplate(template) {
   selectedTemplate.value = template
 
   const data = await get(`/v1/services/formTemplates/${template.id}`, {
-    params: { companyId: currentCompany.value.id },
     loader: schemaLoading,
   })
   selectedTemplate.value = data.formTemplate
@@ -65,7 +59,7 @@ async function handleSubmit(data) {
   const result = await props.createRecord(selectedTemplate.value.id, data)
 
   if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
+    toast.error(result.error)
   } else {
     createdRecord.value = result.record
     step.value = 'success'

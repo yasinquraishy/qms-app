@@ -126,14 +126,7 @@ function resetFilters() {
     </div>
 
     <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4">
-      <WBtn
-        flat
-        icon="add"
-        label="Add Filter"
-        color="primary"
-        size="sm"
-        @click="addFilterSection"
-      />
+      <WBtn flat icon="add" label="Add Filter" color="primary" @click="addFilterSection" />
     </div>
 
     <div class="tw:flex tw:justify-end tw:gap-2 tw:border-t tw:pt-3 tw:border-divider">

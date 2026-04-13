@@ -266,7 +266,6 @@ const navItems = computed(() => {
             flat
             round
             icon="logout"
-            size="sm"
             class="tw:text-secondary tw:hover:text-primary"
             @click="logoutCurrentSession"
           />

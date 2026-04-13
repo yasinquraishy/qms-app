@@ -1,51 +1,51 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { useSites } from '@/composables/useSites.js'
+import { IconMapPin } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 
 const showDialog = ref(false)
 const selectedSiteId = ref(null)
 
-const { sites, loading, filters, deleteSite, fetchSites } = useSites()
-const $q = useQuasar()
+const confirmDelete = ref({ open: false, site: null })
 
 const canCreateSite = computed(() => isAllowed(['sites:create']))
 const canUpdateSite = computed(() => isAllowed(['sites:update']))
 const canDeleteSite = computed(() => isAllowed(['sites:delete']))
+
+// Filters
+const filters = ref({ search: '' })
+
+// Live query for sites
+const sites = useLiveQueryWithDeps(
+  [() => filters.value.search],
+  async (db, [search]) => {
+    let results = await db.Site.where().exec()
+    if (search) {
+      const q = search.toLowerCase()
+      results = results.filter((s) => s.name.toLowerCase().includes(q))
+    }
+    return results.sort(
+      (a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0),
+    )
+  },
+  { initial: [] },
+)
 
 function openDialog(id = null) {
   selectedSiteId.value = id
   showDialog.value = true
 }
 
-onMounted(() => {
-  fetchSites()
-})
-
-async function onDeleteSite(row) {
-  $q.dialog({
-    title: 'Confirm Deletion',
-    message: `Are you sure you want to delete site "${row.name}" (${row.code})? This action cannot be undone.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await deleteSite(row.id)
-    if (result.error) {
-      $q.notify({
-        type: 'negative',
-        message: result.error,
-      })
-    } else {
-      $q.notify({
-        type: 'positive',
-        message: 'Site deleted successfully',
-      })
-    }
-  })
-}
-
 function onEditSite(row) {
   openDialog(row.id)
+}
+
+function onDeleteSite(row) {
+  confirmDelete.value = { open: true, site: row }
+}
+
+async function confirmDeleteSite() {
+  await confirmDelete.value.site.delete()
+  confirmDelete.value = { open: false, site: null }
 }
 </script>
 
@@ -53,21 +53,15 @@ function onEditSite(row) {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="location_on" class="tw:text-primary" size="24px" />
+        <IconMapPin class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Sites</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
-        v-if="canCreateSite"
-        label="Create New Site"
-        icon="add"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        @click="openDialog()"
-      />
+      <BaseButton v-if="canCreateSite" @click="openDialog()">
+        <span>Create New Site</span>
+      </BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -84,7 +78,6 @@ function onEditSite(row) {
 
     <SitesTable
       :rows="sites"
-      :loading="loading"
       :canUpdate="canUpdateSite"
       :canDelete="canDeleteSite"
       @delete="onDeleteSite"
@@ -94,10 +87,13 @@ function onEditSite(row) {
 
   <!-- Create/Edit Site Dialog -->
   <SitesCreateUpdateDialog v-if="showDialog" :id="selectedSiteId" v-model="showDialog" />
-</template>
 
-<style scoped lang="scss">
-.text-slate-800 {
-  color: #1e293b;
-}
-</style>
+  <!-- Delete Confirm Dialog -->
+  <ConfirmDialog
+    v-model="confirmDelete.open"
+    title="Delete Site"
+    :message="`Are you sure you want to delete '${confirmDelete.site?.name}' (${confirmDelete.site?.code})? This cannot be undone.`"
+    okLabel="Delete"
+    @ok="confirmDeleteSite"
+  />
+</template>

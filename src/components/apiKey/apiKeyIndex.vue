@@ -1,8 +1,4 @@
-<script setup>
-import { provideApiKeys } from '@/composables/useApiKeys.js'
-
-provideApiKeys()
-</script>
+<script setup></script>
 
 <template>
   <ApiKeyHome />

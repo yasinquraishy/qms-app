@@ -248,6 +248,9 @@ declare global {
   const useKeyModifier: typeof import('@vueuse/core').useKeyModifier
   const useLastChanged: typeof import('@vueuse/core').useLastChanged
   const useLink: typeof import('vue-router').useLink
+  const useLiveMutation: typeof import('./src/composables/useLiveQuery.js').useLiveMutation
+  const useLiveQuery: typeof import('./src/composables/useLiveQuery.js').useLiveQuery
+  const useLiveQueryWithDeps: typeof import('./src/composables/useLiveQuery.js').useLiveQueryWithDeps
   const useLocalStorage: typeof import('@vueuse/core').useLocalStorage
   const useMagicKeys: typeof import('@vueuse/core').useMagicKeys
   const useManualRefHistory: typeof import('@vueuse/core').useManualRefHistory
@@ -333,6 +336,7 @@ declare global {
   const useTitle: typeof import('@vueuse/core').useTitle
   const useToNumber: typeof import('@vueuse/core').useToNumber
   const useToString: typeof import('@vueuse/core').useToString
+  const useToast: typeof import('./resource/js/shared/composables/useToast.js').useToast
   const useToggle: typeof import('@vueuse/core').useToggle
   const useTooltipData: typeof import('./resource/js/shared/composables/useTooltipData.js').useTooltipData
   const useTransition: typeof import('@vueuse/core').useTransition

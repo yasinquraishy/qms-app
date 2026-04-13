@@ -1,9 +1,8 @@
 <script setup>
-import { useOptionSets } from '@/composables/useOptionSets.js'
-import { isAllowed } from '@/utils/currentSession.js'
-import { useQuasar } from 'quasar'
+import { getCompanyPath } from '@/utils/routeHelpers'
+import { IconTrash } from '@tabler/icons-vue'
 
-defineProps({
+const props = defineProps({
   rows: {
     type: Array,
     default: () => [],
@@ -12,97 +11,90 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  canDelete: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const router = useRouter()
-const route = useRoute()
-const $q = useQuasar()
-const { deleteOptionSet } = useOptionSets()
 
-const canUpdateOptionSet = computed(() => isAllowed(['optionSets:update']))
-const canDeleteOptionSet = computed(() => isAllowed(['optionSets:delete']))
+const pendingDelete = shallowRef(null)
+const openDeleteDialog = computed({
+  get: () => pendingDelete.value !== null,
+  set: (val) => {
+    if (!val) pendingDelete.value = null
+  },
+})
 
 const columns = [
-  { name: 'name', label: 'Name', field: 'name', align: 'left', sortable: true },
-  { name: 'description', label: 'Description', field: 'description', align: 'left' },
-  { name: 'optionsCount', label: 'Options', field: 'optionsCount', align: 'center' },
+  { name: 'name', label: 'NAME', field: 'name', align: 'left', sortable: true },
+  {
+    name: 'description',
+    label: 'DESCRIPTION',
+    field: 'description',
+    align: 'left',
+    sortable: false,
+  },
+  {
+    name: 'optionsCount',
+    label: 'OPTIONS',
+    field: 'optionsCount',
+    align: 'center',
+    sortable: false,
+  },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
 
-function handleRowClick(evt, row) {
-  router.push({ params: { ...route.params, id: row.id } })
+function rowMenuItems(row) {
+  if (!props.canDelete) return []
+  return [
+    {
+      name: 'Delete',
+      icon: IconTrash,
+      click: () => {
+        pendingDelete.value = row
+      },
+    },
+  ]
 }
 
-function onEdit(row) {
-  router.push({ params: { ...route.params, id: row.id } })
+async function executeDelete() {
+  await pendingDelete.value.delete()
+  pendingDelete.value = null
 }
 
-function confirmDelete(row) {
-  $q.dialog({
-    title: 'Confirm Deletion',
-    message: `Are you sure you want to delete the option set "${row.name}"? This action cannot be undone.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    deleteOptionSet(row.id)
-  })
+function onRowClick(row) {
+  router.push(getCompanyPath(`/option-sets/${row.id}`))
 }
 </script>
 
 <template>
-  <WTable
-    :rows="rows"
-    :columns="columns"
-    :loading="loading"
-    rowKey="id"
-    class="tw:rounded-lg"
-    hideTop
-    @rowClick="handleRowClick"
-  >
-    <template #body-cell-optionsCount="props">
-      <QTd :props="props">
-        <QBadge color="blue-1" textColor="blue-7" class="tw:px-2 tw:py-1 tw:font-bold" rounded>
-          {{ props.value || 0 }}
-        </QBadge>
-      </QTd>
+  <BaseTable :rows="rows" :columns="columns" :loading="loading" rowKey="id" @rowClick="onRowClick">
+    <template #body-cell-name="{ row }">
+      <div class="tw:font-bold tw:text-on-main">{{ row.name }}</div>
     </template>
 
-    <template #body-cell-actions="props">
-      <QTd :props="props">
-        <div v-if="canUpdateOptionSet || canDeleteOptionSet" class="tw:flex tw:justify-end">
-          <WBtn flat round dense color="grey-6" icon="more_vert" @click.prevent.stop>
-            <QMenu>
-              <QList dense style="min-width: 140px">
-                <QItem v-if="canUpdateOptionSet" v-close-popup clickable @click="onEdit(props.row)">
-                  <QItemSection>
-                    <div class="tw:flex tw:items-center tw:gap-2">
-                      <WIcon name="edit" size="20px" color="primary" />
-                      <div>Edit</div>
-                    </div>
-                  </QItemSection>
-                </QItem>
-
-                <QItem
-                  v-if="canDeleteOptionSet"
-                  v-close-popup
-                  clickable
-                  class="tw:text-bad"
-                  @click="confirmDelete(props.row)"
-                >
-                  <QItemSection>
-                    <div class="tw:flex tw:items-center tw:gap-2">
-                      <WIcon name="delete" size="20px" />
-                      <div>Delete</div>
-                    </div>
-                  </QItemSection>
-                </QItem>
-              </QList>
-            </QMenu>
-          </WBtn>
-        </div>
-      </QTd>
+    <template #body-cell-description="{ row }">
+      <span class="tw:text-sm tw:text-secondary tw:line-clamp-2">{{ row.description || '—' }}</span>
     </template>
-  </WTable>
+
+    <template #body-cell-optionsCount="{ row }">
+      <BaseBadge> {{ row.options?.length || 0 }} </BaseBadge>
+    </template>
+
+    <template #body-cell-actions="{ row }">
+      <div v-if="canDelete" class="tw:flex tw:justify-end">
+        <BaseMenu :items="rowMenuItems(row)" />
+      </div>
+    </template>
+  </BaseTable>
+
+  <ConfirmDialog
+    :modelValue="openDeleteDialog"
+    title="Delete Option Set"
+    :message="`Are you sure you want to delete '${pendingDelete?.name}'? This cannot be undone.`"
+    okLabel="Delete"
+    @ok="executeDelete"
+  />
 </template>
-
-<style scoped></style>

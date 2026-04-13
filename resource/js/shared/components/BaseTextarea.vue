@@ -1,0 +1,205 @@
+<script setup>
+// --- Props & models ---
+const props = defineProps({
+  modelValue: {
+    type: String,
+    default: '',
+  },
+  label: {
+    type: String,
+    default: '',
+  },
+  labelLeft: {
+    type: Boolean,
+    default: false,
+  },
+  labelRight: {
+    type: Boolean,
+    default: false,
+  },
+  instructions: {
+    type: String,
+    default: '',
+  },
+  name: {
+    type: String,
+    default: '',
+  },
+  id: {
+    type: String,
+    default: '',
+  },
+  type: {
+    type: String,
+    default: 'text',
+  },
+  errorMsg: {
+    type: String,
+    default: '',
+  },
+  placeholder: {
+    type: String,
+    default: '',
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  required: {
+    type: Boolean,
+    default: false,
+  },
+  rows: {
+    type: Number,
+    default: 1,
+  },
+  autofocus: {
+    type: Boolean,
+    default: false,
+  },
+  autosize: {
+    type: Boolean,
+    default: false,
+  },
+  inputClass: {
+    type: [Object, String],
+    default: '',
+  },
+  maxlength: {
+    type: [Number, null],
+    default: null,
+  },
+  showFocusRing: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+// --- Emits ---
+const emit = defineEmits(['update:modelValue', 'focus', 'blur'])
+
+// --- Use ---
+const slots = useSlots()
+
+// --- Vars ---
+const inputEl = ref(undefined)
+const isFocused = ref(false)
+
+function handleFocus() {
+  isFocused.value = true
+  emit('focus')
+}
+
+function handleBlur() {
+  isFocused.value = false
+  emit('blur')
+}
+// --- Handlers ---
+function focus() {
+  inputEl.value?.focus()
+}
+
+if (props.autosize) {
+  useTextareaAutosize({
+    element: inputEl,
+    // Provide a getter that returns the value to watch.
+    // Previously the function had a block body but did not return anything,
+    // so Vue's watch couldn't track changes and a watcher callback could throw.
+    watch: () => props.modelValue,
+  })
+}
+
+// --- Watchers & computed ---
+const inline = computed(() => props.labelLeft || props.labelRight)
+
+// min height allows us to have initial height determined by the rows prop
+// but still allow the textarea to grow
+const minHeight = computed(() => {
+  if (!props.autosize) {
+    return 'auto'
+  }
+  // first row is 40px, each additional row is 24px
+  const firstRowHeight = 24
+  return `${(props.rows - 1) * 24 + firstRowHeight}px`
+})
+
+// --- Lifecycle hooks & related ---
+onMounted(() => {
+  if (props.autofocus) {
+    focus()
+  }
+})
+defineExpose({
+  inputEl,
+})
+</script>
+
+<template>
+  <div :class="{ 'tw:flex': inline, 'tw:flex-row-reverse': labelRight }">
+    <div v-if="label || slots.label || instructions" class="tw:mb-4">
+      <label
+        v-if="label || slots.label"
+        class="tw:dark:text-white"
+        :class="{ 'tw:inline-block': inline }"
+        :for="name"
+      >
+        <slot name="label">
+          {{ label }}
+          <span v-if="required" class="tw:text-red">*</span>
+        </slot>
+      </label>
+      <p v-if="instructions" class="tw:text-14 tw:text-grey-5 tw:dark:text-grey-4 tw:mb-2">
+        {{ instructions }}
+      </p>
+    </div>
+    <div
+      v-if="showFocusRing"
+      class="tw:relative tw:rounded-xl tw:transition-all tw:duration-300"
+      :class="isFocused ? 'tw:ring-2 tw:ring-primary/20 tw:bg-main/50' : 'tw:bg-main/30'"
+    >
+      <textarea
+        :id="id"
+        ref="inputEl"
+        class="tw:disabled:text-grey-5 tw:w-full tw:resize-none tw:rounded-xl tw:border-none tw:bg-transparent tw:focus:ring-0 tw:focus:outline-0 tw:disabled:cursor-not-allowed tw:transition-[border,box-shadow] tw:duration-300"
+        :class="inputClass"
+        :name="name"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :aria-disabled="disabled"
+        :required="required"
+        :rows="rows"
+        :style="`min-height: ${minHeight}`"
+        dir="auto"
+        autocomplete="off"
+        :maxlength="maxlength"
+        @input="$emit('update:modelValue', $event.target.value)"
+        @focus="handleFocus"
+        @blur="handleBlur"
+      />
+      <slot name="indicator" />
+    </div>
+    <textarea
+      v-else
+      :id="id"
+      ref="inputEl"
+      class="tw:disabled:text-grey-5 tw:w-full tw:resize-none tw:rounded-xl tw:bg-transparent tw:focus:ring-0 tw:focus:outline-0 tw:disabled:cursor-not-allowed tw:transition-[border,box-shadow] tw:duration-300"
+      :class="inputClass"
+      :name="name"
+      :value="modelValue"
+      :placeholder="placeholder"
+      :disabled="disabled"
+      :aria-disabled="disabled"
+      :required="required"
+      :rows="rows"
+      :style="`min-height: ${minHeight}`"
+      dir="auto"
+      autocomplete="off"
+      :maxlength="maxlength"
+      @input="$emit('update:modelValue', $event.target.value)"
+      @focus="handleFocus"
+      @blur="handleBlur"
+    />
+    <p v-if="errorMsg" class="tw:text-12 tw:mt-2 tw:text-red">{{ errorMsg }}</p>
+  </div>
+</template>

@@ -1,7 +1,5 @@
 <script setup>
-import { currentCompany } from '@/utils/currentCompany.js'
 import { isAllowed } from '@/utils/currentSession'
-import { useQuasar } from 'quasar'
 import { get, put } from '@/api'
 
 const props = defineProps({
@@ -26,7 +24,7 @@ const open = defineModel({
   default: false,
 })
 
-const $q = useQuasar()
+const toast = useToast()
 const allUsers = ref([])
 const selectedUserIds = ref([])
 const loading = ref(false)
@@ -49,14 +47,7 @@ const canUpdateRole = computed(() => isAllowed(['roles:update']))
 
 // Fetch all company users
 async function fetchAllUsers() {
-  const companyId = currentCompany.value?.id
-
-  if (!companyId) {
-    return
-  }
-
   const data = await get('/v1/services/users', {
-    params: { companyId },
     loader: loading,
   })
   allUsers.value = data.users || []
@@ -81,9 +72,7 @@ function toggleUserSelection(userId) {
 
 // Save user assignments
 async function saveUserAssignments() {
-  const companyId = currentCompany.value?.id
-
-  if (!companyId || !props.roleId) {
+  if (!props.roleId) {
     return
   }
 
@@ -93,16 +82,11 @@ async function saveUserAssignments() {
       userIds: selectedUserIds.value,
     },
     {
-      params: { companyId },
       loader: loading,
     },
   )
 
-  $q.notify({
-    type: 'positive',
-    message: 'User assignments updated successfully',
-    position: 'top',
-  })
+  toast.success('User assignments updated successfully')
 
   open.value = false
   emit('saved')

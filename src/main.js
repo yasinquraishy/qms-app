@@ -1,17 +1,19 @@
 import '@/extensions/datetime' // Extend Luxon's DateTime with custom formatting method
+import 'v-calendar/style.css'
+import VCalendar from 'v-calendar'
 
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { Quasar, Notify, Dialog, Loading } from 'quasar'
+import { Quasar, Dialog, Loading } from 'quasar'
+import { useToast } from '@shared/composables/useToast.js'
 
 import App from './App.vue'
 import router from './router'
 import messages from './i18n'
 
 // API layer — centralised Axios setup
-import { registerNotifyHandler, setCompanyIdGetter, eventBus } from './api'
+import { registerNotifyHandler, eventBus } from './api'
 import { ApiError } from './api/errors.js'
-import { currentCompany } from './utils/currentCompany.js'
 import { isPublicRoute } from './constants/authRoutes.js'
 import { connectSocket, disconnectSocket } from './api/socket.js'
 
@@ -43,12 +45,14 @@ const app = createApp(App)
 // Use Quasar
 app.use(Quasar, {
   plugins: {
-    Notify,
     Dialog,
     Loading,
   },
   config: {},
 })
+
+// Use VCalendar
+app.use(VCalendar, {})
 
 // Use i18n
 app.use(i18n)
@@ -62,6 +66,8 @@ app.mount('#app')
 // ── API layer wiring ──────────────────────────────────────────────────────────
 
 // 1. Notification adapter — bridge API layer events to Quasar toasts
+const toast = useToast()
+
 registerNotifyHandler(({ type, message, fields }) => {
   // If there are validation field errors, format them nicely
   let displayMessage = message
@@ -84,7 +90,7 @@ registerNotifyHandler(({ type, message, fields }) => {
     }
   }
 
-  Notify.create({
+  toast.notify({
     type,
     message: displayMessage,
     position: 'top',
@@ -94,8 +100,7 @@ registerNotifyHandler(({ type, message, fields }) => {
   })
 })
 
-// 2. Multi-tenant — tell the API layer how to get the current companyId
-setCompanyIdGetter(() => currentCompany.value?.id)
+// 2. Multi-tenant — active company is stored in the Redis session, no header needed
 
 // 3. Auth events — redirect on session expiry (but not if already on an auth page)
 eventBus.on('auth:session-expired', () => {

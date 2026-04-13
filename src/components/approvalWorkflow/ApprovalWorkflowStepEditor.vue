@@ -1,28 +1,62 @@
 <script setup>
-import { required, helpers } from '@vuelidate/validators'
-import { useValidator } from '@shared/composables/validator.js'
+import { useDebounceFn } from '@vueuse/core'
+import { IconNote, IconUsers, IconInfoCircle, IconAlertCircle } from '@tabler/icons-vue'
 
-defineProps({
+const props = defineProps({
+  stepId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
 })
 
-const step = defineModel('step', { type: Object, required: true })
+const step = useLiveQueryWithDeps([() => props.stepId], async (db, [stepId]) => {
+  if (!stepId) return null
+  return await db.ApprovalWorkflowStep.findByPk(stepId)
+})
 
-const stepRules = computed(() => ({
-  name: { required: helpers.withMessage('Required', required) },
-}))
+const debouncedStepSave = useDebounceFn(async () => {
+  if (!step.value || !props.canUpdate) return
+  await step.value.save()
+}, 800)
 
-useValidator(stepRules, step)
+watch(
+  step,
+  (_, oldStep) => {
+    if (!props.canUpdate || oldStep === undefined) return
+    debouncedStepSave()
+  },
+  { deep: true },
+)
+
+// Step roles and step users counts for warning/error callouts
+const stepRoles = useLiveQueryWithDeps(
+  [() => props.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return await db.ApprovalWorkflowStepRole.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+const stepUsers = useLiveQueryWithDeps(
+  [() => props.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return await db.ApprovalWorkflowStepUser.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+const roleIds = computed(() => stepRoles.value.map((sr) => sr.roleId))
+const reviewerIds = computed(() => stepUsers.value.map((su) => su.userId))
 
 const approverTab = ref('roles')
 </script>
 
 <template>
-  <div class="tw:space-y-10">
+  <div v-if="step" class="tw:space-y-10">
     <!-- Step Details -->
     <div class="tw:space-y-6">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary tw:mb-2">
-        <WIcon icon="edit_note" size="22px" />
+        <IconNote :size="22" />
         <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Step Configuration: {{ step.name }}</h2>
       </div>
 
@@ -33,25 +67,21 @@ const approverTab = ref('roles')
             <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-2">
               Step Name
             </label>
-            <WInput
+            <BaseTextInput
               v-model="step.name"
               name="name"
               placeholder="e.g. Peer Review"
-              dense
-              :readonly="!canUpdate"
+              :disabled="!canUpdate"
             />
           </div>
           <div>
             <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-2">
               Description
             </label>
-            <WInput
+            <BaseTextarea
               v-model="step.description"
-              type="textarea"
               placeholder="Describe what happens at this step..."
-              dense
-              :readonly="!canUpdate"
-              rows="3"
+              :disabled="!canUpdate"
             />
           </div>
         </div>
@@ -123,13 +153,12 @@ const approverTab = ref('roles')
               SLA: Due in (days)
             </label>
             <div class="tw:flex tw:items-center tw:gap-2">
-              <WInput
-                v-model.number="step.slaDays"
+              <BaseTextInput
+                v-model="step.slaDays"
                 type="number"
                 placeholder="e.g. 5"
-                dense
-                :readonly="!canUpdate"
-                class="tw:w-24"
+                :disabled="!canUpdate"
+                inputClass="tw:w-24"
                 :min="1"
               />
               <span class="tw:text-xs tw:font-medium tw:text-secondary">
@@ -146,11 +175,11 @@ const approverTab = ref('roles')
       class="tw:grid tw:grid-cols-2 tw:gap-4 tw:p-6 tw:bg-main-hover tw:rounded-2xl tw:border tw:border-divider"
     >
       <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
-        <QCheckbox v-model="step.requireComments" color="primary" dense :disable="!canUpdate" />
+        <BaseCheckbox v-model="step.requireComments" :disabled="!canUpdate" />
         <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require Comments</span>
       </label>
       <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
-        <QCheckbox v-model="step.requireEsignature" color="primary" dense :disable="!canUpdate" />
+        <BaseCheckbox v-model="step.requireEsignature" :disabled="!canUpdate" />
         <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require E-signature</span>
       </label>
     </div>
@@ -159,17 +188,17 @@ const approverTab = ref('roles')
     <div class="tw:space-y-4">
       <div class="tw:flex tw:items-center tw:justify-between">
         <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
-          <WIcon icon="group_add" size="22px" />
+          <IconUsers :size="22" />
           <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Step Approvers</h2>
         </div>
       </div>
 
       <!-- Warning Callout -->
       <div
-        v-if="step.roleIds?.length > 0 && step.reviewerIds?.length > 0"
+        v-if="roleIds.length > 0 && reviewerIds.length > 0"
         class="tw:bg-warning/10 tw:border tw:border-warning/30 tw:p-4 tw:rounded-xl tw:flex tw:gap-3"
       >
-        <WIcon icon="info" size="20px" class="tw:text-warning tw:shrink-0" />
+        <IconInfoCircle :size="20" class="tw:text-warning tw:shrink-0" />
         <div class="tw:text-xs tw:text-warning">
           <p class="tw:font-bold tw:mb-0.5">Union Selection Logic</p>
           <p>
@@ -209,12 +238,12 @@ const approverTab = ref('roles')
         <div class="tw:p-6">
           <ApprovalWorkflowRoleSelector
             v-show="approverTab === 'roles'"
-            v-model:roleIds="step.roleIds"
+            :stepId="step.id"
             :canUpdate="canUpdate"
           />
           <ApprovalWorkflowUserSelector
             v-show="approverTab === 'users'"
-            v-model:reviewerIds="step.reviewerIds"
+            :stepId="step.id"
             :canUpdate="canUpdate"
           />
         </div>
@@ -222,10 +251,10 @@ const approverTab = ref('roles')
 
       <!-- Approver Error -->
       <div
-        v-if="step.roleIds?.length === 0 && step.reviewerIds?.length === 0"
+        v-if="roleIds.length === 0 && reviewerIds.length === 0"
         class="tw:flex tw:items-center tw:gap-2 tw:text-bad tw:px-1"
       >
-        <WIcon icon="error_outline" size="14px" />
+        <IconAlertCircle :size="14" class="tw:text-bad" />
         <span class="ds-label-sm"> At least one approver must be selected for this step </span>
       </div>
     </div>

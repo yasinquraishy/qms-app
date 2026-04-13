@@ -107,11 +107,10 @@ function finish() {
                   v-if="user.inviteSent"
                   color="positive"
                   textColor="white"
-                  size="sm"
                   dense
                   label="Invited"
                 />
-                <QChip v-else color="grey" textColor="white" size="sm" dense label="Not Invited" />
+                <QChip v-else color="grey" textColor="white" dense label="Not Invited" />
               </QItemSection>
             </QItem>
           </QList>

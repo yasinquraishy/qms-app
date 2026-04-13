@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { IconEdit, IconTrash } from '@tabler/icons-vue'
+
+const props = defineProps({
   rows: {
     type: Array,
     default: () => [],
@@ -23,105 +25,63 @@ const emit = defineEmits(['delete', 'edit'])
 const columns = [
   { name: 'name', label: 'DEPARTMENT NAME', field: 'name', align: 'left', sortable: true },
   { name: 'code', label: 'CODE', field: 'code', align: 'left', sortable: true },
-  { name: 'site', label: 'SITE', field: 'site', align: 'left', sortable: true },
+  { name: 'site', label: 'SITE', field: 'site', align: 'left', sortable: false },
   {
     name: 'description',
     label: 'DESCRIPTION',
     field: 'description',
     align: 'left',
-    sortable: true,
+    sortable: false,
   },
-  { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right' },
+  { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
+
+function onEdit(row) {
+  emit('edit', row)
+}
 
 function confirmDelete(row) {
   emit('delete', row)
 }
 
-function onEdit(row) {
-  emit('edit', row)
+function rowMenuItems(row) {
+  const items = []
+  if (props.canUpdate) {
+    items.push({ name: 'Edit', icon: IconEdit, click: () => onEdit(row) })
+  }
+  if (props.canDelete) {
+    items.push({ name: 'Delete', icon: IconTrash, click: () => confirmDelete(row) })
+  }
+  return items
 }
 </script>
 
 <template>
-  <WCard>
-    <WTable :rows="rows" :columns="columns" :loading="loading" class="tw:flex-1" hideTop noBorder>
-      <!-- Name Column -->
-      <template #body-cell-name="props">
-        <QTd :props="props">
-          <div class="tw:font-bold tw:text-on-main">{{ props.row.name }}</div>
-        </QTd>
-      </template>
+  <BaseTable :rows="rows" :columns="columns" :loading="loading" rowKey="id">
+    <template #body-cell-name="{ row }">
+      <div class="tw:font-bold tw:text-on-main">{{ row.name }}</div>
+    </template>
 
-      <!-- Code Column -->
-      <template #body-cell-code="props">
-        <QTd :props="props">
-          <QBadge color="primary" outline label>{{ props.row.code }}</QBadge>
-        </QTd>
-      </template>
+    <template #body-cell-code="{ row }">
+      <span
+        class="tw:inline-flex tw:items-center tw:rounded tw:border tw:border-primary tw:px-2 tw:py-0.5 tw:text-xs tw:font-medium tw:text-primary"
+        >{{ row.code }}</span
+      >
+    </template>
 
-      <!-- Site Column -->
-      <template #body-cell-site="props">
-        <QTd :props="props">
-          <div class="tw:flex tw:items-center tw:gap-2">
-            <WIcon name="location_on" size="16px" color="grey-6" />
-            <span class="tw:text-sm">{{ props.row.site?.name || '-' }}</span>
-          </div>
-        </QTd>
-      </template>
+    <template #body-cell-site="{ row }">
+      <SiteBadgeById v-if="row.siteId" :siteId="row.siteId" />
+      <span v-else class="tw:text-sm tw:text-secondary">—</span>
+    </template>
 
-      <!-- Description Column -->
-      <template #body-cell-description="props">
-        <QTd :props="props">
-          <span class="tw:text-sm tw:text-secondary tw:line-clamp-2">{{
-            props.row.description || '-'
-          }}</span>
-        </QTd>
-      </template>
+    <template #body-cell-description="{ row }">
+      <span class="tw:text-sm tw:text-secondary tw:line-clamp-2">{{ row.description || '—' }}</span>
+    </template>
 
-      <!-- Display Order Column -->
-      <template #body-cell-displayOrder="props">
-        <QTd :props="props">
-          <QBadge color="grey-6" outline>{{ props.row.displayOrder }}</QBadge>
-        </QTd>
-      </template>
-
-      <!-- Actions Column -->
-      <template #body-cell-actions="props">
-        <QTd :props="props">
-          <div v-if="canUpdate || canDelete" class="tw:flex tw:justify-end">
-            <WBtn flat round dense color="grey-6" icon="more_vert">
-              <QMenu>
-                <QList dense style="min-width: 140px">
-                  <QItem v-if="canUpdate" v-close-popup clickable @click="onEdit(props.row)">
-                    <QItemSection>
-                      <div class="tw:flex tw:items-center tw:gap-2">
-                        <WIcon name="edit" size="20px" color="primary" />
-                        <div>Edit</div>
-                      </div>
-                    </QItemSection>
-                  </QItem>
-
-                  <QItem
-                    v-if="canDelete"
-                    v-close-popup
-                    clickable
-                    class="tw:text-bad"
-                    @click="confirmDelete(props.row)"
-                  >
-                    <QItemSection>
-                      <div class="tw:flex tw:items-center tw:gap-2">
-                        <WIcon name="delete" size="20px" />
-                        <div>Delete</div>
-                      </div>
-                    </QItemSection>
-                  </QItem>
-                </QList>
-              </QMenu>
-            </WBtn>
-          </div>
-        </QTd>
-      </template>
-    </WTable>
-  </WCard>
+    <template #body-cell-actions="{ row }">
+      <div v-if="canUpdate || canDelete" class="tw:flex tw:justify-end">
+        <BaseMenu :items="rowMenuItems(row)" />
+      </div>
+    </template>
+  </BaseTable>
 </template>

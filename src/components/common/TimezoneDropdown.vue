@@ -1,5 +1,5 @@
 <script setup>
-defineProps({
+const props = defineProps({
   label: {
     type: String,
     default: 'Timezone',
@@ -7,10 +7,6 @@ defineProps({
   hint: {
     type: String,
     default: '',
-  },
-  rules: {
-    type: Array,
-    default: () => [],
   },
 })
 
@@ -20,7 +16,7 @@ const changeNameOfTimezone = {
   'Asia/Calcutta': 'Asia/Kolkata',
 }
 
-const timezones = computed(() => {
+const timezoneItems = computed(() => {
   const tzones = Intl.supportedValuesOf('timeZone')
   return tzones.map((zone) => {
     const offset = new Date()
@@ -31,48 +27,22 @@ const timezones = computed(() => {
       .split(' ')
       .at(-1)
     const text = changeNameOfTimezone[zone] || zone
-    return { label: `${text.replaceAll('_', ' ')} (${offset})`, value: zone }
+    return { id: zone, name: `${text.replaceAll('_', ' ')} (${offset})` }
   })
 })
-
-const options = ref(timezones.value)
-
-function filterFn(val, update) {
-  if (val === '') {
-    update(() => {
-      options.value = timezones.value
-    })
-    return
-  }
-
-  update(() => {
-    const needle = val.toLowerCase()
-    options.value = timezones.value.filter((v) => v.label.toLowerCase().indexOf(needle) > -1)
-  })
-}
 </script>
 
 <template>
-  <WSelect
-    v-model="model"
-    :label="label"
-    :options="options"
-    :hint="hint"
-    :rules="rules"
-    optionLabel="label"
-    optionValue="value"
-    useInput
-    fillInput
-    hideSelected
-    inputDebounce="0"
-    emitValue
-    mapOptions
-    @filter="filterFn"
-  >
-    <template #no-option>
-      <QItem>
-        <QItemSection class="text-grey"> No results </QItemSection>
-      </QItem>
-    </template>
-  </WSelect>
+  <div class="tw:flex tw:flex-col tw:gap-1">
+    <label v-if="props.label" class="tw:text-sm tw:font-medium">{{ props.label }}</label>
+    <BaseSelectMenu v-model="model" :items="timezoneItems" :required="true">
+      <template #button>
+        <BaseBadge v-if="model" class="tw:text-sm tw:text-on-sidebar tw:font-medium">
+          {{ timezoneItems.find((item) => item.id === model)?.name || model }}
+        </BaseBadge>
+        <span v-else class="tw:text-sm tw:text-placeholder tw:font-medium"> Select Timezone </span>
+      </template>
+    </BaseSelectMenu>
+    <span v-if="props.hint" class="tw:text-xs tw:text-secondary">{{ props.hint }}</span>
+  </div>
 </template>

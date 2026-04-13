@@ -15,8 +15,7 @@ function RecordsState() {
   })
 
   function buildFilterParams() {
-    const companyId = currentCompany.value?.id
-    const params = { companyId }
+    const params = {}
 
     Object.entries(filters.value).forEach(([key, value]) => {
       if (value !== null && value !== '' && value !== undefined) {
@@ -29,13 +28,6 @@ function RecordsState() {
 
   // Fetch records
   async function fetchRecords() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/records', {
@@ -47,11 +39,7 @@ function RecordsState() {
 
   // Delete record
   async function deleteRecord(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     await del(`/v1/services/records/${id}`, {
-      params: { companyId },
       loader: loading,
     })
 
@@ -61,13 +49,13 @@ function RecordsState() {
 
   // Create record
   async function createRecord(templateId, payload) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    const data = await post('/v1/services/records', { templateId, payload }, {
-      params: { companyId },
-      loader: loading,
-    })
+    const data = await post(
+      '/v1/services/records',
+      { templateId, payload },
+      {
+        loader: loading,
+      },
+    )
 
     await fetchRecords()
     return { success: true, record: data.record }
@@ -75,11 +63,7 @@ function RecordsState() {
 
   // Update record
   async function updateRecord(id, updates) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await put(`/v1/services/records/${id}`, updates, {
-      params: { companyId },
       loader: loading,
     })
 

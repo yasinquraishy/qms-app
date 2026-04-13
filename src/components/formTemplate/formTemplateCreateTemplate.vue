@@ -116,8 +116,8 @@ function prevStep() {
 
         <!-- Document Type & ID Prefix Row -->
         <div class="tw:grid tw:grid-cols-2 tw:gap-4">
-          <FormTemplatesDocumentTypeSelect
-            v-model:documentTypeId="templateForm.documentTypeId"
+          <DocumentTypeSelectMenu
+            v-model="templateForm.documentTypeId"
             name="documentTypeId"
             label="Document Type"
             placeholder="Select Type..."
@@ -125,7 +125,7 @@ function prevStep() {
             required
           >
             <template #label> Document Type <span class="tw:text-bad">*</span> </template>
-          </FormTemplatesDocumentTypeSelect>
+          </DocumentTypeSelectMenu>
 
           <WInput
             v-model="templateForm.code"

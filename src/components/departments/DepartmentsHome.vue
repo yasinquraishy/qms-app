@@ -1,51 +1,50 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { useDepartments } from '@/composables/useDepartments.js'
+import { IconBuilding } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 
 const showDialog = ref(false)
 const selectedDepartmentId = ref(null)
 
-const { departments, loading, filters, deleteDepartment, fetchDepartments } = useDepartments()
-const $q = useQuasar()
+const confirmDelete = ref({ open: false, department: null })
 
 const canCreateDepartment = computed(() => isAllowed(['departments:create']))
 const canUpdateDepartment = computed(() => isAllowed(['departments:update']))
 const canDeleteDepartment = computed(() => isAllowed(['departments:delete']))
+
+// Filters — drives live query re-run
+const filters = ref({ search: '', siteId: null })
+
+// Live query for departments
+const departments = useLiveQueryWithDeps(
+  [() => filters.value.search, () => filters.value.siteId],
+  async (db, [search, siteId]) => {
+    let results = await db.Department.where().exec()
+    if (siteId) results = results.filter((d) => d.siteId === siteId)
+    if (search) {
+      const q = search.toLowerCase()
+      results = results.filter((d) => d.name.toLowerCase().includes(q))
+    }
+    return results.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+  },
+  { initial: [] },
+)
 
 function openDialog(id = null) {
   selectedDepartmentId.value = id
   showDialog.value = true
 }
 
-onMounted(() => {
-  fetchDepartments()
-})
-
-async function onDeleteDepartment(row) {
-  $q.dialog({
-    title: 'Confirm Deletion',
-    message: `Are you sure you want to delete department "${row.name}" (${row.code})? This action cannot be undone.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await deleteDepartment(row.id)
-    if (result.error) {
-      $q.notify({
-        type: 'negative',
-        message: result.error,
-      })
-    } else {
-      $q.notify({
-        type: 'positive',
-        message: 'Department deleted successfully',
-      })
-    }
-  })
-}
-
 function onEditDepartment(row) {
   openDialog(row.id)
+}
+
+function onDeleteDepartment(row) {
+  confirmDelete.value = { open: true, department: row }
+}
+
+async function confirmDeleteDepartment() {
+  await confirmDelete.value.department.delete()
+  confirmDelete.value = { open: false, department: null }
 }
 </script>
 
@@ -53,21 +52,15 @@ function onEditDepartment(row) {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="corporate_fare" class="tw:text-primary" size="24px" />
+        <IconBuilding class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Departments</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
-        v-if="canCreateDepartment"
-        label="Create New Department"
-        icon="add"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        @click="openDialog()"
-      />
+      <BaseButton v-if="canCreateDepartment" @click="openDialog()">
+        Create New Department
+      </BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -84,7 +77,6 @@ function onEditDepartment(row) {
 
     <DepartmentsTable
       :rows="departments"
-      :loading="loading"
       :canUpdate="canUpdateDepartment"
       :canDelete="canDeleteDepartment"
       @delete="onDeleteDepartment"
@@ -98,10 +90,13 @@ function onEditDepartment(row) {
     :id="selectedDepartmentId"
     v-model="showDialog"
   />
-</template>
 
-<style scoped lang="scss">
-.text-slate-800 {
-  color: #1e293b;
-}
-</style>
+  <!-- Delete Confirm Dialog -->
+  <ConfirmDialog
+    v-model="confirmDelete.open"
+    title="Delete Department"
+    :message="`Are you sure you want to delete '${confirmDelete.department?.name}' (${confirmDelete.department?.code})? This cannot be undone.`"
+    okLabel="Delete"
+    @ok="confirmDeleteDepartment"
+  />
+</template>

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { apiClient } from '@/api/client.js'
 import { isPublicRoute } from '@/constants/authRoutes.js'
+import { deleteAllSyncDatabases } from '@/utils/initSyncEngine.js'
 
 // Unique identifier for the current tab
 export const TAB_ID = `tab-${crypto.randomUUID()}`
@@ -79,6 +80,10 @@ export const logoutCurrentSession = async () => {
   } catch {
     // Ignore errors — we're logging out regardless
   }
+
+  // Wipe all company-scoped IndexedDB databases
+  await deleteAllSyncDatabases()
+
   sessionStorage.removeItem('isLogin')
   sendTabMessage('logout')
   window.location = '/signin'
@@ -107,28 +112,26 @@ async function fetchUserSession(options = {}) {
 
     // Session may not have a company yet
     const session = data.session
-    if (!companyCode.value) {
+
+    // Use activeCompanyId from session (set by backend when companyCode is passed)
+    if (!session.activeCompanyId) {
       currentSession.value = session
       return
     }
 
-    // If we have a company code, find the matching company
-    const companies = session?.companies || {}
-    const companyEntry = Object.entries(companies).find(
-      ([_, company]) => company.code === companyCode.value,
-    )
-    if (!companyEntry) {
+    const activeCompanyId = session.activeCompanyId
+    const activeCompany = session.companies?.[activeCompanyId]
+
+    if (!activeCompany) {
       currentSession.value = null
       return
     }
-    const companyId = companyEntry[0]
-    const company = companyEntry[1]
+
     const newCurrentSession = {
-      id: company.userId,
+      id: activeCompany.userId,
       ...session,
-      ...company,
-      companyId,
-      company,
+      ...activeCompany,
+      companyId: activeCompanyId,
     }
 
     currentSession.value = newCurrentSession

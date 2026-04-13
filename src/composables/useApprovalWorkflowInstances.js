@@ -1,4 +1,3 @@
-import { currentCompany } from '@/utils/currentCompany.js'
 import { get, post } from '@/api'
 
 const symbol = Symbol('useApprovalWorkflowInstances')
@@ -12,12 +11,9 @@ function ApprovalWorkflowInstancesState() {
   const filters = ref({ search: '', statusId: null })
 
   async function fetchInstances() {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return
-
     error.value = null
 
-    const params = { companyId }
+    const params = {}
     if (filters.value.search) params.search = filters.value.search
     if (filters.value.statusId) params.statusId = filters.value.statusId
 
@@ -28,12 +24,9 @@ function ApprovalWorkflowInstancesState() {
   watch(filters, () => fetchInstances(), { deep: true })
 
   async function fetchInstance(instanceId, options = {}) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     error.value = null
 
-    const params = { companyId }
+    const params = {}
     if (options.includeReviewers) params.includeReviewers = true
 
     const data = await get(`/v1/services/workflowInstances/${instanceId}`, {
@@ -44,24 +37,10 @@ function ApprovalWorkflowInstancesState() {
   }
 
   async function updateWorkflowStep(instanceId, action, payload = {}) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post(`/v1/services/workflowInstances/${instanceId}/${action}`, payload, {
-      params: { companyId },
       loader: actionLoading,
     })
     return { workflowInstance: data.workflowInstance }
-  }
-
-  async function fetchInstanceAuditLogs(documentId) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    const data = await get(`/v1/services/documents/${documentId}/auditLogs`, {
-      params: { companyId },
-    })
-    return { auditLogs: data.auditLogs || [] }
   }
 
   return {
@@ -73,7 +52,6 @@ function ApprovalWorkflowInstancesState() {
     fetchInstances,
     fetchInstance,
     updateWorkflowStep,
-    fetchInstanceAuditLogs,
   }
 }
 

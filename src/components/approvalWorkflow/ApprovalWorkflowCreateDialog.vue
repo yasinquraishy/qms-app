@@ -1,13 +1,11 @@
 <script setup>
+import { IconLayoutKanban } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
-import { useApprovalWorkflows } from '@/composables/useApprovalWorkflows.js'
 
 const emit = defineEmits(['created'])
 
 const show = defineModel({ type: Boolean, default: false })
-
-const { createWorkflow } = useApprovalWorkflows()
 
 const form = ref({
   name: '',
@@ -28,28 +26,45 @@ const isFormValid = computed(() => {
   return form.value.name.trim() && form.value.moduleId && form.value.documentTypeId
 })
 
+const createWorkflowAndVersion = useLiveMutation(
+  async (db, { name, description, moduleId, documentTypeId }) => {
+    const workflow = db.ApprovalWorkflow.create({
+      name,
+      description,
+      moduleId,
+      documentTypeId,
+      statusId: 'ACTIVE',
+    })
+    await workflow.save()
+    const version = db.ApprovalWorkflowVersion.create({
+      workflowId: workflow.id,
+      versionMajor: 1,
+      versionMinor: 0,
+      statusId: 'DRAFT',
+      isCurrent: true,
+    })
+    await version.save()
+    return workflow
+  },
+)
+
 async function handleSubmit() {
   const valid = await validator.value.$validate()
   if (!valid || !isFormValid.value) return
 
   loading.value = true
   try {
-    const payload = {
+    const workflow = await createWorkflowAndVersion({
       name: form.value.name.trim(),
       description: form.value.description.trim() || '',
       moduleId: form.value.moduleId,
       documentTypeId: form.value.documentTypeId,
-    }
-
-    const result = await createWorkflow(payload)
-
-    if (result.workflow) {
-      emit('created', result.workflow)
+    })
+    if (workflow) {
+      emit('created', workflow)
       resetForm()
       show.value = false
     }
-  } catch {
-    // Error handled in composable
   } finally {
     loading.value = false
   }
@@ -58,78 +73,69 @@ async function handleSubmit() {
 function resetForm() {
   form.value = { name: '', description: '', moduleId: null, documentTypeId: null }
 }
-
-function handleClose() {
-  resetForm()
-  show.value = false
-}
 </script>
 
 <template>
-  <QDialog v-model="show" transitionShow="scale" transitionHide="scale" @hide="resetForm">
-    <div class="tw:bg-main tw:rounded-2xl tw:overflow-hidden tw:shadow-2xl tw:max-w-md tw:w-full">
-      <div class="tw:p-5 tw:flex tw:flex-col tw:gap-4">
-        <!-- Header -->
-        <div class="tw:flex tw:items-center tw:gap-3">
-          <div
-            class="tw:w-10 tw:h-10 tw:bg-primary/10 tw:text-primary tw:rounded-xl tw:flex tw:items-center tw:justify-center"
-          >
-            <WIcon icon="add_circle" size="24px" />
-          </div>
-          <div class="tw:text-2xl tw:font-bold tw:text-on-main">Create Workflow</div>
+  <BaseDialog v-model="show" title="Create Workflow" maxWidth="md" @hide="resetForm">
+    <template #title>
+      <div class="tw:flex tw:items-center tw:gap-3">
+        <div
+          class="tw:w-9 tw:h-9 tw:bg-primary/10 tw:text-primary tw:rounded-xl tw:flex tw:items-center tw:justify-center"
+        >
+          <IconLayoutKanban :size="20" />
         </div>
+        <span>Create Workflow</span>
+      </div>
+    </template>
 
-        <div class="tw:text-sm tw:text-secondary tw:leading-relaxed">
-          Define a new approval workflow to manage multi-step document approvals.
-        </div>
+    <div class="tw:flex tw:flex-col tw:gap-4">
+      <p class="tw:text-sm tw:text-secondary tw:leading-relaxed">
+        Define a new approval workflow to manage multi-step document approvals.
+      </p>
 
-        <QForm class="tw:flex tw:flex-col tw:gap-4" @submit="handleSubmit">
-          <!-- Name -->
-          <WInput
-            v-model="form.name"
-            name="name"
-            label="Workflow Name"
-            placeholder="e.g. Global SOP Multi-Stage Approval"
-            autofocus
-          >
-            <template #label> Workflow Name <span class="tw:text-bad">*</span> </template>
-          </WInput>
+      <div class="tw:flex tw:flex-col tw:gap-4">
+        <!-- Name -->
+        <BaseTextInput
+          v-model="form.name"
+          name="name"
+          label="Workflow Name"
+          placeholder="e.g. Global SOP Multi-Stage Approval"
+          autofocus
+          required
+        />
 
-          <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-4">
-            <!-- Module -->
-            <ApprovalWorkflowsModuleSelect v-model:moduleId="form.moduleId" required />
-
-            <!-- Document Type -->
-            <FormTemplatesDocumentTypeSelect
-              v-model:documentTypeId="form.documentTypeId"
-              required
-            />
+        <div class="tw:grid tw:grid-cols-2 tw:gap-4">
+          <!-- Module -->
+          <div>
+            <label class="tw:block tw:text-xs tw:font-semibold tw:text-secondary tw:mb-1.5">
+              Module <span class="tw:text-bad">*</span>
+            </label>
+            <ModuleSelectMenu v-model="form.moduleId" required />
           </div>
 
-          <!-- Description -->
-          <WInput
-            v-model="form.description"
-            label="Description"
-            placeholder="Describe the purpose of this workflow"
-            type="textarea"
-            class="tw:min-h-24"
-          />
-        </QForm>
-
-        <!-- Actions -->
-        <div class="tw:flex tw:justify-end tw:gap-3 tw:mt-2">
-          <WBtn flat label="Cancel" color="grey-7" @click="handleClose" />
-          <WBtn
-            label="Create Workflow"
-            color="primary"
-            unelevated
-            class="tw:px-6 tw:font-bold"
-            :loading="loading"
-            :disable="!isFormValid"
-            @click="handleSubmit"
-          />
+          <!-- Document Type -->
+          <div>
+            <label class="tw:block tw:text-xs tw:font-semibold tw:text-secondary tw:mb-1.5">
+              Document Type <span class="tw:text-bad">*</span>
+            </label>
+            <DocumentTypeSelectMenu v-model="form.documentTypeId" required />
+          </div>
         </div>
+
+        <!-- Description -->
+        <BaseTextarea
+          v-model="form.description"
+          label="Description"
+          placeholder="Describe the purpose of this workflow"
+        />
       </div>
     </div>
-  </QDialog>
+
+    <template #footer="{ close }">
+      <BaseButton variant="outline" @click="close">Cancel</BaseButton>
+      <BaseButton :isLoading="loading" :disabled="!isFormValid" @click="handleSubmit">
+        Create Workflow
+      </BaseButton>
+    </template>
+  </BaseDialog>
 </template>

@@ -1,8 +1,6 @@
 import { currentCompany } from '@/utils/currentCompany.js'
 import { get, patch } from '@/api'
 
-const symbol = Symbol('useCompanySettings')
-
 function CompanySettingsState() {
   const formData = ref({
     name: '',
@@ -53,7 +51,6 @@ function CompanySettingsState() {
     error.value = null
 
     const data = await get(`/v1/services/companies/${companyId}`, {
-      params: { companyId },
       loader: loading,
     })
     const company = data.company
@@ -122,7 +119,6 @@ function CompanySettingsState() {
         settings: formData.value.settings,
       },
       {
-        params: { companyId },
         loader: saving,
       },
     )
@@ -210,12 +206,6 @@ function CompanySettingsState() {
   }
 }
 
-export function provideCompanySettings() {
-  const state = CompanySettingsState()
-  provide(symbol, state)
-  return state
-}
-
 export function useCompanySettings() {
-  return inject(symbol)
+  return CompanySettingsState()
 }

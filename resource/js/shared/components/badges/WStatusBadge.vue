@@ -190,7 +190,7 @@ const config = computed(() => {
       config.classes,
       hideLabel && showDot
         ? 'tw:rounded-full tw:p-1'
-        : 'tw:rounded-md tw:px-2 tw:py-1 tw:text-[11px] tw:tracking-[0.03em]',
+        : 'tw:rounded-md tw:px-2 tw:py-1 tw:text-[14px] tw:tracking-[0.03em]',
     ]"
   >
     <!-- Dot indicator -->

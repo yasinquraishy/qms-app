@@ -1,5 +1,4 @@
 <script setup>
-import { currentCompany } from '@/utils/currentCompany.js'
 import { get } from '@/api'
 
 const props = defineProps({
@@ -47,11 +46,8 @@ function resolveSelectedTemplate() {
 }
 
 async function fetchDocumentTemplates() {
-  const companyId = currentCompany.value?.id
-  if (!companyId) throw new Error('No company selected')
-
   const data = await get('/v1/services/documentTemplates', {
-    params: { companyId, statusId: 'ACTIVE' },
+    params: { statusId: 'ACTIVE' },
     loader: loading,
   })
 

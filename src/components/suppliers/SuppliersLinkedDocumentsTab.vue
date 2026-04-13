@@ -1,94 +1,99 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { useSuppliers } from '@/composables/useSuppliers.js'
-import { currentCompany } from '@/utils/currentCompany.js'
-import { get } from '@/api'
+import { IconLink, IconLinkOff, IconFilePlus, IconFileDescription } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 
 const props = defineProps({
-  supplier: {
-    type: Object,
+  supplierId: {
+    type: String,
     required: true,
   },
 })
 
-const emit = defineEmits(['refresh'])
-const $q = useQuasar()
-const { updateSupplier } = useSuppliers()
-
 const canUpdate = computed(() => isAllowed(['suppliers:update']))
 
-const linkedDocuments = computed(() => props.supplier.linkedDocuments || [])
+// ─── Live queries ─────────────────────────────────────────────────────────────
+
+const linkedDocs = useLiveQueryWithDeps(
+  [() => props.supplierId],
+  async (db, [supplierId]) => {
+    const sds = await db.SupplierDocument.where('supplierId', supplierId).exec()
+    return Promise.all(
+      sds.map(async (sd) => {
+        const version = await db.DocumentVersion.findByPk(sd.documentVersionId)
+        const document = version ? await db.Document.findByPk(version.documentId) : null
+        return { sd, version, document }
+      }),
+    )
+  },
+  { initial: [] },
+)
+
+const allLatestVersions = useLiveQuery(
+  async (db) => {
+    const versions = await db.DocumentVersion.where().exec()
+    const latest = versions.filter((v) => v.isLatest)
+    const resolved = await Promise.all(
+      latest.map(async (v) => {
+        const doc = await db.Document.findByPk(v.documentId)
+        if (!doc) return null
+        return { id: v.id, label: `${doc.docNumber} — ${doc.title}` }
+      }),
+    )
+    return resolved.filter(Boolean)
+  },
+  { initial: [] },
+)
+
+const linkedVersionIds = computed(
+  () => new Set(linkedDocs.value.map((e) => e.sd.documentVersionId)),
+)
+
+const availableItems = computed(() =>
+  allLatestVersions.value.filter((v) => !linkedVersionIds.value.has(v.id)),
+)
+
+// ─── Add document ─────────────────────────────────────────────────────────────
 
 const showAddDialog = ref(false)
-const selectedDocumentVersionId = ref(null)
-const availableDocuments = ref([])
-const loadingDocs = ref(false)
+const selectedVersionId = ref(null)
 const saving = ref(false)
 
-async function fetchAvailableDocuments() {
-  const companyId = currentCompany.value?.id
-  const data = await get('/v1/services/documents', {
-    params: { companyId },
-    loader: loadingDocs,
-  })
-
-  const linkedVersionIds = new Set(linkedDocuments.value.map((ld) => ld.documentVersionId))
-  availableDocuments.value = (data.documents || [])
-    .filter((d) => d.latestVersion && !linkedVersionIds.has(d.latestVersion.id))
-    .map((d) => ({
-      label: `${d.docNumber} — ${d.title}`,
-      value: d.latestVersion.id,
-    }))
-}
+const addDoc = useLiveMutation(async (db, { supplierId, documentVersionId }) => {
+  const sd = db.SupplierDocument.create({ supplierId, documentVersionId })
+  await sd.save()
+  return sd
+})
 
 function openAddDialog() {
-  selectedDocumentVersionId.value = null
-  fetchAvailableDocuments()
+  selectedVersionId.value = null
   showAddDialog.value = true
 }
 
 async function onAddDocument() {
-  if (!selectedDocumentVersionId.value) return
-
+  if (!selectedVersionId.value) return
   saving.value = true
-  const currentIds = linkedDocuments.value.map((ld) => ld.documentVersionId)
-  const result = await updateSupplier(props.supplier.id, {
-    documentVersionIds: [...currentIds, selectedDocumentVersionId.value],
-  })
-  saving.value = false
-
-  if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
-  } else {
-    $q.notify({ type: 'positive', message: 'Document linked successfully' })
+  try {
+    await addDoc({ supplierId: props.supplierId, documentVersionId: selectedVersionId.value })
     showAddDialog.value = false
-    emit('refresh')
+  } finally {
+    saving.value = false
   }
 }
 
-async function onRemoveDocument(supplierDocument) {
-  $q.dialog({
+// ─── Remove document ──────────────────────────────────────────────────────────
+
+const confirmDialog = ref(null)
+
+function onRemoveDocument(entry) {
+  confirmDialog.value = {
     title: 'Remove Link',
     message: 'Are you sure you want to unlink this document from the supplier?',
-    cancel: true,
-  }).onOk(async () => {
-    saving.value = true
-    const currentIds = linkedDocuments.value
-      .map((ld) => ld.documentVersionId)
-      .filter((id) => id !== supplierDocument.documentVersionId)
-    const result = await updateSupplier(props.supplier.id, {
-      documentVersionIds: currentIds,
-    })
-    saving.value = false
-
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Document unlinked' })
-      emit('refresh')
-    }
-  })
+    okLabel: 'Remove',
+    onOk: async () => {
+      await entry.sd.delete()
+      confirmDialog.value = null
+    },
+  }
 }
 </script>
 
@@ -103,112 +108,106 @@ async function onRemoveDocument(supplierDocument) {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-gray-100 tw:flex tw:items-center tw:justify-center"
         >
-          <QIcon name="link" class="tw:text-secondary" size="sm" />
+          <IconLink :size="20" class="tw:text-secondary" />
         </div>
         <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Linked Documents</h3>
-        <QBadge
-          v-if="linkedDocuments.length"
-          color="grey-5"
-          textColor="grey-8"
-          class="tw:rounded-full"
+        <span
+          v-if="linkedDocs.length"
+          class="tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-gray-200 tw:text-gray-700 tw:px-2 tw:py-0.5 tw:text-[10px] tw:font-bold"
         >
-          <span class="tw:text-[10px] tw:px-2 tw:py-0.5 tw:font-bold">
-            {{ linkedDocuments.length }}
-          </span>
-        </QBadge>
+          {{ linkedDocs.length }}
+        </span>
       </div>
-      <WBtn
-        v-if="canUpdate"
-        label="Link Document"
-        icon="add_link"
-        color="primary"
-        outline
-        size="sm"
-        @click="openAddDialog"
-      />
+      <BaseButton v-if="canUpdate" variant="outline" @click="openAddDialog">
+        <IconFilePlus :size="16" />
+        <span>Link Document</span>
+      </BaseButton>
     </div>
 
-    <div v-if="linkedDocuments.length" class="tw:divide-y tw:divide-divider">
+    <div v-if="linkedDocs.length" class="tw:divide-y tw:divide-divider">
       <div
-        v-for="ld in linkedDocuments"
-        :key="ld.id"
+        v-for="entry in linkedDocs"
+        :key="entry.sd.id"
         class="tw:p-4 tw:flex tw:items-center tw:gap-4 tw:hover:bg-main-hover tw:transition-colors"
       >
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-primary/10 tw:flex tw:items-center tw:justify-center tw:shrink-0"
         >
-          <QIcon name="article" color="primary" size="sm" />
+          <IconFileDescription :size="20" class="tw:text-primary" />
         </div>
         <div class="tw:flex-1 tw:min-w-0">
           <p class="tw:text-sm tw:font-medium tw:text-on-main tw:truncate">
-            {{ ld.documentVersion?.document?.docNumber }} —
-            {{ ld.documentVersion?.document?.title || 'Document' }}
+            <template v-if="entry.document">
+              {{ entry.document.docNumber }} — {{ entry.document.title || 'Document' }}
+            </template>
+            <template v-else>Document</template>
           </p>
           <div class="tw:flex tw:items-center tw:gap-2 tw:mt-0.5">
-            <span
-              v-if="ld.documentVersion?.document?.documentType"
-              class="tw:text-xs tw:text-secondary"
-            >
-              {{ ld.documentVersion.document.documentType.name }}
-            </span>
-            <WStatusBadge
-              v-if="ld.documentVersion?.document?.statusId"
-              :status="ld.documentVersion.document.statusId"
-              size="xs"
+            <SupplierStatusBadgeById
+              v-if="entry.document?.statusId"
+              :statusId="entry.document.statusId"
             />
           </div>
         </div>
-        <WBtn
+        <button
           v-if="canUpdate"
-          flat
-          round
-          dense
-          icon="link_off"
-          color="negative"
-          size="sm"
-          @click="onRemoveDocument(ld)"
-        />
+          class="tw:p-1.5 tw:rounded tw:text-red-400 tw:hover:text-red-600 tw:hover:bg-red-50 tw:transition-colors"
+          title="Unlink document"
+          @click="onRemoveDocument(entry)"
+        >
+          <IconLinkOff :size="16" />
+        </button>
       </div>
     </div>
 
-    <div v-else class="tw:py-12 tw:text-center">
-      <QIcon name="link_off" size="40px" class="tw:text-secondary/50 tw:mb-2" />
-      <p class="tw:text-secondary tw:text-sm">No documents linked to this supplier.</p>
-      <p class="tw:text-secondary/70 tw:text-xs tw:mt-1">
-        Link documents from your document management system.
-      </p>
-    </div>
-
-    <!-- Add Link Dialog -->
-    <WDialog v-model="showAddDialog" title="Link Document" persistent>
-      <div class="tw:p-4 tw:space-y-4">
-        <WSelect
-          v-model="selectedDocumentVersionId"
-          :options="availableDocuments"
-          :loading="loadingDocs"
-          label="Select Document"
-          outlined
-          dense
-          emitValue
-          mapOptions
-          optionLabel="label"
-          optionValue="value"
-          hideBottomSpace
-          useInput
-          inputDebounce="200"
-        />
-      </div>
-      <template #actions>
-        <WBtn flat label="Cancel" @click="showAddDialog = false" />
-        <WBtn
-          color="primary"
-          label="Link"
-          unelevated
-          :loading="saving"
-          :disable="!selectedDocumentVersionId"
-          @click="onAddDocument"
-        />
-      </template>
-    </WDialog>
+    <BaseEmptyState
+      v-else
+      :icon="IconLinkOff"
+      title="No documents linked to this supplier."
+      description="Link documents from your document management system."
+    />
   </div>
+
+  <!-- Add Document Dialog -->
+  <BaseDialog v-model="showAddDialog" title="Link Document" maxWidth="sm">
+    <div class="tw:p-4 tw:space-y-4">
+      <div>
+        <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-1">
+          Select Document
+        </label>
+        <BaseSelectMenu v-model="selectedVersionId" :items="availableItems" :required="true">
+          <template #button="scope">
+            <slot name="button" v-bind="scope">
+              <span v-if="selectedVersionId" class="tw:text-sm tw:font-medium">
+                {{
+                  availableItems.find((i) => i.id === selectedVersionId)?.label || selectedVersionId
+                }}
+              </span>
+              <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder"
+                >Choose a document</span
+              >
+            </slot>
+          </template>
+        </BaseSelectMenu>
+      </div>
+    </div>
+    <div class="tw:flex tw:justify-end tw:gap-2 tw:px-4 tw:pb-4">
+      <BaseButton variant="ghost" @click="showAddDialog = false">Cancel</BaseButton>
+      <BaseButton :disabled="!selectedVersionId || saving" @click="onAddDocument">
+        <div
+          v-if="saving"
+          class="tw:animate-spin tw:rounded-full tw:size-4 tw:border-2 tw:border-white tw:border-t-transparent"
+        />
+        <span>{{ saving ? 'Linking...' : 'Link' }}</span>
+      </BaseButton>
+    </div>
+  </BaseDialog>
+
+  <ConfirmDialog
+    v-if="confirmDialog"
+    :modelValue="true"
+    v-bind="confirmDialog"
+    @update:modelValue="confirmDialog = null"
+    @ok="confirmDialog?.onOk"
+  />
 </template>

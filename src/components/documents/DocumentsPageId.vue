@@ -1,9 +1,7 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { useDocuments } from '@/composables/useDocuments.js'
-import { provideDocumentMessages } from '@/composables/useDocumentMessages.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
+import { useDocuments } from '@/composables/useDocuments.js'
 
 const props = defineProps({
   id: {
@@ -12,35 +10,47 @@ const props = defineProps({
   },
 })
 
+const toast = useToast()
 const router = useRouter()
-const $q = useQuasar()
-const {
-  fetchDocument,
-  fetchVersions,
-  createVersion,
-  deleteDocument,
-  deleteVersion,
-  cancelReview,
-  setEffective,
-} = useDocuments()
+const { cancelReview, setEffective } = useDocuments()
 
 // State
-const document = ref(null)
-const versions = ref([])
+const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  return db.Document.findByPk(id)
+})
+const versions = useLiveQueryWithDeps(
+  [() => props.id],
+  async (db, [id]) => {
+    return db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec()
+  },
+  { initial: [] },
+)
+
+const latestVersion = useLiveQueryWithDeps([() => props.id], async (db, [documentId]) => {
+  return db.DocumentVersion.where('documentId', documentId, { force: true })
+    .orderBy('createdAt', 'desc')
+    .first()
+})
+
 const selectedVersion = ref(null)
-const loading = ref(true)
-const versionsLoading = ref(false)
 const showWorkflowSidebar = ref(false)
 const showMessages = ref(false)
 
-provideDocumentMessages()
+// Auto-select version when versions list changes
+watch(versions, (list) => {
+  if (!list?.length) {
+    selectedVersion.value = null
+    return
+  }
+  const currentId = selectedVersion.value?.id
+  const found = currentId ? list.find((v) => v.id === currentId) : null
+  selectedVersion.value = found ?? list[0]
+})
+
 const breadcrumbs = computed(() => [
   { label: 'Documents', to: getCompanyPath('/documents') },
   { label: document.value ? document.value.title : 'Loading...' },
 ])
-
-// Edit dialog state
-const showEditDialog = ref(false)
 
 // workflow preview dialog state
 const showPreviewDialog = ref(false)
@@ -65,7 +75,7 @@ const canSubmitForReview = computed(
     canEdit.value &&
     isOwner.value &&
     ['DRAFT', 'REJECTED'].includes(selectedVersion.value?.statusId) &&
-    document.value?.workflowVersionId &&
+    !!document.value?.workflowVersionId &&
     document.value?.statusId !== 'ARCHIVED',
 )
 const canCancelReview = computed(
@@ -86,102 +96,26 @@ const versionLabel = computed(() => {
 })
 
 // Methods
-async function loadDocument() {
-  loading.value = true
-  try {
-    const result = await fetchDocument(props.id)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-      return
-    }
-    document.value = result.document
-  } finally {
-    loading.value = false
-  }
-}
-
-async function loadVersions() {
-  versionsLoading.value = true
-  try {
-    const result = await fetchVersions(props.id)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-      return
-    }
-    versions.value = result.versions || []
-  } finally {
-    versionsLoading.value = false
-  }
-}
-
 function selectVersion(version) {
   selectedVersion.value = version
 }
 
 function handleExport() {
-  $q.notify({ type: 'info', message: 'Export functionality coming soon' })
+  toast.notify({ type: 'info', message: 'Export functionality coming soon' })
 }
 
 function handleReports() {
-  $q.notify({ type: 'info', message: 'Reports functionality coming soon' })
-}
-
-// Edit dialog methods
-function openEditDialog() {
-  showEditDialog.value = true
+  toast.notify({ type: 'info', message: 'Reports functionality coming soon' })
 }
 
 async function handleDeleteDocument() {
-  $q.dialog({
-    title: 'Delete Document',
-    message: 'Are you sure you want to delete this document? This action cannot be undone.',
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await deleteDocument(props.id)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Document deleted successfully' })
-      router.push(getCompanyPath('/documents'))
-    }
-  })
+  await document.value.delete()
+  router.push(getCompanyPath('/documents'))
 }
 
 async function handleDeleteVersion() {
-  if (!selectedVersion.value?.id) {
-    $q.notify({ type: 'negative', message: 'No version selected' })
-    return
-  }
-
-  if (selectedVersion.value.statusId !== 'DRAFT') {
-    $q.notify({
-      type: 'negative',
-      message: 'Only draft versions can be deleted',
-    })
-    return
-  }
-
-  $q.dialog({
-    title: 'Delete Version',
-    message: `Are you sure you want to delete version ${versionLabel.value}? This action cannot be undone.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await deleteVersion(props.id, selectedVersion.value.id)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Version deleted successfully' })
-      await loadData()
-      selectedVersion.value = null
-    }
-  })
-}
-
-async function onDocumentUpdated() {
-  // Reload document after update
-  await loadData()
+  await selectedVersion.value.delete()
+  // watch(versions) will auto-select the next available version
 }
 
 function handleSubmitForReview() {
@@ -190,83 +124,38 @@ function handleSubmitForReview() {
 }
 
 async function handleCancelReview() {
-  $q.dialog({
-    title: 'Cancel Review',
-    message:
-      'Are you sure you want to cancel this review? The document version will return to draft status.',
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await cancelReview(selectedVersion.value.workflowInstanceId)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Review cancelled successfully' })
-      await loadData()
-    }
-  })
+  const result = await cancelReview(selectedVersion.value.workflowInstanceId)
+  if (result.error) {
+    toast.error(result.error)
+  } else {
+    toast.success('Review cancelled successfully')
+  }
 }
 
 async function handleSetEffective() {
-  if (!selectedVersion.value?.id) {
-    $q.notify({ type: 'negative', message: 'No version selected' })
-    return
+  const result = await setEffective(props.id, selectedVersion.value.id)
+  if (result.error) {
+    toast.error(result.error)
+  } else {
+    toast.success('Document set as effective')
   }
-
-  $q.dialog({
-    title: 'Set Version Effective',
-    message:
-      'Are you sure you want to make this version effective? This will mark the version as the current effective version.',
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await setEffective(props.id, selectedVersion.value.id)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Version set to effective successfully' })
-      await loadData()
-    }
-  })
 }
 
 async function createNewVersion() {
-  if (!canCreate.value) return
+  const create = useLiveMutation(async (db) => {
+    const version = db.DocumentVersion.create({
+      documentId: props.id,
+      versionMajor: latestVersion.value ? latestVersion.value.versionMajor + 1 : 1,
+      versionMinor: 0,
+      statusId: 'DRAFT',
+    })
 
-  const result = await createVersion(props.id, { majorBump: true })
-  if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
-    return
-  }
-  $q.notify({ type: 'positive', message: 'New version created successfully' })
+    await version.save()
+    return version
+  })
 
-  await loadData()
-  await nextTick()
-  const newVersion = versions.value.find((v) => v.id === result.version.id)
-  if (newVersion) {
-    selectVersion(newVersion)
-  }
+  selectedVersion.value = await create()
 }
-
-async function loadData() {
-  await Promise.all([loadDocument(), loadVersions()])
-  await nextTick()
-  const findById = selectedVersion.value ? selectedVersion.value.id : versions.value[0]?.id
-  const currentVersion = versions.value.find((v) => v.id === findById)
-  selectVersion(currentVersion)
-}
-
-// Lifecycle
-onMounted(() => {
-  loadData()
-})
-
-watch(
-  () => props.id,
-  () => {
-    loadData()
-  },
-)
 </script>
 
 <template>
@@ -275,12 +164,12 @@ watch(
       <WBreadcrumbs :items="breadcrumbs" />
     </SafeTeleport>
     <!-- Loading State -->
-    <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:min-h-screen">
+    <div v-if="!document" class="tw:flex tw:items-center tw:justify-center tw:min-h-screen">
       <QSpinner color="primary" size="50px" />
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="document" class="tw:flex tw:flex-col">
+    <div v-else class="tw:flex tw:flex-col">
       <!-- Toolbar Section -->
       <div class="tw:bg-sidebar tw:border-b tw:border-divider tw:sticky tw:top-0 tw:z-10">
         <div
@@ -311,7 +200,6 @@ watch(
             <DocumentWorkflowPreviewDialog
               v-model:show="showPreviewDialog"
               :documentId="props.id"
-              @confirm="loadData"
             />
 
             <WBtn
@@ -353,7 +241,7 @@ watch(
             <!-- Version Selector -->
             <div class="tw:relative">
               <WBtn outline>
-                Version: {{ versionLabel }} ({{ selectedVersion?.status?.name || 'Unknown' }})
+                Version: {{ versionLabel }} ({{ selectedVersion?.statusId }})
                 <WIcon name="expand_more" class="tw:ml-2" size="18px" />
 
                 <!-- Version Dropdown -->
@@ -418,13 +306,6 @@ watch(
 
               <QMenu>
                 <QList>
-                  <QItem v-if="canEdit" clickable @click="openEditDialog">
-                    <QItemSection avatar>
-                      <WIcon name="edit" size="20px" />
-                    </QItemSection>
-                    <QItemSection>Edit Properties</QItemSection>
-                  </QItem>
-
                   <QItem
                     v-if="selectedVersion?.workflowInstanceId"
                     clickable
@@ -461,11 +342,7 @@ watch(
       </div>
 
       <!-- Main Content Grid -->
-      <DocumentsMainContent
-        :document="document"
-        :currentVersion="selectedVersion"
-        :canEdit="canEdit"
-      />
+      <DocumentsMainContent :documentId="props.id" :versionId="selectedVersion?.id" />
 
       <!-- Workflow Overlay Sidebar -->
       <DocumentsWorkflowSidebar
@@ -476,26 +353,5 @@ watch(
       <!-- Messages Drawer -->
       <DocumentsMessages v-model="showMessages" :documentId="props.id" />
     </div>
-
-    <!-- Error State -->
-    <div
-      v-else
-      class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:min-h-screen tw:text-center"
-    >
-      <WIcon name="error_outline" size="64px" class="tw:text-secondary tw:mb-4" />
-      <p class="tw:text-xl tw:font-semibold tw:text-on-main">Document not found</p>
-      <WBtn color="primary" flat class="tw:mt-4" @click="router.push(getCompanyPath('/documents'))">
-        Back to Documents
-      </WBtn>
-    </div>
-
-    <!-- Edit Dialog -->
-    <DocumentsEditDialog
-      v-if="showEditDialog && document"
-      v-model="showEditDialog"
-      :document="document"
-      :currentVersion="selectedVersion"
-      @updated="onDocumentUpdated"
-    />
   </div>
 </template>

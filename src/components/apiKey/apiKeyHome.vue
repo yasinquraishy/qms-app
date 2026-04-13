@@ -1,4 +1,6 @@
 <script setup>
+import { IconKey, IconPlus } from '@tabler/icons-vue'
+
 const showCreateDialog = ref(false)
 
 function openDialog() {
@@ -10,20 +12,16 @@ function openDialog() {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="key" class="tw:text-primary" size="24px" />
+        <IconKey class="tw:text-primary tw:size-6" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">API Keys</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
-        label="Create API Key"
-        icon="sym_o_add"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        @click="openDialog"
-      />
+      <BaseButton @click="openDialog">
+        <IconPlus class="tw:size-4" />
+        Create API Key
+      </BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->

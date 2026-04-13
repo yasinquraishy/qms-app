@@ -1,14 +1,10 @@
 <script setup>
-import { provideOptionSets } from '@/composables/useOptionSets.js'
-
 const props = defineProps({
   id: {
     type: String,
     default: undefined,
   },
 })
-
-provideOptionSets()
 </script>
 
 <template>

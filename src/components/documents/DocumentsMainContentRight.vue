@@ -1,29 +1,35 @@
 <script setup>
+import { isAllowed } from '@/utils/currentSession.js'
+
 const props = defineProps({
-  document: {
-    type: Object,
+  documentId: {
+    type: String,
     required: true,
   },
-  currentVersion: {
-    type: Object,
+  versionId: {
+    type: String,
     default: null,
   },
-  canEdit: {
-    type: Boolean,
-    default: false,
-  },
 })
+
+const document = useLiveQueryWithDeps([() => props.documentId], async (db, [id]) => {
+  return db.Document.findByPk(id)
+})
+
+const currentVersion = useLiveQueryWithDeps([() => props.versionId], async (db, [id]) => {
+  return id ? db.DocumentVersion.findByPk(id) : null
+})
+
+const canEdit = computed(
+  () => isAllowed(['documents:update']) && document.value?.statusId !== 'ARCHIVED',
+)
 
 // State
 const activeSection = ref(null)
 
 // Computed properties
 const documentSections = computed(() => {
-  return props.currentVersion?.sections || []
-})
-
-const formattedEffectiveDate = computed(() => {
-  return props.currentVersion?.effectiveDate?.formatDate('date')
+  return currentVersion.value?.sections || []
 })
 
 // Section methods
@@ -34,10 +40,36 @@ function scrollToSection(sectionId) {
     activeSection.value = sectionId
   }
 }
+
+const debounceSaveDocument = useDebounceFn(() => {
+  if (!document.value || !canEdit.value) return
+  document.value.save()
+}, 500)
+
+const debounceSaveVersion = useDebounceFn(() => {
+  if (!currentVersion.value || !canEdit.value) return
+  currentVersion.value.save()
+}, 500)
+
+watch(
+  document,
+  () => {
+    debounceSaveDocument()
+  },
+  { deep: true },
+)
+
+watch(
+  currentVersion,
+  () => {
+    debounceSaveVersion()
+  },
+  { deep: true },
+)
 </script>
 
 <template>
-  <div class="tw:lg:col-span-1 tw:space-y-6 tw:print:hidden">
+  <div v-if="document && currentVersion" class="tw:lg:col-span-1 tw:space-y-6 tw:print:hidden">
     <div class="tw:sticky tw:top-24 tw:space-y-6">
       <!-- Properties Card -->
       <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5">
@@ -53,47 +85,41 @@ function scrollToSection(sectionId) {
             </p>
           </div>
 
-          <div v-if="document.user" class="tw:flex tw:items-center tw:gap-3">
-            <div
-              class="tw:h-8 tw:w-8 tw:rounded-full tw:bg-main-hover tw:flex tw:items-center tw:justify-center tw:shrink-0"
-            >
-              <WIcon name="person" class="tw:text-secondary" size="16px" />
-            </div>
-            <div>
-              <label class="ds-label"> Owner </label>
-              <p class="tw:text-sm tw:font-medium">
-                {{ document.user.firstName }} {{ document.user.lastName }}
-              </p>
-            </div>
+          <div class="tw:flex tw:flex-col">
+            <label class="ds-label tw:mb-2"> Owner </label>
+            <UserBadgeById :userId="document.userId" />
           </div>
 
           <div class="tw:grid tw:grid-cols-2 tw:gap-4">
             <div>
               <label class="ds-label"> Type </label>
-              <p class="tw:text-sm tw:font-medium">
-                {{ document.template?.name || 'Document' }}
-              </p>
+              <div class="tw:mt-1">
+                <DocumentTypeBadgeById
+                  :documentTypeId="document.documentTypeId"
+                  :iconOnly="false"
+                />
+              </div>
             </div>
-            <div>
+
+            <div class="tw:flex tw:flex-col tw:w-fit">
               <label class="ds-label"> Status </label>
-              <p class="tw:text-sm tw:font-bold tw:text-green-600">
-                {{ currentVersion?.status?.name || '-' }}
-              </p>
+
+              <WStatusBadge :status="currentVersion.statusId" class="size-3" />
             </div>
           </div>
 
-          <div v-if="document.department">
+          <div>
             <label class="ds-label"> Department </label>
-            <p class="tw:text-sm tw:font-medium">
-              {{ document.department.name }}
-            </p>
+            <div class="tw:mt-1">
+              <DepartmentSelectMenu v-model="document.departmentId" required />
+            </div>
           </div>
 
-          <div v-if="document.relatedStandard">
+          <div>
             <label class="ds-label"> Related Standard </label>
-            <p class="tw:text-sm tw:font-medium">
-              {{ document.relatedStandard.name }}
-            </p>
+            <div class="tw:mt-1">
+              <RelatedStandardSelectMenu v-model="document.relatedStandardId" />
+            </div>
           </div>
 
           <div>
@@ -104,70 +130,21 @@ function scrollToSection(sectionId) {
           <div>
             <label class="ds-label"> Auto-Effective </label>
             <p class="tw:text-sm tw:font-medium">
-              {{ document.autoEffectiveOnApproval ? 'Yes' : 'No' }}
+              <BaseSwitch v-model="document.autoEffectiveOnApproval" :disabled="!canEdit" />
             </p>
           </div>
 
           <div>
             <label class="ds-label"> Effective Date </label>
-            <p class="tw:text-sm tw:font-medium">
-              {{ formattedEffectiveDate }}
-            </p>
+            <BaseDatePicker
+              v-if="canEdit"
+              v-model="currentVersion.effectiveDate"
+              :required="false"
+            />
           </div>
 
           <!-- Collaborators Section -->
-          <DocumentsCollaborators
-            v-model:collaborators="document.collaborators"
-            :documentId="document.id"
-            :canEdit="canEdit"
-          />
-
-          <!-- Approvers Section -->
-          <div v-if="document.approvers?.length > 0" class="tw:pt-4 tw:border-t tw:border-divider">
-            <label class="ds-label tw:mb-2 tw:block"> Approvers </label>
-            <div class="tw:flex tw:-space-x-2">
-              <div
-                v-for="user in document.approvers.slice(0, 4)"
-                :key="user.id"
-                class="tw:w-8 tw:h-8 tw:rounded-full tw:border-2 tw:border-sidebar tw:bg-main-hover tw:flex tw:items-center tw:justify-center"
-                :title="`${user.firstName} ${user.lastName}`"
-              >
-                <span class="tw:text-[10px] tw:font-bold">
-                  {{ user.firstName[0] }}{{ user.lastName[0] }}
-                </span>
-              </div>
-              <div
-                v-if="document.approvers.length > 4"
-                class="tw:w-8 tw:h-8 tw:rounded-full tw:border-2 tw:border-sidebar tw:bg-primary tw:flex tw:items-center tw:justify-center tw:text-white"
-              >
-                <span class="tw:text-[10px] tw:font-bold">
-                  +{{ document.approvers.length - 4 }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Metadata Tags Card -->
-      <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5">
-        <h4 class="ds-label tw:text-secondary tw:mb-4">Metadata Tags</h4>
-        <div class="tw:flex tw:flex-wrap tw:gap-2">
-          <span
-            class="tw:px-2 tw:py-1 tw:bg-main-hover tw:text-secondary tw:rounded-md tw:text-[11px] tw:font-semibold tw:border tw:border-divider"
-          >
-            All Employees
-          </span>
-          <span
-            class="tw:px-2 tw:py-1 tw:bg-primary/10 tw:text-primary tw:rounded-md tw:text-[11px] tw:font-semibold tw:border tw:border-primary/20"
-          >
-            Change Control
-          </span>
-          <span
-            class="tw:px-2 tw:py-1 tw:bg-main-hover tw:text-secondary tw:rounded-md tw:text-[11px] tw:font-semibold tw:border tw:border-divider"
-          >
-            Document Control
-          </span>
+          <DocumentsCollaborators :documentId="document.id" :canEdit="canEdit" />
         </div>
       </div>
 

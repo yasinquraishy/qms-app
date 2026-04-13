@@ -1,4 +1,3 @@
-import { currentCompany } from '@/utils/currentCompany.js'
 import { upload } from '@/api'
 
 /**
@@ -8,12 +7,6 @@ import { upload } from '@/api'
  * @returns {Promise<{success: boolean, asset?: object, error?: string}>}
  */
 export async function uploadFile(file, fileType = 'ASSET') {
-  const companyId = currentCompany.value?.id
-
-  if (!companyId) {
-    return { success: false, error: 'Company ID is required' }
-  }
-
   if (!file) {
     return { success: false, error: 'No file provided' }
   }
@@ -22,7 +15,7 @@ export async function uploadFile(file, fileType = 'ASSET') {
   formData.append('file', file)
   formData.append('fileType', fileType)
 
-  const data = await upload(`/v1/files/${companyId}/upload`, formData)
+  const data = await upload(`/v1/files/upload`, formData)
 
   return {
     success: true,

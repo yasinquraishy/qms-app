@@ -1,20 +1,12 @@
 <script setup>
 defineProps({
-  document: {
-    type: Object,
+  documentId: {
+    type: String,
     required: true,
   },
-  currentVersion: {
-    type: Object,
+  versionId: {
+    type: String,
     default: null,
-  },
-  canEdit: {
-    type: Boolean,
-    default: false,
-  },
-  reviewMode: {
-    type: Boolean,
-    default: false,
   },
 })
 
@@ -26,19 +18,10 @@ provideApprovalWorkflowInstances()
     <PrintTeleport>
       <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-4 tw:gap-8">
         <!-- Left Column: Document Content (3/4 width) -->
-        <DocumentsMainContentLeft
-          :document="document"
-          :currentVersion="currentVersion"
-          :canEdit="canEdit"
-          :reviewMode="reviewMode"
-        />
+        <DocumentsMainContentLeft :documentId="documentId" :versionId="versionId" />
 
         <!-- Right Column: Sidebar (1/4 width, sticky) -->
-        <DocumentsMainContentRight
-          :document="document"
-          :currentVersion="currentVersion"
-          :canEdit="canEdit"
-        />
+        <DocumentsMainContentRight :documentId="documentId" :versionId="versionId" />
       </div>
     </PrintTeleport>
   </main>

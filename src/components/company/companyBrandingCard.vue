@@ -1,9 +1,11 @@
 <script setup>
+import { IconSun, IconMoon, IconUpload } from '@tabler/icons-vue'
 import { uploadFile } from '@/utils/uploadService.js'
-import { currentCompany } from '@/utils/currentCompany.js'
-import { Notify } from 'quasar'
+import { useToast } from '@shared/composables/useToast.js'
 
 const model = defineModel({ type: Object, required: true })
+
+const toast = useToast()
 
 const showLightDialog = ref(false)
 const showDarkDialog = ref(false)
@@ -13,15 +15,10 @@ const uploadingDark = ref(false)
 async function handleLightSave({ file }) {
   uploadingLight.value = true
   try {
-    const asset = await uploadFile(file, currentCompany.value.id, 'COMPANYLOGO')
+    const asset = await uploadFile(file, 'COMPANYLOGO')
     model.value.companyIconUrl = asset.url
     showLightDialog.value = false
-    Notify.create({
-      type: 'positive',
-      message: 'Light mode logo uploaded successfully',
-      position: 'top',
-      timeout: 2000,
-    })
+    toast.notify({ type: 'positive', message: 'Light mode logo uploaded successfully' })
   } finally {
     uploadingLight.value = false
   }
@@ -30,15 +27,10 @@ async function handleLightSave({ file }) {
 async function handleDarkSave({ file }) {
   uploadingDark.value = true
   try {
-    const asset = await uploadFile(file, currentCompany.value.id, 'COMPANYLOGO')
+    const asset = await uploadFile(file, 'COMPANYLOGO')
     model.value.companyDarkIconUrl = asset.url
     showDarkDialog.value = false
-    Notify.create({
-      type: 'positive',
-      message: 'Dark mode logo uploaded successfully',
-      position: 'top',
-      timeout: 2000,
-    })
+    toast.notify({ type: 'positive', message: 'Dark mode logo uploaded successfully' })
   } finally {
     uploadingDark.value = false
   }
@@ -82,7 +74,7 @@ function handleDarkDelete() {
                 class="tw:size-full tw:object-contain tw:rounded-xl"
               />
               <template v-else>
-                <WIcon icon="light_mode" size="48px" />
+                <IconSun :size="48" class="tw:text-secondary tw:opacity-50" />
                 <span class="ds-label-sm tw:text-center tw:px-2"> No icon uploaded </span>
               </template>
             </div>
@@ -92,16 +84,14 @@ function handleDarkDelete() {
               <p class="tw:text-xs tw:text-secondary tw:leading-relaxed">
                 Used on light backgrounds. Recommended: 512x512px (PNG, SVG, or JPG)
               </p>
-              <WBtn
-                flat
-                color="primary"
-                class="tw:text-sm tw:font-bold tw:justify-start tw:px-0"
-                icon="upload"
-                :label="uploadingLight ? 'Uploading...' : 'Upload Light Icon'"
-                :loading="uploadingLight"
-                :disable="uploadingLight || uploadingDark"
+              <BaseButton
+                variant="text-link"
+                :disabled="uploadingLight || uploadingDark"
                 @click="showLightDialog = true"
-              />
+              >
+                <IconUpload class="tw:size-4" />
+                {{ uploadingLight ? 'Uploading...' : 'Upload Light Icon' }}
+              </BaseButton>
             </div>
             <ImageCropDialog
               v-model="showLightDialog"
@@ -129,7 +119,7 @@ function handleDarkDelete() {
                 class="tw:size-full tw:object-contain tw:rounded-xl"
               />
               <template v-else>
-                <WIcon icon="dark_mode" size="48px" class="tw:text-gray-400" />
+                <IconMoon :size="48" class="tw:text-gray-400" />
                 <span class="ds-label-sm tw:text-center tw:px-2 tw:text-gray-400">
                   No icon uploaded
                 </span>
@@ -141,16 +131,14 @@ function handleDarkDelete() {
               <p class="tw:text-xs tw:text-secondary tw:leading-relaxed">
                 Used on dark backgrounds. Recommended: 512x512px (PNG, SVG, or JPG)
               </p>
-              <WBtn
-                flat
-                color="primary"
-                class="tw:text-sm tw:font-bold tw:justify-start tw:px-0"
-                icon="upload"
-                :label="uploadingDark ? 'Uploading...' : 'Upload Dark Icon'"
-                :loading="uploadingDark"
-                :disable="uploadingLight || uploadingDark"
+              <BaseButton
+                variant="text-link"
+                :disabled="uploadingLight || uploadingDark"
                 @click="showDarkDialog = true"
-              />
+              >
+                <IconUpload class="tw:size-4" />
+                {{ uploadingDark ? 'Uploading...' : 'Upload Dark Icon' }}
+              </BaseButton>
             </div>
             <ImageCropDialog
               v-model="showDarkDialog"

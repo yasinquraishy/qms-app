@@ -12,6 +12,7 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 const { deactivateRole, activateRole } = useRoles()
 
@@ -31,15 +32,9 @@ function handleDeactivate() {
   }).onOk(async () => {
     const success = await deactivateRole(props.role.id)
     if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Role deactivated successfully',
-      })
+      toast.success('Role deactivated successfully')
     } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to deactivate role',
-      })
+      toast.error('Failed to deactivate role')
     }
   })
 }
@@ -53,15 +48,9 @@ function handleActivate() {
   }).onOk(async () => {
     const success = await activateRole(props.role.id)
     if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Role activated successfully',
-      })
+      toast.success('Role activated successfully')
     } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to activate role',
-      })
+      toast.error('Failed to activate role')
     }
   })
 }
@@ -123,21 +112,21 @@ function handleActivate() {
       class="tw:mt-2 tw:flex tw:flex-wrap tw:items-center tw:gap-6 tw:border-t tw:border-divider tw:pt-2"
     >
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-sm">
-        <WIcon icon="group" size="sm" class="tw:text-secondary" />
+        <WIcon icon="group" class="tw:text-secondary" />
         <span class="tw:font-medium tw:text-on-sidebar">
           {{ role.userCount || 0 }} Assigned Users
         </span>
       </div>
 
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-sm">
-        <WIcon icon="history" size="sm" class="tw:text-secondary" />
+        <WIcon icon="history" class="tw:text-secondary" />
         <span class="tw:text-secondary"
           >Last Modified: {{ role.updatedAt.formatDate('date') }}</span
         >
       </div>
 
       <!-- <div class="tw:flex tw:items-center tw:gap-2 tw:text-sm">
-        <WIcon icon="verified_user" size="sm" class="tw:text-secondary" />
+        <WIcon icon="verified_user"  class="tw:text-secondary" />
         <span class="tw:text-secondary tw:italic">
           {{ role.securityLevel || 'High Security Level' }}
         </span>

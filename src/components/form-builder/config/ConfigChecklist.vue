@@ -107,15 +107,7 @@ function removeColumnOption(selectColumnIndex, optionIndex) {
           <div class="tw:flex-1">
             <WInput v-model="field.rows[index]" placeholder="Row Label" dense />
           </div>
-          <WBtn
-            flat
-            round
-            dense
-            size="sm"
-            icon="sym_o_delete"
-            color="negative"
-            @click="removeRow(index)"
-          />
+          <WBtn flat round dense icon="sym_o_delete" color="negative" @click="removeRow(index)" />
         </div>
       </div>
       <WBtn
@@ -150,7 +142,6 @@ function removeColumnOption(selectColumnIndex, optionIndex) {
               flat
               round
               dense
-              size="sm"
               icon="sym_o_delete"
               color="negative"
               @click="removeColumn(index)"
@@ -198,7 +189,6 @@ function removeColumnOption(selectColumnIndex, optionIndex) {
               flat
               round
               dense
-              size="sm"
               icon="sym_o_delete"
               color="negative"
               @click="removeColumnOption(colIndex, optIndex)"

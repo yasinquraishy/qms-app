@@ -1,8 +1,14 @@
 <script setup>
+import { IconInfoCircle } from '@tabler/icons-vue'
+
 defineProps({
   supplier: {
     type: Object,
     required: true,
+  },
+  canUpdate: {
+    type: Boolean,
+    default: false,
   },
 })
 </script>
@@ -17,7 +23,7 @@ defineProps({
       <div
         class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-primary/10 tw:flex tw:items-center tw:justify-center"
       >
-        <QIcon name="info" color="primary" size="sm" />
+        <IconInfoCircle :size="20" class="tw:text-primary" />
       </div>
       <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Basic Information</h3>
     </div>
@@ -28,7 +34,11 @@ defineProps({
       </div>
       <div>
         <label class="ds-label-sm tw:text-secondary tw:block tw:mb-1">Category</label>
-        <p class="tw:text-sm tw:font-medium tw:text-on-main">{{ supplier.category || '—' }}</p>
+        <SupplierCategorySelectMenu v-if="canUpdate" v-model="supplier.category" :required="true" />
+        <template v-else>
+          <SupplierCategoryBadge v-if="supplier.category" :categoryId="supplier.category" />
+          <span v-else class="tw:text-sm tw:text-secondary">—</span>
+        </template>
       </div>
       <div>
         <label class="ds-label-sm tw:text-secondary tw:block tw:mb-1">Created Date</label>
@@ -38,7 +48,48 @@ defineProps({
       </div>
       <div>
         <label class="ds-label-sm tw:text-secondary tw:block tw:mb-1">Country</label>
-        <p class="tw:text-sm tw:font-medium tw:text-on-main">{{ supplier.country || '—' }}</p>
+        <BaseTextInput v-if="canUpdate" v-model="supplier.country" placeholder="Country" />
+        <p v-else class="tw:text-sm tw:font-medium tw:text-on-main">
+          {{ supplier.country || '—' }}
+        </p>
+      </div>
+      <div>
+        <label class="ds-label-sm tw:text-secondary tw:block tw:mb-1">Street Address</label>
+        <BaseTextInput
+          v-if="canUpdate"
+          v-model="supplier.streetAddress"
+          placeholder="Street Address"
+        />
+        <p v-else class="tw:text-sm tw:font-medium tw:text-on-main">
+          {{ supplier.streetAddress || '—' }}
+        </p>
+      </div>
+      <div>
+        <label class="ds-label-sm tw:text-secondary tw:block tw:mb-1">City</label>
+        <BaseTextInput v-if="canUpdate" v-model="supplier.city" placeholder="City" />
+        <p v-else class="tw:text-sm tw:font-medium tw:text-on-main">{{ supplier.city || '—' }}</p>
+      </div>
+      <div>
+        <label class="ds-label-sm tw:text-secondary tw:block tw:mb-1">State / Province</label>
+        <BaseTextInput
+          v-if="canUpdate"
+          v-model="supplier.stateProvince"
+          placeholder="State / Province"
+        />
+        <p v-else class="tw:text-sm tw:font-medium tw:text-on-main">
+          {{ supplier.stateProvince || '—' }}
+        </p>
+      </div>
+      <div>
+        <label class="ds-label-sm tw:text-secondary tw:block tw:mb-1">Zip / Postal Code</label>
+        <BaseTextInput
+          v-if="canUpdate"
+          v-model="supplier.zipPostalCode"
+          placeholder="Zip / Postal Code"
+        />
+        <p v-else class="tw:text-sm tw:font-medium tw:text-on-main">
+          {{ supplier.zipPostalCode || '—' }}
+        </p>
       </div>
     </div>
   </div>

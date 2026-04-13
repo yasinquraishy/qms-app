@@ -61,10 +61,9 @@ const canActOnStep = computed(() => myTask.value?.statusId === 'ASSIGNED')
     <!--body-->
     <div class="tw:flex-1 tw:overflow-y-auto">
       <DocumentsMainContentLeft
-        v-if="doc"
-        :document="doc"
-        :currentVersion="doc.latestVersion"
-        :canEdit="false"
+        v-if="doc?.id"
+        :documentId="doc.id"
+        :versionId="doc.latestVersion.id"
         :dense="true"
         :reviewMode="canActOnStep"
       />

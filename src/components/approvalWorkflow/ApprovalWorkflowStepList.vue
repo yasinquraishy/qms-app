@@ -1,77 +1,98 @@
 <script setup>
+import { IconPlus } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany.js'
 
-defineProps({
+const props = defineProps({
+  versionId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
+  autoAddStep: { type: Boolean, default: false },
 })
 
-const steps = defineModel({
-  type: Array,
-  default: () => [],
+const stepId = defineModel('stepId', {
+  type: String,
+  default: null,
 })
 
-const selectedIndex = defineModel('selectedIndex', {
-  type: Number,
-  default: 0,
+const steps = useLiveQueryWithDeps(
+  [() => props.versionId],
+  async (db, [vId]) => {
+    if (!vId) return []
+    return db.ApprovalWorkflowStep.where('workflowVersionId', vId).orderBy('stepOrder').exec()
+  },
+  { initial: [] },
+)
+
+// Auto-add first step when autoAddStep is enabled and version has no steps
+watch(steps, async (newSteps) => {
+  if (props.autoAddStep && props.canUpdate && newSteps?.length === 0 && props.versionId) {
+    await nextTick()
+    await addStep()
+  }
 })
 
-function selectStep(index) {
-  selectedIndex.value = index
+function selectStep(step) {
+  stepId.value = step.id
 }
 
-function addStep() {
-  if (!steps.value) return
-  const newOrder = steps.value.length + 1
-  const s = currentCompany.value?.settings || {}
-  steps.value.push({
-    name: `Step ${newOrder}`,
+const createStep = useLiveMutation(async (db, { versionId, order, settings }) => {
+  const s = settings || {}
+  const step = db.ApprovalWorkflowStep.create({
+    workflowVersionId: versionId,
+    name: `Step ${order}`,
     description: '',
-    stepOrder: newOrder,
+    stepOrder: order,
     approvalRule: s.defaultApprovalWorkflowApprovalRule ?? 'ALL',
     slaDays: s.defaultSla ?? null,
     requireComments: s.defaultApprovalWorkflowRequireComment ?? false,
     requireEsignature: s.defaultApprovalWorkflowRequireSignature ?? false,
-    roleIds: [],
-    reviewerIds: [],
   })
-  selectedIndex.value = steps.value.length - 1
+  await step.save()
+  return step
+})
+
+async function addStep() {
+  const s = currentCompany.value?.settings || {}
+  const order = steps.value.length + 1
+  const step = await createStep({ versionId: props.versionId, order, settings: s })
+  if (step) stepId.value = step.id
 }
 
-function removeStep(index) {
-  if (!steps.value) return
-  steps.value.splice(index, 1)
-  // Reorder
-  steps.value.forEach((step, i) => {
-    step.stepOrder = i + 1
-  })
-  // Adjust selection
-  if (selectedIndex.value >= steps.value.length) {
-    selectedIndex.value = Math.max(0, steps.value.length - 1)
+async function removeStep(index) {
+  const step = steps.value[index]
+  if (!step) return
+  const wasSelected = stepId.value === step.id
+  await step.delete()
+  // Reorder remaining
+  const remaining = steps.value.filter((_, i) => i !== index)
+  await Promise.all(
+    remaining.map((s, i) => {
+      s.stepOrder = i + 1
+      return s.save()
+    }),
+  )
+  if (wasSelected) {
+    const newIndex = Math.max(0, index - 1)
+    stepId.value = remaining[newIndex]?.id ?? null
   }
 }
 
-function moveStepUp(index) {
-  if (index > 0) {
-    moveStepInternal(index, index - 1)
-  }
+async function moveStepUp(index) {
+  if (index > 0) await swapSteps(index, index - 1)
 }
 
-function moveStepDown(index) {
-  if (index < steps.value.length - 1) {
-    moveStepInternal(index, index + 1)
-  }
+async function moveStepDown(index) {
+  if (index < steps.value.length - 1) await swapSteps(index, index + 1)
 }
 
-function moveStepInternal(fromIndex, toIndex) {
-  if (!steps.value) return
-  if (toIndex < 0 || toIndex >= steps.value.length) return
-  const [moved] = steps.value.splice(fromIndex, 1)
-  steps.value.splice(toIndex, 0, moved)
-  // Reorder
-  steps.value.forEach((step, i) => {
-    step.stepOrder = i + 1
-  })
-  selectedIndex.value = toIndex
+async function swapSteps(fromIndex, toIndex) {
+  const a = steps.value[fromIndex]
+  const b = steps.value[toIndex]
+  if (!a || !b) return
+  const tmpOrder = a.stepOrder
+  a.stepOrder = b.stepOrder
+  b.stepOrder = tmpOrder
+  await Promise.all([a.save(), b.save()])
+  stepId.value = a.id
 }
 
 defineExpose({ addStep })
@@ -87,7 +108,7 @@ defineExpose({ addStep })
       <span
         class="tw:text-xs tw:font-medium tw:text-secondary tw:bg-main tw:px-2 tw:py-0.5 tw:rounded"
       >
-        {{ steps.length }} Step{{ steps.length !== 1 ? 's' : '' }}
+        {{ steps?.length ?? 0 }} Step{{ (steps?.length ?? 0) !== 1 ? 's' : '' }}
       </span>
     </div>
 
@@ -95,14 +116,14 @@ defineExpose({ addStep })
     <div class="tw:flex-1 tw:overflow-y-auto tw:p-4 tw:space-y-3">
       <ApprovalWorkflowStepCard
         v-for="(step, index) in steps"
-        :key="index"
+        :key="step.id ?? index"
         :step="step"
         :index="index"
-        :isSelected="index === selectedIndex"
+        :isSelected="step.id === stepId"
         :isFirst="index === 0"
         :isLast="index === steps.length - 1"
         :canUpdate="canUpdate"
-        @select="selectStep(index)"
+        @select="selectStep(step)"
         @remove="removeStep(index)"
         @moveUp="moveStepUp(index)"
         @moveDown="moveStepDown(index)"
@@ -114,7 +135,7 @@ defineExpose({ addStep })
         class="tw:w-full tw:py-4 tw:border-2 tw:border-dashed tw:border-divider tw:rounded-xl tw:flex tw:items-center tw:justify-center tw:gap-2 tw:text-secondary tw:hover:text-primary tw:hover:border-primary tw:hover:bg-primary/5 tw:transition-all"
         @click="addStep"
       >
-        <WIcon icon="add_circle" size="20px" />
+        <IconPlus :size="20" />
         <span class="tw:text-sm tw:font-bold">Add Step</span>
       </button>
     </div>

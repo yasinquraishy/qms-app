@@ -1,6 +1,5 @@
 <script setup>
 import DynamicForm from '@/components/form/DynamicForm.js'
-import { useQuasar } from 'quasar'
 
 const props = defineProps({
   schema: {
@@ -35,7 +34,7 @@ const props = defineProps({
 
 const emit = defineEmits(['submit', 'close', 'update:modelValue'])
 
-const $q = useQuasar()
+const toast = useToast()
 const formData = ref({})
 
 watch(
@@ -51,7 +50,7 @@ watch(
 function handleSubmit(data) {
   if (props.readonly) return
   emit('submit', data)
-  $q.notify({
+  toast.notify({
     type: 'positive',
     message: 'Form submitted successfully!',
     caption: 'Check console for form data',

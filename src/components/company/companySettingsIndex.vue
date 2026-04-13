@@ -1,8 +1,4 @@
-<script setup>
-import { provideCompanySettings } from '@/composables/useCompanySettings.js'
-
-provideCompanySettings()
-</script>
+<script setup></script>
 
 <template>
   <CompanySettingsHome />

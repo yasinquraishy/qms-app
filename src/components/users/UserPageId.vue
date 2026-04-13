@@ -1,9 +1,8 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { required, helpers } from '@vuelidate/validators'
-import { useValidator } from '@shared/composables/validator.js'
+import { IconMail, IconInfoCircle, IconPlus, IconCamera, IconHistory } from '@tabler/icons-vue'
+import { post } from '@/api'
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { isAllowed, currentSession } from '@/utils/currentSession.js'
+import { isAllowed } from '@/utils/currentSession.js'
 import { uploadFile } from '@/utils/uploadService.js'
 
 const props = defineProps({
@@ -13,285 +12,144 @@ const props = defineProps({
   },
 })
 
-const $q = useQuasar()
-const { getUser, updateUser, inviteUser } = useUsers()
-const { roles, loading: loadingRoles } = useRoles()
+const canUpdateUser = computed(() => isAllowed(['users:update']))
 
-const loading = ref(false)
-const saving = ref(false)
-const user = ref(null)
-const showEditDialog = ref(false)
+const user = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  return db.User.findByPk(id)
+})
+
+const loading = computed(() => user.value === undefined)
+
 const showAvatarDialog = ref(false)
 const uploadingAvatar = ref(false)
 const sendingInvite = ref(false)
+const showRoleSelect = ref(false)
+const editingName = ref(false)
+const isSaving = ref(false)
+const saveError = ref(null)
+const isFirstLoad = ref(true)
 
-const canUpdateUser = computed(() => isAllowed(['users:update']))
+const debouncedSave = useDebounceFn(async () => {
+  if (!user.value) return
+  isSaving.value = true
+  saveError.value = null
+  try {
+    await user.value.save()
+  } catch (err) {
+    saveError.value = err.message || 'Failed to save'
+  } finally {
+    isSaving.value = false
+  }
+}, 500)
 
-const languageOptions = [
-  { label: 'English (US)', value: 'en-US' },
-  { label: 'English (UK)', value: 'en-GB' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'French', value: 'fr' },
-  { label: 'German', value: 'de' },
-  { label: 'Italian', value: 'it' },
-  { label: 'Portuguese', value: 'pt' },
-  { label: 'Chinese', value: 'zh' },
-  { label: 'Japanese', value: 'ja' },
-]
+watch(
+  user,
+  (u) => {
+    if (isFirstLoad.value) {
+      isFirstLoad.value = false
+      return
+    }
+    if (u) debouncedSave()
+  },
+  { deep: true },
+)
 
-const userStatusOptions = [
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Inactive', value: 'INACTIVE' },
-]
+const roleAssignments = useLiveQueryWithDeps(
+  [() => props.id],
+  async (db, [userId]) => {
+    if (!userId) return []
+    return db.RoleOnUser.where('userId', userId).exec()
+  },
+  { initial: [] },
+)
 
-const form = ref({
-  firstName: '',
-  lastName: '',
-  email: '',
-  languageId: 'en-US',
-  timeZone: 'UTC',
-  roleIds: [],
-  color: '#2563eb',
-  siteId: null,
-  departmentId: null,
-  userStatusId: 'ACTIVE',
+const assignedRoleIds = computed(() => roleAssignments.value.map((ra) => ra.roleId))
+
+const addRoleOnUser = useLiveMutation(async (db, { userId, roleId }) => {
+  const assignment = db.RoleOnUser.create({ userId, roleId })
+  await assignment.save()
+  return assignment
 })
 
-const formRules = computed(() => ({
-  firstName: { required: helpers.withMessage('Required', required) },
-  lastName: { required: helpers.withMessage('Required', required) },
-}))
+async function handleRolesChange(newRoleIds) {
+  const currentIds = assignedRoleIds.value
+  const toAdd = newRoleIds.filter((id) => !currentIds.includes(id))
+  const toRemove = currentIds.filter((id) => !newRoleIds.includes(id))
 
-const validator = useValidator(formRules, form)
-
-// Computed Properties
-const assignedRoles = computed(() => {
-  if (!user.value?.roleAssignments) return []
-  return user.value.roleAssignments
-    .map((ra) => roles.value.find((r) => r.id === ra.roleId))
-    .filter(Boolean)
-})
-
-const assignedRolesText = computed(() => {
-  if (assignedRoles.value.length === 0) return 'No roles assigned'
-  if (assignedRoles.value.length === 1) return assignedRoles.value[0].name
-  return `${assignedRoles.value.length} roles assigned`
-})
+  for (const roleId of toAdd) {
+    await addRoleOnUser({ userId: props.id, roleId })
+  }
+  for (const roleId of toRemove) {
+    const match = roleAssignments.value.find((ra) => ra.roleId === roleId)
+    if (match) await match.delete()
+  }
+  showRoleSelect.value = false
+}
 
 const breadcrumbItems = computed(() => [
   { label: 'Users', to: getCompanyPath('/users') },
   { label: user.value ? `${user.value.firstName} ${user.value.lastName}` : 'Loading...' },
 ])
 
-// Fetch Data
-async function loadUser() {
-  loading.value = true
-  const result = await getUser(props.id)
-  loading.value = false
-
-  if (result.error) {
-    $q.notify({
-      type: 'negative',
-      message: result.error,
-    })
-    return
-  }
-
-  if (result.user) {
-    user.value = { ...result.user }
-    form.value = {
-      firstName: result.user.firstName,
-      lastName: result.user.lastName,
-      email: result.user.email,
-      languageId: result.user.languageId || 'en-US',
-      timeZone: result.user.timeZone || 'UTC',
-      roleIds: result.user.roleAssignments?.map((ra) => ra.roleId) || [],
-      color: result.user.color,
-      siteId: result.user.siteId,
-      departmentId: result.user.departmentId,
-      userStatusId: result.user.userStatusId || 'ACTIVE',
-    }
-  }
-}
-
-// Send Invitation
 async function sendInvitation() {
   sendingInvite.value = true
-  const result = await inviteUser(props.id)
-  sendingInvite.value = false
-
-  if (result.error) {
-    $q.notify({
-      type: 'negative',
-      message: result.error,
-    })
-  } else {
-    $q.notify({
-      type: 'positive',
-      message: 'Invitation sent successfully',
-    })
+  try {
+    await post(`/v1/services/users/${props.id}/invite`, {})
     if (user.value) {
-      user.value = { ...user.value, inviteSent: true }
+      user.value.inviteSent = true
     }
+  } finally {
+    sendingInvite.value = false
   }
 }
 
-// Open Edit Dialog
-function openEditDialog() {
-  showEditDialog.value = true
-}
-
-// Save Data
-async function save() {
-  const valid = await validator.value.$validate()
-  if (!valid) return
-
-  saving.value = true
-  const result = await updateUser(props.id, form.value)
-  saving.value = false
-
-  if (result.error) {
-    $q.notify({
-      type: 'negative',
-      message: result.error,
-    })
-  } else {
-    $q.notify({
-      type: 'positive',
-      message: 'User updated successfully',
-    })
-    user.value = result.user
-    form.value = {
-      firstName: result.user.firstName,
-      lastName: result.user.lastName,
-      email: result.user.email,
-      languageId: result.user.languageId || 'en-US',
-      timeZone: result.user.timeZone || 'UTC',
-      siteId: result.user.siteId,
-      departmentId: result.user.departmentId,
-      roleIds: result.user.roleAssignments?.map((ra) => ra.roleId) || [],
-      color: result.user.color,
-      userStatusId: result.user.userStatusId || 'ACTIVE',
-    }
-    showEditDialog.value = false
-  }
-}
-
-// View Audit Logs
-function viewAuditLogs() {
-  $q.notify({
-    type: 'info',
-    message: 'Audit logs functionality coming soon',
-  })
-}
-
-// Open Avatar Dialog
 function openAvatarDialog() {
-  if (!canUpdateUser.value) {
-    $q.notify({
-      type: 'warning',
-      message: 'You do not have permission to update this user',
-    })
-    return
-  }
+  if (!canUpdateUser.value) return
   showAvatarDialog.value = true
 }
 
-// Save Avatar
 async function handleAvatarSave({ file }) {
   uploadingAvatar.value = true
-
   try {
-    // Upload to server
-    const asset = await uploadFile(file, currentSession.value.companyId, 'USERAVATAR')
-
-    // Update user with new avatar URL
-    const updateResult = await updateUser(props.id, {
-      avatar: asset.url,
-    })
-
-    if (updateResult.error) {
-      $q.notify({
-        type: 'negative',
-        message: updateResult.error,
-      })
-    } else {
-      $q.notify({
-        type: 'positive',
-        message: 'Profile picture updated successfully',
-      })
-      // Update local user state
-      user.value = updateResult.user
-      showAvatarDialog.value = false
-    }
+    const asset = await uploadFile(file, 'USERAVATAR')
+    user.value.avatar = asset.url
+    await user.value.save()
+    showAvatarDialog.value = false
   } finally {
     uploadingAvatar.value = false
   }
 }
 
-// Delete Avatar
 async function handleAvatarDelete() {
   uploadingAvatar.value = true
-  const updateResult = await updateUser(props.id, {
-    avatar: null,
-  })
-  uploadingAvatar.value = false
-
-  if (updateResult.error) {
-    $q.notify({
-      type: 'negative',
-      message: updateResult.error,
-    })
-  } else {
-    $q.notify({
-      type: 'positive',
-      message: 'Profile picture removed successfully',
-    })
-    // Update local user state
-    user.value = updateResult.user
+  try {
+    user.value.avatar = null
+    await user.value.save()
     showAvatarDialog.value = false
+  } finally {
+    uploadingAvatar.value = false
   }
 }
-
-onMounted(() => {
-  loadUser()
-})
-
-watch(
-  () => props.id,
-  () => {
-    loadUser()
-  },
-)
 </script>
 
 <template>
   <div class="tw:flex tw:flex-col tw:h-full">
     <!-- Breadcrumbs Teleport -->
     <SafeTeleport to="#main-header-title">
-      <WBreadcrumbs :items="breadcrumbItems" />
+      <BaseBreadcrumbs :items="breadcrumbItems" />
     </SafeTeleport>
 
     <!-- Actions Teleport -->
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:items-center tw:gap-3">
-        <WBtn
+        <BaseButton
           v-if="canUpdateUser && user && !user.inviteSent"
-          label="Send Invitation"
-          color="secondary"
-          unelevated
+          variant="outline"
           :loading="sendingInvite"
-          class="tw:px-4 tw:py-2 tw:text-sm tw:font-bold"
           @click="sendInvitation"
-        />
-        <WBtn
-          v-if="canUpdateUser"
-          label="Edit Profile"
-          color="primary"
-          unelevated
-          class="tw:px-4 tw:py-2 tw:text-sm tw:font-bold"
-          @click="openEditDialog"
-        />
+        >
+          Send Invitation
+        </BaseButton>
       </div>
     </SafeTeleport>
 
@@ -300,13 +158,28 @@ watch(
       v-if="loading"
       class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:flex-1 tw:py-8"
     >
-      <QSpinner color="primary" size="48px" />
+      <div
+        class="tw:size-12 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      />
       <div class="tw:text-sm tw:text-secondary tw:mt-3">Loading user...</div>
     </div>
 
     <!-- Content -->
     <div v-else class="tw:flex-1 tw:overflow-y-auto tw:p-8">
       <div class="tw:max-w-5xl tw:mx-auto tw:space-y-6">
+        <!-- Saving Indicator -->
+        <div v-if="isSaving" class="tw:flex tw:items-center tw:gap-2 tw:text-xs tw:text-secondary">
+          <div
+            class="tw:size-3 tw:animate-spin tw:rounded-full tw:border tw:border-primary tw:border-t-transparent"
+          />
+          Saving...
+        </div>
+
+        <!-- Save Error -->
+        <div v-if="saveError" class="tw:p-3 tw:bg-red-50 tw:text-red-600 tw:text-sm tw:rounded-lg">
+          {{ saveError }}
+        </div>
+
         <!-- Profile Header Card -->
         <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:p-8">
           <div
@@ -322,24 +195,50 @@ watch(
                 v-if="canUpdateUser"
                 class="tw:absolute tw:inset-0 tw:bg-black/50 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity tw:pointer-events-none"
               >
-                <QIcon name="photo_camera" size="32px" class="tw:text-white" />
+                <IconCamera :size="32" class="tw:text-white" />
               </div>
             </div>
             <div
               class="tw:flex tw:flex-col tw:items-center tw:md:items-start tw:text-center tw:md:text-left tw:pt-2"
             >
               <div class="tw:flex tw:items-center tw:gap-3 tw:mb-1 tw:flex-wrap">
-                <h2 class="tw:text-3xl tw:font-bold tw:text-on-sidebar">
+                <!-- Edit mode -->
+                <template v-if="editingName && canUpdateUser">
+                  <BaseTextInput
+                    v-model="user.firstName"
+                    placeholder="First Name"
+                    size="sm"
+                    @keyup.enter="editingName = false"
+                    @blur="editingName = false"
+                  />
+                  <BaseTextInput
+                    v-model="user.lastName"
+                    placeholder="Last Name"
+                    size="sm"
+                    @keyup.enter="editingName = false"
+                    @blur="editingName = false"
+                  />
+                </template>
+                <!-- Display mode -->
+                <h2
+                  v-else
+                  class="tw:text-3xl tw:font-bold tw:text-on-sidebar"
+                  :class="{ 'tw:cursor-pointer tw:hover:text-primary': canUpdateUser }"
+                  @click="canUpdateUser && (editingName = true)"
+                >
                   {{ user?.firstName }} {{ user?.lastName }}
                 </h2>
-                <WStatusBadge :status="user?.userStatusId" />
+                <UserStatusBadge :statusId="user?.userStatusId" />
               </div>
-              <p class="tw:text-lg tw:text-secondary tw:mb-4">
-                {{ assignedRolesText }}
-              </p>
+              <div class="tw:flex tw:flex-wrap tw:gap-1 tw:mb-4">
+                <RoleBadgeById v-for="roleId in assignedRoleIds" :key="roleId" :roleId="roleId" />
+                <span v-if="!assignedRoleIds.length" class="tw:text-lg tw:text-secondary">
+                  No roles assigned
+                </span>
+              </div>
               <div class="tw:flex tw:flex-wrap tw:justify-center tw:md:justify-start tw:gap-4">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary tw:text-sm">
-                  <QIcon name="mail" size="18px" />
+                  <IconMail :size="18" />
                   {{ user?.email }}
                 </div>
               </div>
@@ -356,47 +255,77 @@ watch(
             </div>
             <div class="tw:p-6 tw:space-y-6">
               <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-4">
+                <!-- Email -->
                 <div>
-                  <p class="ds-label tw:text-secondary tw:mb-1">Email Address</p>
-                  <p class="tw:text-sm tw:text-on-sidebar tw:font-medium">{{ user?.email }}</p>
-                </div>
-                <div>
-                  <p class="ds-label tw:text-secondary tw:mb-1">Phone Number</p>
-                  <p class="tw:text-sm tw:text-secondary tw:italic">—</p>
-                </div>
-                <div>
-                  <p class="ds-label tw:text-secondary tw:mb-1">Preferred Language</p>
+                  <p class="tw:text-secondary tw:mb-1">Email Address</p>
                   <p class="tw:text-sm tw:text-on-sidebar tw:font-medium">
-                    {{
-                      languageOptions.find((l) => l.value === user?.languageId)?.label ||
-                      user?.languageId ||
-                      '—'
-                    }}
+                    {{ user?.email }}
                   </p>
                 </div>
+
+                <!-- Language -->
                 <div>
-                  <p class="ds-label tw:text-secondary tw:mb-1">Timezone</p>
-                  <p class="tw:text-sm tw:text-on-sidebar tw:font-medium">
-                    {{ user?.timeZone || '—' }}
-                  </p>
+                  <p class="tw:text-secondary tw:mb-1">Preferred Language</p>
+                  <LanguageSelectMenu
+                    v-if="canUpdateUser"
+                    v-model="user.languageId"
+                    :required="true"
+                  />
+                  <LanguageBadge v-else :languageId="user?.languageId" />
                 </div>
+
+                <!-- Timezone -->
                 <div>
-                  <p class="ds-label tw:text-secondary tw:mb-1">Site</p>
-                  <p class="tw:text-sm tw:text-on-sidebar tw:font-medium">
-                    {{ user?.site?.name || '—' }}
-                  </p>
+                  <TimezoneDropdown v-model="user.timeZone" />
                 </div>
+
+                <!-- User Status -->
                 <div>
-                  <p class="ds-label tw:text-secondary tw:mb-1">Department</p>
-                  <p class="tw:text-sm tw:text-on-sidebar tw:font-medium">
-                    {{ user?.department?.name || '—' }}
-                  </p>
+                  <p class="tw:text-secondary tw:mb-1">Status</p>
+                  <UserStatusSelectMenu
+                    v-if="canUpdateUser"
+                    v-model="user.userStatusId"
+                    :required="true"
+                  />
+                  <UserStatusBadge v-else :statusId="user?.userStatusId" />
+                </div>
+
+                <!-- Site -->
+                <div>
+                  <p class="tw:text-secondary tw:mb-1">Site</p>
+                  <SiteSelectMenu v-if="canUpdateUser" v-model="user.siteId" :required="true" />
+                  <template v-else>
+                    <SiteBadgeById v-if="user?.siteId" :siteId="user.siteId" />
+                    <span v-else class="tw:text-sm tw:text-secondary">—</span>
+                  </template>
+                </div>
+
+                <!-- Department -->
+                <div>
+                  <p class="tw:text-secondary tw:mb-1">Department</p>
+                  <DepartmentSelectMenu
+                    v-if="canUpdateUser"
+                    v-model="user.departmentId"
+                    :siteId="user.siteId"
+                    :required="true"
+                  />
+                  <template v-else>
+                    <DepartmentBadgeById
+                      v-if="user?.departmentId"
+                      :departmentId="user.departmentId"
+                    />
+                    <span v-else class="tw:text-sm tw:text-secondary">—</span>
+                  </template>
                 </div>
               </div>
+
+              <!-- Color -->
               <div class="tw:pt-4 tw:border-t tw:border-divider">
-                <p class="ds-label tw:text-secondary tw:mb-3">User Color</p>
+                <p class="tw:text-secondary tw:mb-3">User Color</p>
                 <div class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:bg-main-hover tw:rounded-lg">
+                  <BaseColorPicker v-if="canUpdateUser" v-model="user.color" />
                   <div
+                    v-else
                     class="tw:size-10 tw:rounded tw:shrink-0"
                     :style="{ backgroundColor: user?.color || '#2563eb' }"
                   ></div>
@@ -417,31 +346,38 @@ watch(
               class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover tw:flex tw:justify-between tw:items-center"
             >
               <h3 class="tw:text-base tw:font-bold tw:text-on-main">Role Assignments</h3>
+              <div v-if="canUpdateUser">
+                <RoleSelectMenu
+                  :modelValue="assignedRoleIds"
+                  :required="false"
+                  multiple
+                  @update:modelValue="handleRolesChange"
+                >
+                  <template #button>
+                    <BaseButton v-if="canUpdateUser" iconOnly size="sm">
+                      <IconPlus :size="18" />
+                    </BaseButton>
+                  </template>
+                </RoleSelectMenu>
+              </div>
             </div>
             <div class="tw:p-6 tw:space-y-4">
-              <template v-if="assignedRoles.length > 0">
-                <div
-                  v-for="role in assignedRoles"
-                  :key="role.id"
-                  class="tw:flex tw:items-start tw:gap-4 tw:p-4 tw:border tw:border-divider tw:rounded-lg tw:hover:border-primary/30 tw:transition-colors"
-                >
-                  <div
-                    class="tw:size-10 tw:rounded tw:bg-primary/10 tw:flex tw:items-center tw:justify-center tw:text-primary tw:shrink-0"
-                  >
-                    <QIcon name="verified_user" size="20px" />
-                  </div>
-                  <div>
-                    <h4 class="tw:text-sm tw:font-bold tw:text-on-sidebar">{{ role.name }}</h4>
-                    <p class="tw:text-xs tw:text-secondary tw:mt-1">
-                      {{ role.description || 'No description available' }}
-                    </p>
-                  </div>
+              <!-- Role badges -->
+              <template v-if="assignedRoleIds.length > 0">
+                <div class="tw:flex tw:flex-wrap tw:gap-2">
+                  <RoleBadgeById
+                    v-for="roleId in assignedRoleIds"
+                    :key="roleId"
+                    :roleId="roleId"
+                    :clearable="canUpdateUser"
+                    @clear="() => handleRolesChange(assignedRoleIds.filter((id) => id !== roleId))"
+                  />
                 </div>
                 <div class="tw:bg-primary/5 tw:rounded-lg tw:p-4 tw:mt-2">
                   <div
                     class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:text-xs tw:font-bold tw:mb-1"
                   >
-                    <QIcon name="info" size="14px" />
+                    <IconInfoCircle :size="14" />
                     Permission Note
                   </div>
                   <p class="tw:text-xs tw:text-secondary">
@@ -451,7 +387,6 @@ watch(
                 </div>
               </template>
               <div v-else class="tw:text-center tw:py-8">
-                <QIcon name="shield_with_heart" size="48px" class="tw:text-secondary tw:mb-2" />
                 <p class="tw:text-sm tw:text-secondary">No roles assigned yet</p>
               </div>
             </div>
@@ -464,116 +399,28 @@ watch(
         >
           <div class="tw:flex tw:items-center tw:gap-6">
             <div class="tw:flex tw:flex-col">
-              <span class="ds-label-sm tw:text-secondary"> Account Created </span>
+              <span class="tw:text-secondary tw:text-xs">Account Created</span>
               <span class="tw:text-sm tw:font-medium tw:text-on-sidebar">
-                {{ user?.createdAt.formatDate('date') }}
+                {{ user?.createdAt?.formatDate('date') }}
               </span>
             </div>
             <div class="tw:w-px tw:h-8 tw:bg-divider tw:hidden tw:md:block"></div>
             <div class="tw:flex tw:flex-col">
-              <span class="ds-label-sm tw:text-secondary"> Last Updated </span>
+              <span class="tw:text-secondary tw:text-xs">Last Updated</span>
               <span class="tw:text-sm tw:font-medium tw:text-on-sidebar">
-                {{ user?.updatedAt.formatDate('date') }}
+                {{ user?.updatedAt?.formatDate('date') }}
               </span>
             </div>
           </div>
           <button
             class="tw:flex tw:items-center tw:gap-2 tw:px-3 tw:py-1.5 tw:bg-main-hover tw:rounded-full tw:text-secondary tw:cursor-pointer tw:hover:bg-divider tw:transition-colors"
-            @click="viewAuditLogs"
           >
-            <QIcon name="history" size="14px" />
+            <IconHistory :size="14" />
             <span class="tw:text-xs tw:font-medium">View Audit Logs</span>
           </button>
         </div>
       </div>
     </div>
-
-    <!-- Edit Dialog -->
-    <WDialog v-model="showEditDialog" title="Edit User Profile">
-      <div class="tw:space-y-4">
-        <div class="tw:grid tw:grid-cols-2 tw:gap-4">
-          <WInput v-model="form.firstName" name="firstName" placeholder="e.g. John">
-            <template #label> First Name <span class="tw:text-bad">*</span> </template>
-          </WInput>
-          <WInput v-model="form.lastName" name="lastName" placeholder="e.g. Doe">
-            <template #label> Last Name <span class="tw:text-bad">*</span> </template>
-          </WInput>
-        </div>
-        <div class="tw:grid tw:grid-cols-2 tw:gap-4">
-          <WSelect
-            v-model="form.languageId"
-            label="Preferred Language"
-            :options="languageOptions"
-            optionLabel="label"
-            optionValue="value"
-            emitValue
-            mapOptions
-          />
-          <WSelect
-            v-model="form.userStatusId"
-            label="User Status"
-            :options="userStatusOptions"
-            optionLabel="label"
-            optionValue="value"
-            emitValue
-            mapOptions
-          />
-        </div>
-        <div class="tw:grid tw:grid-cols-2 tw:gap-4">
-          <TimezoneDropdown v-model="form.timeZone" label="Timezone" />
-        </div>
-        <div class="tw:grid tw:grid-cols-2 tw:gap-4">
-          <UsersSiteSelect v-model:siteId="form.siteId" :required="true">
-            <template #label> Site <span class="tw:text-bad">*</span> </template>
-          </UsersSiteSelect>
-          <UsersDepartmentSelect
-            v-model:departmentId="form.departmentId"
-            :siteId="form.siteId"
-            :required="true"
-          >
-            <template #label> Department <span class="tw:text-bad">*</span> </template>
-          </UsersDepartmentSelect>
-        </div>
-        <WSelect
-          v-model="form.roleIds"
-          label="Assigned Roles"
-          :options="roles"
-          optionLabel="name"
-          optionValue="id"
-          multiple
-          :loading="loadingRoles"
-          emitValue
-          mapOptions
-        >
-          <template #label> Assigned Roles </template>
-          <template #option="{ itemProps, opt }">
-            <QItem v-bind="itemProps">
-              <QItemSection>
-                <QItemLabel>{{ opt.name }}</QItemLabel>
-                <QItemLabel caption>{{ opt.description }}</QItemLabel>
-              </QItemSection>
-            </QItem>
-          </template>
-        </WSelect>
-        <div>
-          <div class="tw:text-xs tw:text-secondary tw:mb-2 tw:font-bold tw:uppercase">
-            User Color
-          </div>
-          <WColorPicker v-model="form.color" />
-        </div>
-      </div>
-      <template #actions>
-        <WBtn label="Cancel" flat color="secondary" @click="showEditDialog = false" />
-        <WBtn
-          label="Save Changes"
-          unelevated
-          color="primary"
-          :loading="saving"
-          :disable="saving"
-          @click="save"
-        />
-      </template>
-    </WDialog>
 
     <!-- Avatar Management Dialog -->
     <ImageCropDialog

@@ -25,7 +25,6 @@ const close = () => {
         v-if="closable"
         class="w-alert__close-btn"
         icon="sym_r_close"
-        size="sm"
         color="currentColor"
         flat
         round

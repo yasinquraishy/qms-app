@@ -1,6 +1,4 @@
 <script setup>
-import { useOptionSets } from '@/composables/useOptionSets.js'
-
 const props = defineProps({
   options: {
     type: Array,
@@ -12,42 +10,22 @@ const props = defineProps({
   },
 })
 
-// Use WSelect props
+// Use WSelect attrs
 const attrs = useAttrs()
 
-const { fetchOptionSet } = useOptionSets()
-const fetchedOptions = ref([])
+const optionSet = useLiveQueryWithDeps(
+  [() => props.optionSetId],
+  async (db, [optionSetId]) => {
+    if (!optionSetId) return null
+    return db.OptionSet.findByPk(optionSetId)
+  },
+  { initial: null },
+)
 
 const computedOptions = computed(() => {
-  if (props.optionSetId && fetchedOptions.value.length > 0) {
-    return fetchedOptions.value
-  }
+  if (optionSet.value?.options) return optionSet.value.options
   return props.options || []
 })
-
-async function loadOptionSetIfNeeded() {
-  if (props.optionSetId) {
-    const data = await fetchOptionSet(props.optionSetId)
-    if (data && Array.isArray(data.options)) {
-      fetchedOptions.value = data.options
-    }
-  }
-}
-
-onMounted(() => {
-  loadOptionSetIfNeeded()
-})
-
-watch(
-  () => props.optionSetId,
-  (newId) => {
-    if (newId) {
-      loadOptionSetIfNeeded()
-    } else {
-      fetchedOptions.value = []
-    }
-  },
-)
 </script>
 
 <template>

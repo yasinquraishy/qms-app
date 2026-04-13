@@ -1,6 +1,5 @@
 <script setup>
 import { currentCompany } from '@/utils/currentCompany.js'
-import { useQuasar } from 'quasar'
 import { get } from '@/api'
 
 const props = defineProps({
@@ -10,7 +9,7 @@ const props = defineProps({
   },
 })
 
-const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 
 const { updateTemplate, loading: updating } = useFormTemplates()
@@ -22,12 +21,11 @@ const loading = ref(false)
 const error = ref(null)
 
 async function fetchTemplate() {
-  if (!props.id || !currentCompany.value?.id) return
+  if (!props.id) return
 
   error.value = null
 
   const data = await get(`/v1/services/formTemplates/${props.id}`, {
-    params: { companyId: currentCompany.value.id },
     loader: loading,
   })
   template.value = data.formTemplate
@@ -37,10 +35,7 @@ async function saveSchema(schemaData) {
   const success = await updateTemplate(props.id, { schema: schemaData })
 
   if (success) {
-    $q.notify({
-      type: 'positive',
-      message: 'Form template saved successfully',
-    })
+    toast.success('Form template saved successfully')
     handleCancel()
   }
 }

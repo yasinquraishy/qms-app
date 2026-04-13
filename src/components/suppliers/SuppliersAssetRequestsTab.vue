@@ -1,24 +1,39 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { currentCompany } from '@/utils/currentCompany.js'
-import { get, del } from '@/api'
+import {
+  IconClipboardList,
+  IconClipboard,
+  IconUpload,
+  IconStar,
+  IconPencil,
+  IconTrash,
+  IconPlus,
+} from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 
 const props = defineProps({
-  supplier: {
-    type: Object,
+  supplierId: {
+    type: String,
     required: true,
   },
 })
 
-const $q = useQuasar()
-
 const canUpdate = computed(() => isAllowed(['suppliers:update']))
 
-const assetRequests = ref([])
-const requestTypes = ref([])
-const requestStatuses = ref([])
-const loading = ref(false)
+// ─── Live queries ─────────────────────────────────────────────────────────────
+
+const assetRequests = useLiveQueryWithDeps(
+  [() => props.supplierId],
+  async (db, [supplierId]) => db.AssetRequest.where('supplierId', supplierId).exec(),
+  { initial: [] },
+)
+
+const contacts = useLiveQueryWithDeps(
+  [() => props.supplierId],
+  async (db, [supplierId]) => db.SupplierContact.where('supplierId', supplierId).exec(),
+  { initial: [] },
+)
+
+// ─── Dialogs ──────────────────────────────────────────────────────────────────
 
 const showDialog = ref(false)
 const editingRequest = ref(null)
@@ -28,29 +43,6 @@ const submittingRequest = ref(null)
 
 const showReviewDialog = ref(false)
 const reviewingRequestId = ref(null)
-
-async function fetchData() {
-  const companyId = currentCompany.value?.id
-  loading.value = true
-  const [requestsData, typesData, statusesData] = await Promise.all([
-    get(`/v1/services/suppliers/${props.supplier.id}/assetRequests`, {
-      params: { companyId },
-    }),
-    get('/v1/services/assetRequestTypes'),
-    get('/v1/services/assetRequestStatuses'),
-  ])
-  loading.value = false
-
-  assetRequests.value = requestsData.assetRequests || []
-  requestTypes.value = (typesData.assetRequestTypes || []).map((t) => ({
-    label: t.name,
-    value: t.id,
-  }))
-  requestStatuses.value = (statusesData.assetRequestStatuses || []).map((s) => ({
-    label: s.name,
-    value: s.id,
-  }))
-}
 
 function openCreateDialog() {
   editingRequest.value = null
@@ -72,30 +64,26 @@ function openReviewDialog(request) {
   showReviewDialog.value = true
 }
 
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+const confirmDialog = ref(null)
+
 function onDeleteRequest(request) {
-  $q.dialog({
+  confirmDialog.value = {
     title: 'Delete Asset Request',
     message: `Are you sure you want to delete "${request.title}"?`,
-    cancel: true,
-  }).onOk(async () => {
-    const result = await del(`/v1/services/assetRequests/${request.id}`)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Asset request deleted' })
-      await fetchData()
-    }
-  })
+    okLabel: 'Delete',
+    onOk: async () => {
+      await request.delete()
+      confirmDialog.value = null
+    },
+  }
 }
 
 function formatDate(value) {
   if (!value) return '—'
   return value?.formatDate?.('date') || value
 }
-
-onMounted(() => {
-  fetchData()
-})
 </script>
 
 <template>
@@ -110,38 +98,24 @@ onMounted(() => {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-gray-100 tw:flex tw:items-center tw:justify-center"
         >
-          <QIcon name="request_quote" class="tw:text-secondary" size="sm" />
+          <IconClipboardList :size="20" class="tw:text-secondary" />
         </div>
         <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Asset Requests</h3>
-        <QBadge
+        <span
           v-if="assetRequests.length"
-          color="grey-5"
-          textColor="grey-8"
-          class="tw:rounded-full"
+          class="tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-gray-200 tw:text-gray-700 tw:px-2 tw:py-0.5 tw:text-[10px] tw:font-bold"
         >
-          <span class="tw:text-[10px] tw:px-2 tw:py-0.5 tw:font-bold">
-            {{ assetRequests.length }}
-          </span>
-        </QBadge>
+          {{ assetRequests.length }}
+        </span>
       </div>
-      <WBtn
-        v-if="canUpdate"
-        label="New Request"
-        icon="add"
-        color="primary"
-        outline
-        size="sm"
-        @click="openCreateDialog"
-      />
-    </div>
-
-    <!-- Loading -->
-    <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:py-12">
-      <QSpinner color="primary" size="32px" />
+      <BaseButton v-if="canUpdate" variant="outline" @click="openCreateDialog">
+        <IconPlus :size="16" />
+        <span>New Request</span>
+      </BaseButton>
     </div>
 
     <!-- List -->
-    <div v-else-if="assetRequests.length" class="tw:divide-y tw:divide-divider">
+    <div v-if="assetRequests.length" class="tw:divide-y tw:divide-divider">
       <div
         v-for="request in assetRequests"
         :key="request.id"
@@ -150,18 +124,19 @@ onMounted(() => {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-primary/10 tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:mt-0.5"
         >
-          <QIcon name="assignment" color="primary" size="sm" />
+          <IconClipboard :size="20" class="tw:text-primary" />
         </div>
 
         <div class="tw:flex-1 tw:min-w-0">
           <div class="tw:flex tw:items-center tw:gap-2 tw:flex-wrap">
             <p class="tw:text-sm tw:font-medium tw:text-on-main">{{ request.title }}</p>
-            <WStatusBadge v-if="request.statusId" :status="request.statusId" size="xs" />
+            <AssetRequestStatusBadgeById v-if="request.statusId" :statusId="request.statusId" />
           </div>
           <div class="tw:flex tw:items-center tw:gap-3 tw:mt-1 tw:flex-wrap">
-            <span v-if="request.requestType" class="tw:text-xs tw:text-secondary">
-              {{ request.requestType.name }}
-            </span>
+            <AssetRequestTypeBadgeById
+              v-if="request.requestTypeId"
+              :typeId="request.requestTypeId"
+            />
             <span v-if="request.dueDate" class="tw:text-xs tw:text-secondary">
               Due: {{ formatDate(request.dueDate) }}
             </span>
@@ -172,96 +147,69 @@ onMounted(() => {
           <p v-if="request.description" class="tw:text-xs tw:text-secondary tw:mt-1 tw:truncate">
             {{ request.description }}
           </p>
-          <div
-            v-if="request.contacts?.length"
-            class="tw:flex tw:items-center tw:gap-1 tw:mt-1 tw:flex-wrap"
-          >
-            <QBadge
-              v-for="contact in request.contacts"
-              :key="contact.id"
-              color="grey-3"
-              textColor="grey-8"
-              class="tw:rounded-full"
-            >
-              <span class="tw:text-[10px] tw:px-1">{{ contact.email || contact.phoneNumber }}</span>
-            </QBadge>
-          </div>
         </div>
 
         <div v-if="canUpdate" class="tw:flex tw:items-center tw:gap-1 tw:shrink-0">
-          <WBtn
+          <button
             v-if="['PENDING', 'OVERDUE'].includes(request.statusId)"
-            flat
-            round
-            dense
-            icon="upload_file"
-            color="positive"
-            size="sm"
+            class="tw:p-1.5 tw:rounded tw:text-green-500 tw:hover:text-green-700 tw:hover:bg-green-50 tw:transition-colors"
             title="Submit request"
             @click="openSubmitDialog(request)"
-          />
-          <WBtn
+          >
+            <IconUpload :size="16" />
+          </button>
+          <button
             v-if="request.statusId === 'RECEIVED'"
-            flat
-            round
-            dense
-            icon="rate_review"
-            color="primary"
-            size="sm"
+            class="tw:p-1.5 tw:rounded tw:text-primary tw:hover:bg-primary/10 tw:transition-colors"
             title="Review document"
             @click="openReviewDialog(request)"
-          />
-          <WBtn
-            flat
-            round
-            dense
-            icon="edit"
-            color="secondary"
-            size="sm"
+          >
+            <IconStar :size="16" />
+          </button>
+          <button
+            class="tw:p-1.5 tw:rounded tw:text-secondary tw:hover:text-on-main tw:hover:bg-main-hover tw:transition-colors"
             @click="openEditDialog(request)"
-          />
-          <WBtn
-            flat
-            round
-            dense
-            icon="delete"
-            color="negative"
-            size="sm"
+          >
+            <IconPencil :size="16" />
+          </button>
+          <button
+            class="tw:p-1.5 tw:rounded tw:text-red-400 tw:hover:text-red-600 tw:hover:bg-red-50 tw:transition-colors"
             @click="onDeleteRequest(request)"
-          />
+          >
+            <IconTrash :size="16" />
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Empty -->
-    <div v-else class="tw:py-12 tw:text-center">
-      <QIcon name="request_quote" size="40px" class="tw:text-secondary/50 tw:mb-2" />
-      <p class="tw:text-secondary tw:text-sm">No asset requests yet.</p>
-      <p class="tw:text-secondary/70 tw:text-xs tw:mt-1">
-        Create a request to track documents needed from this supplier.
-      </p>
-    </div>
+    <BaseEmptyState
+      v-else
+      :icon="IconClipboardList"
+      title="No asset requests yet."
+      description="Create a request to track documents needed from this supplier."
+    />
 
     <SuppliersAssetRequestDialog
       v-model="showDialog"
-      :supplierId="supplier.id"
+      :supplierId="supplierId"
       :editingRequest="editingRequest"
-      :contacts="supplier.contacts || []"
-      :requestTypes="requestTypes"
-      :requestStatuses="requestStatuses"
-      @saved="fetchData"
+      :contacts="contacts"
     />
 
-    <SuppliersAssetRequestSubmitDialog
-      v-model="showSubmitDialog"
-      :request="submittingRequest"
-      @submitted="fetchData"
-    />
+    <SuppliersAssetRequestSubmitDialog v-model="showSubmitDialog" :request="submittingRequest" />
 
     <SuppliersAssetRequestReviewDialog
       v-model="showReviewDialog"
       :assetRequestId="reviewingRequestId"
-      @done="fetchData"
     />
   </div>
+
+  <ConfirmDialog
+    v-if="confirmDialog"
+    :modelValue="true"
+    v-bind="confirmDialog"
+    @update:modelValue="confirmDialog = null"
+    @ok="confirmDialog?.onOk"
+  />
 </template>

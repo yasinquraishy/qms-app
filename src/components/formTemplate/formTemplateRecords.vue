@@ -5,7 +5,6 @@ import { exportRecordPDFsHTML } from '@/utils/exportRecordPDFsHTML.js'
 import { getProp, setProp } from '@shared/composables/object.js'
 import DynamicForm from '@/components/form/DynamicForm.js'
 import FormTemplateRecordsAdvancedFilter from './FormTemplateRecordsAdvancedFilter.vue'
-import { useQuasar } from 'quasar'
 import { isAllowed } from '@/utils/currentSession'
 
 const props = defineProps({
@@ -25,7 +24,7 @@ const props = defineProps({
 
 // Composables
 const { templateRecords, recordsLoading, fetchTemplateRecords, updateRecord } = useFormTemplates()
-const $q = useQuasar()
+const toast = useToast()
 
 // ---- Refs ----
 // Search
@@ -558,9 +557,9 @@ async function onMenuHide() {
   const success = await updateRecord(record.id, { payload: newPayload })
 
   if (success) {
-    $q.notify({ type: 'positive', message: 'Record updated' })
+    toast.success('Record updated')
   } else {
-    $q.notify({ type: 'negative', message: 'Failed to update record' })
+    toast.error('Failed to update record')
   }
 
   editSaving.value = false
@@ -569,10 +568,7 @@ async function onMenuHide() {
 // Export function
 async function handleExport(format) {
   if (!templateRecords.value || templateRecords.value.length === 0) {
-    $q.notify({
-      type: 'warning',
-      message: 'No data to export',
-    })
+    toast.warning('No data to export')
     return
   }
 
@@ -589,10 +585,7 @@ async function handleExport(format) {
       await exportRecordPDFsHTML(templateRecords.value, props.schema, props.templateName)
     }
 
-    $q.notify({
-      type: 'positive',
-      message: `Exported to ${format.toUpperCase()} successfully`,
-    })
+    toast.success(`Exported to ${format.toUpperCase()} successfully`)
   } catch (error) {
     console.error('Export failed:', error)
 
@@ -601,10 +594,7 @@ async function handleExport(format) {
       errorMessage = `${format.toUpperCase()} export requires additional libraries. Please contact administrator.`
     }
 
-    $q.notify({
-      type: 'negative',
-      message: errorMessage,
-    })
+    toast.error(errorMessage)
   }
 }
 </script>
@@ -613,30 +603,15 @@ async function handleExport(format) {
   <div class="tw:flex tw:flex-col tw:h-full tw:p-6">
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:gap-1">
-        <WBtn
-          icon="download"
-          label="CSV"
-          outline
-          size="sm"
-          color="primary"
-          @click="handleExport('csv')"
-        />
+        <WBtn icon="download" label="CSV" outline color="primary" @click="handleExport('csv')" />
         <WBtn
           icon="download"
           label="Excel"
           outline
-          size="sm"
           color="primary"
           @click="handleExport('excel')"
         />
-        <WBtn
-          icon="download"
-          label="PDF"
-          outline
-          size="sm"
-          color="primary"
-          @click="handleExport('pdf')"
-        />
+        <WBtn icon="download" label="PDF" outline color="primary" @click="handleExport('pdf')" />
       </div>
     </SafeTeleport>
 

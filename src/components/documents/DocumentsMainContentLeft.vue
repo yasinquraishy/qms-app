@@ -1,19 +1,14 @@
 <script setup>
-import { useComments } from '@/composables/useComments.js'
-import { currentSession } from '@/utils/currentSession.js'
+import { isAllowed, currentSession } from '@/utils/currentSession.js'
 
 const props = defineProps({
-  document: {
-    type: Object,
+  documentId: {
+    type: String,
     required: true,
   },
-  currentVersion: {
-    type: Object,
+  versionId: {
+    type: String,
     default: null,
-  },
-  canEdit: {
-    type: Boolean,
-    default: false,
   },
   dense: {
     type: Boolean,
@@ -25,10 +20,100 @@ const props = defineProps({
   },
 })
 
-const { updateVersion } = useDocuments()
+const document = useLiveQueryWithDeps([() => props.documentId], async (db, [id]) => {
+  return db.Document.findByPk(id)
+})
+
+const currentVersion = useLiveQueryWithDeps([() => props.versionId], async (db, [id]) => {
+  return id ? db.DocumentVersion.findByPk(id) : null
+})
+
+const rejectInstance = useLiveQueryWithDeps(
+  [() => currentVersion.value?.workflowInstanceId],
+  async (db, [workflowInstanceId]) => {
+    if (!workflowInstanceId) return null
+    const instance = await db.ApprovalWorkflowInstance.findByPk(workflowInstanceId)
+    if (['REJECTED', 'CHANGES_REQUESTED'].includes(instance.statusId)) {
+      return instance
+    }
+    return instance
+  },
+  { models: 'ApprovalWorkflowInstance' },
+)
+
+const rejectedInstanceStep = useLiveQueryWithDeps(
+  [() => rejectInstance.value?.id],
+  async (db, [instanceId]) => {
+    if (!instanceId) return null
+    const step = await db.ApprovalWorkflowInstanceStep.where('[workflowInstanceId+statusId]', [
+      [instanceId, 'REJECTED'],
+      [instanceId, 'CHANGES_REQUESTED'],
+    ]).first()
+    return step
+  },
+  { models: 'ApprovalWorkflowInstanceStep' },
+)
+
+const rejectedTask = useLiveQueryWithDeps(
+  [() => rejectedInstanceStep.value?.id],
+  async (db, [stepId]) => {
+    if (!stepId) return null
+    const task = await db.TaskInstance.where('[sourceType+sourceId]', [
+      'ApprovalWorkflowInstanceStep',
+      stepId,
+    ])
+      .where('statusId', 'REJECTED')
+      .first()
+    return task
+  },
+)
+
+const canEdit = computed(
+  () =>
+    isAllowed(['documents:update']) && document.value?.statusId !== 'ARCHIVED' && !props.reviewMode,
+)
 
 // ── Review Mode: Inline section comments ───────────────────────────────────
-const { comments, fetchComments, createComment, updateComment } = useComments()
+// Load section comments from IDB — filtered by reviewer userId
+const sectionComments = useLiveQueryWithDeps(
+  [
+    () => props.reviewMode,
+    () => currentSession.value?.userId,
+    () => props.versionId,
+    () => currentVersion.value?.statusId,
+    () =>
+      Array.isArray(currentVersion.value?.sections)
+        ? currentVersion.value.sections.map((s) => s.id)
+        : [],
+    () => rejectedTask.value?.assignedTo,
+  ],
+  async (db, [isReview, currentUserId, versionId, versionStatusId, sectionIds, rejectedBy]) => {
+    if (!versionId) return []
+
+    if (['REJECTED', 'CHANGES_REQUESTED'].includes(versionStatusId)) {
+      // Show all section comments on rejected versions (reviewer's feedback)
+      return await db.Comment.where(
+        '[objectType+objectId]',
+        sectionIds.map((id) => ['DocumentSection', id]),
+      )
+        .where('userId', rejectedBy)
+        .exec()
+    }
+
+    if (isReview) {
+      // Show only reviewer's own comments during review
+      return await db.Comment.where(
+        '[objectType+objectId]',
+        sectionIds.map((id) => ['DocumentSection', id]),
+      )
+        .where('userId', currentUserId)
+        .exec()
+    }
+
+    return []
+  },
+  { initial: [], models: 'Comment' },
+)
 
 // Local comment text per section (keyed by section ID)
 const sectionCommentText = ref({})
@@ -40,19 +125,19 @@ const showAddSectionDialog = ref(false)
 
 // Computed properties
 const documentSections = computed(() => {
-  return props.currentVersion?.sections || []
+  return currentVersion.value?.sections || []
 })
 
 const canUpdateVersion = computed(() => {
   return (
-    props.canEdit &&
-    props.currentVersion &&
-    ['DRAFT', 'REJECTED'].includes(props.currentVersion.statusId)
+    canEdit.value &&
+    currentVersion.value &&
+    ['DRAFT', 'REJECTED'].includes(currentVersion.value.statusId)
   )
 })
 
 const versionLabel = computed(() => {
-  const v = props.currentVersion
+  const v = currentVersion.value
   if (!v) return ''
   return v.versionLabel || `${v.versionMajor}.${v.versionMinor}`
 })
@@ -83,18 +168,16 @@ function openAddSectionDialog() {
   showAddSectionDialog.value = true
 }
 
-const debouncedSave = useDebounceFn((newSections) => {
+const debouncedSave = useDebounceFn(async () => {
   if (canUpdateVersion.value) {
-    updateVersion(props.document.id, props.currentVersion.id, {
-      sections: newSections,
-    })
+    await currentVersion.value.save() // Saves the changes
   }
 }, 500)
 
 watch(
   documentSections,
-  (newSections) => {
-    debouncedSave(newSections)
+  () => {
+    debouncedSave()
   },
   { deep: true },
 )
@@ -104,61 +187,43 @@ useEventListener('click', (event) => {
   stopEditing()
 })
 
-// Fetch comments depending on mode:
-// - reviewMode=true: fetch current reviewer's own comments
-// - reviewMode=false + rejected version: fetch rejecting reviewer's comments
+function getReviewerComment(sectionId) {
+  return sectionComments.value.find((c) => c.objectId === sectionId) || null
+}
+
+// Populate text inputs when comments are loaded or review starts
 watch(
-  [() => props.reviewMode, () => props.currentVersion],
-  async ([isReview, version]) => {
-    comments.value = []
-    sectionCommentText.value = {}
-
-    const sections = version?.sections || []
-    if (sections.length === 0) return
-
-    const objectId = sections.map((s) => s.id).join(',')
-
-    if (isReview) {
-      await fetchComments({
-        objectType: 'DocumentSection',
-        objectId,
-        userId: currentSession.value?.id,
-      })
-      for (const comment of comments.value) {
+  sectionComments,
+  (newComments) => {
+    if (!props.reviewMode) return
+    for (const comment of newComments) {
+      if (!(comment.objectId in sectionCommentText.value)) {
         sectionCommentText.value[comment.objectId] = comment.body
       }
-    } else if (
-      ['REJECTED', 'CHANGES_REQUESTED'].includes(version?.statusId) &&
-      version?.rejectedBy?.id
-    ) {
-      await fetchComments({
-        objectType: 'DocumentSection',
-        objectId,
-        userId: version.rejectedBy.id,
-      })
     }
   },
   { immediate: true },
 )
 
-function getReviewerComment(sectionId) {
-  return comments.value.find((c) => c.objectId === sectionId) || null
-}
-
 const debouncedSaveComment = useDebounceFn(async (sectionId) => {
   const text = sectionCommentText.value[sectionId]?.trim()
-  const existing = comments.value.find((c) => c.objectId === sectionId)
+  const existing = getReviewerComment(sectionId)
 
   savingComment.value[sectionId] = true
   try {
     if (existing && text) {
-      await updateComment(existing.id, { body: text })
+      existing.body = text
+      await existing.save()
     } else if (!existing && text) {
-      await createComment({
-        body: text,
-        objectType: 'DocumentSection',
-        objectId: sectionId,
+      const create = useLiveMutation(async (db) => {
+        const comment = db.Comment.create({
+          body: text,
+          objectType: 'DocumentSection',
+          objectId: sectionId,
+        })
+        await comment.save()
       })
+      await create()
     }
   } finally {
     savingComment.value[sectionId] = false
@@ -167,7 +232,7 @@ const debouncedSaveComment = useDebounceFn(async (sectionId) => {
 </script>
 
 <template>
-  <div class="tw:lg:col-span-3 tw:space-y-6">
+  <div v-if="document && currentVersion" class="tw:lg:col-span-3 tw:space-y-6">
     <!-- Document Card -->
     <div
       class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:print:border-0 tw:print:shadow-none tw:overflow-hidden"
@@ -332,8 +397,8 @@ const debouncedSaveComment = useDebounceFn(async (sectionId) => {
             <div class="tw:flex tw:items-center tw:gap-2 tw:mb-1">
               <WIcon name="feedback" size="16px" class="tw:text-orange-600" />
               <span class="tw:text-xs tw:font-semibold tw:text-orange-700 tw:dark:text-orange-400">
-                Reviewer Feedback — {{ getReviewerComment(section.id).user?.firstName }}
-                {{ getReviewerComment(section.id).user?.lastName }}
+                Reviewer Feedback —
+                <UserBadgeById :userId="getReviewerComment(section.id).userId" />
               </span>
             </div>
             <p

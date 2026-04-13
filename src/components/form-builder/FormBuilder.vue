@@ -4,7 +4,6 @@ import FormFieldPalette from './FormFieldPalette.vue'
 import FormCanvas from './FormCanvas.vue'
 import FormFieldConfig from './FormFieldConfig.vue'
 import DynamicForm from '@/components/form/DynamicForm.js'
-import { useQuasar } from 'quasar'
 
 const props = defineProps({
   title: {
@@ -19,7 +18,7 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'update:schema'])
 
-const $q = useQuasar()
+const toast = useToast()
 
 const {
   schema,
@@ -109,9 +108,7 @@ function validateSchema(fields) {
   for (const field of fields) {
     // Check if field has a name
     if (!field.name || field.name.trim() === '') {
-      $q.notify({
-        type: 'negative',
-        message: `Field "${field.label || field.type}" is missing a name`,
+      toast.error(`Field "${field.label || field.type}" is missing a name`, {
         caption: 'All fields must have a unique name',
       })
       return false
@@ -122,10 +119,9 @@ function validateSchema(fields) {
       for (const [index, option] of field.options.entries()) {
         const val = typeof option === 'object' ? option?.value : option
         if (!val || String(val).trim() === '') {
-          $q.notify({
-            type: 'negative',
-            message: `Option ${index + 1} in field "${field.label || field.name}" is missing a value`,
-          })
+          toast.error(
+            `Option ${index + 1} in field "${field.label || field.name}" is missing a value`,
+          )
           return false
         }
       }
@@ -136,10 +132,7 @@ function validateSchema(fields) {
       for (const [index, row] of field.rows.entries()) {
         const val = typeof row === 'object' ? row?.value : row
         if (!val || String(val).trim() === '') {
-          $q.notify({
-            type: 'negative',
-            message: `Row ${index + 1} in field "${field.label || field.name}" is missing a value`,
-          })
+          toast.error(`Row ${index + 1} in field "${field.label || field.name}" is missing a value`)
           return false
         }
       }
@@ -149,10 +142,9 @@ function validateSchema(fields) {
     if (field.columns && Array.isArray(field.columns)) {
       for (const [colIndex, col] of field.columns.entries()) {
         if (!col.value || String(col.value).trim() === '') {
-          $q.notify({
-            type: 'negative',
-            message: `Column ${colIndex + 1} in field "${field.label || field.name}" is missing a value`,
-          })
+          toast.error(
+            `Column ${colIndex + 1} in field "${field.label || field.name}" is missing a value`,
+          )
           return false
         }
 
@@ -161,10 +153,9 @@ function validateSchema(fields) {
           for (const [optIndex, option] of col.options.entries()) {
             const val = typeof option === 'object' ? option?.value : option
             if (!val || String(val).trim() === '') {
-              $q.notify({
-                type: 'negative',
-                message: `Option ${optIndex + 1} in Column "${col.label || col.value}" (Field: "${field.label || field.name}") is missing a value`,
-              })
+              toast.error(
+                `Option ${optIndex + 1} in Column "${col.label || col.value}" (Field: "${field.label || field.name}") is missing a value`,
+              )
               return false
             }
           }
@@ -186,7 +177,7 @@ function validateSchema(fields) {
 }
 
 function onPreviewSubmit(data) {
-  $q.notify({
+  toast.notify({
     type: 'positive',
     message: 'Form submitted!',
     caption: 'Check console for form data',
@@ -207,10 +198,7 @@ function doClear() {
 
 function copyJson() {
   navigator.clipboard.writeText(jsonContent.value)
-  $q.notify({
-    type: 'positive',
-    message: 'JSON copied to clipboard',
-  })
+  toast.success('JSON copied to clipboard')
 }
 </script>
 
@@ -356,7 +344,7 @@ function copyJson() {
               class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:border-divider tw:bg-main/50"
             >
               <div class="tw:text-lg tw:font-bold tw:text-on-sidebar">Field Settings</div>
-              <WBtn flat round dense icon="close" size="sm" @click="closeRightDrawer" />
+              <WBtn flat round dense icon="close" @click="closeRightDrawer" />
             </div>
             <div class="tw:flex tw:flex-col tw:grow tw:overflow-y-auto">
               <FormFieldConfig v-model:field="selectedField" :path="selectedFieldPath" />
@@ -389,7 +377,6 @@ function copyJson() {
                 icon="content_copy"
                 label="Copy JSON"
                 color="primary"
-                size="sm"
                 @click="copyJson"
               />
             </div>

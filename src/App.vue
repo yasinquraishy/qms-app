@@ -3,6 +3,7 @@ import { initSession, currentSession } from '@/utils/currentSession'
 import { initCurrentCompany, companies } from '@/utils/currentCompany'
 import { isPublicRoute as isPublicRouteFn, isAuthRoute } from '@/constants/authRoutes'
 import { provideNotifications } from '@/composables/useNotifications.js'
+import { initSync } from '@/utils/initSyncEngine.js'
 
 provideNotifications()
 
@@ -54,6 +55,18 @@ onMounted(async () => {
   if (!isCompanyExists && companies.value.length > 0) {
     const firstCompanyCode = companies.value[0].code
     window.location.href = `/${firstCompanyCode}/dashboard`
+    return
+  }
+
+  // If URL companyCode doesn't match the active company in session, re-call session to update it
+  const activeCompanyCode = currentSession.value?.activeCompanyCode
+  if (activeCompanyCode && activeCompanyCode !== companyCode) {
+    await initSession(companyCode)
+  }
+
+  // Install syncEngine with company-scoped DB
+  if (currentSession.value?.companyId) {
+    await initSync(currentSession.value.companyId)
   }
 
   loading.value = false
@@ -61,6 +74,8 @@ onMounted(async () => {
 </script>
 
 <template>
+  <BaseToastContainer />
+
   <!-- Full-screen loader overlay -->
   <div v-if="loading" class="fixed-full flex flex-center bg-dark" style="z-index: 9999">
     <div class="tw:text-center">

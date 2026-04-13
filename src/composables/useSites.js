@@ -14,8 +14,7 @@ function SitesState() {
   })
 
   function buildFilterParams() {
-    const companyId = currentCompany.value?.id
-    const params = { companyId }
+    const params = {}
 
     Object.keys(filters.value).forEach((key) => {
       const value = filters.value[key]
@@ -29,13 +28,6 @@ function SitesState() {
 
   // Fetch sites
   async function fetchSites() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/sites', {
@@ -47,12 +39,8 @@ function SitesState() {
 
   // Create site
   async function createSite(siteData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/sites', {
       ...siteData,
-      companyId,
     })
 
     await fetchSites()
@@ -61,12 +49,7 @@ function SitesState() {
 
   // Delete site
   async function deleteSite(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    await del(`/v1/services/sites/${id}`, {
-      params: { companyId },
-    })
+    await del(`/v1/services/sites/${id}`, {})
 
     await fetchSites()
     return { success: true }
@@ -74,13 +57,9 @@ function SitesState() {
 
   // Update site
   async function updateSite(id, siteData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
     if (!id) return { error: 'Site ID is required' }
 
-    const data = await put(`/v1/services/sites/${id}`, siteData, {
-      params: { companyId },
-    })
+    const data = await put(`/v1/services/sites/${id}`, siteData, {})
 
     await fetchSites()
     return { site: data.site }
@@ -88,17 +67,17 @@ function SitesState() {
 
   // Check code availability
   async function checkCodeAvailability(code, name = '', isNameCheck = false, id = null) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     try {
-      const data = await put('/v1/services/sites/checkcode', {
-        companyId,
-        code,
-        name,
-        isNameCheck,
-        id,
-      }, { showError: false })
+      const data = await put(
+        '/v1/services/sites/checkcode',
+        {
+          code,
+          name,
+          isNameCheck,
+          id,
+        },
+        { showError: false },
+      )
 
       return data
     } catch (err) {

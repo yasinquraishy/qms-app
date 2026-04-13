@@ -1,7 +1,4 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { useDocuments } from '@/composables/useDocuments.js'
-
 const props = defineProps({
   document: {
     type: Object,
@@ -20,8 +17,7 @@ const open = defineModel({
   default: false,
 })
 
-const { updateDocument, updateVersion } = useDocuments()
-const $q = useQuasar()
+const toast = useToast()
 
 // Form state
 const editForm = ref({
@@ -77,28 +73,19 @@ function removeTag(index) {
 async function onSubmit() {
   isSubmitting.value = true
   try {
-    const updateData = {
-      departmentId: editForm.value.departmentId,
-      statusId: editForm.value.statusId,
-      workflowVersionId: editForm.value.workflowVersionId,
-      relatedStandardId: editForm.value.relatedStandardId,
-      periodicReviewMonths: editForm.value.periodicReviewMonths,
-      autoEffectiveOnApproval: editForm.value.autoEffectiveOnApproval,
-    }
+    props.document.departmentId = editForm.value.departmentId
+    props.document.statusId = editForm.value.statusId
+    props.document.workflowVersionId = editForm.value.workflowVersionId
+    props.document.relatedStandardId = editForm.value.relatedStandardId
+    props.document.periodicReviewMonths = editForm.value.periodicReviewMonths
+    props.document.autoEffectiveOnApproval = editForm.value.autoEffectiveOnApproval
+    await props.document.save()
 
-    const result = await updateDocument(props.document.id, updateData)
-    const versionResult = await updateVersion(props.document.id, props.currentVersion.id, {
-      effectiveDate: editForm.value.effectiveDate,
-      tags: editForm.value.tags,
-    })
+    props.currentVersion.effectiveDate = editForm.value.effectiveDate
+    await props.currentVersion.save()
 
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-      return
-    }
-
-    $q.notify({ type: 'positive', message: 'Document updated successfully' })
-    emit('updated', result.document, versionResult.version)
+    toast.success('Document updated successfully')
+    emit('updated')
     open.value = false
   } finally {
     isSubmitting.value = false

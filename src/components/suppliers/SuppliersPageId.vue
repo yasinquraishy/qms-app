@@ -1,8 +1,6 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { isAllowed } from '@/utils/currentSession.js'
-import { useSuppliers } from '@/composables/useSuppliers.js'
 
 const props = defineProps({
   id: {
@@ -11,20 +9,51 @@ const props = defineProps({
   },
 })
 
-const router = useRouter()
-const $q = useQuasar()
-const { getSupplier } = useSuppliers()
+const canUpdate = computed(() => isAllowed(['suppliers:update']))
 
-const loading = ref(false)
-const supplier = ref(null)
-const activeTab = ref('overview')
+const supplier = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
+  db.Supplier.findByPk(id),
+)
+
+const loading = computed(() => supplier.value === undefined)
 
 const breadcrumbs = computed(() => [
   { label: 'Suppliers', to: getCompanyPath('/suppliers') },
   { label: supplier.value?.name || 'Loading...' },
 ])
 
-const canUpdate = computed(() => isAllowed(['suppliers:update']))
+const isSaving = ref(false)
+const saveError = ref(null)
+const isFirstLoad = ref(true)
+
+const debouncedSave = useDebounceFn(async () => {
+  if (!supplier.value) return
+  isSaving.value = true
+  saveError.value = null
+  try {
+    await supplier.value.save()
+  } catch (err) {
+    saveError.value = err.message || 'Failed to save'
+  } finally {
+    isSaving.value = false
+  }
+}, 500)
+
+watch(
+  supplier,
+  (s) => {
+    if (isFirstLoad.value) {
+      isFirstLoad.value = false
+      return
+    }
+    if (s) debouncedSave()
+  },
+  { deep: true },
+)
+
+const editingName = ref(false)
+
+const activeTab = ref('overview')
 
 const tabs = [
   { value: 'overview', label: 'Overview' },
@@ -34,62 +63,29 @@ const tabs = [
   { value: 'evaluations', label: 'Evaluations' },
   { value: 'audit-logs', label: 'Audit Logs' },
 ]
-
-const documentCount = computed(() => supplier.value?.documents?.length || 0)
-const linkedDocumentCount = computed(() => supplier.value?.linkedDocuments?.length || 0)
-
-async function loadSupplier() {
-  loading.value = true
-  const result = await getSupplier(props.id)
-  loading.value = false
-
-  if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
-    return
-  }
-
-  supplier.value = result.supplier
-}
-
-function onEditClick() {
-  router.push(getCompanyPath(`/suppliers/${props.id}`) + '?mode=edit')
-}
-
-onMounted(() => {
-  loadSupplier()
-})
-
-watch(
-  () => props.id,
-  () => {
-    loadSupplier()
-  },
-)
 </script>
 
 <template>
   <div class="tw:flex tw:flex-col tw:h-full">
     <SafeTeleport to="#main-header-title">
-      <WBreadcrumbs :items="breadcrumbs" />
+      <BaseBreadcrumbs :items="breadcrumbs" />
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <div class="tw:flex tw:gap-2">
-        <WBtn
-          v-if="canUpdate"
-          label="Edit Profile"
-          icon="edit"
-          color="primary"
-          unelevated
-          class="tw:px-6 tw:font-bold"
-          @click="onEditClick"
+      <div v-if="isSaving" class="tw:flex tw:items-center tw:gap-2 tw:text-sm tw:text-secondary">
+        <div
+          class="tw:animate-spin tw:rounded-full tw:size-4 tw:border-2 tw:border-primary tw:border-t-transparent"
         />
+        Saving...
       </div>
+      <p v-else-if="saveError" class="tw:text-sm tw:text-red-500">{{ saveError }}</p>
     </SafeTeleport>
 
     <!-- Loading State -->
     <div v-if="loading" class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-16">
-      <QSpinner color="primary" size="48px" />
+      <div
+        class="tw:animate-spin tw:rounded-full tw:size-12 tw:border-4 tw:border-primary tw:border-t-transparent"
+      />
       <div class="tw:text-sm tw:text-secondary tw:mt-3">Loading supplier...</div>
     </div>
 
@@ -102,10 +98,27 @@ watch(
         >
           <div class="tw:space-y-1">
             <div class="tw:flex tw:items-center tw:gap-3">
-              <h1 class="tw:text-2xl tw:font-bold tw:text-on-main tw:tracking-tight">
+              <template v-if="editingName && canUpdate">
+                <BaseTextInput
+                  v-model="supplier.name"
+                  size="sm"
+                  @keyup.enter="editingName = false"
+                  @blur="editingName = false"
+                />
+              </template>
+              <h1
+                v-else
+                class="tw:text-2xl tw:font-bold tw:text-on-main tw:tracking-tight tw:cursor-pointer tw:hover:text-primary"
+                @click="canUpdate && (editingName = true)"
+              >
                 {{ supplier.name }}
               </h1>
-              <WStatusBadge v-if="supplier.statusId" :status="supplier.statusId" showDot />
+              <SupplierStatusSelectMenu
+                v-if="canUpdate"
+                v-model="supplier.statusId"
+                :required="true"
+              />
+              <SupplierStatusBadgeById v-else :statusId="supplier.statusId" />
             </div>
             <p class="tw:text-secondary tw:text-sm">{{ supplier.code }} • Supplier Record</p>
           </div>
@@ -125,32 +138,24 @@ watch(
             @click="activeTab = tab.value"
           >
             {{ tab.label }}
-            <span
-              v-if="tab.value === 'documents' && documentCount > 0"
-              class="tw:bg-gray-100 tw:text-secondary tw:px-2 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-bold"
-            >
-              {{ documentCount }}
-            </span>
-            <span
-              v-if="tab.value === 'linked-documents' && linkedDocumentCount > 0"
-              class="tw:bg-gray-100 tw:text-secondary tw:px-2 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-bold"
-            >
-              {{ linkedDocumentCount }}
-            </span>
           </button>
         </div>
 
         <!-- Tab Content -->
-        <SuppliersOverview v-if="activeTab === 'overview'" :supplier="supplier" />
+        <SuppliersOverview
+          v-if="activeTab === 'overview'"
+          :supplier="supplier"
+          :canUpdate="canUpdate"
+          :supplierId="props.id"
+        />
         <SuppliersDocumentsTab v-else-if="activeTab === 'documents'" :supplier="supplier" />
         <SuppliersLinkedDocumentsTab
           v-else-if="activeTab === 'linked-documents'"
-          :supplier="supplier"
-          @refresh="loadSupplier"
+          :supplierId="props.id"
         />
         <SuppliersAssetRequestsTab
           v-else-if="activeTab === 'asset-requests'"
-          :supplier="supplier"
+          :supplierId="props.id"
         />
         <SuppliersEvaluationsTab v-else-if="activeTab === 'evaluations'" :supplier="supplier" />
         <SuppliersAuditLogsTab v-else-if="activeTab === 'audit-logs'" :supplier="supplier" />

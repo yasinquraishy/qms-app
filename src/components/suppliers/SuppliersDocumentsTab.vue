@@ -1,4 +1,6 @@
 <script setup>
+import { IconFileDescription, IconExternalLink } from '@tabler/icons-vue'
+
 const props = defineProps({
   supplier: {
     type: Object,
@@ -24,12 +26,14 @@ const typeLabel = {
       <div
         class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-gray-100 tw:flex tw:items-center tw:justify-center"
       >
-        <QIcon name="description" class="tw:text-secondary" size="sm" />
+        <IconFileDescription :size="20" class="tw:text-secondary" />
       </div>
       <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Documents</h3>
-      <QBadge v-if="documents.length" color="grey-5" textColor="grey-8" class="tw:rounded-full">
-        <span class="tw:text-[10px] tw:px-2 tw:py-0.5 tw:font-bold">{{ documents.length }}</span>
-      </QBadge>
+      <span
+        v-if="documents.length"
+        class="tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-gray-200 tw:text-gray-700 tw:px-2 tw:py-0.5 tw:text-[10px] tw:font-bold"
+        >{{ documents.length }}</span
+      >
     </div>
     <div v-if="documents.length" class="tw:divide-y tw:divide-divider">
       <div
@@ -40,7 +44,7 @@ const typeLabel = {
         <div
           class="tw:w-10 tw:h-10 tw:rounded-lg tw:bg-primary/10 tw:flex tw:items-center tw:justify-center tw:shrink-0"
         >
-          <QIcon name="description" color="primary" size="sm" />
+          <IconFileDescription :size="20" class="tw:text-primary" />
         </div>
         <div class="tw:flex-1 tw:min-w-0">
           <p class="tw:text-sm tw:font-medium tw:text-on-main tw:truncate">
@@ -53,23 +57,22 @@ const typeLabel = {
         <p class="tw:text-xs tw:text-secondary">
           {{ doc.createdAt?.formatDate('date') }}
         </p>
-        <WBtn
+        <a
           v-if="doc.asset?.url"
-          flat
-          round
-          dense
-          icon="open_in_new"
-          color="secondary"
-          size="sm"
-          title="Open document"
           :href="doc.asset.url"
           target="_blank"
-        />
+          class="tw:p-1 tw:rounded tw:text-secondary tw:hover:text-primary tw:transition-colors"
+          title="Open document"
+        >
+          <IconExternalLink :size="16" />
+        </a>
       </div>
     </div>
-    <div v-else class="tw:py-12 tw:text-center">
-      <QIcon name="description" size="40px" class="tw:text-secondary/50 tw:mb-2" />
-      <p class="tw:text-secondary tw:text-sm">No documents attached to this supplier.</p>
-    </div>
+
+    <BaseEmptyState
+      v-else
+      :icon="IconFileDescription"
+      title="No documents attached to this supplier."
+    />
   </div>
 </template>

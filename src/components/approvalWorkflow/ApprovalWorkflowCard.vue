@@ -1,4 +1,5 @@
 <script setup>
+import { IconLayoutKanban, IconCalendar } from '@tabler/icons-vue'
 defineProps({
   workflow: {
     type: Object,
@@ -16,14 +17,13 @@ defineProps({
         <div
           class="tw:w-10 tw:h-10 tw:bg-primary/10 tw:text-primary tw:rounded-xl tw:flex tw:items-center tw:justify-center"
         >
-          <WIcon icon="account_tree" size="22px" />
+          <IconLayoutKanban :size="22" />
         </div>
         <div>
           <div class="tw:font-bold tw:text-on-main">{{ workflow.name }}</div>
-          <div class="tw:text-xs tw:text-secondary tw:font-mono">{{ workflow.code }}</div>
         </div>
       </div>
-      <WStatusBadge :status="workflow.statusId" variant="workflow" showDot />
+      <ApprovalWorkflowVersionStatusBadgeById :statusId="workflow.statusId" />
     </div>
 
     <div v-if="workflow.description" class="tw:text-sm tw:text-secondary tw:mb-3 tw:line-clamp-2">
@@ -32,16 +32,8 @@ defineProps({
 
     <div class="tw:flex tw:items-center tw:gap-4 tw:text-xs tw:text-secondary">
       <span class="tw:flex tw:items-center tw:gap-1">
-        <WIcon icon="layers" size="16px" />
-        {{ workflow.steps?.length || 0 }} Steps
-      </span>
-      <span class="tw:flex tw:items-center tw:gap-1">
-        <WIcon icon="history" size="16px" />
-        v{{ workflow.version }}
-      </span>
-      <span class="tw:flex tw:items-center tw:gap-1">
-        <WIcon icon="calendar_today" size="16px" />
-        {{ workflow.createdAt.formatDate('date') }}
+        <IconCalendar :size="16" />
+        {{ workflow.createdAt?.toFormat ? workflow.createdAt.toFormat('dd MMM yyyy') : '' }}
       </span>
     </div>
   </div>

@@ -1,7 +1,7 @@
 <script setup>
-import { useOptionSets } from '@/composables/useOptionSets.js'
-import { isAllowed } from '@/utils/currentSession'
-import { getCompanyPath } from '@/utils/routeHelpers'
+import { IconEdit, IconTrash, IconPlus, IconInfoCircle } from '@tabler/icons-vue'
+import { isAllowed } from '@/utils/currentSession.js'
+import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const props = defineProps({
   id: {
@@ -11,144 +11,97 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const { fetchOptionSet, updateOptionSet, currentOptionSet, loading } = useOptionSets()
 
-const form = ref({
-  name: '',
-  description: '',
-  options: [],
+const optionSet = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  return db.OptionSet.findByPk(id)
 })
 
-const isSaving = ref(false)
-
-const isEditingName = ref(false)
-const isEditingDescription = ref(false)
-const nameInputRef = ref(null)
-const descriptionInputRef = ref(null)
+const loading = computed(() => optionSet.value === undefined)
+const canUpdate = computed(() => isAllowed(['optionSets:update']))
 
 const editingOptionIndex = ref(-1)
-const optionInputRefs = ref([])
+const firstInitialized = ref(false)
 
 const breadcrumbs = computed(() => [
   { label: 'Option Sets', to: getCompanyPath('/option-sets') },
-  { label: form.value.name || 'Edit Option Set' },
+  { label: optionSet.value?.name || 'Edit Option Set' },
 ])
-const canUpdate = computed(() => isAllowed(['optionSets:update']))
 
-async function startEditOption(index) {
+const debouncedSave = useDebounceFn(async () => {
+  if (!optionSet.value) return
+
+  const hasEmptyOption = optionSet.value.options.some((opt) => !opt || opt.trim() === '')
+  if (hasEmptyOption) return
+
+  await optionSet.value.save()
+}, 500)
+
+watch(
+  optionSet,
+  () => {
+    if (!firstInitialized.value) {
+      firstInitialized.value = true
+      return
+    }
+
+    debouncedSave()
+  },
+  { immediate: true, deep: true },
+)
+
+function goBack() {
+  const currentPath = router.currentRoute.value.path
+  const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'))
+  router.push(parentPath)
+}
+
+function startEditOption(index) {
   editingOptionIndex.value = index
-  await nextTick()
-  // WInput might expose focus directly or via internal ref
-  const inputComp = optionInputRefs.value[index]
-  if (inputComp?.focus) {
-    inputComp.focus()
-  }
 }
 
 function stopEditOption() {
   editingOptionIndex.value = -1
 }
 
-async function startEditName() {
-  isEditingName.value = true
-  await nextTick()
-  // Try to focus the input
-  if (nameInputRef.value?.focus) {
-    nameInputRef.value.focus()
-  }
-}
-
-function stopEditName() {
-  isEditingName.value = false
-}
-
-async function startEditDescription() {
-  isEditingDescription.value = true
-  await nextTick()
-  if (descriptionInputRef.value?.focus) {
-    descriptionInputRef.value.focus()
-  }
-}
-
-function stopEditDescription() {
-  isEditingDescription.value = false
-}
-
-async function loadData() {
-  const data = await fetchOptionSet(props.id)
-  if (data) {
-    form.value = {
-      name: data.name,
-      description: data.description,
-      options: Array.isArray(data.options) ? [...data.options] : [],
-    }
-  }
-}
-
-onMounted(() => {
-  loadData()
-})
-
-watch(() => props.id, loadData)
-
 function addOption() {
-  form.value.options.push('')
-  startEditOption(form.value.options.length - 1)
+  optionSet.value.options.push('')
+  startEditOption(optionSet.value.options.length - 1)
 }
 
 function removeOption(index) {
-  form.value.options.splice(index, 1)
+  optionSet.value.options.splice(index, 1)
 }
 
-async function handleSave() {
-  isSaving.value = true
-  try {
-    // Filter empty options
-    const cleanOptions = form.value.options.filter((opt) => opt && opt.trim() !== '')
-
-    await updateOptionSet(props.id, {
-      ...form.value,
-      options: cleanOptions,
-    })
-
-    // Refresh local form with cleaned options
-    form.value.options = cleanOptions
-    goBack()
-  } finally {
-    isSaving.value = false
-  }
-}
-
-function goBack() {
-  // Go up one level (remove ID)
-  const currentPath = router.currentRoute.value.path
-  const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'))
-  router.push(parentPath)
+async function confirmDelete() {
+  await optionSet.value.delete()
+  goBack()
 }
 </script>
 
 <template>
   <div class="tw:p-5">
     <SafeTeleport to="#main-header-title">
-      <WBreadcrumbs :items="breadcrumbs" />
+      <BaseBreadcrumbs :items="breadcrumbs" />
     </SafeTeleport>
 
     <SafeTeleport v-if="canUpdate" to="#main-header-actions">
-      <WBtn
-        label="Save Changes"
-        icon="save"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        :loading="isSaving"
-        @click="handleSave"
-      />
+      <button
+        class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:bg-red-50 tw:text-red-600 tw:rounded-lg tw:text-sm tw:font-medium tw:hover:bg-red-100 tw:transition-colors"
+        @click="confirmDelete"
+      >
+        <IconTrash :size="16" />
+        Delete
+      </button>
     </SafeTeleport>
 
-    <div v-if="loading && !currentOptionSet" class="tw:flex tw:justify-center tw:py-12">
-      <QSpinner size="40px" color="primary" />
+    <!-- Loading State -->
+    <div v-if="loading" class="tw:flex tw:justify-center tw:py-12">
+      <div
+        class="tw:size-10 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      />
     </div>
 
+    <!-- Content -->
     <div v-else class="tw:flex tw:flex-col tw:gap-4 tw:max-w-5xl tw:mx-auto">
       <!-- Header -->
       <div class="tw:flex tw:items-center tw:px-1">
@@ -158,24 +111,20 @@ function goBack() {
       <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-4">
         <!-- Main Content -->
         <div class="tw:md:col-span-2 tw:flex tw:flex-col tw:gap-8">
-          <!-- Options Manager -->
-          <WCard flat bordered class="tw:rounded-xl">
-            <QCardSection>
-              <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">
+          <!-- Options Manager Card -->
+          <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
+            <div class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover">
+              <div class="tw:flex tw:items-center tw:justify-between">
                 <div class="tw:text-xl tw:font-bold tw:text-on-main">Options</div>
-                <WBtn
-                  v-if="canUpdate"
-                  flat
-                  icon="add"
-                  label="Add Option"
-                  color="primary"
-                  size="sm"
-                  @click="addOption"
-                />
+                <BaseButton v-if="canUpdate" size="sm" @click="addOption">
+                  <IconPlus :size="14" />
+                  Add Option
+                </BaseButton>
               </div>
-
+            </div>
+            <div class="tw:p-6">
               <div
-                v-if="form.options.length === 0"
+                v-if="!optionSet.options?.length"
                 class="tw:text-secondary tw:text-center tw:p-12 tw:bg-main-hover tw:rounded-xl tw:border-2 tw:border-dashed tw:border-divider"
               >
                 No options added yet. Click "Add Option" to start.
@@ -183,7 +132,7 @@ function goBack() {
 
               <div v-else class="tw:flex tw:flex-col">
                 <div
-                  v-for="(opt, idx) in form.options"
+                  v-for="(opt, idx) in optionSet.options"
                   :key="idx"
                   class="tw:flex tw:items-center tw:gap-1 tw:group"
                 >
@@ -195,136 +144,94 @@ function goBack() {
                     <!-- Display Mode -->
                     <div
                       v-if="editingOptionIndex !== idx"
-                      class="tw:text-base tw:px-2 tw:py-1 tw:rounded-lg tw:transition-all tw:duration-200 tw:text-on-main tw:flex tw:items-center tw:justify-between"
-                      :class="{
-                        'tw:text-secondary tw:italic': !form.options[idx],
-                        'tw:cursor-pointer tw:hover:bg-main-hover': canUpdate,
-                      }"
+                      class="tw:text-base tw:px-2 tw:py-1 tw:rounded-lg tw:transition-all tw:duration-200 tw:text-on-main tw:flex tw:items-center tw:justify-between tw:cursor-pointer tw:hover:bg-main-hover"
                       @click="canUpdate && startEditOption(idx)"
                     >
-                      <span>{{ form.options[idx] || 'Empty option' }}</span>
-                      <WIcon
+                      <span>{{ opt || 'Empty option' }}</span>
+                      <IconEdit
                         v-if="canUpdate"
-                        icon="edit"
-                        size="18px"
-                        color="grey-5"
-                        class="tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity"
+                        :size="18"
+                        class="tw:text-secondary tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity"
                       />
                     </div>
 
                     <!-- Edit Mode -->
-                    <WInput
+                    <BaseTextInput
                       v-else
-                      :ref="(el) => (optionInputRefs[idx] = el)"
-                      v-model="form.options[idx]"
+                      v-model="optionSet.options[idx]"
                       placeholder="Option value"
-                      dense
-                      autofocus
+                      size="sm"
                       @blur="stopEditOption"
                       @keyup.enter="stopEditOption"
                     />
                   </div>
 
-                  <!-- Actions -->
-                  <WBtn
+                  <!-- Delete Button -->
+                  <button
                     v-if="canUpdate"
-                    flat
-                    round
-                    icon="delete_outline"
-                    size="sm"
-                    class="tw:opacity-0 tw:group-hover:opacity-100 tw:hover:text-bad tw:hover:bg-red-50 tw:transition-all tw:text-bad!"
+                    class="tw:p-1 tw:text-secondary tw:hover:text-red-600 tw:hover:bg-red-50 tw:rounded tw:transition-colors tw:opacity-0 tw:group-hover:opacity-100"
                     @click="removeOption(idx)"
-                  />
+                  >
+                    <IconTrash :size="16" />
+                  </button>
                 </div>
               </div>
-            </QCardSection>
-          </WCard>
-        </div>
-
-        <!-- Sidebar Config -->
-        <aside class="tw:flex! tw:flex-col tw:gap-6">
-          <WCard flat bordered class="tw:rounded-xl">
-            <QCardSection class="tw:flex tw:flex-col tw:gap-6">
-              <div class="tw:text-lg tw:font-bold tw:text-on-main">Settings</div>
-
-              <!-- Name Field -->
-              <div class="tw:flex tw:flex-col tw:gap-2">
-                <div class="ds-label-sm tw:text-secondary">Name</div>
-                <div
-                  v-if="!isEditingName"
-                  class="tw:text-base tw:p-3 tw:rounded-lg tw:transition-all tw:duration-200 tw:text-on-main tw:flex tw:items-center tw:justify-between tw:group"
-                  :class="{
-                    'tw:text-secondary tw:italic': !form.name,
-                    'tw:cursor-pointer tw:hover:bg-main-hover': canUpdate,
-                  }"
-                  @click="canUpdate && startEditName()"
-                >
-                  <span>{{ form.name || 'Click to add name' }}</span>
-                  <WIcon
-                    v-if="canUpdate"
-                    icon="edit"
-                    size="18px"
-                    color="grey-5"
-                    class="tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity"
-                  />
-                </div>
-                <WInput
-                  v-else
-                  ref="nameInputRef"
-                  v-model="form.name"
-                  dense
-                  @blur="stopEditName"
-                  @keyup.enter="stopEditName"
-                />
-              </div>
-
-              <!-- Description Field -->
-              <div class="tw:flex tw:flex-col tw:gap-2">
-                <div class="ds-label-sm tw:text-secondary">Description</div>
-                <div
-                  v-if="!isEditingDescription"
-                  class="tw:text-sm tw:leading-relaxed tw:p-3 tw:rounded-lg tw:transition-all tw:duration-200 tw:text-on-main tw:flex tw:items-center tw:justify-between tw:group"
-                  :class="{
-                    'tw:text-secondary tw:italic': !form.description,
-                    'tw:cursor-pointer tw:hover:bg-main-hover': canUpdate,
-                  }"
-                  @click="canUpdate && startEditDescription()"
-                >
-                  <span>{{ form.description || 'Click to add description' }}</span>
-                  <WIcon
-                    v-if="canUpdate"
-                    icon="edit"
-                    size="18px"
-                    color="grey-5"
-                    class="tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity"
-                  />
-                </div>
-                <WInput
-                  v-else
-                  ref="descriptionInputRef"
-                  v-model="form.description"
-                  type="textarea"
-                  dense
-                  @blur="stopEditDescription"
-                />
-              </div>
-            </QCardSection>
-          </WCard>
-
-          <div class="tw:bg-primary/5 tw:p-6 tw:rounded-xl tw:border tw:border-primary/10">
-            <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:mb-2">
-              <WIcon icon="info" size="18px" />
-              <div class="tw:text-sm tw:font-bold">Pro Tip</div>
-            </div>
-            <div class="tw:text-sm tw:text-secondary tw:leading-relaxed">
-              Options are saved in the order they appear here. You can leave entries blank to remove
-              them on save.
             </div>
           </div>
-        </aside>
+
+          <!-- Settings Sidebar -->
+          <aside class="tw:flex tw:flex-col tw:gap-6">
+            <!-- Name & Description Card -->
+            <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
+              <div class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover">
+                <div class="tw:text-lg tw:font-bold tw:text-on-main">Settings</div>
+              </div>
+              <div class="tw:p-6 tw:flex tw:flex-col tw:gap-6">
+                <!-- Name Field -->
+                <div class="tw:flex tw:flex-col tw:gap-2">
+                  <div class="tw:text-sm tw:text-secondary">Name</div>
+                  <BaseTextInput
+                    v-if="canUpdate"
+                    v-model="optionSet.name"
+                    placeholder="Option set name"
+                  />
+                  <div v-else class="tw:text-base tw:p-3 tw:rounded-lg tw:text-on-main">
+                    {{ optionSet?.name || '—' }}
+                  </div>
+                </div>
+
+                <!-- Description Field -->
+                <div class="tw:flex tw:flex-col tw:gap-2">
+                  <div class="tw:text-sm tw:text-secondary">Description</div>
+                  <BaseTextarea
+                    v-if="canUpdate"
+                    v-model="optionSet.description"
+                    placeholder="Briefly describe this option set"
+                    rows="2"
+                  />
+                  <div
+                    v-else
+                    class="tw:text-sm tw:leading-relaxed tw:p-3 tw:rounded-lg tw:text-on-main"
+                  >
+                    {{ optionSet?.description || '—' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pro Tip -->
+            <div class="tw:bg-primary/5 tw:p-6 tw:rounded-xl tw:border tw:border-primary/10">
+              <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:mb-2">
+                <IconInfoCircle :size="18" />
+                <div class="tw:text-sm tw:font-bold">Pro Tip</div>
+              </div>
+              <div class="tw:text-sm tw:text-secondary tw:leading-relaxed">
+                Name and description save automatically. Options require an explicit save.
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped></style>

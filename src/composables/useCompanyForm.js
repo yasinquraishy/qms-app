@@ -142,7 +142,6 @@ export function useCompanyForm(props, isEdit = false) {
 
   const updateCompany = async () => {
     await patch('/v1/services/companies', {
-      companyId: currentCompany.value.id,
       code: companyForm.code.trim(),
     })
     currentCompany.value.code = companyForm.code.trim()

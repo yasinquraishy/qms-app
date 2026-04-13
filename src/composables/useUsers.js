@@ -14,8 +14,7 @@ function UsersState() {
   })
 
   function buildFilterParams() {
-    const companyId = currentCompany.value?.id
-    const params = { companyId }
+    const params = {}
 
     Object.keys(filters.value).forEach((key) => {
       const value = filters.value[key]
@@ -29,13 +28,6 @@ function UsersState() {
 
   // Fetch users
   async function fetchUsers() {
-    const companyId = currentCompany.value?.id
-
-    if (!companyId) {
-      error.value = 'Company ID is required'
-      return
-    }
-
     error.value = null
 
     const data = await get('/v1/services/users', {
@@ -47,12 +39,8 @@ function UsersState() {
 
   // Create user
   async function createUser(userData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await post('/v1/services/users', {
       ...userData,
-      companyId,
     })
 
     await fetchUsers()
@@ -61,11 +49,7 @@ function UsersState() {
 
   // Get single user
   async function getUser(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
     const data = await get(`/v1/services/users/${id}`, {
-      params: { companyId },
       loader: loading,
     })
     return { user: data.user }
@@ -73,27 +57,13 @@ function UsersState() {
 
   // Update user
   async function updateUser(id, userData) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    const data = await put(`/v1/services/users/${id}`, userData, {
-      params: { companyId },
-    })
+    const data = await put(`/v1/services/users/${id}`, userData, {})
 
     return { user: data.user }
   }
 
   async function inviteUser(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return { error: 'Company ID is required' }
-
-    const data = await post(
-      `/v1/services/users/${id}/invite`,
-      {},
-      {
-        params: { companyId },
-      },
-    )
+    const data = await post(`/v1/services/users/${id}/invite`, {})
 
     return { message: data.message }
   }

@@ -1,14 +1,11 @@
 <script setup>
+import { IconEdit, IconTrash } from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers'
 
-defineProps({
+const props = defineProps({
   rows: {
     type: Array,
     default: () => [],
-  },
-  loading: {
-    type: Boolean,
-    default: false,
   },
   canUpdate: {
     type: Boolean,
@@ -35,7 +32,7 @@ const columns = [
     align: 'left',
     sortable: true,
   },
-  { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right' },
+  { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
 
 function getInitials(name) {
@@ -45,151 +42,73 @@ function getInitials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase()
 }
 
-const riskLevelConfig = {
-  Low: { bg: 'tw:bg-emerald-50', text: 'tw:text-emerald-600', border: 'tw:border-emerald-100' },
-  Medium: { bg: 'tw:bg-orange-50', text: 'tw:text-orange-600', border: 'tw:border-orange-100' },
-  High: { bg: 'tw:bg-red-50', text: 'tw:text-red-600', border: 'tw:border-red-100' },
-}
-
-const statusConfig = {
-  APPROVED: { bg: 'tw:bg-blue-50', text: 'tw:text-blue-600', border: 'tw:border-blue-100' },
-  PENDING: { bg: 'tw:bg-amber-50', text: 'tw:text-amber-600', border: 'tw:border-amber-100' },
-  REJECTED: { bg: 'tw:bg-red-50', text: 'tw:text-red-600', border: 'tw:border-red-100' },
-  BLOCKED: { bg: 'tw:bg-slate-100', text: 'tw:text-slate-500', border: 'tw:border-slate-200' },
-}
-
-function getRiskClasses(level) {
-  return riskLevelConfig[level] || riskLevelConfig.Low
-}
-
-function getStatusClasses(statusId) {
-  return statusConfig[statusId] || statusConfig.PENDING
-}
-
-function confirmDelete(row) {
-  emit('delete', row)
-}
-
-function onEdit(row) {
-  emit('edit', row)
+function rowMenuItems(row) {
+  const items = []
+  if (props.canUpdate) {
+    items.push({ name: 'Edit', icon: IconEdit, click: () => emit('edit', row) })
+  }
+  if (props.canDelete) {
+    items.push({ name: 'Delete', icon: IconTrash, click: () => emit('delete', row) })
+  }
+  return items
 }
 </script>
 
 <template>
-  <WCard>
-    <WTable :rows="rows" :columns="columns" :loading="loading" class="tw:flex-1" hideTop noBorder>
-      <!-- Name Column -->
-      <template #body-cell-name="props">
-        <QTd :props="props">
-          <RouterLink
-            class="tw:flex tw:items-center tw:gap-3"
-            :to="getCompanyPath(`/suppliers/${props.row.id}`)"
-          >
-            <div
-              class="tw:w-8 tw:h-8 tw:rounded-full tw:bg-primary-container tw:flex tw:items-center tw:justify-center tw:text-primary tw:font-bold tw:text-xs"
-            >
-              {{ getInitials(props.row.name) }}
-            </div>
-            <div class="tw:font-bold tw:text-on-main">{{ props.row.name }}</div>
-          </RouterLink>
-        </QTd>
-      </template>
+  <BaseTable :rows="rows" :columns="columns" rowKey="id">
+    <!-- Name Column -->
+    <template #body-cell-name="{ row }">
+      <RouterLink
+        class="tw:flex tw:items-center tw:gap-3"
+        :to="getCompanyPath(`/suppliers/${row.id}`)"
+      >
+        <div
+          class="tw:w-8 tw:h-8 tw:rounded-full tw:bg-primary-container tw:flex tw:items-center tw:justify-center tw:text-primary tw:font-bold tw:text-xs"
+        >
+          {{ getInitials(row.name) }}
+        </div>
+        <div class="tw:font-bold tw:text-on-main">{{ row.name }}</div>
+      </RouterLink>
+    </template>
 
-      <!-- Code Column -->
-      <template #body-cell-code="props">
-        <QTd :props="props">
-          <QBadge color="primary" outline label>{{ props.row.code }}</QBadge>
-        </QTd>
-      </template>
+    <!-- Code Column -->
+    <template #body-cell-code="{ row }">
+      <span
+        class="tw:inline-flex tw:items-center tw:rounded tw:border tw:border-primary tw:px-2 tw:py-0.5 tw:text-xs tw:font-mono tw:font-medium tw:text-primary"
+        >{{ row.code }}</span
+      >
+    </template>
 
-      <!-- Category Column -->
-      <template #body-cell-category="props">
-        <QTd :props="props">
-          <span class="tw:text-sm tw:text-secondary">{{ props.row.category || '-' }}</span>
-        </QTd>
-      </template>
+    <!-- Category Column -->
+    <template #body-cell-category="{ row }">
+      <SupplierCategoryBadge v-if="row.category" :categoryId="row.category" />
+      <span v-else class="tw:text-sm tw:text-secondary">—</span>
+    </template>
 
-      <!-- Risk Level Column -->
-      <template #body-cell-riskLevel="props">
-        <QTd :props="props">
-          <span
-            v-if="props.row.riskLevel"
-            class="tw:inline-flex tw:items-center tw:px-2 tw:py-1 tw:rounded-md tw:text-[11px] tw:font-bold tw:uppercase tw:tracking-tight tw:border"
-            :class="[
-              getRiskClasses(props.row.riskLevel).bg,
-              getRiskClasses(props.row.riskLevel).text,
-              getRiskClasses(props.row.riskLevel).border,
-            ]"
-          >
-            {{ props.row.riskLevel }}
-          </span>
-          <span v-else class="tw:text-sm tw:text-secondary">-</span>
-        </QTd>
-      </template>
+    <!-- Risk Level Column -->
+    <template #body-cell-riskLevel="{ row }">
+      <SupplierRiskLevelBadge v-if="row.riskLevel" :riskLevelId="row.riskLevel" />
+      <span v-else class="tw:text-sm tw:text-secondary">—</span>
+    </template>
 
-      <!-- Status Column -->
-      <template #body-cell-status="props">
-        <QTd :props="props">
-          <span
-            class="tw:inline-flex tw:items-center tw:px-2 tw:py-1 tw:rounded-md tw:text-[11px] tw:font-bold tw:uppercase tw:tracking-tight tw:border"
-            :class="[
-              getStatusClasses(props.row.statusId).bg,
-              getStatusClasses(props.row.statusId).text,
-              getStatusClasses(props.row.statusId).border,
-            ]"
-          >
-            {{ props.row.status?.name || props.row.statusId }}
-          </span>
-        </QTd>
-      </template>
+    <!-- Status Column -->
+    <template #body-cell-status="{ row }">
+      <SupplierStatusBadgeById v-if="row.statusId" :statusId="row.statusId" />
+      <span v-else class="tw:text-sm tw:text-secondary">—</span>
+    </template>
 
-      <!-- Last Evaluation Column -->
-      <template #body-cell-lastEvaluation="props">
-        <QTd :props="props">
-          <span class="tw:text-sm tw:text-secondary">
-            {{
-              props.row.lastEvaluationDate ? props.row.lastEvaluationDate.formatDate('date') : '-'
-            }}
-          </span>
-        </QTd>
-      </template>
+    <!-- Last Evaluation Column -->
+    <template #body-cell-lastEvaluation="{ row }">
+      <span class="tw:text-sm tw:text-secondary">
+        {{ row.lastEvaluationDate ? row.lastEvaluationDate.formatDate('date') : '—' }}
+      </span>
+    </template>
 
-      <!-- Actions Column -->
-      <template #body-cell-actions="props">
-        <QTd :props="props">
-          <div v-if="canUpdate || canDelete" class="tw:flex tw:justify-end">
-            <WBtn flat round dense color="grey-6" icon="more_vert">
-              <QMenu>
-                <QList dense style="min-width: 140px">
-                  <QItem v-if="canUpdate" v-close-popup clickable @click="onEdit(props.row)">
-                    <QItemSection>
-                      <div class="tw:flex tw:items-center tw:gap-2">
-                        <WIcon name="edit" size="20px" color="primary" />
-                        <div>Edit</div>
-                      </div>
-                    </QItemSection>
-                  </QItem>
-
-                  <QItem
-                    v-if="canDelete"
-                    v-close-popup
-                    clickable
-                    class="tw:text-bad"
-                    @click="confirmDelete(props.row)"
-                  >
-                    <QItemSection>
-                      <div class="tw:flex tw:items-center tw:gap-2">
-                        <WIcon name="delete" size="20px" />
-                        <div>Delete</div>
-                      </div>
-                    </QItemSection>
-                  </QItem>
-                </QList>
-              </QMenu>
-            </WBtn>
-          </div>
-        </QTd>
-      </template>
-    </WTable>
-  </WCard>
+    <!-- Actions Column -->
+    <template #body-cell-actions="{ row }">
+      <div v-if="canUpdate || canDelete" class="tw:flex tw:justify-end">
+        <BaseMenu :items="rowMenuItems(row)" />
+      </div>
+    </template>
+  </BaseTable>
 </template>

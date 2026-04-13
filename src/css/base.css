@@ -19,6 +19,7 @@
   /* Brand / Primary */
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
 
   /* Secondary */
   --color-secondary: var(--secondary);
@@ -30,6 +31,8 @@
 
   /* Divider / Border */
   --color-divider: var(--divider);
+
+  --color-placeholder: var(--placeholder);
 
   /* Semantic Colors (theme-responsive via tokens.css) */
   --color-bad: var(--bad);
@@ -98,6 +101,8 @@
     --primary: #136dec;
     --primary-hover: #105dc7;
 
+    --on-primary: #ffffff;
+
     /* Secondary */
     --secondary: #617289;
 
@@ -108,6 +113,8 @@
 
     /* Divider / Border */
     --divider: #e5e7eb;
+
+    --placeholder: #9ca3af;
   }
 
   .dark {
@@ -127,6 +134,8 @@
     --primary: #136dec;
     --primary-hover: #136dec;
 
+    --on-primary: #ffffff;
+
     /* Secondary */
     --secondary: #a0aec0;
 
@@ -137,6 +146,7 @@
 
     /* Divider / Border */
     --divider: #2d3748;
+    --placeholder: #9ca3af;
   }
 
   /* Global Scrollbar */

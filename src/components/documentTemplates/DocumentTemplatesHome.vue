@@ -1,26 +1,23 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { useDocumentTemplates } from '@/composables/useDocumentTemplates.js'
+import { IconFileDescription } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const router = useRouter()
-const $q = useQuasar()
 
-const { documentTemplates, loading, updateDocumentTemplate, fetchDocumentTemplates } =
-  useDocumentTemplates()
+const documentTemplates = useLiveQuery(async (db) => db.DocumentTemplate.where().exec())
+const loading = computed(() => documentTemplates.value === undefined)
 
 const canCreate = computed(() => isAllowed(['document-templates:create']))
 const canUpdate = computed(() => isAllowed(['document-templates:update']))
 const canArchive = computed(() => isAllowed(['document-templates:delete']))
 
-// Computed stats
-const totalTemplates = computed(() => documentTemplates.value.length)
+const totalTemplates = computed(() => (documentTemplates.value || []).length)
 const activeTemplates = computed(
-  () => documentTemplates.value.filter((t) => t.statusId === 'ACTIVE').length,
+  () => (documentTemplates.value || []).filter((t) => t.statusId === 'ACTIVE').length,
 )
 const withTraining = computed(
-  () => documentTemplates.value.filter((t) => t.trainingAvailable).length,
+  () => (documentTemplates.value || []).filter((t) => t.trainingAvailable).length,
 )
 
 function navigateToCreate() {
@@ -32,61 +29,35 @@ function navigateToDetail(row) {
 }
 
 async function onArchiveTemplate(row) {
-  $q.dialog({
-    title: 'Confirm Archive',
-    message: `Are you sure you want to archive "${row.name}"? This will make it unavailable for new documents.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await updateDocumentTemplate(row.id, { statusId: 'ARCHIVED' })
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Template archived successfully' })
-    }
-  })
+  row.statusId = 'ARCHIVED'
+  try {
+    await row.save()
+  } catch {
+    row.statusId = 'ACTIVE'
+  }
 }
 
 async function onUnarchiveTemplate(row) {
-  $q.dialog({
-    title: 'Confirm Unarchive',
-    message: `Are you sure you want to unarchive "${row.name}"?`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await updateDocumentTemplate(row.id, { statusId: 'ACTIVE' })
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Template unarchived successfully' })
-    }
-  })
+  row.statusId = 'ACTIVE'
+  try {
+    await row.save()
+  } catch {
+    row.statusId = 'ARCHIVED'
+  }
 }
-
-onMounted(() => {
-  fetchDocumentTemplates()
-})
 </script>
 
 <template>
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="description" class="tw:text-primary" size="24px" />
+        <IconFileDescription class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Document Templates</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
-        v-if="canCreate"
-        label="Create Template"
-        icon="add"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        @click="navigateToCreate"
-      />
+      <BaseButton v-if="canCreate" @click="navigateToCreate">Create Template</BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -109,7 +80,7 @@ onMounted(() => {
 
     <!-- Templates Table -->
     <DocumentTemplatesTable
-      :rows="documentTemplates"
+      :rows="documentTemplates || []"
       :loading="loading"
       :canUpdate="canUpdate"
       :canArchive="canArchive"

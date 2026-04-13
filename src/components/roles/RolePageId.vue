@@ -13,6 +13,7 @@ const props = defineProps({
 })
 
 const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 const role = ref(null)
 const loading = ref(false)
@@ -105,9 +106,9 @@ function handleDeactivate() {
     const success = await deactivateRole(props.id)
     if (success) {
       role.value = { ...role.value, statusId: 'INACTIVE' }
-      $q.notify({ type: 'positive', message: 'Role deactivated successfully', position: 'top' })
+      toast.success('Role deactivated successfully')
     } else {
-      $q.notify({ type: 'negative', message: 'Failed to deactivate role', position: 'top' })
+      toast.error('Failed to deactivate role')
     }
   })
 }
@@ -122,9 +123,9 @@ function handleActivate() {
     const success = await activateRole(props.id)
     if (success) {
       role.value = { ...role.value, statusId: 'ACTIVE' }
-      $q.notify({ type: 'positive', message: 'Role activated successfully', position: 'top' })
+      toast.success('Role activated successfully')
     } else {
-      $q.notify({ type: 'negative', message: 'Failed to activate role', position: 'top' })
+      toast.error('Failed to activate role')
     }
   })
 }
@@ -178,11 +179,7 @@ async function saveChanges() {
       throw new Error(result.error || 'Failed to update role')
     }
 
-    $q.notify({
-      type: 'positive',
-      message: 'Role updated successfully',
-      position: 'top',
-    })
+    toast.success('Role updated successfully')
 
     // Update local role with response
     role.value = result.role
@@ -360,7 +357,6 @@ watch(
               </div>
               <WBtn
                 label="View All Users"
-                size="sm"
                 flat
                 color="primary"
                 class="tw:font-semibold"
@@ -393,7 +389,6 @@ watch(
               icon="select_all"
               flat
               color="primary"
-              size="sm"
               class="tw:font-semibold"
               @click="selectAll"
             />

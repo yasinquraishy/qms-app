@@ -1,4 +1,6 @@
 <script setup>
+import { IconSettings, IconInfoCircle } from '@tabler/icons-vue'
+
 const form = defineModel({
   type: Object,
   default: () => ({
@@ -8,6 +10,12 @@ const form = defineModel({
     retryLimit: '3 attempts',
   }),
 })
+
+const retryLimitOptions = [
+  { id: '3 attempts', name: '3 attempts' },
+  { id: '5 attempts', name: '5 attempts' },
+  { id: 'Unlimited', name: 'Unlimited' },
+]
 </script>
 
 <template>
@@ -19,45 +27,36 @@ const form = defineModel({
       <h3
         class="tw:text-lg tw:font-bold tw:text-on-sidebar tw:mb-6 tw:flex tw:items-center tw:gap-2"
       >
-        <WIcon name="settings" class="tw:text-primary" />
+        <IconSettings class="tw:text-primary tw:size-5" />
         Assessment Settings
       </h3>
       <div class="tw:space-y-6">
-        <WInput v-model="form.passingScore" label="Passing Score" type="number">
-          <template #append>
-            <span class="tw:text-sm tw:text-secondary tw:font-medium">%</span>
-          </template>
-        </WInput>
+        <div class="tw:space-y-2">
+          <BaseTextInput v-model="form.passingScore" label="Passing Score" type="number" />
+          <p class="tw:text-xs tw:text-secondary tw:font-medium">%</p>
+        </div>
 
         <div class="tw:flex tw:items-center tw:justify-between">
           <div>
             <label class="tw:text-sm tw:font-medium tw:text-on-sidebar">Required Completion</label>
             <p class="tw:text-[11px] tw:text-secondary">Must pass before signing</p>
           </div>
-          <label class="tw:relative tw:inline-flex tw:items-center tw:cursor-pointer">
-            <QToggle v-model="form.requiredCompletion" color="primary" keepColor />
-          </label>
+          <BaseSwitch v-model="form.requiredCompletion" />
         </div>
         <div class="tw:space-y-2">
-          <WDateTimeInput
-            v-model="form.assessmentDueDate"
-            label="Assessment Due Date"
-            mode="date"
-          />
+          <label class="tw:text-sm tw:font-medium tw:text-secondary">Assessment Due Date</label>
+          <BaseDatePicker v-model="form.assessmentDueDate" />
         </div>
         <div class="tw:space-y-2">
-          <WSelect
-            v-model="form.retryLimit"
-            label="Retry limit"
-            :options="['3 attempts', '5 attempts', 'Unlimited']"
-          />
+          <label class="tw:text-sm tw:font-medium tw:text-secondary">Retry limit</label>
+          <BaseSelectMenu v-model="form.retryLimit" :items="retryLimitOptions" :required="true" />
         </div>
       </div>
       <div class="tw:mt-8 tw:pt-6 tw:border-t tw:border-divider">
         <div
           class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:bg-primary/20 tw:p-3 tw:rounded-lg"
         >
-          <span class="material-symbols-outlined tw:text-xl">info</span>
+          <IconInfoCircle class="tw:size-5 tw:shrink-0" />
           <p class="tw:text-[12px] tw:leading-tight tw:font-medium">
             Changes here will apply to all current trainees of this version.
           </p>

@@ -6,6 +6,7 @@ import {
   returnToOriginalUser,
   currentSession,
 } from '@/utils/currentSession'
+import { deleteAllSyncDatabases } from '@/utils/initSyncEngine.js'
 
 const drawer = useCompanyLocalStorage('sidebar-drawer', true)
 
@@ -13,6 +14,18 @@ const impersonatedName = computed(() => {
   if (!currentSession.value) return ''
   return `${currentSession.value.firstName || ''} ${currentSession.value.lastName || ''}`.trim()
 })
+
+const resetting = ref(false)
+
+async function resetSync() {
+  resetting.value = true
+  try {
+    await deleteAllSyncDatabases()
+  } finally {
+    resetting.value = false
+    window.location.reload()
+  }
+}
 </script>
 
 <template>
@@ -52,6 +65,9 @@ const impersonatedName = computed(() => {
       <div class="tw:flex tw:items-center tw:gap-4">
         <div id="main-header-actions" />
         <NotificationsBell />
+        <WBtn flat round :loading="resetting" @click="resetSync">
+          <WIcon name="sync" size="20px" />
+        </WBtn>
       </div>
     </div>
   </header>

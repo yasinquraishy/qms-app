@@ -1,27 +1,51 @@
 <script setup>
 import { useQuasar } from 'quasar'
-import { useDocuments } from '@/composables/useDocuments.js'
-import { currentCompany } from '@/utils/currentCompany.js'
-import { get } from '@/api'
+import { currentSession } from '@/utils/currentSession.js'
 
 const props = defineProps({
   documentId: {
     type: String,
     required: true,
   },
-  document: {
-    type: Object,
+  versionId: {
+    type: String,
     default: null,
   },
 })
 
-const emit = defineEmits(['refresh'])
 const $q = useQuasar()
-const { createLink, deleteLink } = useDocuments()
+const toast = useToast()
 
-const links = computed(() => {
-  return props.document?.links || []
+const links = useLiveQueryWithDeps(
+  [() => props.versionId],
+  async (db, [versionId]) => {
+    if (!versionId) return []
+    const all = await db.DocumentLink.where().exec()
+    return all.filter((l) => l.fromDocumentVersionId === versionId && !l.deletedAt)
+  },
+  { initial: [] },
+)
+
+const allDocuments = useLiveQuery(async (db) => db.Document.where().exec(), { initial: [] })
+const allVersions = useLiveQuery(async (db) => db.DocumentVersion.where().exec(), { initial: [] })
+
+const documentsById = computed(() => {
+  const map = {}
+  for (const d of allDocuments.value) map[d.id] = d
+  return map
 })
+
+const versionsById = computed(() => {
+  const map = {}
+  for (const v of allVersions.value) map[v.id] = v
+  return map
+})
+
+const availableDocuments = computed(() =>
+  (allDocuments.value ?? [])
+    .filter((d) => d.id !== props.documentId)
+    .map((d) => ({ label: `${d.docNumber} - ${d.title}`, value: d.id })),
+)
 
 const showAddDialog = ref(false)
 const linkForm = ref({
@@ -29,43 +53,45 @@ const linkForm = ref({
   linkType: 'RELATED',
 })
 
-// Fetch available documents for linking
-const availableDocuments = ref([])
-const loadingDocs = ref(false)
-
-async function fetchAvailableDocuments() {
-  const companyId = currentCompany.value?.id
-  const data = await get('/v1/services/documents', {
-    params: { companyId },
-    loader: loadingDocs,
-  })
-  // Exclude current document
-  availableDocuments.value = (data.documents || [])
-    .filter((d) => d.id !== props.documentId)
-    .map((d) => ({
-      label: `${d.docNumber} - ${d.title}`,
-      value: d.id,
-    }))
+function getTargetDocument(link) {
+  const version = versionsById.value[link.toDocumentVersionId]
+  if (!version) return null
+  return documentsById.value[version.documentId]
 }
 
 async function onAddLink() {
   if (!linkForm.value.targetDocumentId) {
-    $q.notify({ type: 'warning', message: 'Select a document to link' })
+    toast.warning('Select a document to link')
     return
   }
 
-  const result = await createLink(props.documentId, {
-    targetDocumentId: linkForm.value.targetDocumentId,
-    linkType: linkForm.value.linkType,
+  const add = useLiveMutation(async (db) => {
+    const latestVersion = await db.DocumentVersion.where(
+      'documentId',
+      linkForm.value.targetDocumentId,
+    )
+      .orderBy('createdAt', 'desc')
+      .first()
+
+    if (!latestVersion) throw new Error('Target document has no versions')
+
+    const link = db.DocumentLink.create({
+      fromDocumentVersionId: props.versionId,
+      toDocumentVersionId: latestVersion.id,
+      relationshipType: linkForm.value.linkType,
+      createdBy: currentSession.value?.userId || '',
+    })
+    await link.save()
+    return link
   })
 
-  if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
-  } else {
-    $q.notify({ type: 'positive', message: 'Link created' })
+  try {
+    await add()
+    toast.success('Link created')
     showAddDialog.value = false
     linkForm.value = { targetDocumentId: '', linkType: 'RELATED' }
-    emit('refresh')
+  } catch (err) {
+    toast.error(err.message || 'Failed to create link')
   }
 }
 
@@ -75,18 +101,12 @@ async function onDeleteLink(link) {
     message: 'Are you sure you want to remove this link?',
     cancel: true,
   }).onOk(async () => {
-    const result = await deleteLink(props.documentId, link.id)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Link removed' })
-      emit('refresh')
-    }
+    await link.delete()
+    toast.success('Link removed')
   })
 }
 
 function openAddDialog() {
-  fetchAvailableDocuments()
   showAddDialog.value = true
 }
 
@@ -106,14 +126,7 @@ function getLinkTypeBadgeColor(linkType) {
   <div class="tw:p-6">
     <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">
       <h3 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Document Links</h3>
-      <WBtn
-        label="Add Link"
-        icon="add_link"
-        color="primary"
-        outline
-        size="sm"
-        @click="openAddDialog"
-      />
+      <WBtn label="Add Link" icon="add_link" color="primary" outline @click="openAddDialog" />
     </div>
 
     <!-- Links List -->
@@ -127,25 +140,17 @@ function getLinkTypeBadgeColor(linkType) {
           <WIcon name="link" size="20px" class="tw:text-primary" />
           <div>
             <div class="tw:text-sm tw:font-semibold tw:text-on-sidebar">
-              {{ link.targetDocument?.docNumber || link.targetDocumentId }}
+              {{ getTargetDocument(link)?.docNumber || link.toDocumentVersionId }}
               <span class="tw:font-normal tw:text-secondary">
-                {{ link.targetDocument?.title ? `— ${link.targetDocument.title}` : '' }}
+                {{ getTargetDocument(link)?.title ? `— ${getTargetDocument(link).title}` : '' }}
               </span>
             </div>
           </div>
-          <QBadge :color="getLinkTypeBadgeColor(link.linkType)" outline class="tw:ml-2">
-            {{ link.linkType }}
+          <QBadge :color="getLinkTypeBadgeColor(link.relationshipType)" outline class="tw:ml-2">
+            {{ link.relationshipType }}
           </QBadge>
         </div>
-        <WBtn
-          flat
-          round
-          dense
-          icon="delete"
-          color="negative"
-          size="sm"
-          @click="onDeleteLink(link)"
-        />
+        <WBtn flat round dense icon="delete" color="negative" @click="onDeleteLink(link)" />
       </div>
     </div>
 

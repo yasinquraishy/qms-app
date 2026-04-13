@@ -1,12 +1,16 @@
 <script setup>
-import { useQuasar } from 'quasar'
+import {
+  IconFileText,
+  IconInfoCircle,
+  IconHistory,
+  IconArticle,
+  IconSchool,
+} from '@tabler/icons-vue'
 import { required, minValue, helpers } from '@vuelidate/validators'
-import { useDocuments } from '@/composables/useDocuments.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const router = useRouter()
-const $q = useQuasar()
-const { createDocument } = useDocuments()
+const toast = useToast()
 
 const saving = ref(false)
 const activeTab = ref('properties')
@@ -88,15 +92,67 @@ const rules = computed(() => ({
 // Setup validator
 const validator = useValidator(rules, form)
 
+const createDocument = useLiveMutation(async (db, formData) => {
+  // Resolve placeholders in prefix → {SITE_CODE}, {DEPARTMENT_CODE}
+  let resolvedPrefix = formData.prefix
+
+  if (/\{SITE_CODE\}/i.test(resolvedPrefix)) {
+    const site = await db.Site.findByPk(formData.siteId)
+    if (!site) throw new Error(`Site not found: ${formData.siteId}`)
+    resolvedPrefix = resolvedPrefix.replace(/\{SITE_CODE\}/gi, site.code)
+  }
+
+  if (/\{DEPARTMENT_CODE\}/i.test(resolvedPrefix)) {
+    const department = await db.Department.findByPk(formData.departmentId)
+    if (!department) throw new Error(`Department not found: ${formData.departmentId}`)
+    resolvedPrefix = resolvedPrefix.replace(/\{DEPARTMENT_CODE\}/gi, department.code)
+  }
+
+  // Get or create counter scoped to the resolved prefix
+  let documentCounter = await db.DocumentCounter.where('prefix', resolvedPrefix).first()
+  if (!documentCounter) {
+    documentCounter = db.DocumentCounter.create({ prefix: resolvedPrefix, currentValue: 1 })
+  } else {
+    documentCounter.currentValue += 1
+  }
+
+  const doc = db.Document.create({
+    title: formData.title,
+    documentTypeId: formData.documentTypeId,
+    documentTemplateId: formData.documentTemplateId,
+    departmentId: formData.departmentId,
+    siteId: formData.siteId,
+    prefix: formData.prefix,
+    relatedStandardId: formData.relatedStandardId,
+    periodicReviewMonths: formData.periodicReviewMonths,
+    autoEffectiveOnApproval: formData.autoEffectiveOnApproval,
+    workflowVersionId: formData.workflowVersionId,
+    statusId: 'ACTIVE',
+    docNumber: `${resolvedPrefix}-${String(documentCounter.currentValue).padStart(3, '0')}`,
+  })
+  await doc.save()
+  await documentCounter.save()
+
+  const version = db.DocumentVersion.create({
+    documentId: doc.id,
+    versionMajor: 1,
+    versionMinor: 0,
+    statusId: 'DRAFT',
+    sections: formData.sections || [],
+    changeSummary: formData.changeNotes || '',
+    effectiveDate: formData.effectiveDate,
+  })
+  await version.save()
+
+  return doc
+})
+
 async function saveDraft() {
   // Validate form fields using Vuelidate
   const isValid = await validator.value.$validate()
 
   if (!isValid) {
-    $q.notify({
-      type: 'warning',
-      message: 'Please fix the validation errors before saving',
-    })
+    toast.warning('Please fix the validation errors before saving')
     // Switch to properties tab if validation fails
     activeTab.value = 'properties'
     return
@@ -104,16 +160,10 @@ async function saveDraft() {
 
   saving.value = true
   try {
-    const result = await createDocument(form.value) // Pass true to indicate it's a draft save
-
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-      return true // Indicate error
-    } else {
-      $q.notify({ type: 'positive', message: 'Document saved as draft' })
-      form.value = { ...DEFAULT_FORM } // Clear form after successful creation
-      router.push(getCompanyPath(`/documents/${result.document.id}`))
-    }
+    const doc = await createDocument({ ...form.value })
+    toast.success('Document saved as draft')
+    form.value = { ...DEFAULT_FORM }
+    router.push(getCompanyPath(`/documents/${doc.id}`))
   } finally {
     saving.value = false
   }
@@ -122,10 +172,7 @@ async function saveDraft() {
 async function continueToNext() {
   const isValid = await validator.value.$validate()
   if (!isValid) {
-    $q.notify({
-      type: 'warning',
-      message: 'Please fix the validation errors before continuing',
-    })
+    toast.warning('Please fix the validation errors before continuing')
     activeTab.value = 'properties'
     return
   } else {
@@ -153,7 +200,7 @@ function cancel() {
   <div class="tw:relative tw:flex tw:flex-col tw:h-full">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="description" class="tw:text-primary" size="24px" />
+        <IconFileText class="tw:text-primary tw:size-6" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Create Document</h2>
       </div>
     </SafeTeleport>
@@ -178,7 +225,7 @@ function cancel() {
               ]"
               @click="activeTab = 'properties'"
             >
-              <WIcon name="info" size="18px" /> Properties
+              <IconInfoCircle :size="18" /> Properties
             </button>
             <button
               :class="[
@@ -189,7 +236,7 @@ function cancel() {
               ]"
               @click="activeTab = 'changeControl'"
             >
-              <WIcon name="history_edu" size="18px" /> Change Control
+              <IconHistory :size="18" /> Change Control
             </button>
             <button
               :class="[
@@ -200,7 +247,7 @@ function cancel() {
               ]"
               @click="activeTab = 'content'"
             >
-              <WIcon name="article" size="18px" /> Content
+              <IconArticle :size="18" /> Content
             </button>
             <button
               :class="[
@@ -211,7 +258,7 @@ function cancel() {
               ]"
               @click="activeTab = 'training'"
             >
-              <WIcon name="school" size="18px" /> Training Assessment
+              <IconSchool :size="18" /> Training Assessment
             </button>
           </div>
         </div>
@@ -248,32 +295,13 @@ function cancel() {
       <div class="tw:max-w-4xl tw:mx-auto tw:flex tw:items-center tw:justify-between">
         <div class="tw:flex tw:items-center tw:gap-4 tw:text-secondary tw:text-sm"></div>
         <div class="tw:flex tw:items-center tw:gap-4">
-          <WBtn
-            flat
-            label="Cancel"
-            color="negative"
-            class="tw:font-bold"
-            :loading="saving"
-            @click="cancel"
-          />
-          <WBtn
-            flat
-            label="Save Draft"
-            color="secondary"
-            class="tw:font-bold"
-            :loading="saving"
-            @click="saveDraft"
-          />
-          <WBtn
-            v-if="activeTab !== 'training'"
-            unelevated
-            label="Continue"
-            iconRight="arrow_forward"
-            color="primary"
-            class="tw:font-bold tw:shadow-lg"
-            :loading="saving"
-            @click="continueToNext"
-          />
+          <BaseButton variant="danger" :isLoading="saving" @click="cancel"> Cancel </BaseButton>
+          <BaseButton variant="secondary" :isLoading="saving" @click="saveDraft">
+            Save Draft
+          </BaseButton>
+          <BaseButton v-if="activeTab !== 'training'" :isLoading="saving" @click="continueToNext">
+            Continue
+          </BaseButton>
         </div>
       </div>
     </div>

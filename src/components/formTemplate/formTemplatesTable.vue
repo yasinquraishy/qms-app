@@ -1,6 +1,5 @@
 <script setup>
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { currentCompany } from '@/utils/currentCompany.js'
 import { useQuasar } from 'quasar'
 import { isAllowed } from '@/utils/currentSession.js'
 import { get } from '@/api'
@@ -11,6 +10,7 @@ import { get } from '@/api'
 
 // Composables
 const $q = useQuasar()
+const toast = useToast()
 const router = useRouter()
 const { updateTemplate, templates: rows, loading, deleteTemplate } = useFormTemplates()
 const { statusOptions, fetchFormStatuses } = useTemplateForm()
@@ -57,7 +57,6 @@ async function openPreview(row) {
   previewTemplate.value = null
 
   const data = await get(`/v1/services/formTemplates/${row.id}`, {
-    params: { companyId: currentCompany.value.id },
     loader: previewLoading,
   })
   previewTemplate.value = data.formTemplate
@@ -97,15 +96,9 @@ async function handleDelete(template) {
   }).onOk(async () => {
     const success = await deleteTemplate(template.id)
     if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Form template deleted successfully',
-      })
+      toast.success('Form template deleted successfully')
     } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to delete form template',
-      })
+      toast.error('Failed to delete form template')
     }
   })
 }

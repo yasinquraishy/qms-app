@@ -11,36 +11,25 @@ function NotificationsState() {
   const loading = ref(false)
 
   async function fetchNotifications() {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return
-
     const data = await get('/v1/services/notifications', {
-      params: { companyId, limit: 50 },
+      params: { limit: 50 },
       loader: loading,
     })
     notifications.value = data.notifications || []
   }
 
   async function fetchUnreadCount() {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return
-
     const data = await get('/v1/services/notifications/unreadCount', {
-      params: { companyId },
       showError: false,
     })
     unreadCount.value = data.unreadCount || 0
   }
 
   async function markAsRead(id) {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return
-
     await patch(
       `/v1/services/notifications/${id}/read`,
       {},
       {
-        params: { companyId },
         showSuccess: false,
       },
     )
@@ -54,14 +43,10 @@ function NotificationsState() {
   }
 
   async function markAllAsRead() {
-    const companyId = currentCompany.value?.id
-    if (!companyId) return
-
     await patch(
       '/v1/services/notifications/markAllRead',
       {},
       {
-        params: { companyId },
         showSuccess: false,
       },
     )

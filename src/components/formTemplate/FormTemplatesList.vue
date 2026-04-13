@@ -5,6 +5,7 @@ import { get } from '@/api'
 
 const { templates, loading, deleteTemplate } = useFormTemplates()
 const $q = useQuasar()
+const toast = useToast()
 
 const canDeleteTemplate = computed(() => isAllowed(['formTemplates:delete']))
 
@@ -17,7 +18,6 @@ async function handlePreview(template) {
   previewTemplate.value = null
 
   const data = await get(`/v1/services/formTemplates/${template.id}`, {
-    params: { companyId: template.companyId },
     loader: previewLoading,
   })
   previewTemplate.value = data.formTemplate
@@ -42,15 +42,9 @@ async function handleDelete(template) {
   }).onOk(async () => {
     const success = await deleteTemplate(template.id)
     if (success) {
-      $q.notify({
-        type: 'positive',
-        message: 'Form template deleted successfully',
-      })
+      toast.success('Form template deleted successfully')
     } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Failed to delete form template',
-      })
+      toast.error('Failed to delete form template')
     }
   })
 }

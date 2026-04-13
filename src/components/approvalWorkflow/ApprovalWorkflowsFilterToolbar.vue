@@ -1,4 +1,6 @@
 <script setup>
+import { IconSearch } from '@tabler/icons-vue'
+
 const filters = defineModel('filters', {
   type: Object,
   required: true,
@@ -8,19 +10,19 @@ const filters = defineModel('filters', {
 <template>
   <div class="tw:flex tw:items-center tw:gap-2 tw:p-2 tw:rounded-lg tw:bg-sidebar">
     <SafeTeleport to="#main-header-search">
-      <WInput
+      <BaseTextInput
         v-model="filters.search"
         placeholder="Search workflows by name or code..."
         class="tw:flex-1 tw:max-w-md"
       >
-        <template #prepend>
-          <WIcon icon="search" />
+        <template #icon>
+          <IconSearch :size="18" />
         </template>
-      </WInput>
+      </BaseTextInput>
     </SafeTeleport>
 
     <div class="tw:flex-1 tw:min-w-40">
-      <ApprovalWorkflowsStatusSelect v-model:statusId="filters.statusId" />
+      <ApprovalWorkflowsStatusSelectMenu v-model="filters.statusId" />
     </div>
 
     <!-- Actions Slot -->

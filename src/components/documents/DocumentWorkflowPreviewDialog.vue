@@ -1,6 +1,5 @@
 <script setup>
 import { useDocuments } from '@/composables/useDocuments.js'
-import { useQuasar } from 'quasar'
 
 const props = defineProps({
   documentId: { type: String, required: true },
@@ -9,36 +8,69 @@ const emit = defineEmits(['confirm'])
 
 const show = defineModel('show', { type: Boolean, default: false })
 
-const loading = ref(false)
-const version = ref({})
-const { previewWorkflow, submitForReview } = useDocuments()
-const $q = useQuasar()
+const { submitForReview } = useDocuments()
+const toast = useToast()
 
-const steps = computed(() => version.value.steps || [])
+// ── Local data from IDB ───────────────────────────────────────────────────
+const document = useLiveQueryWithDeps([() => props.documentId], async (db, [documentId]) =>
+  db.Document.findByPk(documentId),
+)
 
-watch(
-  () => show.value,
-  async (v) => {
-    if (v) {
-      loading.value = true
-      try {
-        const res = await previewWorkflow(props.documentId)
-        version.value = res.version || {}
-      } finally {
-        loading.value = false
-      }
-    }
+const allWorkflowSteps = useLiveQueryWithDeps(
+  [() => document.value?.workflowVersionId],
+  async (db, [workflowVersionId]) =>
+    workflowVersionId
+      ? db.ApprovalWorkflowStep.where('workflowVersionId', workflowVersionId)
+          .orderBy('stepOrder')
+          .exec()
+      : [],
+  {
+    initial: [],
   },
 )
 
+const stepIds = computed(() => allWorkflowSteps.value.map((s) => s.id))
+
+const allStepUsers = useLiveQueryWithDeps(
+  [stepIds],
+  async (db, [stepIds]) => db.ApprovalWorkflowStepUser.where('stepId', stepIds).exec(),
+  {
+    initial: [],
+  },
+)
+
+const allUsers = useLiveQuery(async (db) => db.User.where().exec(), { initial: [] })
+
+const usersById = computed(() => {
+  const map = {}
+  for (const u of allUsers.value) map[u.id] = u
+  return map
+})
+
+const steps = computed(() => {
+  const stepUserMap = {}
+  for (const su of allStepUsers.value ?? []) {
+    if (!stepUserMap[su.stepId]) stepUserMap[su.stepId] = []
+    stepUserMap[su.stepId].push(su)
+  }
+
+  return allWorkflowSteps.value.map((step) => {
+    step.reviewers = (stepUserMap[step.id] ?? []).map((su) => usersById.value[su.userId])
+    return step
+  })
+})
+
+const loading = computed(() => document.value === undefined)
+
+// ── Actions ────────────────────────────────────────────────────────────────
 async function confirm() {
   try {
     const result = await submitForReview(props.documentId)
     if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
+      toast.error(result.error)
       return
     }
-    $q.notify({ type: 'positive', message: 'Document submitted for review' })
+    toast.success('Document submitted for review')
     emit('confirm')
   } finally {
     show.value = false

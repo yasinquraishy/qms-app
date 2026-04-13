@@ -32,7 +32,6 @@ function handleViewAll() {
         noCaps
         color="primary"
         label="Mark all read"
-        size="sm"
         @click="handleMarkAllRead"
       />
     </div>

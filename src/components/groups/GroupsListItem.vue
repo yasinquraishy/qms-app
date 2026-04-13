@@ -1,5 +1,5 @@
 <script setup>
-import { useQuasar } from 'quasar'
+import { IconTrash } from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers'
 
 const props = defineProps({
@@ -13,51 +13,32 @@ const props = defineProps({
   },
 })
 
-const $q = useQuasar()
-const { deleteGroup } = useGroups()
 const router = useRouter()
+const confirmDelete = ref(false)
 
-// Get user count from userAssignments
-const userCount = computed(() => {
-  return props.group.userAssignments?.length || 0
-})
+const memberships = useLiveQueryWithDeps(
+  [() => props.group.id],
+  async (db, [id]) => db.UserOnTeam.where('teamId', id).exec(),
+  { initial: [] },
+)
 
-// Get first few user names for preview
-const userPreview = computed(() => {
-  const assignments = props.group.userAssignments || []
-  const users = assignments
-    .slice(0, 3)
-    .map((a) => `${a.user?.firstName || ''} ${a.user?.lastName || ''}`.trim())
-  if (assignments.length > 3) {
-    users.push(`+${assignments.length - 3} more`)
-  }
-  return users.join(', ') || 'No members'
-})
+const memberCount = computed(() => memberships.value.length)
 
 function onClick() {
   router.push(getCompanyPath(`/groups/${props.group.id}`))
 }
 
-function onDeleteClick(event) {
-  event.stopPropagation()
-  $q.dialog({
-    title: 'Confirm Deletion',
-    message: `Are you sure you want to delete group "${props.group.name}"? This action cannot be undone.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await deleteGroup(props.group.id)
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Group deleted successfully' })
-    }
-  })
+async function onConfirmDelete() {
+  await props.group.delete()
+  confirmDelete.value = false
 }
 </script>
 
 <template>
-  <WCard flat bordered class="tw:p-3 tw:cursor-pointer" @click="onClick">
+  <div
+    class="tw:border tw:border-divider tw:rounded-xl tw:p-3 tw:cursor-pointer tw:hover:bg-main-hover tw:transition-colors"
+    @click="onClick"
+  >
     <div class="tw:flex tw:items-center tw:gap-3">
       <!-- Avatar with group color -->
       <TeamAvatar :team="group" class="tw:size-12" />
@@ -68,33 +49,40 @@ function onDeleteClick(event) {
           {{ group.name }}
         </div>
         <div class="tw:text-sm tw:text-secondary">
-          {{ userCount }} member{{ userCount !== 1 ? 's' : '' }}
-        </div>
-        <div class="tw:text-xs tw:text-secondary tw:mt-1 tw:truncate tw:max-w-100">
-          {{ userPreview }}
+          {{ memberCount }} member{{ memberCount !== 1 ? 's' : '' }}
         </div>
       </div>
 
       <!-- Leadership Badge -->
-      <div v-if="group.isLeadership" class="tw:flex-none">
-        <QBadge color="primary" class="tw:px-2 tw:py-1" rounded> Leadership </QBadge>
-      </div>
+      <span
+        v-if="group.isLeadership"
+        class="tw:flex-none tw:text-xs tw:font-semibold tw:bg-primary/10 tw:text-primary tw:px-2.5 tw:py-1 tw:rounded-full"
+      >
+        Leadership
+      </span>
 
       <!-- Actions Menu -->
       <div v-if="canDelete" class="tw:flex-none" @click.stop>
-        <QBtn flat round dense icon="more_vert" color="grey">
-          <QMenu>
-            <QList>
-              <QItem v-close-popup clickable class="tw:text-negative" @click="onDeleteClick">
-                <QItemSection avatar>
-                  <QIcon name="delete" color="negative" />
-                </QItemSection>
-                <QItemSection>Delete</QItemSection>
-              </QItem>
-            </QList>
-          </QMenu>
-        </QBtn>
+        <BaseMenu>
+          <template #items>
+            <button
+              class="tw:flex tw:items-center tw:gap-2 tw:w-full tw:px-3 tw:py-2 tw:text-sm tw:text-red-600 tw:hover:bg-red-50 tw:transition-colors"
+              @click="confirmDelete = true"
+            >
+              <IconTrash :size="14" />
+              Delete
+            </button>
+          </template>
+        </BaseMenu>
       </div>
     </div>
-  </WCard>
+  </div>
+
+  <ConfirmDialog
+    v-model="confirmDelete"
+    title="Delete Group"
+    :message="`Are you sure you want to delete '${group.name}'? This action cannot be undone.`"
+    okLabel="Delete"
+    @ok="onConfirmDelete"
+  />
 </template>

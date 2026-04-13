@@ -449,7 +449,7 @@ function handleSubmit(data, done) {
           <QCardSection class="tw:flex tw:items-center tw:pb-0">
             <div class="tw:text-lg tw:font-medium">Form Data (v-model)</div>
             <QSpace />
-            <QChip color="info" textColor="white" size="sm">Live Preview</QChip>
+            <QChip color="info" textColor="white">Live Preview</QChip>
           </QCardSection>
           <QCardSection>
             <pre
@@ -501,7 +501,6 @@ function handleSubmit(data, done) {
                 :key="fieldType"
                 color="grey-3"
                 textColor="grey-8"
-                size="sm"
               >
                 {{ fieldType }}
               </QChip>

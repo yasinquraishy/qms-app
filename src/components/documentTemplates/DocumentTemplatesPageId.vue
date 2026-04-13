@@ -1,6 +1,14 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { useDocumentTemplates } from '@/composables/useDocumentTemplates.js'
+import {
+  IconInfoCircle,
+  IconSettings,
+  IconLayoutList,
+  IconCircleCheck,
+  IconCircleX,
+  IconArchive,
+  IconArchiveOff,
+  IconArrowLeft,
+} from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
@@ -12,147 +20,124 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const $q = useQuasar()
-const { fetchDocumentTemplate, updateDocumentTemplate } = useDocumentTemplates()
 
-const template = ref(null)
-const loading = ref(true)
+const template = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  return db.DocumentTemplate.findByPk(id)
+})
 
+const loading = computed(() => template.value === undefined)
 const canUpdate = computed(() => isAllowed(['document-templates:update']))
 const canArchive = computed(() => isAllowed(['document-templates:delete']))
 
+const isSaving = ref(false)
+const saveError = ref(null)
+const isFirstLoad = ref(true)
+const editingName = ref(false)
+
+const debouncedSave = useDebounceFn(async () => {
+  if (!template.value) return
+  isSaving.value = true
+  saveError.value = null
+  try {
+    await template.value.save()
+  } catch (err) {
+    saveError.value = err.message || 'Failed to save'
+  } finally {
+    isSaving.value = false
+  }
+}, 500)
+
+watch(
+  template,
+  (t) => {
+    if (isFirstLoad.value) {
+      isFirstLoad.value = false
+      return
+    }
+    if (t) debouncedSave()
+  },
+  { deep: true },
+)
+
 const breadcrumbs = computed(() => [
   { label: 'Document Templates', to: getCompanyPath('/document-templates') },
-  { label: template.value?.name || 'Template', to: null },
+  { label: template.value?.name || 'Template' },
 ])
 
-const formattedCreatedDate = computed(() => {
-  return template.value?.createdAt?.formatDate('date')
-})
-
-const formattedUpdatedDate = computed(() => {
-  return template.value?.updatedAt?.formatDate('date')
-})
-
-const sectionTypeBadgeColor = {
-  text: 'blue',
-  attachment: 'purple',
-  form: 'green',
-  table: 'orange',
-}
-
-function getSectionTypeBadgeColor(type) {
-  return sectionTypeBadgeColor[type] || 'grey'
-}
-
-async function loadTemplate() {
-  loading.value = true
-  const result = await fetchDocumentTemplate(props.id)
-  if (result.error) {
-    $q.notify({ type: 'negative', message: result.error })
-    router.push(getCompanyPath('/document-templates'))
-  } else {
-    template.value = result.documentTemplate
-  }
-  loading.value = false
+const SECTION_TYPE_MAP = {
+  text: { label: 'TEXT', class: 'tw:bg-blue-100 tw:text-blue-700' },
+  attachment: { label: 'ATTACHMENT', class: 'tw:bg-purple-100 tw:text-purple-700' },
+  form: { label: 'FORM', class: 'tw:bg-green-100 tw:text-green-700' },
+  table: { label: 'TABLE', class: 'tw:bg-orange-100 tw:text-orange-700' },
 }
 
 async function onArchive() {
   if (!template.value) return
-
-  $q.dialog({
-    title: 'Confirm Archive',
-    message: `Are you sure you want to archive "${template.value.name}"? This will make it unavailable for new documents.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await updateDocumentTemplate(props.id, { statusId: 'ARCHIVED' })
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Template archived successfully' })
-      router.push(getCompanyPath('/document-templates'))
-    }
-  })
+  template.value.statusId = 'ARCHIVED'
+  try {
+    await template.value.save()
+    router.push(getCompanyPath('/document-templates'))
+  } catch {
+    template.value.statusId = 'ACTIVE'
+  }
 }
 
 async function onUnarchive() {
   if (!template.value) return
-
-  $q.dialog({
-    title: 'Confirm Unarchive',
-    message: `Are you sure you want to unarchive "${template.value.name}"?`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await updateDocumentTemplate(props.id, { statusId: 'ACTIVE' })
-    if (result.error) {
-      $q.notify({ type: 'negative', message: result.error })
-    } else {
-      $q.notify({ type: 'positive', message: 'Template unarchived successfully' })
-      router.push(getCompanyPath('/document-templates'))
-    }
-  })
+  template.value.statusId = 'ACTIVE'
+  try {
+    await template.value.save()
+  } catch {
+    template.value.statusId = 'ARCHIVED'
+  }
 }
 
 function goBack() {
   router.push(getCompanyPath('/document-templates'))
 }
-
-function navigateToEdit() {
-  router.push(getCompanyPath(`/document-templates/${props.id}?mode=edit`))
-}
-
-onMounted(() => {
-  loadTemplate()
-})
-
-watch(
-  () => props.id,
-  () => {
-    loadTemplate()
-  },
-)
 </script>
 
 <template>
   <div class="tw:flex tw:flex-col tw:h-full">
     <SafeTeleport to="#main-header-title">
-      <WBreadcrumbs :items="breadcrumbs" />
+      <BaseBreadcrumbs :items="breadcrumbs" />
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:items-center tw:gap-3">
-        <WBtn
-          v-if="canUpdate"
-          outline
-          icon="edit"
-          label="Edit"
-          color="primary"
-          @click="navigateToEdit"
-        />
-        <WBtn
+        <span v-if="isSaving" class="tw:text-xs tw:text-secondary tw:animate-pulse">Saving...</span>
+        <button
           v-if="canArchive && template?.statusId !== 'ARCHIVED'"
-          outline
-          icon="inventory_2"
-          label="Archive"
-          color="negative"
+          class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:border tw:border-red-300 tw:text-red-600 tw:text-sm tw:font-medium tw:hover:bg-red-50 tw:transition-colors"
           @click="onArchive"
-        />
-        <WBtn
+        >
+          <IconArchive :size="16" />
+          Archive
+        </button>
+        <button
           v-if="canArchive && template?.statusId === 'ARCHIVED'"
-          outline
-          icon="unarchive"
-          label="Unarchive"
-          color="primary"
+          class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:border tw:border-primary tw:text-primary tw:text-sm tw:font-medium tw:hover:bg-primary/10 tw:transition-colors"
           @click="onUnarchive"
-        />
+        >
+          <IconArchiveOff :size="16" />
+          Unarchive
+        </button>
       </div>
     </SafeTeleport>
 
+    <!-- Save Error -->
+    <div
+      v-if="saveError"
+      class="tw:mx-8 tw:mt-4 tw:p-3 tw:bg-red-50 tw:text-red-600 tw:text-sm tw:rounded-lg"
+    >
+      {{ saveError }}
+    </div>
+
     <!-- Loading State -->
     <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:h-full">
-      <QSpinner color="primary" size="50px" />
+      <div
+        class="tw:size-12 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      />
     </div>
 
     <!-- Template Details -->
@@ -162,9 +147,26 @@ watch(
         <div class="tw:flex tw:items-start tw:justify-between">
           <div>
             <div class="tw:flex tw:items-center tw:gap-3 tw:mb-2">
-              <h1 class="tw:text-3xl tw:font-black tw:text-on-sidebar">{{ template.name }}</h1>
+              <!-- Editable name -->
+              <template v-if="editingName && canUpdate">
+                <BaseTextInput
+                  v-model="template.name"
+                  placeholder="Template Name"
+                  size="sm"
+                  @keyup.enter="editingName = false"
+                  @blur="editingName = false"
+                />
+              </template>
+              <h1
+                v-else
+                class="tw:text-3xl tw:font-black tw:text-on-sidebar"
+                :class="{ 'tw:cursor-pointer tw:hover:text-primary': canUpdate }"
+                @click="canUpdate && (editingName = true)"
+              >
+                {{ template.name }}
+              </h1>
 
-              <DocumentTemplateStatusBadge :status="template.statusId" />
+              <DocumentTemplateStatusBadge :statusId="template.statusId" />
             </div>
             <p class="tw:text-secondary">
               Document prefix:
@@ -174,149 +176,166 @@ watch(
         </div>
 
         <!-- Basic Information Card -->
-        <WCard>
+        <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
           <div
-            class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
+            class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover tw:flex tw:items-center tw:gap-2"
           >
-            <WIcon name="info" class="tw:text-primary" size="22px" />
+            <IconInfoCircle :size="22" class="tw:text-primary" />
             <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Basic Information</h2>
           </div>
           <div class="tw:p-6 tw:grid tw:grid-cols-2 tw:gap-6">
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Template Name
-              </div>
-              <div class="tw:text-on-sidebar">{{ template.name }}</div>
+              <p class="tw:text-secondary tw:mb-1">Document Prefix</p>
+              <p class="tw:font-mono tw:font-bold tw:text-on-sidebar">{{ template.prefix }}</p>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Document Prefix
-              </div>
-              <div class="tw:font-mono tw:font-bold tw:text-on-sidebar">
-                {{ template.prefix }}
-              </div>
+              <p class="tw:text-secondary tw:mb-1">Department</p>
+              <DepartmentBadgeById
+                v-if="template.departmentId"
+                :departmentId="template.departmentId"
+              />
+              <span v-else class="tw:text-sm tw:text-secondary">—</span>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Department
-              </div>
-              <div class="tw:text-on-sidebar">
-                {{ template.department?.name || '-' }}
-              </div>
+              <p class="tw:text-secondary tw:mb-1">Related Standard</p>
+              <RelatedStandardBadgeById
+                v-if="template.relatedStandardId"
+                :relatedStandardId="template.relatedStandardId"
+              />
+              <span v-else class="tw:text-sm tw:text-secondary">—</span>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Related Standard
-              </div>
-              <div class="tw:text-on-sidebar">
-                {{ template.relatedStandard?.name || '-' }}
-              </div>
+              <p class="tw:text-secondary tw:mb-1">Status</p>
+              <DocumentTemplateStatusSelectMenu
+                v-if="canUpdate"
+                v-model="template.statusId"
+                :required="true"
+              />
+              <DocumentTemplateStatusBadge v-else :statusId="template.statusId" />
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Created Date
-              </div>
-              <div class="tw:text-on-sidebar">{{ formattedCreatedDate }}</div>
+              <p class="tw:text-secondary tw:mb-1">Created Date</p>
+              <p class="tw:text-on-sidebar">{{ template.createdAt?.formatDate('date') }}</p>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Last Modified
-              </div>
-              <div class="tw:text-on-sidebar">{{ formattedUpdatedDate }}</div>
+              <p class="tw:text-secondary tw:mb-1">Last Modified</p>
+              <p class="tw:text-on-sidebar">{{ template.updatedAt?.formatDate('date') }}</p>
             </div>
           </div>
-        </WCard>
+        </div>
 
         <!-- Default Settings Card -->
-        <WCard>
+        <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
           <div
-            class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
+            class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover tw:flex tw:items-center tw:gap-2"
           >
-            <WIcon name="settings" class="tw:text-primary" size="22px" />
+            <IconSettings :size="22" class="tw:text-primary" />
             <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Default Settings</h2>
           </div>
           <div class="tw:p-6 tw:grid tw:grid-cols-2 tw:md:grid-cols-3 tw:gap-6">
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Training Available
-              </div>
-              <div class="tw:flex tw:items-center tw:gap-2">
-                <WIcon
-                  :name="template.trainingAvailable ? 'check_circle' : 'cancel'"
-                  :class="template.trainingAvailable ? 'tw:text-green-600' : 'tw:text-gray-400'"
-                  size="20px"
-                />
-                <span>{{ template.trainingAvailable ? 'Yes' : 'No' }}</span>
-              </div>
+              <p class="tw:text-secondary tw:mb-1">Training Available</p>
+              <BaseCheckbox v-if="canUpdate" v-model="template.trainingAvailable" label="Yes" />
+              <template v-else>
+                <div class="tw:flex tw:items-center tw:gap-2">
+                  <IconCircleCheck
+                    v-if="template.trainingAvailable"
+                    :size="20"
+                    class="tw:text-green-600"
+                  />
+                  <IconCircleX v-else :size="20" class="tw:text-gray-400" />
+                  <span>{{ template.trainingAvailable ? 'Yes' : 'No' }}</span>
+                </div>
+              </template>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Retraining on Version
-              </div>
-              <div class="tw:flex tw:items-center tw:gap-2">
-                <WIcon
-                  :name="template.retrainingOnVersion ? 'check_circle' : 'cancel'"
-                  :class="template.retrainingOnVersion ? 'tw:text-green-600' : 'tw:text-gray-400'"
-                  size="20px"
-                />
-                <span>{{ template.retrainingOnVersion ? 'Yes' : 'No' }}</span>
-              </div>
+              <p class="tw:text-secondary tw:mb-1">Retraining on Version</p>
+              <BaseCheckbox v-if="canUpdate" v-model="template.retrainingOnVersion" label="Yes" />
+              <template v-else>
+                <div class="tw:flex tw:items-center tw:gap-2">
+                  <IconCircleCheck
+                    v-if="template.retrainingOnVersion"
+                    :size="20"
+                    class="tw:text-green-600"
+                  />
+                  <IconCircleX v-else :size="20" class="tw:text-gray-400" />
+                  <span>{{ template.retrainingOnVersion ? 'Yes' : 'No' }}</span>
+                </div>
+              </template>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Periodic Review
-              </div>
-              <div class="tw:text-on-sidebar">{{ template.periodicReviewMonths }} months</div>
+              <p class="tw:text-secondary tw:mb-1">Periodic Review</p>
+              <BaseTextInput
+                v-if="canUpdate"
+                v-model="template.periodicReviewMonths"
+                type="number"
+                placeholder="Months"
+              />
+              <p v-else class="tw:text-on-sidebar">{{ template.periodicReviewMonths }} months</p>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Review Limit
-              </div>
-              <div class="tw:text-on-sidebar">{{ template.reviewLimitDays }} days</div>
+              <p class="tw:text-secondary tw:mb-1">Review Limit</p>
+              <BaseTextInput
+                v-if="canUpdate"
+                v-model="template.reviewLimitDays"
+                type="number"
+                placeholder="Days"
+              />
+              <p v-else class="tw:text-on-sidebar">{{ template.reviewLimitDays }} days</p>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Approval Limit
-              </div>
-              <div class="tw:text-on-sidebar">{{ template.approvalLimitDays }} days</div>
+              <p class="tw:text-secondary tw:mb-1">Approval Limit</p>
+              <BaseTextInput
+                v-if="canUpdate"
+                v-model="template.approvalLimitDays"
+                type="number"
+                placeholder="Days"
+              />
+              <p v-else class="tw:text-on-sidebar">{{ template.approvalLimitDays }} days</p>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Auto Effective
-              </div>
-              <div class="tw:flex tw:items-center tw:gap-2">
-                <WIcon
-                  :name="template.autoEffectiveOnApproval ? 'check_circle' : 'cancel'"
-                  :class="
-                    template.autoEffectiveOnApproval ? 'tw:text-green-600' : 'tw:text-gray-400'
-                  "
-                  size="20px"
-                />
-                <span>{{ template.autoEffectiveOnApproval ? 'Yes' : 'No' }}</span>
-              </div>
+              <p class="tw:text-secondary tw:mb-1">Auto Effective</p>
+              <BaseCheckbox
+                v-if="canUpdate"
+                v-model="template.autoEffectiveOnApproval"
+                label="Yes"
+              />
+              <template v-else>
+                <div class="tw:flex tw:items-center tw:gap-2">
+                  <IconCircleCheck
+                    v-if="template.autoEffectiveOnApproval"
+                    :size="20"
+                    class="tw:text-green-600"
+                  />
+                  <IconCircleX v-else :size="20" class="tw:text-gray-400" />
+                  <span>{{ template.autoEffectiveOnApproval ? 'Yes' : 'No' }}</span>
+                </div>
+              </template>
             </div>
             <div>
-              <div class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1">
-                Show Section Titles
-              </div>
-              <div class="tw:flex tw:items-center tw:gap-2">
-                <WIcon
-                  :name="template.showSectionTitles ? 'check_circle' : 'cancel'"
-                  :class="template.showSectionTitles ? 'tw:text-green-600' : 'tw:text-gray-400'"
-                  size="20px"
-                />
-                <span>{{ template.showSectionTitles ? 'Yes' : 'No' }}</span>
-              </div>
+              <p class="tw:text-secondary tw:mb-1">Show Section Titles</p>
+              <BaseCheckbox v-if="canUpdate" v-model="template.showSectionTitles" label="Yes" />
+              <template v-else>
+                <div class="tw:flex tw:items-center tw:gap-2">
+                  <IconCircleCheck
+                    v-if="template.showSectionTitles"
+                    :size="20"
+                    class="tw:text-green-600"
+                  />
+                  <IconCircleX v-else :size="20" class="tw:text-gray-400" />
+                  <span>{{ template.showSectionTitles ? 'Yes' : 'No' }}</span>
+                </div>
+              </template>
             </div>
           </div>
-        </WCard>
+        </div>
 
         <!-- Sections Preview Card -->
-        <WCard>
+        <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
           <div
-            class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-2"
+            class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover tw:flex tw:items-center tw:gap-2"
           >
-            <WIcon name="view_quilt" class="tw:text-primary" size="22px" />
+            <IconLayoutList :size="22" class="tw:text-primary" />
             <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">
               Template Sections ({{ template.sections?.length || 0 }})
             </h2>
@@ -340,27 +359,41 @@ watch(
                     }}{{ section.defaultContent.length > 100 ? '...' : '' }}
                   </div>
                 </div>
-                <QBadge
-                  :color="getSectionTypeBadgeColor(section.sectionType)"
-                  class="tw:px-3 tw:py-1 tw:font-medium"
+                <span
+                  class="tw:inline-flex tw:items-center tw:rounded tw:px-3 tw:py-1 tw:text-xs tw:font-medium"
+                  :class="
+                    SECTION_TYPE_MAP[section.sectionType]?.class ||
+                    'tw:bg-gray-100 tw:text-gray-600'
+                  "
                 >
-                  {{ section.sectionType.toUpperCase() }}
-                </QBadge>
+                  {{
+                    (
+                      SECTION_TYPE_MAP[section.sectionType]?.label ||
+                      section.sectionType ||
+                      '—'
+                    ).toUpperCase()
+                  }}
+                </span>
               </div>
             </div>
             <div v-else class="tw:text-center tw:py-8 tw:text-secondary">
               No sections defined for this template.
             </div>
           </div>
-        </WCard>
+        </div>
       </div>
     </div>
 
     <!-- Error State -->
     <div v-else class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:h-full tw:gap-4">
-      <WIcon name="error" size="64px" class="tw:text-secondary" />
       <div class="tw:text-xl tw:text-secondary">Template not found</div>
-      <WBtn outline label="Go Back" icon="arrow_back" @click="goBack" />
+      <button
+        class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:border tw:border-divider tw:text-sm tw:font-medium tw:hover:bg-main-hover tw:transition-colors"
+        @click="goBack"
+      >
+        <IconArrowLeft :size="16" />
+        Go Back
+      </button>
     </div>
   </div>
 </template>

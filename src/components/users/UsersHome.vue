@@ -1,39 +1,45 @@
 <script setup>
-import { useUsers } from '@/composables/useUsers.js'
+import { IconUsers } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 
-const { users, loading, filters, fetchUsers } = useUsers()
 const showCreateDialog = ref(false)
 
 const canCreateUser = computed(() => isAllowed(['users:create']))
 
-onMounted(() => {
-  fetchUsers()
+// Filters
+const filters = ref({ search: '' })
+
+// Live query for users
+const users = useLiveQueryWithDeps([() => filters.value.search], async (db, [search]) => {
+  let results = await db.User.where().exec()
+  if (search) {
+    const q = search.toLowerCase()
+    results = results.filter(
+      (u) =>
+        u.firstName.toLowerCase().includes(q) ||
+        u.lastName.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q),
+    )
+  }
+  return results.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
 })
+
+const loading = computed(() => users.value === undefined)
 </script>
 
 <template>
   <div class="tw:flex tw:flex-col tw:gap-3 tw:overflow-hidden tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="people" class="tw:text-primary" size="24px" />
+        <IconUsers class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Users</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
-        v-if="canCreateUser"
-        label="Create User"
-        icon="add"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        @click="showCreateDialog = true"
-      />
+      <BaseButton v-if="canCreateUser" @click="showCreateDialog = true"> Create User </BaseButton>
     </SafeTeleport>
 
-    <!-- Page Header -->
     <div class="">
       <div class="tw:flex tw:flex-col tw:gap-3">
         <div class="tw:flex tw:flex-col tw:gap-1">
@@ -46,10 +52,9 @@ onMounted(() => {
     </div>
 
     <div class="tw:flex tw:flex-col tw:flex-1 tw:gap-5 tw:overflow-auto">
-      <UsersList :users="users" :loading="loading" />
+      <UsersList :users="users || []" :loading="loading" />
     </div>
 
-    <!-- Create User Dialog -->
-    <UsersCreateUserDialog v-model="showCreateDialog" @created="fetchUsers" />
+    <UsersCreateUserDialog v-model="showCreateDialog" />
   </div>
 </template>

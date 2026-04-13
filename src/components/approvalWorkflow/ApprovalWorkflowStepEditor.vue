@@ -19,8 +19,8 @@ const debouncedStepSave = useDebounceFn(async () => {
 
 watch(
   step,
-  () => {
-    if (!props.canUpdate) return
+  (_, oldStep) => {
+    if (!props.canUpdate || oldStep === undefined) return
     debouncedStepSave()
   },
   { deep: true },

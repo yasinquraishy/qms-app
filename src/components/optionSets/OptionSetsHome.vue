@@ -4,10 +4,8 @@ import { isAllowed } from '@/utils/currentSession.js'
 
 const showCreateDialog = ref(false)
 const selectedOptionSetId = ref(null)
-const confirmDelete = ref({ open: false, optionSet: null })
 
 const canCreateOptionSet = computed(() => isAllowed(['optionSets:create']))
-const canUpdateOptionSet = computed(() => isAllowed(['optionSets:update']))
 const canDeleteOptionSet = computed(() => isAllowed(['optionSets:delete']))
 
 // Filters — drives live query re-run
@@ -22,11 +20,12 @@ const optionSets = useLiveQueryWithDeps(
       const q = search.toLowerCase()
       results = results.filter(
         (os) =>
-          os.name.toLowerCase().includes(q) ||
-          (os.description || '').toLowerCase().includes(q),
+          os.name.toLowerCase().includes(q) || (os.description || '').toLowerCase().includes(q),
       )
     }
-    return results.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+    return results.sort(
+      (a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0),
+    )
   },
   { initial: [] },
 )
@@ -34,19 +33,6 @@ const optionSets = useLiveQueryWithDeps(
 function openDialog(id = null) {
   selectedOptionSetId.value = id
   showCreateDialog.value = true
-}
-
-function onEditOptionSet(row) {
-  openDialog(row.id)
-}
-
-function onDeleteOptionSet(row) {
-  confirmDelete.value = { open: true, optionSet: row }
-}
-
-async function confirmDeleteOptionSet() {
-  await confirmDelete.value.optionSet.delete()
-  confirmDelete.value = { open: false, optionSet: null }
 }
 </script>
 
@@ -60,9 +46,7 @@ async function confirmDeleteOptionSet() {
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <BaseButton v-if="canCreateOptionSet" @click="openDialog()">
-        Create Option Set
-      </BaseButton>
+      <BaseButton v-if="canCreateOptionSet" @click="openDialog()"> Create Option Set </BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -77,13 +61,7 @@ async function confirmDeleteOptionSet() {
 
     <OptionSetsFilterToolbar v-model:filters="filters" />
 
-    <OptionSetsTable
-      :rows="optionSets"
-      :canUpdate="canUpdateOptionSet"
-      :canDelete="canDeleteOptionSet"
-      @delete="onDeleteOptionSet"
-      @edit="onEditOptionSet"
-    />
+    <OptionSetsTable :rows="optionSets" :canDelete="canDeleteOptionSet" />
   </div>
 
   <!-- Create/Edit Option Set Dialog -->
@@ -91,14 +69,5 @@ async function confirmDeleteOptionSet() {
     v-if="showCreateDialog"
     :id="selectedOptionSetId"
     v-model="showCreateDialog"
-  />
-
-  <!-- Delete Confirm Dialog -->
-  <ConfirmDialog
-    v-model="confirmDelete.open"
-    title="Delete Option Set"
-    :message="`Are you sure you want to delete '${confirmDelete.optionSet?.name}'? This cannot be undone.`"
-    okLabel="Delete"
-    @ok="confirmDeleteOptionSet"
   />
 </template>

@@ -1,6 +1,6 @@
 <script setup>
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { IconEdit, IconTrash } from '@tabler/icons-vue'
+import { IconTrash } from '@tabler/icons-vue'
 
 const props = defineProps({
   rows: {
@@ -11,19 +11,21 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  canUpdate: {
-    type: Boolean,
-    default: false,
-  },
   canDelete: {
     type: Boolean,
     default: false,
   },
 })
 
-const emit = defineEmits(['delete', 'edit'])
-
 const router = useRouter()
+
+const pendingDelete = shallowRef(null)
+const openDeleteDialog = computed({
+  get: () => pendingDelete.value !== null,
+  set: (val) => {
+    if (!val) pendingDelete.value = null
+  },
+})
 
 const columns = [
   { name: 'name', label: 'NAME', field: 'name', align: 'left', sortable: true },
@@ -44,23 +46,22 @@ const columns = [
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
 
-function onEdit(row) {
-  emit('edit', row)
-}
-
-function confirmDelete(row) {
-  emit('delete', row)
-}
-
 function rowMenuItems(row) {
-  const items = []
-  if (props.canUpdate) {
-    items.push({ name: 'Edit', icon: IconEdit, click: () => onEdit(row) })
-  }
-  if (props.canDelete) {
-    items.push({ name: 'Delete', icon: IconTrash, click: () => confirmDelete(row) })
-  }
-  return items
+  if (!props.canDelete) return []
+  return [
+    {
+      name: 'Delete',
+      icon: IconTrash,
+      click: () => {
+        pendingDelete.value = row
+      },
+    },
+  ]
+}
+
+async function executeDelete() {
+  await pendingDelete.value.delete()
+  pendingDelete.value = null
 }
 
 function onRowClick(row) {
@@ -83,9 +84,17 @@ function onRowClick(row) {
     </template>
 
     <template #body-cell-actions="{ row }">
-      <div v-if="canUpdate || canDelete" class="tw:flex tw:justify-end">
+      <div v-if="canDelete" class="tw:flex tw:justify-end">
         <BaseMenu :items="rowMenuItems(row)" />
       </div>
     </template>
   </BaseTable>
+
+  <ConfirmDialog
+    :modelValue="openDeleteDialog"
+    title="Delete Option Set"
+    :message="`Are you sure you want to delete '${pendingDelete?.name}'? This cannot be undone.`"
+    okLabel="Delete"
+    @ok="executeDelete"
+  />
 </template>

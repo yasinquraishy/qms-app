@@ -1,5 +1,4 @@
 // hydration.js
-import { toRaw } from 'vue'
 import { IndexedDB } from './IndexedDB.js'
 import { ObjectPool } from '../core/ObjectPool.js'
 import ModelRegistry from '../core/ModelRegistry.js'
@@ -41,24 +40,21 @@ export function serializeValue(value, propertyMeta) {
   if (value === undefined || value === null) return value
   if (!propertyMeta) return value
 
-  // Strip Vue reactive/ref proxy so instanceof checks and structured-clone work correctly
-  const raw = toRaw(value)
-
   const { options = {} } = propertyMeta
 
   // 1. Property-level custom serializer
   if (options.serializer?.toStore) {
-    return options.serializer.toStore(raw)
+    return options.serializer.toStore(value)
   }
 
   // 2. Default serializers (Date, Map, Set, DateTime)
   const typeName = options.type?.name
   if (typeName && defaultSerializers[typeName]?.toStore) {
-    return defaultSerializers[typeName].toStore(raw)
+    return defaultSerializers[typeName].toStore(value)
   }
 
   // 3. Fallback: return as-is
-  return raw
+  return value
 }
 
 /**

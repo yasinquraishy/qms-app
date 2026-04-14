@@ -55,7 +55,7 @@ export const defaultSerializers = {
   DateTime: {
     /** @param {DateTime} dt */
     toStore(dt) {
-      return dt instanceof DateTime ? dt.toISO() : dt
+      return DateTime.isDateTime(dt) ? dt.toISO() : dt
     },
     /** @param {string|null} s */
     fromStore(s) {

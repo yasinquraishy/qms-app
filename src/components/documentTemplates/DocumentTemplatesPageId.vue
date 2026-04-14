@@ -20,6 +20,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const toast = useToast()
 
 const template = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
   return db.DocumentTemplate.findByPk(id)
@@ -29,21 +30,15 @@ const loading = computed(() => template.value === undefined)
 const canUpdate = computed(() => isAllowed(['document-templates:update']))
 const canArchive = computed(() => isAllowed(['document-templates:delete']))
 
-const isSaving = ref(false)
-const saveError = ref(null)
 const isFirstLoad = ref(true)
 const editingName = ref(false)
 
 const debouncedSave = useDebounceFn(async () => {
   if (!template.value) return
-  isSaving.value = true
-  saveError.value = null
   try {
     await template.value.save()
   } catch (err) {
-    saveError.value = err.message || 'Failed to save'
-  } finally {
-    isSaving.value = false
+    toast.error(err)
   }
 }, 500)
 
@@ -105,7 +100,6 @@ function goBack() {
 
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:items-center tw:gap-3">
-        <span v-if="isSaving" class="tw:text-xs tw:text-secondary tw:animate-pulse">Saving...</span>
         <button
           v-if="canArchive && template?.statusId !== 'ARCHIVED'"
           class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:border tw:border-red-300 tw:text-red-600 tw:text-sm tw:font-medium tw:hover:bg-red-50 tw:transition-colors"
@@ -124,14 +118,6 @@ function goBack() {
         </button>
       </div>
     </SafeTeleport>
-
-    <!-- Save Error -->
-    <div
-      v-if="saveError"
-      class="tw:mx-8 tw:mt-4 tw:p-3 tw:bg-red-50 tw:text-red-600 tw:text-sm tw:rounded-lg"
-    >
-      {{ saveError }}
-    </div>
 
     <!-- Loading State -->
     <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:h-full">

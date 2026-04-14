@@ -19,6 +19,7 @@ class TransactionQueue extends BaseModel {
   @Property({ type: String }) action = OPERATION.UPDATE
   @Property({ type: String }) status = STATUS.PENDING
   @Property({ type: Number }) createdAt = 0
+  @Property({ type: Number }) attempt = 0
 
   /**
    * Append a queue entry directly via IndexedDB.put (skip save() to avoid recursion).
@@ -57,6 +58,7 @@ class TransactionQueue extends BaseModel {
       action,
       status: STATUS.PENDING,
       createdAt: Date.now(),
+      attempt: 0,
     }
     // Write directly to IndexedDB — bypass save() to avoid recursion through SyncTransaction
     await IndexedDB.put(TRANSACTIONS_STORE, entry)

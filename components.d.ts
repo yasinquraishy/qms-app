@@ -156,7 +156,6 @@ declare module 'vue' {
     DocumentTemplateBadge: typeof import('./src/components/badges/DocumentTemplateBadge.vue')['default']
     DocumentTemplateBadgeById: typeof import('./src/components/badges/DocumentTemplateBadgeById.vue')['default']
     DocumentTemplatesCreate: typeof import('./src/components/documentTemplates/DocumentTemplatesCreate.vue')['default']
-    DocumentTemplateSectionsEditor: typeof import('./src/components/documentTemplates/DocumentTemplateSectionsEditor.vue')['default']
     DocumentTemplateSelectMenu: typeof import('./src/components/menus/DocumentTemplateSelectMenu.vue')['default']
     DocumentTemplatesHome: typeof import('./src/components/documentTemplates/DocumentTemplatesHome.vue')['default']
     DocumentTemplatesIndex: typeof import('./src/components/documentTemplates/DocumentTemplatesIndex.vue')['default']

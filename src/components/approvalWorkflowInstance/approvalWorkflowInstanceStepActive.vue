@@ -1,24 +1,58 @@
 <script setup>
+import { IconSignature } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 
-defineProps({
-  stepEntry: { type: Object, required: true },
+const props = defineProps({
+  instanceStepId: { type: String, required: true },
 })
 
 const currentUserId = computed(() => currentSession.value?.id)
 
+const instanceStep = useLiveQueryWithDeps(
+  [() => props.instanceStepId],
+  async (db, [instanceStepId]) => {
+    if (!instanceStepId) return null
+    return db.ApprovalWorkflowInstanceStep.findByPk(instanceStepId)
+  },
+)
+
+const step = useLiveQueryWithDeps([() => instanceStep.value?.stepId], async (db, [stepId]) => {
+  if (!stepId) return null
+  return db.ApprovalWorkflowStep.findByPk(stepId)
+})
+
+const tasks = useLiveQueryWithDeps(
+  [() => props.instanceStepId],
+  async (db, [instanceStepId]) => {
+    if (!instanceStepId) return []
+    return db.TaskInstance.where('[sourceType+sourceId]', [
+      'ApprovalWorkflowInstanceStep',
+      instanceStepId,
+    ]).exec()
+  },
+  { initial: [] },
+)
+
 function isCurrentUser(task) {
-  return task.assignee?.id === currentUserId.value
+  return task.assignedTo === currentUserId.value
 }
 
-function approvedCount(step) {
-  return (step.tasks || []).filter((t) => t.statusId === 'APPROVED').length
-}
+const approvedCount = computed(() => tasks.value.filter((t) => t.statusId === 'APPROVED').length)
 
-function canActOnStep(step) {
-  const assignment = step.tasks?.find((t) => t.assignedTo === currentUserId.value)
-  return assignment && assignment.statusId === 'ASSIGNED'
-}
+const myTask = computed(() =>
+  tasks.value.find((t) => t.assignedTo === currentUserId.value && t.statusId === 'ASSIGNED'),
+)
+
+const usersMap = useLiveQueryWithDeps(
+  [() => tasks.value.map((t) => t.assignedTo)],
+  async (db, [userIds]) => {
+    const ids = [...new Set(userIds.filter(Boolean))]
+    if (!ids.length) return {}
+    const users = await Promise.all(ids.map((id) => db.User.findByPk(id)))
+    return Object.fromEntries(users.filter(Boolean).map((u) => [u.id, u]))
+  },
+  { initial: {} },
+)
 </script>
 
 <template>
@@ -30,22 +64,22 @@ function canActOnStep(step) {
     >
       <div>
         <h3 class="tw:font-bold tw:text-on-main tw:flex tw:items-center tw:gap-2">
-          Step {{ stepEntry.stepNumber }}: {{ stepEntry.step?.name }}
-          <WStatusBadge :status="stepEntry.statusId" variant="step" />
+          Step {{ instanceStep?.stepNumber }}: {{ step?.name }}
+          <ApprovalWorkflowInstanceStepStatusBadgeById :statusId="instanceStep?.statusId" />
         </h3>
         <p class="tw:text-xs tw:text-secondary">
-          Rule: {{ stepEntry.step?.approvalRule }} approvers must sign &bull;
+          Rule: {{ step?.approvalRule }} approvers must sign &bull;
           <span class="tw:text-primary tw:font-medium">
-            {{ approvedCount(stepEntry) }} of {{ stepEntry.tasks?.length || 0 }} approved
+            {{ approvedCount }} of {{ tasks.length }} approved
           </span>
         </p>
       </div>
       <!-- Avatar stack -->
       <div class="tw:flex tw:-space-x-3 tw:overflow-hidden">
-        <UserAvatar
-          v-for="task in stepEntry.tasks"
+        <UserAvatarById
+          v-for="task in tasks"
           :key="task.id"
-          :user="task.assignee"
+          :userId="task.assignedTo"
           class="tw:size-8"
           :class="
             task.statusId === 'APPROVED'
@@ -59,7 +93,7 @@ function canActOnStep(step) {
     <!-- Approver list -->
     <div class="tw:space-y-4 tw:mb-8">
       <div
-        v-for="task in stepEntry.tasks"
+        v-for="task in tasks"
         :key="task.id"
         class="tw:flex tw:items-center tw:justify-between tw:p-3 tw:rounded-lg tw:border"
         :class="{
@@ -72,8 +106,8 @@ function canActOnStep(step) {
       >
         <div class="tw:flex tw:items-center tw:gap-3">
           <div class="tw:relative">
-            <UserAvatar
-              :user="task.assignee"
+            <UserAvatarById
+              :userId="task.assignedTo"
               class="tw:size-10"
               :class="
                 task.statusId === 'APPROVED'
@@ -81,39 +115,37 @@ function canActOnStep(step) {
                   : 'tw:border-divider tw:grayscale tw:opacity-50'
               "
             />
-
-            <!-- Status indicator dot -->
-            <div class="tw:absolute tw:-bottom-1 tw:-right-1">
-              <WStatusBadge :status="task.statusId" variant="task" showDot hideLabel />
-            </div>
           </div>
           <div>
             <p class="tw:text-sm tw:font-semibold tw:text-on-main">
-              {{ task.assignee?.firstName }} {{ task.assignee?.lastName }}
+              {{ usersMap[task.assignedTo]?.firstName }} {{ usersMap[task.assignedTo]?.lastName }}
               <span v-if="isCurrentUser(task)" class="tw:text-primary">(You)</span>
             </p>
-            <p class="ds-label-sm tw:text-secondary">
-              {{ task.assignee?.email }}
-            </p>
+            <p class="ds-label-sm tw:text-secondary">{{ usersMap[task.assignedTo]?.email }}</p>
           </div>
         </div>
-        <WStatusBadge :status="task.statusId" variant="task" />
+        <TaskInstanceStatusBadgeById :statusId="task.statusId" />
       </div>
     </div>
 
-    <!-- Action buttons (only for current user with PENDING status) -->
-    <div
-      v-if="canActOnStep(stepEntry)"
-      class="tw:bg-primary/5 tw:rounded-xl tw:p-4 tw:border tw:border-primary/20"
-    >
+    <!-- Action buttons (only for current user with ASSIGNED status) -->
+    <div v-if="myTask" class="tw:bg-primary/5 tw:rounded-xl tw:p-4 tw:border tw:border-primary/20">
       <div class="tw:flex tw:flex-col tw:gap-4">
         <div class="tw:flex tw:items-center tw:gap-2 tw:mb-2">
-          <WIcon name="draw" size="20px" class="tw:text-primary" />
+          <IconSignature :size="20" class="tw:text-primary" />
           <p class="tw:text-sm tw:font-semibold tw:text-primary">Your required action</p>
         </div>
         <div class="tw:flex tw:flex-wrap tw:gap-3">
-          <ApprovalWorkflowInstanceApproverAction action="APPROVE" :activeStep="stepEntry" />
-          <ApprovalWorkflowInstanceApproverAction action="REJECT" :activeStep="stepEntry" />
+          <ApprovalWorkflowInstanceApproverAction
+            action="APPROVE"
+            :workflowInstanceId="instanceStep?.workflowInstanceId"
+            :instanceStepId="instanceStepId"
+          />
+          <ApprovalWorkflowInstanceApproverAction
+            action="REJECT"
+            :workflowInstanceId="instanceStep?.workflowInstanceId"
+            :instanceStepId="instanceStepId"
+          />
         </div>
       </div>
     </div>

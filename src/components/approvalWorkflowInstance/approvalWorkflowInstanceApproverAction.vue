@@ -1,7 +1,6 @@
 <script setup>
-import { useApprovalWorkflowInstances } from '@/composables/useApprovalWorkflowInstances.js'
+import { IconCircleCheck, IconX, IconEdit } from '@tabler/icons-vue'
 import { post } from '@/api'
-import { currentCompany } from '@/utils/currentCompany.js'
 
 const props = defineProps({
   action: {
@@ -9,14 +8,40 @@ const props = defineProps({
     required: true,
     validator: (value) => ['APPROVE', 'REJECT', 'REQUEST_CHANGES'].includes(value),
   },
-  activeStep: { type: Object, required: true },
+  workflowInstanceId: { type: String, required: true },
+  instanceStepId: { type: String, default: null },
 })
 
 const emit = defineEmits(['done'])
 
 const toast = useToast()
-const { actionLoading, updateWorkflowStep } = useApprovalWorkflowInstances()
-const approverAction = inject('approverAction', null)
+
+// ── SyncEngine queries for step data ───────────────────────────────────────────
+const instanceStep = useLiveQueryWithDeps([() => props.instanceStepId], async (db, [stepId]) => {
+  if (!stepId) return null
+  return db.ApprovalWorkflowInstanceStep.findByPk(stepId)
+})
+
+const workflowStep = useLiveQueryWithDeps(
+  [() => instanceStep.value?.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return null
+    return db.ApprovalWorkflowStep.findByPk(stepId)
+  },
+)
+
+// ── Inline workflow action (server-side command — NOT SyncEngine) ──────────────
+const actionLoading = ref(false)
+
+async function updateWorkflowStep(instanceId, action, payload = {}) {
+  actionLoading.value = true
+  try {
+    const data = await post(`/v1/services/workflowInstances/${instanceId}/${action}`, payload)
+    return { workflowInstance: data.workflowInstance }
+  } finally {
+    actionLoading.value = false
+  }
+}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 const showFeedbackDialog = ref(false)
@@ -25,7 +50,7 @@ const feedbackAction = ref('') // 'REJECT' or 'REQUEST_CHANGES'
 const pendingAction = ref(null) // stores the action key to execute after e-sign
 const comment = ref('')
 
-const requireEsignature = computed(() => props.activeStep?.step?.requireEsignature)
+const requireEsignature = computed(() => workflowStep.value?.requireEsignature)
 
 const dialogTitle = computed(() => {
   return feedbackAction.value === 'REJECT' ? 'Reject Step' : 'Request Changes'
@@ -72,16 +97,11 @@ onMounted(() => {
       REQUEST_CHANGES: 'changes requested',
     }
     toast.success(`Step ${actionLabels[esignCompleted] || 'action completed'} successfully`)
-    onDone()
+    emit('done')
   }
 })
 
 // ── Actions ────────────────────────────────────────────────────────────────────
-function onDone() {
-  if (typeof approverAction === 'function') approverAction()
-  emit('done')
-}
-
 async function triggerEsignOrExecute(actionKey) {
   if (requireEsignature.value) {
     pendingAction.value = actionKey
@@ -91,8 +111,7 @@ async function triggerEsignOrExecute(actionKey) {
       action: props.action,
       actionKey,
       feedbackAction: feedbackAction.value,
-      workflowInstanceId: props.activeStep.workflowInstanceId,
-      companyId: currentCompany.value.id,
+      workflowInstanceId: props.workflowInstanceId,
       comment: feedbackAction.value === 'REJECT' ? comment.value : undefined,
     })
 
@@ -102,19 +121,12 @@ async function triggerEsignOrExecute(actionKey) {
   }
 }
 
-/**
- * Called when the esign auth dialog emits verified credentials (password flow only).
- * OAuth flows are handled entirely by the server callback.
- */
 function onEsignVerified(esign) {
   if (pendingAction.value) {
     executeAction(pendingAction.value, esign)
   }
 }
 
-/**
- * Central dispatcher — executes the workflow action with optional esign credentials.
- */
 async function executeAction(actionKey, esign) {
   if (actionKey === 'approve') {
     await submitApprove(esign)
@@ -128,12 +140,12 @@ async function submitApprove(esign) {
     const payload = {}
     if (esign?.strategy) payload.esign = esign
 
-    await updateWorkflowStep(props.activeStep.workflowInstanceId, 'approve', payload)
+    await updateWorkflowStep(props.workflowInstanceId, 'approve', payload)
 
     toast.success('Step approved successfully')
     showEsignDialog.value = false
     pendingAction.value = null
-    onDone()
+    emit('done')
   } catch {
     // If e-sign failed, keep the dialog open so user doesn't lose their input
   }
@@ -148,7 +160,7 @@ async function submitFeedback(esign) {
     if (esign?.strategy) payload.esign = esign
     if (feedbackAction.value === 'REJECT' && comment.value) payload.comment = comment.value
 
-    const result = await updateWorkflowStep(props.activeStep.workflowInstanceId, action, payload)
+    const result = await updateWorkflowStep(props.workflowInstanceId, action, payload)
 
     if (result.error) {
       toast.error(result.error || `Failed to ${action} step`)
@@ -159,7 +171,7 @@ async function submitFeedback(esign) {
     showFeedbackDialog.value = false
     pendingAction.value = null
     comment.value = ''
-    onDone()
+    emit('done')
   } catch {
     // If e-sign failed, keep the feedback dialog open so user doesn't lose their input
   }
@@ -187,67 +199,70 @@ function onConfirmFeedback() {
 
 <template>
   <div class="tw:text-center">
-    <WBtn
+    <BaseButton
       v-if="action === 'APPROVE'"
-      color="positive"
-      unelevated
+      :isLoading="actionLoading"
       class="tw:font-bold tw:shadow-md tw:shadow-primary/20!"
-      :loading="actionLoading"
       @click="onApprove"
     >
-      <WIcon name="verified" class="tw:mr-2" />
+      <template #icon>
+        <IconCircleCheck :size="18" />
+      </template>
       Approve
-    </WBtn>
+    </BaseButton>
 
-    <WBtn
+    <BaseButton
       v-if="action === 'REJECT'"
-      outline
+      variant="outline"
       class="tw:text-red-600! tw:border-red-200! tw:hover:bg-red-50! tw:font-bold"
-      :loading="actionLoading"
+      :isLoading="actionLoading"
       @click="onReject"
     >
-      <WIcon name="cancel" class="tw:mr-2" />
+      <template #icon>
+        <IconX :size="18" />
+      </template>
       Reject
-    </WBtn>
+    </BaseButton>
 
-    <WBtn
+    <BaseButton
       v-if="action === 'REQUEST_CHANGES'"
-      outline
+      variant="outline"
       class="tw:text-secondary tw:border-divider tw:hover:bg-main tw:font-bold"
-      :loading="actionLoading"
+      :isLoading="actionLoading"
       @click="onRequestChanges"
     >
-      <WIcon name="edit_note" class="tw:mr-2" />
+      <template #icon>
+        <IconEdit :size="18" />
+      </template>
       Request Changes
-    </WBtn>
+    </BaseButton>
 
     <!-- Feedback Dialog (Reject / Request Changes) -->
-    <WDialog v-model="showFeedbackDialog" :title="dialogTitle" minWidth="500px" persistent>
-      <p class="tw:text-sm tw:text-secondary tw:mb-0!">
+    <BaseDialog v-model="showFeedbackDialog" :title="dialogTitle" maxWidth="md" persistent>
+      <p class="tw:text-sm tw:text-secondary">
         {{ dialogMessage }}
       </p>
 
-      <WInput
+      <BaseTextarea
         v-if="feedbackAction === 'REJECT'"
         v-model="comment"
-        type="textarea"
         label="Comment (optional)"
-        autogrow
-        noDense
+        :rows="3"
+        autosize
         class="tw:mt-4"
       />
 
-      <template #actions>
-        <WBtn flat label="Cancel" @click="showFeedbackDialog = false" />
-        <WBtn
-          :color="feedbackAction === 'REJECT' ? 'negative' : 'primary'"
-          unelevated
-          :label="feedbackAction === 'REJECT' ? 'Reject' : 'Request Changes'"
-          :loading="actionLoading"
+      <template #footer="{ close }">
+        <BaseButton variant="outline" @click="close">Cancel</BaseButton>
+        <BaseButton
+          :variant="feedbackAction === 'REJECT' ? 'danger' : 'primary'"
+          :isLoading="actionLoading"
           @click="onConfirmFeedback"
-        />
+        >
+          {{ feedbackAction === 'REJECT' ? 'Reject' : 'Request Changes' }}
+        </BaseButton>
       </template>
-    </WDialog>
+    </BaseDialog>
 
     <!-- E-Signature Identity Verification Dialog -->
     <ApprovalWorkflowInstanceEsignAuthDialog

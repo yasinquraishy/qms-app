@@ -343,11 +343,21 @@ const latest = await db.DocumentVersion.where('documentId', id, { force: true })
 
 Every entity that appears in select menus or badge displays must follow the triad pattern. Never use `BaseSelectMenu` directly for an entity — always create the wrapper component.
 
-### Full Pattern (SyncEngine models)
+### Architecture Overview
 
-For entities backed by a SyncEngine model (Site, Department, Role, OptionSet, User, etc.):
+```
+XBadge          — Receives full object, handles STYLING only (SCHEME_MAP: id → class)
+XBadgeById      — Receives id, resolves to object (from IDB or static map), passes to XBadge
+XSelectMenu     — Uses BaseSelectMenu + XBadgeById
+```
 
-**1. `XBadge.vue`** — Display component (receives full object)
+**Key rule:** `XBadge` never receives an `id` string — it receives a full object and renders `object.name`. `XBadgeById` is always the component that receives the `id` and resolves it.
+
+### Full Pattern (SyncEngine models — e.g. Site, Department, TaskInstanceStatus)
+
+For entities backed by a SyncEngine model:
+
+**1. `XBadge.vue`** — Display component (receives full object from IDB). Styling only via `SCHEME_MAP`.
 
 ```vue
 <script setup>
@@ -361,6 +371,31 @@ defineProps({
 </template>
 ```
 
+For status badges that need per-id color styling:
+
+```vue
+<script setup>
+defineProps({
+  status: { type: Object, required: true },
+  showDot: { type: Boolean, default: false },
+})
+
+const SCHEME_MAP = {
+  APPROVED: { class: 'tw:bg-green-100 tw:text-green-700' },
+  REJECTED: { class: 'tw:bg-red-100 tw:text-red-700' },
+  PENDING: { class: 'tw:bg-amber-100 tw:text-amber-700' },
+}
+
+const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-600' }
+</script>
+
+<template>
+  <BaseBadge v-bind="$attrs" :class="scheme(status?.id).class" :showDot="showDot">
+    {{ status?.name || status?.id || '—' }}
+  </BaseBadge>
+</template>
+```
+
 **2. `XBadgeById.vue`** — Lookup wrapper (receives `id`, queries SyncEngine)
 
 ```vue
@@ -369,18 +404,38 @@ const props = defineProps({
   siteId: { type: String, default: null },
 })
 
-const site = useLiveQueryWithDeps(
-  [() => props.siteId],
-  async (db, [siteId]) => {
-    if (!siteId) return null
-    return db.Site.findByPk(siteId)
-  },
-  { initial: null },
-)
+const site = useLiveQueryWithDeps([() => props.siteId], async (db, [siteId]) => {
+  if (!siteId) return null
+  return db.Site.findByPk(siteId)
+})
 </script>
 
 <template>
   <SiteBadge v-if="site" :site="site" v-bind="$attrs" />
+</template>
+```
+
+For status badges with a SyncEngine model:
+
+```vue
+<script setup>
+const props = defineProps({
+  statusId: { type: String, default: null },
+  showDot: { type: Boolean, default: false },
+})
+
+const status = useLiveQueryWithDeps(
+  [() => props.statusId],
+  async (db, [statusId]) => {
+    if (!statusId) return null
+    return db.TaskInstanceStatus.findByPk(statusId)
+  },
+)
+</script>
+
+<template>
+  <TaskInstanceStatusBadge v-if="status" :status="status" :showDot="showDot" v-bind="$attrs" />
+</template>
 </template>
 ```
 
@@ -437,35 +492,68 @@ function getArray() {
 </template>
 ```
 
-### Enum Pattern (static/enum data — no DB model)
+### Enum Pattern (no SyncEngine model — e.g. UserStatus)
 
-For entities that are not SyncEngine models (language, status, timezone, etc.):
+For entities that are **not** SyncEngine models (language, timezone, etc.):
 
-**1. `XBadge.vue`** — Display component (receives code value, internal label map)
+**1. `XBadge.vue`** — Display component (receives full object). Styling only via `SCHEME_MAP`.
 
 ```vue
 <script setup>
-const STATUS_MAP = {
-  ACTIVE: { label: 'Active', class: 'tw:bg-green-100 tw:text-green-700' },
-  INACTIVE: { label: 'Inactive', class: 'tw:bg-gray-100 tw:text-gray-600' },
+defineProps({
+  status: { type: Object, default: null },
+})
+
+const SCHEME_MAP = {
+  ACTIVE: { class: 'tw:bg-green-100 tw:text-green-700' },
+  INACTIVE: { class: 'tw:bg-gray-100 tw:text-gray-600' },
+  INVITED: { class: 'tw:bg-blue-100 tw:text-blue-700' },
 }
 
-defineProps({
-  statusId: { type: String, default: null },
-})
+const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-600' }
 </script>
 
 <template>
-  <BaseBadge v-bind="$attrs" :class="STATUS_MAP[statusId]?.class">
-    {{ STATUS_MAP[statusId]?.label || statusId || '—' }}
+  <BaseBadge v-bind="$attrs" :class="scheme(status?.id).class">
+    {{ status?.name || status?.id || '—' }}
   </BaseBadge>
 </template>
 ```
 
-**2. `XSelectMenu.vue`** — Select component (uses BaseSelectMenu with static items)
+**2. `XBadgeById.vue`** — Lookup wrapper (receives `id`, resolves from static `STATUS_MAP`)
 
 ```vue
 <script setup>
+const props = defineProps({
+  statusId: { type: String, default: null },
+})
+
+const STATUS_MAP = {
+  ACTIVE: { id: 'ACTIVE', name: 'Active' },
+  INACTIVE: { id: 'INACTIVE', name: 'Inactive' },
+  INVITED: { id: 'INVITED', name: 'Invited' },
+}
+
+const status = computed(
+  () =>
+    STATUS_MAP[props.statusId] ||
+    (props.statusId ? { id: props.statusId, name: props.statusId } : null),
+)
+</script>
+
+<template>
+  <UserStatusBadge v-if="status" :status="status" v-bind="$attrs" />
+</template>
+```
+
+**3. `XSelectMenu.vue`** — Select component (uses BaseSelectMenu with static items + XBadgeById)
+
+```vue
+<script setup>
+defineProps({
+  required: { type: Boolean, default: false },
+})
+
 const modelValue = defineModel({ type: [String, null], default: null })
 
 const items = computed(() => [
@@ -478,7 +566,7 @@ const items = computed(() => [
   <BaseSelectMenu v-model="modelValue" :items="items" :required="required">
     <template #button="scope">
       <slot name="button" v-bind="scope">
-        <UserStatusBadge
+        <UserStatusBadgeById
           v-if="modelValue"
           :statusId="modelValue"
           :clearable="!required"
@@ -492,7 +580,29 @@ const items = computed(() => [
 </template>
 ```
 
-No `XBadgeById` needed — nothing to look up in IndexedDB.
+### SCHEME_MAP vs STATUS_MAP — when to use which
+
+| Map          | Lives in                 | Contains                              | Purpose                                                 |
+| ------------ | ------------------------ | ------------------------------------- | ------------------------------------------------------- |
+| `SCHEME_MAP` | `XBadge`                 | `{ ID: { class: 'tw:bg-...' } }`      | Styling only — maps id to Tailwind classes              |
+| `STATUS_MAP` | `XBadgeById` (enum only) | `{ ID: { id: 'ID', name: 'Label' } }` | Data only — static label lookup when no DB model exists |
+
+**Never** put labels in `SCHEME_MAP`. **Never** put styling classes in `STATUS_MAP`.
+
+**When a SyncEngine model exists**, `XBadgeById` queries IDB — no `STATUS_MAP` needed. The label comes from `status.name` (from the DB record).
+
+**When no SyncEngine model exists**, `XBadgeById` has a static `STATUS_MAP` — the label comes from the map.
+
+### XBadgeById `initial` Pattern
+
+`XBadgeById` should use `{ initial: () => (props.statusId ? { id: props.statusId } : null) }` instead of `{ initial: null }`. This ensures a fallback object exists before IDB loads, so `XBadge` can render `status.name || status.id` immediately.
+
+**Never use `BaseBadge` as a fallback in `XBadgeById`** — always let `XBadge` handle the display. If the IDB record hasn't loaded yet, `XBadge` will show `status.id` as the label via the `status.name || status.id` fallback.
+
+### How to decide which pattern to use
+
+1. **Check if a SyncEngine model exists** — look in `models/` directory (e.g. `taskInstanceStatus.js` exists → use Full Pattern)
+2. **No model** — use Enum Pattern (e.g. no `userStatus.js` model, only `user.userStatusId` field → enum pattern)
 
 ### File Locations
 
@@ -502,10 +612,13 @@ No `XBadgeById` needed — nothing to look up in IndexedDB.
 ### Checklist: When Adding a New Entity to the UI
 
 - [ ] Does the entity need a badge display? Create `XBadge`
-- [ ] Is it a SyncEngine model? Create `XBadgeById` too
+- [ ] Is it a SyncEngine model? Create `XBadgeById` with IDB query too
+- [ ] Is it an enum (no DB model)? Create `XBadgeById` with static `STATUS_MAP`
 - [ ] Does the entity need a select menu? Create `XSelectMenu` using the appropriate pattern above
 - [ ] Never use `BaseSelectMenu` directly for entity selection — always wrap it
 - [ ] Never do inline `useLiveQuery` + entity rendering when an `XBadgeById` or `XSelectMenu` exists
+- [ ] `XBadge` never accepts an `id` prop — it always receives a full object
+- [ ] `XBadgeById` always accepts an `id` prop and resolves it (via IDB or static map)
 
 ---
 

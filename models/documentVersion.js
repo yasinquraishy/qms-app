@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 @ClientModel('documentVersions', {
   primaryKey: 'id',
   syncField: 'updatedAt',
-  customIndex: 'documentId, [documentId+statusId], versionMajor, versionMinor',
+  customIndex: 'documentId, [documentId+statusId], versionMajor, versionMinor, workflowInstanceId',
 })
 export class DocumentVersion extends BaseModel {
   static paranoid = true // Enable soft deletes using deletedAt field

@@ -8,20 +8,34 @@ export class IndexedDB {
   static #db = null
 
   /**
+   * @type {string|null}
+   */
+  static #currentDbName = null
+
+  /**
    * Initialize and open the IndexedDB database.
    * @param {string} dbName
    * @returns {Promise<IDBDatabase>}
    */
   static async init(dbName) {
+    if (IndexedDB.#db && IndexedDB.#currentDbName !== dbName) {
+      IndexedDB.#db.close()
+      IndexedDB.#db = null
+      IndexedDB.#currentDbName = null
+    }
+
     if (IndexedDB.#db) return IndexedDB.#db
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(dbName, 1)
+      console.log(`[IndexedDB] Opening database "${dbName}"`)
       req.onerror = () => reject(req.error)
       req.onsuccess = () => {
         IndexedDB.#db = req.result
+        IndexedDB.#currentDbName = dbName
         resolve(IndexedDB.#db)
       }
       req.onupgradeneeded = (event) => {
+        console.log(`[IndexedDB] Upgrading database to version ${event.newVersion}`)
         this.ensureSchema(event.target.result)
       }
     })
@@ -34,6 +48,7 @@ export class IndexedDB {
     if (IndexedDB.#db) {
       IndexedDB.#db.close()
       IndexedDB.#db = null
+      IndexedDB.#currentDbName = null
     }
   }
 

@@ -1,9 +1,5 @@
 <script setup>
-import { provideApprovalWorkflowInstances } from '@/composables/useApprovalWorkflowInstances.js'
-
-const { filters, fetchInstances } = provideApprovalWorkflowInstances()
-
-onMounted(() => fetchInstances())
+const filters = ref({ search: '', statusId: null })
 </script>
 
 <template>
@@ -25,7 +21,7 @@ onMounted(() => fetchInstances())
     <div class="tw:flex tw:gap-4 tw:flex-1 tw:min-h-0">
       <!-- Table -->
       <div class="tw:flex-1 tw:min-w-0 tw:flex tw:flex-col">
-        <ApprovalWorkflowInstancesTable />
+        <ApprovalWorkflowInstancesTable :search="filters.search" :statusId="filters.statusId" />
       </div>
     </div>
   </div>

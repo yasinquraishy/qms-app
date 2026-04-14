@@ -15,11 +15,6 @@ let maxAttempt = 3
 let _metaMap = null
 let _config = null
 
-/**
- * @type {Map<string, number>}
- */
-const attempMap = new Map()
-
 export function startPolling(metaMap, config) {
   stopPolling()
   _metaMap = metaMap
@@ -92,10 +87,10 @@ async function flush(entries) {
         },
       })
     } catch (err) {
-      const entryCount = attempMap.get(entry.id) || 0
+      const attemptCount = entry.attempt
       const status = err?.status
       const isPermanent = status === 400 || status === 409 || status === 422
-      if (isPermanent || entryCount >= maxAttempt) {
+      if (isPermanent || attemptCount >= maxAttempt) {
         await rollbackEntry(entry, meta)
         await IndexedDB.delete(TRANSACTIONS_STORE, entry.id)
         await broadcastMessage({
@@ -113,7 +108,8 @@ async function flush(entries) {
         })
         continue
       } else {
-        attempMap.set(entry.id, entryCount + 1)
+        entry.attempt = attemptCount + 1
+        await IndexedDB.put(TRANSACTIONS_STORE, entry)
       }
       await broadcastMessage({
         type: MSG.ERROR,

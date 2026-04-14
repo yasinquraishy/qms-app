@@ -55,14 +55,16 @@ export const defaultSerializers = {
   DateTime: {
     /** @param {DateTime} dt */
     toStore(dt) {
-      return dt instanceof DateTime ? dt.toISO() : dt
+      return DateTime.isDateTime(dt) || typeof dt?.toISO === 'function' ? dt.toISO() : dt
     },
     /** @param {string|null} s */
     fromStore(s) {
       return s != null ? DateTime.fromISO(s) : null
     },
   },
-  get _DateTime() {
+  // dynamic setting name from DateTime.name to avoid hard dependency on luxon
+  // DateTime.name changes on build
+  get [DateTime.name]() {
     return this.DateTime
   },
 }

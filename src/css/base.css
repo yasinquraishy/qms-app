@@ -186,6 +186,10 @@ button {
   @apply tw:cursor-pointer;
 }
 
+select {
+  @apply tw:text-sm tw:border tw:border-divider tw:rounded-lg tw:px-3 tw:py-1.5 tw:bg-sidebar tw:text-on-sidebar tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary/30;
+}
+
 /* ==============================================
  * Design System Utility Classes
  * Standard label typography (replaces inconsistent

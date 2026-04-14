@@ -9,8 +9,6 @@ const documentTemplates = useLiveQuery(async (db) => db.DocumentTemplate.where()
 const loading = computed(() => documentTemplates.value === undefined)
 
 const canCreate = computed(() => isAllowed(['document-templates:create']))
-const canUpdate = computed(() => isAllowed(['document-templates:update']))
-const canArchive = computed(() => isAllowed(['document-templates:delete']))
 
 const totalTemplates = computed(() => (documentTemplates.value || []).length)
 const activeTemplates = computed(
@@ -22,28 +20,6 @@ const withTraining = computed(
 
 function navigateToCreate() {
   router.push(getCompanyPath('/document-templates/create'))
-}
-
-function navigateToDetail(row) {
-  router.push(getCompanyPath(`/document-templates/${row.id}`))
-}
-
-async function onArchiveTemplate(row) {
-  row.statusId = 'ARCHIVED'
-  try {
-    await row.save()
-  } catch {
-    row.statusId = 'ACTIVE'
-  }
-}
-
-async function onUnarchiveTemplate(row) {
-  row.statusId = 'ACTIVE'
-  try {
-    await row.save()
-  } catch {
-    row.statusId = 'ARCHIVED'
-  }
 }
 </script>
 
@@ -79,14 +55,6 @@ async function onUnarchiveTemplate(row) {
     />
 
     <!-- Templates Table -->
-    <DocumentTemplatesTable
-      :rows="documentTemplates || []"
-      :loading="loading"
-      :canUpdate="canUpdate"
-      :canArchive="canArchive"
-      @view="navigateToDetail"
-      @archive="onArchiveTemplate"
-      @unarchive="onUnarchiveTemplate"
-    />
+    <DocumentTemplatesTable :rows="documentTemplates || []" :loading="loading" />
   </div>
 </template>

@@ -1,0 +1,175 @@
+<script setup>
+import { IconLayoutList, IconArrowUp, IconArrowDown, IconTrash, IconPlus } from '@tabler/icons-vue'
+
+const props = defineProps({
+  readonly: { type: [Boolean, Function], default: false },
+})
+
+const sections = defineModel({ type: Array, required: true })
+
+function isReadonly(section) {
+  return typeof props.readonly === 'function' ? props.readonly(section) : props.readonly
+}
+
+const SECTION_TYPE_MAP = {
+  text: { label: 'TEXT', class: 'tw:bg-blue-100 tw:text-blue-700' },
+  attachment: { label: 'ATTACHMENT', class: 'tw:bg-purple-100 tw:text-purple-700' },
+  form: { label: 'FORM', class: 'tw:bg-green-100 tw:text-green-700' },
+  table: { label: 'TABLE', class: 'tw:bg-orange-100 tw:text-orange-700' },
+}
+
+function addSection() {
+  const order = (sections.value?.length || 0) + 1
+  sections.value = [
+    ...(sections.value || []),
+    {
+      id: crypto.randomUUID(),
+      order,
+      title: '',
+      sectionType: 'text',
+      content: '',
+    },
+  ]
+}
+
+function removeSection(sectionId) {
+  sections.value = sections.value
+    .filter((s) => s.id !== sectionId)
+    .map((s, i) => ({ ...s, order: i + 1 }))
+}
+
+function moveSectionUp(index) {
+  if (index === 0) return
+  const arr = [...sections.value]
+  ;[arr[index], arr[index - 1]] = [arr[index - 1], arr[index]]
+  sections.value = arr.map((s, i) => ({ ...s, order: i + 1 }))
+}
+
+function moveSectionDown(index) {
+  if (index >= sections.value.length - 1) return
+  const arr = [...sections.value]
+  ;[arr[index], arr[index + 1]] = [arr[index + 1], arr[index]]
+  sections.value = arr.map((s, i) => ({ ...s, order: i + 1 }))
+}
+</script>
+
+<template>
+  <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
+    <div
+      class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover tw:flex tw:items-center tw:gap-2"
+    >
+      <IconLayoutList :size="22" class="tw:text-primary" />
+      <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">
+        Sections ({{ sections?.length || 0 }})
+      </h2>
+    </div>
+    <div class="tw:p-6">
+      <div v-if="sections?.length" class="tw:space-y-3">
+        <div
+          v-for="(section, sectionIndex) in sections"
+          :key="section.id"
+          class="tw:flex tw:items-start tw:gap-4 tw:p-4 tw:bg-main-hover tw:rounded-lg"
+        >
+          <!-- Order badge -->
+          <div
+            class="tw:flex tw:items-center tw:justify-center tw:w-8 tw:h-8 tw:shrink-0 tw:rounded-full tw:bg-primary/10 tw:text-primary tw:font-bold tw:text-sm tw:mt-1"
+          >
+            {{ section.order }}
+          </div>
+
+          <!-- Edit mode -->
+          <template v-if="!isReadonly(section)">
+            <div class="tw:flex-1 tw:flex tw:flex-col tw:gap-2">
+              <div class="tw:grid tw:grid-cols-2 tw:gap-2">
+                <BaseTextInput v-model="section.title" placeholder="Section title" size="sm" />
+                <select
+                  v-model="section.sectionType"
+                  class="tw:text-sm tw:border tw:border-divider tw:rounded-lg tw:px-3 tw:py-1.5 tw:bg-sidebar tw:text-on-sidebar tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary/30"
+                >
+                  <option value="text">Text</option>
+                  <option value="attachment">Attachment</option>
+                  <!-- <option value="form">Form</option>
+                  <option value="table">Table</option> -->
+                </select>
+              </div>
+              <div v-if="section.sectionType === 'text'">
+                <TiptapEditor v-model="section.content" />
+              </div>
+              <div v-else-if="section.sectionType === 'attachment'">
+                <BaseUploader v-model="section.attachments" :hideHeader="true" />
+              </div>
+              <div
+                v-else
+                class="tw:border tw:border-divider tw:rounded-lg tw:h-16 tw:flex tw:items-center tw:justify-center tw:bg-main-hover"
+              >
+                <p class="tw:text-sm tw:text-secondary tw:italic">
+                  {{ section.sectionType }} configuration coming soon...
+                </p>
+              </div>
+            </div>
+            <div class="tw:flex tw:items-center tw:gap-1 tw:shrink-0 tw:mt-1">
+              <button
+                class="tw:p-1.5 tw:rounded tw:text-secondary tw:hover:text-primary tw:hover:bg-primary/10 tw:transition-colors tw:disabled:opacity-30"
+                :disabled="sectionIndex === 0"
+                @click="moveSectionUp(sectionIndex)"
+              >
+                <IconArrowUp :size="16" />
+              </button>
+              <button
+                class="tw:p-1.5 tw:rounded tw:text-secondary tw:hover:text-primary tw:hover:bg-primary/10 tw:transition-colors tw:disabled:opacity-30"
+                :disabled="sectionIndex === sections.length - 1"
+                @click="moveSectionDown(sectionIndex)"
+              >
+                <IconArrowDown :size="16" />
+              </button>
+              <button
+                class="tw:p-1.5 tw:rounded tw:text-red-400 tw:hover:text-red-600 tw:hover:bg-red-50 tw:transition-colors"
+                @click="removeSection(section.id)"
+              >
+                <IconTrash :size="16" />
+              </button>
+            </div>
+          </template>
+
+          <!-- Read-only mode -->
+          <template v-else>
+            <div class="tw:flex-1">
+              <div class="tw:font-bold tw:text-on-sidebar">{{ section.title }}</div>
+              <div v-if="section.defaultContent" class="tw:text-xs tw:text-secondary tw:mt-1">
+                {{ section.defaultContent.substring(0, 100)
+                }}{{ section.defaultContent.length > 100 ? '...' : '' }}
+              </div>
+            </div>
+            <span
+              class="tw:inline-flex tw:items-center tw:rounded tw:px-3 tw:py-1 tw:text-xs tw:font-medium"
+              :class="
+                SECTION_TYPE_MAP[section.sectionType]?.class || 'tw:bg-gray-100 tw:text-gray-600'
+              "
+            >
+              {{
+                (
+                  SECTION_TYPE_MAP[section.sectionType]?.label ||
+                  section.sectionType ||
+                  '—'
+                ).toUpperCase()
+              }}
+            </span>
+          </template>
+        </div>
+      </div>
+
+      <div v-else class="tw:text-center tw:py-8 tw:text-secondary">
+        No sections defined for this template.
+      </div>
+
+      <button
+        v-if="!isReadonly(null)"
+        class="tw:mt-4! tw:flex tw:items-center tw:justify-center tw:gap-2 tw:w-full tw:px-4 tw:py-2 tw:rounded-lg tw:border tw:border-dashed tw:border-primary tw:text-primary tw:text-sm tw:font-medium tw:hover:bg-primary/10 tw:transition-colors"
+        @click="addSection"
+      >
+        <IconPlus :size="16" />
+        Add Section
+      </button>
+    </div>
+  </div>
+</template>

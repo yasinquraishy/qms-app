@@ -10,6 +10,7 @@
  *   toast.notify({ type: 'negative', message: 'Failed', timeout: 5000 })
  */
 
+import { ValidationError } from '@syncEngine/index'
 import { ref } from 'vue'
 
 /** @type {import('vue').Ref<Array<ToastItem>>} */
@@ -81,6 +82,12 @@ function success(message, options = {}) {
 }
 
 function error(message, options = {}) {
+  if (message instanceof ValidationError) {
+    message = message.errors.map((err) => `${err.field}: ${err.message}`).join('\n')
+  } else if (message instanceof Error) {
+    message = message.message
+  }
+
   return notify({ ...options, type: 'negative', message })
 }
 

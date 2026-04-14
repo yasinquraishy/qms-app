@@ -21,7 +21,7 @@ const items = computed(() => [
   <BaseSelectMenu v-model="modelValue" :items="items" :required="required">
     <template #button="scope">
       <slot name="button" v-bind="scope">
-        <UserStatusBadge
+        <UserStatusBadgeById
           v-if="modelValue"
           :statusId="modelValue"
           :clearable="!required"

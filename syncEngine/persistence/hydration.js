@@ -47,7 +47,7 @@ export function serializeValue(value, propertyMeta) {
     return options.serializer.toStore(value)
   }
 
-  // 2. Default serializers (Date, Map, Set)
+  // 2. Default serializers (Date, Map, Set, DateTime)
   const typeName = options.type?.name
   if (typeName && defaultSerializers[typeName]?.toStore) {
     return defaultSerializers[typeName].toStore(value)

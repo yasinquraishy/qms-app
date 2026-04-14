@@ -31,29 +31,17 @@ async function confirm() {
 </script>
 
 <template>
-  <WDialog v-model="show" title="Request Changes" minWidth="440px" persistent>
+  <BaseDialog v-model="show" title="Request Changes" maxWidth="sm" persistent>
     <p class="tw:text-sm tw:text-secondary tw:mb-4">
       Please describe the changes you need before this step can be approved.
     </p>
-    <WInput
-      v-model="form.comment"
-      name="comment"
-      type="textarea"
-      label="Comment (required)"
-      outlined
-      autogrow
-    />
+    <BaseTextarea v-model="form.comment" placeholder="Comment (required)" />
 
-    <template #actions>
-      <WBtn flat label="Cancel" @click="show = false" />
-      <WBtn
-        color="primary"
-        unelevated
-        label="Request Changes"
-        :loading="actionLoading"
-        :disable="actionLoading"
-        @click="confirm"
-      />
+    <template #footer>
+      <BaseButton variant="ghost" @click="show = false">Cancel</BaseButton>
+      <BaseButton :isLoading="actionLoading" :disabled="actionLoading" @click="confirm">
+        Request Changes
+      </BaseButton>
     </template>
-  </WDialog>
+  </BaseDialog>
 </template>

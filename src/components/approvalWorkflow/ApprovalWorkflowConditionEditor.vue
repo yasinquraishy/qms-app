@@ -1,25 +1,27 @@
 <script setup>
+import { IconTrash, IconPlus } from '@tabler/icons-vue'
+
 const conditions = defineModel('conditions', { type: Array, default: () => [] })
 
-const conditionFieldOptions = [
-  { label: 'Risk Level', value: 'risk_level' },
-  { label: 'Impact Area', value: 'impact_area' },
-  { label: 'Document Value', value: 'document_value' },
-  { label: 'Department', value: 'department' },
-  { label: 'Priority', value: 'priority' },
+const conditionFieldItems = [
+  { id: 'risk_level', name: 'Risk Level' },
+  { id: 'impact_area', name: 'Impact Area' },
+  { id: 'document_value', name: 'Document Value' },
+  { id: 'department', name: 'Department' },
+  { id: 'priority', name: 'Priority' },
 ]
 
-const conditionOperatorOptions = [
-  { label: 'IS', value: 'IS' },
-  { label: 'IS NOT', value: 'IS_NOT' },
-  { label: 'CONTAINS', value: 'CONTAINS' },
-  { label: 'GREATER THAN', value: 'GREATER_THAN' },
-  { label: 'LESS THAN', value: 'LESS_THAN' },
+const conditionOperatorItems = [
+  { id: 'IS', name: 'IS' },
+  { id: 'IS_NOT', name: 'IS NOT' },
+  { id: 'CONTAINS', name: 'CONTAINS' },
+  { id: 'GREATER_THAN', name: 'GREATER THAN' },
+  { id: 'LESS_THAN', name: 'LESS THAN' },
 ]
 
-const actionTypeOptions = [
-  { label: 'Add Role', value: 'ADD_ROLE' },
-  { label: 'Add User', value: 'ADD_USER' },
+const actionTypeItems = [
+  { id: 'ADD_ROLE', name: 'Add Role' },
+  { id: 'ADD_USER', name: 'Add User' },
 ]
 
 function addCondition() {
@@ -50,43 +52,58 @@ function removeCondition(index) {
     >
       <span class="tw:text-xs tw:font-bold tw:text-secondary">IF</span>
 
-      <WSelect
+      <BaseSelectMenu
         v-model="condition.conditionField"
-        :options="conditionFieldOptions"
-        optionLabel="label"
-        optionValue="value"
-        emitValue
-        mapOptions
-        dense
-        placeholder="Select field"
+        :items="conditionFieldItems"
+        required
         class="tw:w-40"
-      />
+      >
+        <template #button>
+          <BaseBadge selectable>
+            {{
+              conditionFieldItems.find((i) => i.id === condition.conditionField)?.name ||
+              'Select field'
+            }}
+          </BaseBadge>
+        </template>
+      </BaseSelectMenu>
 
-      <WSelect
+      <BaseSelectMenu
         v-model="condition.conditionOperator"
-        :options="conditionOperatorOptions"
-        optionLabel="label"
-        optionValue="value"
-        emitValue
-        mapOptions
-        dense
+        :items="conditionOperatorItems"
+        required
         class="tw:w-36"
-      />
+      >
+        <template #button>
+          <BaseBadge selectable>
+            {{
+              conditionOperatorItems.find((i) => i.id === condition.conditionOperator)?.name || 'IS'
+            }}
+          </BaseBadge>
+        </template>
+      </BaseSelectMenu>
 
-      <WInput v-model="condition.conditionValue" placeholder="Value" dense class="tw:w-32" />
+      <BaseTextInput
+        v-model="condition.conditionValue"
+        placeholder="Value"
+        size="sm"
+        class="tw:w-32"
+      />
 
       <span class="tw:text-xs tw:font-bold tw:text-secondary">THEN</span>
 
-      <WSelect
+      <BaseSelectMenu
         v-model="condition.actionType"
-        :options="actionTypeOptions"
-        optionLabel="label"
-        optionValue="value"
-        emitValue
-        mapOptions
-        dense
+        :items="actionTypeItems"
+        required
         class="tw:w-32"
-      />
+      >
+        <template #button>
+          <BaseBadge selectable>
+            {{ actionTypeItems.find((i) => i.id === condition.actionType)?.name || 'Add Role' }}
+          </BaseBadge>
+        </template>
+      </BaseSelectMenu>
 
       <!-- Action Target - shows inline text for now, role/user selection handled by parent -->
       <div
@@ -99,7 +116,7 @@ function removeCondition(index) {
         class="tw:ml-auto tw:text-secondary tw:hover:text-bad tw:transition-colors"
         @click="removeCondition(index)"
       >
-        <WIcon icon="delete" size="20px" />
+        <IconTrash :size="20" />
       </button>
     </div>
 
@@ -113,7 +130,7 @@ function removeCondition(index) {
       class="tw:text-xs tw:font-bold tw:text-primary tw:flex tw:items-center tw:gap-1 tw:hover:underline"
       @click="addCondition"
     >
-      <WIcon icon="add" size="16px" />
+      <IconPlus :size="16" />
       Add another logic rule
     </button>
   </div>

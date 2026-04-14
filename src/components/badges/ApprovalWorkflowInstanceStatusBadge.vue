@@ -17,6 +17,6 @@ const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-6
 
 <template>
   <BaseBadge v-bind="$attrs" :class="scheme(status?.id).class" :showDot="showDot">
-    {{ status.name || status.id || '—' }}
+    {{ status?.name || status?.id || '—' }}
   </BaseBadge>
 </template>

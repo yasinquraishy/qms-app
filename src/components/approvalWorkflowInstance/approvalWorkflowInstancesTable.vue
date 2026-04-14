@@ -21,22 +21,8 @@ const documentMap = useLiveQueryWithDeps(
   async (db, [resourceIds]) => {
     const ids = [...new Set(resourceIds.filter(Boolean))]
     if (!ids.length) return {}
-    const versions = await Promise.all(ids.map((id) => db.DocumentVersion.findByPk(id)))
-    const docIds = [
-      ...new Set(
-        versions
-          .filter(Boolean)
-          .map((v) => v.documentId)
-          .filter(Boolean),
-      ),
-    ]
-    const documents = await Promise.all(docIds.map((id) => db.Document.findByPk(id)))
-    const docById = Object.fromEntries(documents.filter(Boolean).map((d) => [d.id, d]))
-    const map = {}
-    for (const v of versions.filter(Boolean)) {
-      if (docById[v.documentId]) map[v.id] = docById[v.documentId]
-    }
-    return map
+    const documents = await Promise.all(ids.map((id) => db.Document.findByPk(id)))
+    return Object.fromEntries(documents.filter(Boolean).map((d) => [d.id, d]))
   },
   { initial: {} },
 )
@@ -151,13 +137,14 @@ function getDocument(instance) {
       <DocumentTypeBadgeById
         v-if="getDocument(row)?.documentTypeId"
         :documentTypeId="getDocument(row).documentTypeId"
+        :iconOnly="false"
       />
       <span v-else class="tw:text-sm tw:text-secondary">—</span>
     </template>
 
     <!-- Submitted By -->
     <template #body-cell-submittedBy="{ row }">
-      <UserBadgeById v-if="getDocument(row)?.userId" :userId="getDocument(row).userId" />
+      <UserBadgeById v-if="row.submittedBy" :userId="row.submittedBy" />
       <span v-else class="tw:text-sm tw:text-secondary">—</span>
     </template>
 

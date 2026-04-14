@@ -1,6 +1,19 @@
 <script setup>
-defineProps({
-  stepEntry: { type: Object, required: true },
+const props = defineProps({
+  instanceStepId: { type: String, required: true },
+})
+
+const instanceStep = useLiveQueryWithDeps(
+  [() => props.instanceStepId],
+  async (db, [instanceStepId]) => {
+    if (!instanceStepId) return null
+    return db.ApprovalWorkflowInstanceStep.findByPk(instanceStepId)
+  },
+)
+
+const step = useLiveQueryWithDeps([() => instanceStep.value?.stepId], async (db, [stepId]) => {
+  if (!stepId) return null
+  return db.ApprovalWorkflowStep.findByPk(stepId)
 })
 </script>
 
@@ -9,11 +22,11 @@ defineProps({
     <div class="tw:flex tw:items-center tw:justify-between">
       <div>
         <h3 class="tw:font-bold tw:text-on-main">
-          Step {{ stepEntry.stepNumber }}: {{ stepEntry.step?.name }}
+          Step {{ instanceStep?.stepNumber }}: {{ step?.name }}
         </h3>
-        <p class="tw:text-xs tw:text-secondary">Rule: {{ stepEntry.step?.approvalRule }}</p>
+        <p class="tw:text-xs tw:text-secondary">Rule: {{ step?.approvalRule }}</p>
       </div>
-      <ApprovalWorkflowInstanceStepStatusBadgeById :statusId="stepEntry.statusId" />
+      <ApprovalWorkflowInstanceStepStatusBadgeById :statusId="instanceStep?.statusId" />
     </div>
   </div>
 </template>

@@ -107,21 +107,21 @@ function stepState(step) {
         <!-- Step cards -->
         <ApprovalWorkflowInstanceStepCompleted
           v-if="stepState(stepEntry) === 'completed'"
-          :stepEntry="stepEntry"
+          :instanceStepId="stepEntry.id"
         />
         <ApprovalWorkflowInstanceStepActive
           v-else-if="stepState(stepEntry) === 'active'"
-          :stepEntry="stepEntry"
+          :instanceStepId="stepEntry.id"
         />
         <ApprovalWorkflowInstanceStepRejected
           v-else-if="stepState(stepEntry) === 'rejected'"
-          :stepEntry="stepEntry"
+          :instanceStepId="stepEntry.id"
         />
         <ApprovalWorkflowInstanceStepRejected
           v-else-if="stepState(stepEntry) === 'changesRequested'"
-          :stepEntry="stepEntry"
+          :instanceStepId="stepEntry.id"
         />
-        <ApprovalWorkflowInstanceStepPending v-else :stepEntry="stepEntry" />
+        <ApprovalWorkflowInstanceStepPending v-else :instanceStepId="stepEntry.id" />
       </div>
     </template>
   </div>

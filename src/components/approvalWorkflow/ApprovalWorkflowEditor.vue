@@ -12,6 +12,9 @@ const props = defineProps({
 const toast = useToast()
 const router = useRouter()
 
+const selectedVersionId = ref(null)
+const selectedStepId = ref(null)
+
 // --- Live data ---
 const workflow = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
   db.ApprovalWorkflow.findByPk(id),
@@ -26,8 +29,38 @@ const versions = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-const selectedVersionId = ref(null)
-const selectedStepId = ref(null)
+const steps = useLiveQueryWithDeps(
+  [() => selectedVersionId.value],
+  async (db, [versionId]) => {
+    if (!versionId) return []
+    return db.ApprovalWorkflowStep.where('workflowVersionId', versionId).exec()
+  },
+  { initial: [] },
+)
+
+const stepUsers = useLiveQueryWithDeps(
+  [() => steps.value.map((s) => s.id)],
+  async (db, [stepIds]) => {
+    if (!stepIds || stepIds.length === 0) return []
+    return db.ApprovalWorkflowStepUser.where('stepId', stepIds).exec()
+  },
+)
+
+const stepRoles = useLiveQueryWithDeps(
+  [() => steps.value.map((s) => s.id)],
+  async (db, [stepIds]) => {
+    if (!stepIds || stepIds.length === 0) return []
+    return db.ApprovalWorkflowStepRole.where('stepId', stepIds).exec()
+  },
+)
+
+const stepsWithoutAssignees = computed(() => {
+  return steps.value.filter((step) => {
+    const hasUsers = stepUsers.value.some((su) => su.stepId === step.id)
+    const hasRoles = stepRoles.value.some((sr) => sr.stepId === step.id)
+    return !hasUsers && !hasRoles
+  })
+})
 
 watch(
   versions,
@@ -97,10 +130,8 @@ async function handlePublish(statusOverride) {
   if (!selectedVersion.value || !workflow.value) return
 
   // Validate each step has at least one role or reviewer
-  // TODO: need to do publishing in backend
-  const stepsWithoutAssignees = []
-  if (stepsWithoutAssignees.length > 0) {
-    toast.warning('  // TODO: need to do publishing in backend')
+  if (stepsWithoutAssignees.value.length > 0) {
+    toast.warning('Please assign at least one user or role to each step before publishing.')
     return
   }
 

@@ -404,18 +404,14 @@ const props = defineProps({
   siteId: { type: String, default: null },
 })
 
-const site = useLiveQueryWithDeps(
-  [() => props.siteId],
-  async (db, [siteId]) => {
-    if (!siteId) return null
-    return db.Site.findByPk(siteId)
-  },
-  { initial: { id: props.siteId } },
-)
+const site = useLiveQueryWithDeps([() => props.siteId], async (db, [siteId]) => {
+  if (!siteId) return null
+  return db.Site.findByPk(siteId)
+})
 </script>
 
 <template>
-  <SiteBadge v-if="siteId" :site="site" v-bind="$attrs" />
+  <SiteBadge v-if="site" :site="site" v-bind="$attrs" />
 </template>
 ```
 
@@ -434,12 +430,11 @@ const status = useLiveQueryWithDeps(
     if (!statusId) return null
     return db.TaskInstanceStatus.findByPk(statusId)
   },
-  { initial:  { id: props.statusId } },
 )
 </script>
 
 <template>
-  <TaskInstanceStatusBadge v-if="statusId" :status="status" :showDot="showDot" v-bind="$attrs" />
+  <TaskInstanceStatusBadge v-if="status" :status="status" :showDot="showDot" v-bind="$attrs" />
 </template>
 </template>
 ```

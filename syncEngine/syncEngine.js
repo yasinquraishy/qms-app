@@ -86,11 +86,11 @@ export class SyncEngine {
   async #initDatabase(dbName) {
     if (shouldNuke()) {
       this.#dbToNuke = this.dbName
-      this.dbName = `${dbName}-${Date.now()}`
-      localStorage.setItem(SCHEMA_HASH_KEY, computeSchemaHash())
-    } else if (!this.dbName) {
+    }
+
+    if (!this.dbName || this.#dbToNuke !== null) {
       // First run or new company — no entry in localStorage yet
-      this.dbName = dbName
+      this.dbName = `${dbName}-${Date.now()}`
     }
 
     await IndexedDB.init(this.dbName)

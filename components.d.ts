@@ -255,6 +255,7 @@ declare module 'vue' {
     ProductsCreateUpdateDialog: typeof import('./src/components/products/ProductsCreateUpdateDialog.vue')['default']
     ProductsFilterToolbar: typeof import('./src/components/products/ProductsFilterToolbar.vue')['default']
     ProductsHome: typeof import('./src/components/products/ProductsHome.vue')['default']
+    ProductsImportCsvDialog: typeof import('./src/components/products/ProductsImportCsvDialog.vue')['default']
     ProductsIndex: typeof import('./src/components/products/ProductsIndex.vue')['default']
     ProductsTable: typeof import('./src/components/products/ProductsTable.vue')['default']
     ProductStatusBadge: typeof import('./src/components/badges/ProductStatusBadge.vue')['default']

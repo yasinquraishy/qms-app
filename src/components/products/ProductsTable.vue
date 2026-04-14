@@ -1,5 +1,5 @@
 <script setup>
-import { IconEdit, IconTrash, IconDownload } from '@tabler/icons-vue'
+import { IconEdit, IconTrash, IconDownload, IconUpload } from '@tabler/icons-vue'
 
 const props = defineProps({
   rows: {
@@ -56,6 +56,8 @@ function rowMenuItems(row) {
   return items
 }
 
+const showImportDialog = ref(false)
+
 function escapeCsvValue(value) {
   if (value === null || value === undefined) return ''
   const str = String(value)
@@ -86,7 +88,11 @@ function downloadCsv(rows, cols) {
 
 <template>
   <div>
-    <div class="tw:flex tw:justify-end tw:mb-3">
+    <div class="tw:flex tw:justify-end tw:gap-2 tw:mb-3">
+      <BaseButton variant="outline" size="sm" @click="showImportDialog = true">
+        <template #icon><IconUpload :size="16" /></template>
+        Import CSV
+      </BaseButton>
       <BaseButton
         variant="outline"
         size="sm"
@@ -97,6 +103,8 @@ function downloadCsv(rows, cols) {
         Export CSV
       </BaseButton>
     </div>
+
+    <ProductsImportCsvDialog v-model="showImportDialog" :columns="columns" />
 
     <BaseTable :rows="rows" :columns="columns" :loading="loading" rowKey="id">
       <template #body-cell-name="{ row }">

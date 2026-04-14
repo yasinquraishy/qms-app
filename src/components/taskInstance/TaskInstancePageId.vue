@@ -18,9 +18,7 @@ const document = useLiveQueryWithDeps(
   [() => taskInstance.value?.entityId],
   async (db, [entityId]) => {
     if (!entityId) return null
-    const version = await db.DocumentVersion.findByPk(entityId)
-    if (!version) return null
-    return db.Document.findByPk(version.documentId)
+    return db.Document.findByPk(entityId)
   },
 )
 
@@ -30,6 +28,24 @@ const instanceStep = useLiveQueryWithDeps(
   async (db, [sourceId]) => {
     if (!sourceId) return null
     return db.ApprovalWorkflowInstanceStep.findByPk(sourceId)
+  },
+)
+
+const instance = useLiveQueryWithDeps(
+  [() => instanceStep.value?.workflowInstanceId],
+  async (db, [workflowInstanceId]) => {
+    if (!workflowInstanceId) return null
+    return db.ApprovalWorkflowInstance.findByPk(workflowInstanceId)
+  },
+)
+
+// Resolve the specific DocumentVersion locked for this workflow instance
+const documentVersion = useLiveQueryWithDeps(
+  [() => instance.value?.id],
+  async (db, [workflowInstanceId]) => {
+    if (!workflowInstanceId) return null
+    const version = await db.DocumentVersion.where('workflowInstanceId', workflowInstanceId).first()
+    return version
   },
 )
 
@@ -81,7 +97,7 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
       <DocumentsMainContent
         v-if="document"
         :documentId="document.id"
-        :versionId="taskInstance.entityId"
+        :versionId="documentVersion?.id"
       />
     </template>
 

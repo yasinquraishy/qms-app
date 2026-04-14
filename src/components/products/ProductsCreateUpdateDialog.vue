@@ -97,12 +97,7 @@ async function onSubmit() {
       })
       emit('created', newProduct)
     } else {
-      product.value.name = form.value.name
-      product.value.sku = form.value.sku
-      product.value.family = form.value.family
-      product.value.description = form.value.description
-      product.value.productTypeId = form.value.productTypeId
-      product.value.statusId = form.value.statusId
+      Object.assign(product.value, form.value)
       await product.value.save()
       emit('updated', product.value)
     }
@@ -179,6 +174,18 @@ watch(open, (val) => {
         :errorMsg="validator.$errors?.family?.[0]?.$message"
       />
 
+      <div class="tw:flex tw:gap-4">
+        <div>
+          <label>Product Type</label>
+          <ProductTypeSelectMenu v-model="form.productTypeId" :required="true" />
+        </div>
+
+        <div>
+          <label>Status</label>
+          <ProductStatusSelectMenu v-model="form.statusId" :required="true" />
+        </div>
+      </div>
+
       <BaseTextarea
         v-model="form.description"
         name="description"
@@ -187,10 +194,6 @@ watch(open, (val) => {
         :maxlength="1000"
         :rows="3"
       />
-
-      <ProductTypeSelectMenu v-model="form.productTypeId" :required="true" />
-
-      <ProductStatusSelectMenu v-model="form.statusId" :required="true" />
     </div>
 
     <template #footer>

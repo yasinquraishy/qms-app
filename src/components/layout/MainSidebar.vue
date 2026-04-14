@@ -77,9 +77,15 @@ const navItems = computed(() => {
     },
     {
       label: 'Suppliers',
-      // permissions: ['suppliers:read'],
+      permissions: ['suppliers:read'],
       icon: 'local_shipping',
       to: getCompanyPath('/suppliers'),
+    },
+    {
+      label: 'Products',
+      permissions: ['products:read'],
+      icon: 'inventory',
+      to: getCompanyPath('/products'),
     },
     {}, // Divider
     {

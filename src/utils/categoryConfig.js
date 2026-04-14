@@ -69,6 +69,12 @@ export const CATEGORY_METADATA = {
     icon: 'local_shipping',
     description: 'Manage access for Suppliers',
   },
+
+  products: {
+    label: 'Products',
+    icon: 'inventory_2',
+    description: 'Manage access for Products',
+  },
 }
 
 export const PERMISSION_SECTIONS = [
@@ -83,6 +89,7 @@ export const PERMISSION_SECTIONS = [
       'roles',
       'optionSets',
       'suppliers',
+      'products',
     ],
   },
   {

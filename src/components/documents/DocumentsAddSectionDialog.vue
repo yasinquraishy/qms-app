@@ -1,6 +1,7 @@
 <script setup>
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
+import { IconHeading, IconNotes, IconPaperclip } from '@tabler/icons-vue'
 
 const props = defineProps({
   currentVersion: {
@@ -59,61 +60,65 @@ async function handleAddSection() {
   emit('sectionAdded', section)
   open.value = false
 }
-
-function closeDialog() {
-  open.value = false
-}
 </script>
 
 <template>
-  <WDialog v-model="open" tag="form" title="Add New Section" persistent minWidth="400px">
-    <template #default>
-      <div class="tw:space-y-4">
-        <!-- Section Title -->
-        <WInput
-          v-model="newSection.title"
-          name="title"
-          label="Section Title"
-          outlined
-          dense
-          autofocus
-        >
-          <template #prepend>
-            <WIcon name="title" />
-          </template>
-        </WInput>
+  <BaseDialog v-model="open" title="Add New Section" maxWidth="sm" persistent>
+    <div class="tw:space-y-4">
+      <!-- Section Title -->
+      <BaseTextInput
+        v-model="newSection.title"
+        name="title"
+        label="Section Title"
+        :errorMsg="
+          sectionValidator.title?.$error ? sectionValidator.title.$errors[0]?.$message : ''
+        "
+        autofocus
+      >
+        <template #icon>
+          <IconHeading class="tw:text-secondary" :size="16" />
+        </template>
+      </BaseTextInput>
 
-        <!-- Section Type -->
-        <WSelect
-          v-model="newSection.sectionType"
-          label="Section Type"
-          outlined
-          dense
-          :options="[
-            { label: 'Text Content', value: 'text' },
-            { label: 'Attachments', value: 'attachment' },
-          ]"
-          optionLabel="label"
-          optionValue="value"
-          emitValue
-          mapOptions
-        >
-          <template #prepend>
-            <WIcon :name="newSection.sectionType === 'text' ? 'notes' : 'attach_file'" />
-          </template>
-        </WSelect>
+      <!-- Section Type -->
+      <div class="tw:flex tw:flex-col tw:gap-1">
+        <label class="tw:text-sm tw:font-medium tw:text-secondary">Section Type</label>
+        <div class="tw:flex tw:gap-3">
+          <button
+            type="button"
+            class="tw:flex tw:items-center tw:gap-2 tw:flex-1 tw:rounded-lg tw:border tw:px-4 tw:py-3 tw:text-sm tw:font-medium tw:transition-colors"
+            :class="
+              newSection.sectionType === 'text'
+                ? 'tw:border-primary tw:bg-primary/10 tw:text-primary'
+                : 'tw:border-divider tw:text-secondary tw:hover:border-primary/50'
+            "
+            @click="newSection.sectionType = 'text'"
+          >
+            <IconNotes :size="16" />
+            Text Content
+          </button>
+          <button
+            type="button"
+            class="tw:flex tw:items-center tw:gap-2 tw:flex-1 tw:rounded-lg tw:border tw:px-4 tw:py-3 tw:text-sm tw:font-medium tw:transition-colors"
+            :class="
+              newSection.sectionType === 'attachment'
+                ? 'tw:border-primary tw:bg-primary/10 tw:text-primary'
+                : 'tw:border-divider tw:text-secondary tw:hover:border-primary/50'
+            "
+            @click="newSection.sectionType = 'attachment'"
+          >
+            <IconPaperclip :size="16" />
+            Attachments
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <template #footer="{ close }">
+      <div class="tw:flex tw:justify-end tw:gap-2">
+        <BaseButton variant="text" @click="close">Cancel</BaseButton>
+        <BaseButton variant="primary" @click="handleAddSection">Add Section</BaseButton>
       </div>
     </template>
-
-    <template #actions>
-      <WBtn flat label="Cancel" @click="closeDialog" />
-      <WBtn
-        type="submit"
-        unelevated
-        color="primary"
-        label="Add Section"
-        @click="handleAddSection"
-      />
-    </template>
-  </WDialog>
+  </BaseDialog>
 </template>

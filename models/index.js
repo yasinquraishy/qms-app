@@ -36,6 +36,9 @@ import { NotificationType } from './notificationType'
 import { OptionSet } from './optionSet'
 import { Permission } from './permission'
 import { PermissionOnRole } from './permissionOnRole'
+import { Product } from './product'
+import { ProductStatus } from './productStatus'
+import { ProductType } from './productType'
 import { Record } from './record'
 import { RecordCounter } from './recordCounter'
 import { RecordStatus } from './recordStatus'
@@ -102,6 +105,9 @@ export const db = {
   OptionSet,
   Permission,
   PermissionOnRole,
+  Product,
+  ProductStatus,
+  ProductType,
   Record,
   RecordCounter,
   RecordStatus,

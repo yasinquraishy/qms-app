@@ -41,11 +41,11 @@ const instance = useLiveQueryWithDeps(
 
 // Resolve the specific DocumentVersion locked for this workflow instance
 const documentVersion = useLiveQueryWithDeps(
-  [() => instance.value?.id],
-  async (db, [workflowInstanceId]) => {
-    if (!workflowInstanceId) return null
-    const version = await db.DocumentVersion.where('workflowInstanceId', workflowInstanceId).first()
-    return version
+  [() => document.value?.id, () => instance.value?.id],
+  async (db, [documentId, workflowInstanceId]) => {
+    if (!documentId || !workflowInstanceId) return null
+    const versions = await db.DocumentVersion.where('documentId', documentId).exec()
+    return versions.find((v) => v.workflowInstanceId === workflowInstanceId) || null
   },
 )
 
@@ -98,6 +98,7 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
         v-if="document"
         :documentId="document.id"
         :versionId="documentVersion?.id"
+        :reviewMode="canActOnStep"
       />
     </template>
 

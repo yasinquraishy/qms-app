@@ -25,11 +25,11 @@ export default defineConfig({
       // Hard boundary: block any imports from main-thread modules.
       // If an SW file accidentally imports these, the build will fail
       // with "module not found" instead of silently bundling them.
-      { find: '@core', replacement: false },
-      { find: '@persistence', replacement: false },
-      { find: '@network', replacement: false },
-      { find: '@decorators', replacement: false },
-      { find: '@worker', replacement: false },
+      { find: '@core', replacement: path.resolve(__dirname, '__blocked__/@core') },
+      { find: '@persistence', replacement: path.resolve(__dirname, '__blocked__/@persistence') },
+      { find: '@network', replacement: path.resolve(__dirname, '__blocked__/@network') },
+      { find: '@decorators', replacement: path.resolve(__dirname, '__blocked__/@decorators') },
+      { find: '@worker', replacement: path.resolve(__dirname, '__blocked__/@worker') },
     ],
   },
 })

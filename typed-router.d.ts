@@ -121,6 +121,13 @@ declare module 'vue-router/auto-routes' {
       { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
       | never
     >,
+    '/[companyCode]/products': RouteRecordInfo<
+      '/[companyCode]/products',
+      '/:companyCode/products',
+      { companyCode: ParamValue<true> },
+      { companyCode: ParamValue<false> },
+      | never
+    >,
     '/[companyCode]/records': RouteRecordInfo<
       '/[companyCode]/records',
       '/:companyCode/records',
@@ -334,6 +341,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/[companyCode]/option-sets/[[id]].vue': {
       routes:
         | '/[companyCode]/option-sets/[[id]]'
+      views:
+        | never
+    }
+    'src/pages/[companyCode]/products.vue': {
+      routes:
+        | '/[companyCode]/products'
       views:
         | never
     }

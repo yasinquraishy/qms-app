@@ -33,7 +33,7 @@ defineProps({
           class="tw:size-8 tw:border-divider tw:grayscale tw:opacity-50"
         />
       </div>
-      <WStatusBadge v-else :status="stepEntry.statusId" variant="step" />
+      <ApprovalWorkflowInstanceStepStatusBadgeById v-else :statusId="stepEntry.statusId" />
     </div>
 
     <template v-if="stepEntry.reviewers">

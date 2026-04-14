@@ -13,7 +13,7 @@ defineProps({
         </h3>
         <p class="tw:text-xs tw:text-secondary">Rule: {{ stepEntry.step?.approvalRule }}</p>
       </div>
-      <WStatusBadge :status="stepEntry.statusId" variant="step" />
+      <ApprovalWorkflowInstanceStepStatusBadgeById :statusId="stepEntry.statusId" />
     </div>
   </div>
 </template>

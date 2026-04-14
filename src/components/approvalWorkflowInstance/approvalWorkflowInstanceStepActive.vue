@@ -1,4 +1,5 @@
 <script setup>
+import { IconSignature } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 
 defineProps({
@@ -31,7 +32,7 @@ function canActOnStep(step) {
       <div>
         <h3 class="tw:font-bold tw:text-on-main tw:flex tw:items-center tw:gap-2">
           Step {{ stepEntry.stepNumber }}: {{ stepEntry.step?.name }}
-          <WStatusBadge :status="stepEntry.statusId" variant="step" />
+          <ApprovalWorkflowInstanceStepStatusBadgeById :statusId="stepEntry.statusId" />
         </h3>
         <p class="tw:text-xs tw:text-secondary">
           Rule: {{ stepEntry.step?.approvalRule }} approvers must sign &bull;
@@ -84,7 +85,7 @@ function canActOnStep(step) {
 
             <!-- Status indicator dot -->
             <div class="tw:absolute tw:-bottom-1 tw:-right-1">
-              <WStatusBadge :status="task.statusId" variant="task" showDot hideLabel />
+              <TaskInstanceStatusBadgeById :statusId="task.statusId" showDot hideLabel />
             </div>
           </div>
           <div>
@@ -97,7 +98,7 @@ function canActOnStep(step) {
             </p>
           </div>
         </div>
-        <WStatusBadge :status="task.statusId" variant="task" />
+        <TaskInstanceStatusBadgeById :statusId="task.statusId" />
       </div>
     </div>
 
@@ -108,12 +109,20 @@ function canActOnStep(step) {
     >
       <div class="tw:flex tw:flex-col tw:gap-4">
         <div class="tw:flex tw:items-center tw:gap-2 tw:mb-2">
-          <WIcon name="draw" size="20px" class="tw:text-primary" />
+          <IconSignature :size="20" class="tw:text-primary" />
           <p class="tw:text-sm tw:font-semibold tw:text-primary">Your required action</p>
         </div>
         <div class="tw:flex tw:flex-wrap tw:gap-3">
-          <ApprovalWorkflowInstanceApproverAction action="APPROVE" :activeStep="stepEntry" />
-          <ApprovalWorkflowInstanceApproverAction action="REJECT" :activeStep="stepEntry" />
+          <ApprovalWorkflowInstanceApproverAction
+            action="APPROVE"
+            :workflowInstanceId="stepEntry.workflowInstanceId"
+            :instanceStepId="stepEntry.id"
+          />
+          <ApprovalWorkflowInstanceApproverAction
+            action="REJECT"
+            :workflowInstanceId="stepEntry.workflowInstanceId"
+            :instanceStepId="stepEntry.id"
+          />
         </div>
       </div>
     </div>

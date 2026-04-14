@@ -1,19 +1,18 @@
 <script setup>
 const props = defineProps({
   statusId: { type: String, default: null },
-  showDot: { type: Boolean, default: true },
 })
 
 const status = useLiveQueryWithDeps(
   [() => props.statusId],
   async (db, [statusId]) => {
     if (!statusId) return null
-    return db.SupplierStatus.findByPk(statusId)
+    return db.UserStatus.findByPk(statusId)
   },
   { initial: { id: props.statusId } },
 )
 </script>
 
 <template>
-  <SupplierStatusBadge v-if="statusId" :status="status" :showDot="showDot" v-bind="$attrs" />
+  <UserStatusBadge v-if="statusId" :status="status" v-bind="$attrs" />
 </template>

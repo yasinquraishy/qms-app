@@ -1,10 +1,110 @@
 <script setup>
-import { useApprovalWorkflowInstances } from '@/composables/useApprovalWorkflowInstances.js'
 import { getCompanyPath } from '@/utils/routeHelpers'
 
-import { DateTime } from 'luxon'
+const props = defineProps({
+  search: { type: String, default: '' },
+  statusId: { type: String, default: null },
+})
 
-const { instances, loading } = useApprovalWorkflowInstances()
+const instances = useLiveQueryWithDeps(
+  [() => props.statusId],
+  async (db, [statusId]) => {
+    let results = await db.ApprovalWorkflowInstance.where().exec()
+    if (statusId) results = results.filter((i) => i.statusId === statusId)
+    return results
+  },
+  { initial: [] },
+)
+
+const documentMap = useLiveQueryWithDeps(
+  [() => instances.value.map((i) => i.resourceId)],
+  async (db, [resourceIds]) => {
+    const ids = [...new Set(resourceIds.filter(Boolean))]
+    if (!ids.length) return {}
+    const versions = await Promise.all(ids.map((id) => db.DocumentVersion.findByPk(id)))
+    const docIds = [
+      ...new Set(
+        versions
+          .filter(Boolean)
+          .map((v) => v.documentId)
+          .filter(Boolean),
+      ),
+    ]
+    const documents = await Promise.all(docIds.map((id) => db.Document.findByPk(id)))
+    const docById = Object.fromEntries(documents.filter(Boolean).map((d) => [d.id, d]))
+    const map = {}
+    for (const v of versions.filter(Boolean)) {
+      if (docById[v.documentId]) map[v.id] = docById[v.documentId]
+    }
+    return map
+  },
+  { initial: {} },
+)
+
+const moduleIdMap = useLiveQueryWithDeps(
+  [() => instances.value.map((i) => i.workflowVersionId)],
+  async (db, [wfVersionIds]) => {
+    const ids = [...new Set(wfVersionIds.filter(Boolean))]
+    if (!ids.length) return {}
+    const wfVersions = await Promise.all(ids.map((id) => db.ApprovalWorkflowVersion.findByPk(id)))
+    const workflowIds = [
+      ...new Set(
+        wfVersions
+          .filter(Boolean)
+          .map((v) => v.workflowId)
+          .filter(Boolean),
+      ),
+    ]
+    const workflows = await Promise.all(workflowIds.map((id) => db.ApprovalWorkflow.findByPk(id)))
+    const wfById = Object.fromEntries(workflows.filter(Boolean).map((w) => [w.id, w]))
+    const map = {}
+    for (const v of wfVersions.filter(Boolean)) {
+      const wf = wfById[v.workflowId]
+      if (wf) map[v.id] = wf.moduleId
+    }
+    return map
+  },
+  { initial: {} },
+)
+
+const activeStepNameMap = useLiveQueryWithDeps(
+  [() => instances.value.map((i) => i.id)],
+  async (db, [instanceIds]) => {
+    if (!instanceIds.length) return {}
+    const allSteps = await Promise.all(
+      instanceIds.map((id) =>
+        db.ApprovalWorkflowInstanceStep.where('workflowInstanceId', id).exec(),
+      ),
+    )
+    const activeByInstance = {}
+    const stepIds = new Set()
+    for (let i = 0; i < instanceIds.length; i++) {
+      const active = (allSteps[i] || []).find((s) => s.statusId === 'IN_PROGRESS')
+      if (active) {
+        activeByInstance[instanceIds[i]] = active.stepId
+        stepIds.add(active.stepId)
+      }
+    }
+    const steps = await Promise.all([...stepIds].map((id) => db.ApprovalWorkflowStep.findByPk(id)))
+    const stepById = Object.fromEntries(steps.filter(Boolean).map((s) => [s.id, s]))
+    const map = {}
+    for (const [instanceId, stepId] of Object.entries(activeByInstance)) {
+      map[instanceId] = stepById[stepId]?.name || null
+    }
+    return map
+  },
+  { initial: {} },
+)
+
+const filteredInstances = computed(() => {
+  if (!props.search) return instances.value
+  const q = props.search.toLowerCase()
+  return instances.value.filter((instance) => {
+    const doc = documentMap.value[instance.resourceId]
+    if (!doc) return false
+    return doc.title?.toLowerCase().includes(q) || doc.docNumber?.toLowerCase().includes(q)
+  })
+})
 
 const columns = [
   { name: 'title', label: 'ITEM TITLE', field: 'title', align: 'left' },
@@ -12,128 +112,65 @@ const columns = [
   { name: 'type', label: 'TYPE', field: 'type', align: 'left' },
   { name: 'submittedBy', label: 'SUBMITTED BY', field: 'submittedBy', align: 'left' },
   { name: 'currentStep', label: 'CURRENT STEP', field: 'currentStep', align: 'left' },
-  { name: 'dueDate', label: 'DUE DATE', field: 'dueDate', align: 'left' },
   { name: 'status', label: 'STATUS', field: 'status', align: 'left' },
 ]
 
-function getActiveStep(instance) {
-  return instance.steps?.find((s) => s.statusId === 'IN_PROGRESS') || null
-}
-
-function getSubmitterInitials(instance) {
-  const user = instance.resource?.user
-  if (!user) return '?'
-  return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()
-}
-
-function getSubmitterName(instance) {
-  const user = instance.resource?.user
-  if (!user) return 'Unknown'
-  return `${user.firstName || ''} ${user.lastName || ''}`.trim()
-}
-
-function isDuePast(dueDate) {
-  if (!dueDate) return false
-  return dueDate < DateTime.now()
-}
-
-function getStatus(instance) {
-  return instance.statusId || 'Unknown'
+function getDocument(instance) {
+  return documentMap.value[instance.resourceId] || null
 }
 </script>
 
 <template>
-  <QCard flat bordered class="tw:flex tw:flex-col tw:overflow-hidden">
-    <WTable
-      :rows="instances"
-      :columns="columns"
-      :loading="loading"
-      hideTop
-      noBorder
-      class="tw:flex-1"
-    >
-      <!-- Item Title -->
-      <template #body-cell-title="slotProps">
-        <QTd :props="slotProps" class="tw:cursor-pointer">
-          <RouterLink
-            class="tw:flex tw:flex-col tw:group"
-            :to="getCompanyPath(`workflow-instances/${slotProps.row.id}`)"
-          >
-            <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
-              {{ slotProps.row.resource?.title || '—' }}
-            </span>
-            <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
-              {{ slotProps.row.resource?.docNumber || slotProps.row.id.slice(0, 8) }}
-            </span>
-          </RouterLink>
-        </QTd>
-      </template>
+  <BaseTable :rows="filteredInstances" :columns="columns" rowKey="id">
+    <!-- Item Title -->
+    <template #body-cell-title="{ row }">
+      <RouterLink
+        class="tw:flex tw:flex-col tw:group"
+        :to="getCompanyPath(`workflow-instances/${row.id}`)"
+      >
+        <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
+          {{ getDocument(row)?.title || '—' }}
+        </span>
+        <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
+          {{ getDocument(row)?.docNumber || row.id.slice(0, 8) }}
+        </span>
+      </RouterLink>
+    </template>
 
-      <!-- Module -->
-      <template #body-cell-module="slotProps">
-        <QTd :props="slotProps">
-          <span class="tw:text-sm tw:text-on-main">
-            {{ slotProps.row.workflowVersion?.workflow?.module?.name || '—' }}
-          </span>
-        </QTd>
-      </template>
+    <!-- Module -->
+    <template #body-cell-module="{ row }">
+      <ModuleBadgeById
+        v-if="moduleIdMap[row.workflowVersionId]"
+        :moduleId="moduleIdMap[row.workflowVersionId]"
+      />
+      <span v-else class="tw:text-sm tw:text-secondary">—</span>
+    </template>
 
-      <!-- Type -->
-      <template #body-cell-type="slotProps">
-        <QTd :props="slotProps">
-          <span class="tw:text-sm tw:text-secondary">
-            {{ slotProps.row.resource?.documentType?.name || '—' }}
-          </span>
-        </QTd>
-      </template>
+    <!-- Type -->
+    <template #body-cell-type="{ row }">
+      <DocumentTypeBadgeById
+        v-if="getDocument(row)?.documentTypeId"
+        :documentTypeId="getDocument(row).documentTypeId"
+      />
+      <span v-else class="tw:text-sm tw:text-secondary">—</span>
+    </template>
 
-      <!-- Submitted By -->
-      <template #body-cell-submittedBy="slotProps">
-        <QTd :props="slotProps">
-          <div class="tw:flex tw:items-center tw:gap-2">
-            <div
-              class="tw:size-6 tw:rounded-full tw:bg-slate-200 tw:flex tw:items-center tw:justify-center tw:text-[10px] tw:font-bold tw:shrink-0"
-            >
-              {{ getSubmitterInitials(slotProps.row) }}
-            </div>
-            <span class="tw:text-sm">{{ getSubmitterName(slotProps.row) }}</span>
-          </div>
-        </QTd>
-      </template>
+    <!-- Submitted By -->
+    <template #body-cell-submittedBy="{ row }">
+      <UserBadgeById v-if="getDocument(row)?.userId" :userId="getDocument(row).userId" />
+      <span v-else class="tw:text-sm tw:text-secondary">—</span>
+    </template>
 
-      <!-- Current Step -->
-      <template #body-cell-currentStep="slotProps">
-        <QTd :props="slotProps">
-          <span class="tw:text-sm tw:text-secondary">
-            {{ getActiveStep(slotProps.row)?.step?.name || '—' }}
-          </span>
-        </QTd>
-      </template>
+    <!-- Current Step -->
+    <template #body-cell-currentStep="{ row }">
+      <span class="tw:text-sm tw:text-secondary">
+        {{ activeStepNameMap[row.id] || '—' }}
+      </span>
+    </template>
 
-      <!-- Due Date -->
-      <template #body-cell-dueDate="slotProps">
-        <QTd :props="slotProps">
-          <span
-            class="tw:text-sm tw:font-medium"
-            :class="
-              isDuePast(slotProps.row.resource?.dueDate) ? 'tw:text-red-500' : 'tw:text-on-main'
-            "
-          >
-            {{
-              slotProps.row.resource?.dueDate
-                ? slotProps.row.resource.dueDate.formatDate('date')
-                : '—'
-            }}
-          </span>
-        </QTd>
-      </template>
-
-      <!-- Status -->
-      <template #body-cell-status="slotProps">
-        <QTd :props="slotProps">
-          <WStatusBadge :status="getStatus(slotProps.row)" variant="workflow" showDot />
-        </QTd>
-      </template>
-    </WTable>
-  </QCard>
+    <!-- Status -->
+    <template #body-cell-status="{ row }">
+      <ApprovalWorkflowInstanceStatusBadgeById :statusId="row.statusId" showDot />
+    </template>
+  </BaseTable>
 </template>

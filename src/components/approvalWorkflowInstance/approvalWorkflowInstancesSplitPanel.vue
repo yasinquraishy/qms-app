@@ -1,4 +1,5 @@
 <script setup>
+import { IconExternalLink, IconX } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers'
 
@@ -46,16 +47,19 @@ const canActOnStep = computed(() => myTask.value?.statusId === 'ASSIGNED')
           {{ doc?.documentType?.name || '—' }}
         </p>
       </div>
-      <WBtn
-        flat
-        round
-        dense
-        icon="open_in_new"
-        color="grey-6"
+      <RouterLink
         :to="getCompanyPath(`/workflow-instances/${instance.id}`)"
-      />
+        class="tw:p-1.5 tw:rounded-lg tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
+      >
+        <IconExternalLink :size="18" />
+      </RouterLink>
 
-      <WBtn flat round dense icon="close" color="grey-6" @click="emit('close')" />
+      <button
+        class="tw:p-1.5 tw:rounded-lg tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
+        @click="emit('close')"
+      >
+        <IconX :size="18" />
+      </button>
     </div>
 
     <!--body-->
@@ -75,12 +79,14 @@ const canActOnStep = computed(() => myTask.value?.statusId === 'ASSIGNED')
         <div class="tw:grid tw:grid-cols-2 tw:gap-2">
           <ApprovalWorkflowInstanceApproverAction
             action="APPROVE"
-            :activeStep="activeStep"
+            :workflowInstanceId="activeStep.workflowInstanceId"
+            :instanceStepId="activeStep.id"
             @done="emit('done')"
           />
           <ApprovalWorkflowInstanceApproverAction
             action="REJECT"
-            :activeStep="activeStep"
+            :workflowInstanceId="activeStep.workflowInstanceId"
+            :instanceStepId="activeStep.id"
             @done="emit('done')"
           />
         </div>

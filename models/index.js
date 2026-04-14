@@ -61,6 +61,7 @@ import { User } from './user'
 import { UserOnApprovalWorkflowInstanceStep } from './userOnApprovalWorkflowInstanceStep'
 import { UserOnDocument } from './userOnDocument'
 import { UserOnTeam } from './userOnTeam'
+import { UserStatus } from './userStatus'
 
 export const db = {
   ApiKey,
@@ -126,4 +127,5 @@ export const db = {
   UserOnApprovalWorkflowInstanceStep,
   UserOnDocument,
   UserOnTeam,
+  UserStatus,
 }

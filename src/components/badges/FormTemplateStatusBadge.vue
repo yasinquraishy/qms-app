@@ -1,53 +1,21 @@
 <script setup>
-const props = defineProps({
-  status: {
-    type: Object,
-    required: true,
-  },
-  showDot: {
-    type: Boolean,
-    default: true,
-  },
+defineProps({
+  status: { type: Object, required: true },
+  showDot: { type: Boolean, default: true },
 })
 
-const statusColor = computed(() => {
-  const colors = {
-    ACTIVE: 'green',
-    DRAFT: 'amber',
-    ARCHIVED: 'grey',
-    INACTIVE: 'grey',
-  }
-  return colors[props.status.id] || 'grey'
-})
+const SCHEME_MAP = {
+  ACTIVE: { class: 'tw:bg-green-100 tw:text-green-700' },
+  DRAFT: { class: 'tw:bg-amber-100 tw:text-amber-700' },
+  ARCHIVED: { class: 'tw:bg-gray-100 tw:text-gray-600' },
+  INACTIVE: { class: 'tw:bg-gray-100 tw:text-gray-600' },
+}
 
-const statusDotClass = computed(() => {
-  const classes = {
-    ACTIVE: 'bg-positive',
-    DRAFT: 'bg-warning',
-    ARCHIVED: 'bg-grey',
-    INACTIVE: 'bg-grey',
-  }
-  return classes[props.status.id] || 'bg-grey'
-})
+const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-600' }
 </script>
 
 <template>
-  <QBadge
-    :color="`${statusColor}-1`"
-    :textColor="`${statusColor}-${statusColor === 'amber' ? '9' : '8'}`"
-    class="q-px-sm q-py-xs text-caption font-medium row items-center gap-1"
-    rounded
-  >
-    <div v-if="showDot" class="rounded-full" :class="statusDotClass" style="width: 6px; height: 6px" />
-    {{ status.id }}
-  </QBadge>
+  <BaseBadge v-bind="$attrs" :class="scheme(status?.id).class" :showDot="showDot">
+    {{ status?.name || status?.id || '—' }}
+  </BaseBadge>
 </template>
-
-<style scoped lang="scss">
-.gap-1 {
-  gap: 4px;
-}
-.font-medium {
-  font-weight: 500;
-}
-</style>

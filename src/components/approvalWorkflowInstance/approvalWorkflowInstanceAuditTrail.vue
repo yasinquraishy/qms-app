@@ -1,14 +1,23 @@
 <script setup>
+import {
+  IconHistory,
+  IconCheck,
+  IconX,
+  IconPencil,
+  IconSend,
+  IconShieldLock,
+} from '@tabler/icons-vue'
+
 defineProps({
   auditLogs: { type: Array, default: () => [] },
 })
 
 function auditIcon(action) {
-  if (action?.includes('APPROVE')) return 'check'
-  if (action?.includes('REJECT')) return 'close'
-  if (action?.includes('REQUEST_CHANGES')) return 'edit_note'
-  if (action?.includes('SUBMIT')) return 'send'
-  return 'history'
+  if (action?.includes('APPROVE')) return IconCheck
+  if (action?.includes('REJECT')) return IconX
+  if (action?.includes('REQUEST_CHANGES')) return IconPencil
+  if (action?.includes('SUBMIT')) return IconSend
+  return IconHistory
 }
 
 function auditColor(action) {
@@ -26,7 +35,7 @@ function auditColor(action) {
       class="tw:px-5 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:justify-between"
     >
       <h3 class="tw:font-bold tw:text-on-main tw:flex tw:items-center tw:gap-2">
-        <WIcon name="history" size="20px" class="tw:text-primary" />
+        <IconHistory :size="20" class="tw:text-primary" />
         Audit Trail
       </h3>
     </div>
@@ -48,10 +57,10 @@ function auditColor(action) {
               v-if="auditColor(log.action) === 'slate'"
               class="tw:size-1.5 tw:bg-slate-400 tw:rounded-full"
             ></div>
-            <WIcon
+            <component
+              :is="auditIcon(log.action)"
               v-else
-              :name="auditIcon(log.action)"
-              size="10px"
+              :size="10"
               :class="{
                 'tw:text-emerald-600': auditColor(log.action) === 'emerald',
                 'tw:text-red-600': auditColor(log.action) === 'red',
@@ -71,15 +80,13 @@ function auditColor(action) {
           </div>
         </div>
 
-        <div v-if="!auditLogs.length" class="tw:text-center tw:text-secondary tw:text-xs tw:py-4">
-          No audit entries yet
-        </div>
+        <BaseEmptyState v-if="!auditLogs.length" dense title="No audit entries yet" />
       </div>
     </div>
 
     <div class="tw:mt-auto tw:p-4 tw:bg-main tw:border-t tw:border-divider">
       <div class="tw:flex tw:items-center tw:gap-3">
-        <WIcon name="sym_o_shield_lock" size="18px" class="tw:text-secondary" />
+        <IconShieldLock :size="18" class="tw:text-secondary" />
         <p class="tw:text-[10px] tw:text-secondary tw:leading-tight">
           This audit trail is tamper-evident and compliant with 21 CFR Part 11 electronic record
           requirements.

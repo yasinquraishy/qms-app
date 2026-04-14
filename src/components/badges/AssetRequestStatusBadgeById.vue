@@ -1,13 +1,7 @@
 <script setup>
 const props = defineProps({
-  statusId: {
-    type: String,
-    default: null,
-  },
-  showDot: {
-    type: Boolean,
-    default: true,
-  },
+  statusId: { type: String, default: null },
+  showDot: { type: Boolean, default: true },
 })
 
 const status = useLiveQueryWithDeps(
@@ -16,11 +10,10 @@ const status = useLiveQueryWithDeps(
     if (!statusId) return null
     return db.AssetRequestStatus.findByPk(statusId)
   },
-  { initial: null },
+  { initial: { id: props.statusId } },
 )
 </script>
 
 <template>
-  <AssetRequestStatusBadge v-if="status" :status="status" :showDot="showDot" v-bind="$attrs" />
-  <BaseBadge v-else v-bind="$attrs">—</BaseBadge>
+  <AssetRequestStatusBadge v-if="statusId" :status="status" :showDot="showDot" v-bind="$attrs" />
 </template>

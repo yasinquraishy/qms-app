@@ -17,7 +17,7 @@ defineProps({
           Rule: {{ stepEntry.step?.approvalRule }} &bull; Threshold met
         </p>
       </div>
-      <WStatusBadge :status="stepEntry.statusId" variant="step" />
+      <ApprovalWorkflowInstanceStepStatusBadgeById :statusId="stepEntry.statusId" />
     </div>
     <div class="tw:space-y-2">
       <div v-for="task in stepEntry.tasks" :key="task.id" class="tw:flex tw:items-center tw:gap-3">
@@ -26,7 +26,7 @@ defineProps({
           <p class="tw:text-sm tw:font-semibold tw:text-on-main">
             {{ task.assignee?.firstName }} {{ task.assignee?.lastName }}
           </p>
-          <WStatusBadge :status="task.statusId" variant="task" />
+          <TaskInstanceStatusBadgeById :statusId="task.statusId" />
         </div>
       </div>
     </div>

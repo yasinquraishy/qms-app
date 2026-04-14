@@ -1,42 +1,11 @@
 <script setup>
-import { useApprovalWorkflowInstances } from '@/composables/useApprovalWorkflowInstances.js'
+import { IconX } from '@tabler/icons-vue'
 
 const props = defineProps({
   instanceId: { type: String, default: null },
 })
 
 const show = defineModel({ type: Boolean, default: false })
-
-const { fetchInstance } = useApprovalWorkflowInstances()
-
-const workflowInstance = ref(null)
-const loading = ref(false)
-
-async function load() {
-  if (!props.instanceId) return
-  loading.value = true
-  try {
-    const result = await fetchInstance(props.instanceId, { includeReviewers: true })
-    workflowInstance.value = result.workflowInstance || null
-  } finally {
-    loading.value = false
-  }
-}
-
-watch(
-  () => show.value,
-  (val) => {
-    if (val && props.instanceId) load()
-  },
-)
-
-watch(
-  () => props.instanceId,
-  (val) => {
-    if (show.value && val) load()
-    else workflowInstance.value = null
-  },
-)
 </script>
 
 <template>
@@ -61,23 +30,17 @@ watch(
               class="tw:flex tw:items-center tw:justify-between tw:px-5 tw:py-4 tw:border-b tw:border-divider tw:shrink-0"
             >
               <h2 class="tw:text-base tw:font-bold tw:text-on-main">Approval Workflow</h2>
-              <WBtn flat round dense @click="show = false">
-                <WIcon name="close" size="20px" />
-              </WBtn>
+              <button
+                class="tw:p-1.5 tw:rounded tw:hover:bg-main-hover tw:text-secondary tw:transition-colors"
+                @click="show = false"
+              >
+                <IconX :size="20" />
+              </button>
             </div>
 
             <!-- Content -->
             <div class="tw:flex-1 tw:overflow-y-auto tw:p-5">
-              <div v-if="loading" class="tw:flex tw:justify-center tw:py-12">
-                <QSpinner color="primary" size="36px" />
-              </div>
-              <WEmptyState
-                v-else-if="!workflowInstance"
-                icon="account_tree"
-                title="No workflow data available"
-                compact
-              />
-              <ApprovalWorkflowInstanceTimeline v-else :steps="workflowInstance.steps || []" />
+              <ApprovalWorkflowInstanceTimeline :workflowInstanceId="props.instanceId" />
             </div>
           </aside>
         </Transition>

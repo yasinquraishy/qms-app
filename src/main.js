@@ -1,6 +1,7 @@
 import '@/extensions/datetime' // Extend Luxon's DateTime with custom formatting method
 import 'v-calendar/style.css'
-import '@models/index.js' // Initialize Dexie database and live query system
+import '@models/index.js' // Initialize IndexedDB database and live query system
+
 import VCalendar from 'v-calendar'
 
 import { createApp } from 'vue'

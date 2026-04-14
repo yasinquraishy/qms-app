@@ -6,8 +6,10 @@ import {
   IconArchive,
   IconArchiveOff,
 } from '@tabler/icons-vue'
+import { isAllowed } from '@/utils/currentSession.js'
+import { getCompanyPath } from '@/utils/routeHelpers.js'
 
-const props = defineProps({
+defineProps({
   rows: {
     type: Array,
     default: () => [],
@@ -16,17 +18,41 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  canUpdate: {
-    type: Boolean,
-    default: false,
-  },
-  canArchive: {
-    type: Boolean,
-    default: false,
-  },
 })
 
-const emit = defineEmits(['view', 'archive', 'unarchive'])
+const router = useRouter()
+const toast = useToast()
+
+const canArchive = computed(() => isAllowed(['document-templates:delete']))
+
+function navigateToDetail(row) {
+  router.push(getCompanyPath(`/document-templates/${row.id}`))
+}
+
+async function onArchiveTemplate(row) {
+  row.statusId = 'ARCHIVED'
+
+  nextTick(async () => {
+    try {
+      await row.save()
+      toast.success('Template archived successfully')
+    } catch {
+      toast.error('Failed to archive template. Please try again.')
+    }
+  })
+}
+
+async function onUnarchiveTemplate(row) {
+  row.statusId = 'ACTIVE'
+  nextTick(async () => {
+    try {
+      await row.save()
+      toast.success('Template unarchived successfully')
+    } catch {
+      toast.error('Failed to unarchive template. Please try again.')
+    }
+  })
+}
 
 const columns = [
   { name: 'name', label: 'NAME', field: 'name', align: 'left', sortable: true },
@@ -58,12 +84,12 @@ function getSectionCount(row) {
 
 function rowMenuItems(row) {
   const items = []
-  items.push({ name: 'View Details', icon: IconEye, click: () => emit('view', row) })
-  if (props.canArchive) {
+  items.push({ name: 'View Details', icon: IconEye, click: () => navigateToDetail(row) })
+  if (canArchive.value) {
     if (row.statusId !== 'ARCHIVED') {
-      items.push({ name: 'Archive', icon: IconArchive, click: () => emit('archive', row) })
+      items.push({ name: 'Archive', icon: IconArchive, click: () => onArchiveTemplate(row) })
     } else {
-      items.push({ name: 'Unarchive', icon: IconArchiveOff, click: () => emit('unarchive', row) })
+      items.push({ name: 'Unarchive', icon: IconArchiveOff, click: () => onUnarchiveTemplate(row) })
     }
   }
   return items
@@ -75,7 +101,7 @@ function rowMenuItems(row) {
     <template #body-cell-name="{ row }">
       <div
         class="tw:font-bold tw:text-on-main tw:cursor-pointer tw:hover:text-primary"
-        @click="emit('view', row)"
+        @click="navigateToDetail(row)"
       >
         {{ row.name }}
       </div>

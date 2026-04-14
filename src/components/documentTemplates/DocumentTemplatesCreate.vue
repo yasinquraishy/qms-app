@@ -354,7 +354,7 @@ const breadcrumbs = computed(() => [
           </div>
 
           <!-- Sections Builder -->
-          <SectionBuilder v-model="form.sections" title="Sections & Default Content Builder" />
+          <DocumentSectionsEditor v-model="form.sections" />
         </div>
       </div>
     </div>

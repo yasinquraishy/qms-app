@@ -2,9 +2,6 @@
 import {
   IconInfoCircle,
   IconSettings,
-  IconLayoutList,
-  IconCircleCheck,
-  IconCircleX,
   IconArchive,
   IconArchiveOff,
   IconArrowLeft,
@@ -58,13 +55,6 @@ const breadcrumbs = computed(() => [
   { label: 'Document Templates', to: getCompanyPath('/document-templates') },
   { label: template.value?.name || 'Template' },
 ])
-
-const SECTION_TYPE_MAP = {
-  text: { label: 'TEXT', class: 'tw:bg-blue-100 tw:text-blue-700' },
-  attachment: { label: 'ATTACHMENT', class: 'tw:bg-purple-100 tw:text-purple-700' },
-  form: { label: 'FORM', class: 'tw:bg-green-100 tw:text-green-700' },
-  table: { label: 'TABLE', class: 'tw:bg-orange-100 tw:text-orange-700' },
-}
 
 async function onArchive() {
   if (!template.value) return
@@ -172,23 +162,37 @@ function goBack() {
           <div class="tw:p-6 tw:grid tw:grid-cols-2 tw:gap-6">
             <div>
               <p class="tw:text-secondary tw:mb-1">Document Prefix</p>
-              <p class="tw:font-mono tw:font-bold tw:text-on-sidebar">{{ template.prefix }}</p>
+              <BaseTextInput
+                v-if="canUpdate"
+                v-model="template.prefix"
+                placeholder="Prefix"
+                size="sm"
+              />
+              <p v-else class="tw:font-mono tw:font-bold tw:text-on-sidebar">
+                {{ template.prefix }}
+              </p>
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Department</p>
-              <DepartmentBadgeById
-                v-if="template.departmentId"
-                :departmentId="template.departmentId"
-              />
-              <span v-else class="tw:text-sm tw:text-secondary">—</span>
+              <DepartmentSelectMenu v-if="canUpdate" v-model="template.departmentId" />
+              <template v-else>
+                <DepartmentBadgeById
+                  v-if="template.departmentId"
+                  :departmentId="template.departmentId"
+                />
+                <span v-else class="tw:text-sm tw:text-secondary">—</span>
+              </template>
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Related Standard</p>
-              <RelatedStandardBadgeById
-                v-if="template.relatedStandardId"
-                :relatedStandardId="template.relatedStandardId"
-              />
-              <span v-else class="tw:text-sm tw:text-secondary">—</span>
+              <RelatedStandardSelectMenu v-if="canUpdate" v-model="template.relatedStandardId" />
+              <template v-else>
+                <RelatedStandardBadgeById
+                  v-if="template.relatedStandardId"
+                  :relatedStandardId="template.relatedStandardId"
+                />
+                <span v-else class="tw:text-sm tw:text-secondary">—</span>
+              </template>
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Status</p>
@@ -221,33 +225,11 @@ function goBack() {
           <div class="tw:p-6 tw:grid tw:grid-cols-2 tw:md:grid-cols-3 tw:gap-6">
             <div>
               <p class="tw:text-secondary tw:mb-1">Training Available</p>
-              <BaseCheckbox v-if="canUpdate" v-model="template.trainingAvailable" label="Yes" />
-              <template v-else>
-                <div class="tw:flex tw:items-center tw:gap-2">
-                  <IconCircleCheck
-                    v-if="template.trainingAvailable"
-                    :size="20"
-                    class="tw:text-green-600"
-                  />
-                  <IconCircleX v-else :size="20" class="tw:text-gray-400" />
-                  <span>{{ template.trainingAvailable ? 'Yes' : 'No' }}</span>
-                </div>
-              </template>
+              <BaseSwitch v-model="template.trainingAvailable" :disabled="!canUpdate" />
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Retraining on Version</p>
-              <BaseCheckbox v-if="canUpdate" v-model="template.retrainingOnVersion" label="Yes" />
-              <template v-else>
-                <div class="tw:flex tw:items-center tw:gap-2">
-                  <IconCircleCheck
-                    v-if="template.retrainingOnVersion"
-                    :size="20"
-                    class="tw:text-green-600"
-                  />
-                  <IconCircleX v-else :size="20" class="tw:text-gray-400" />
-                  <span>{{ template.retrainingOnVersion ? 'Yes' : 'No' }}</span>
-                </div>
-              </template>
+              <BaseSwitch v-model="template.retrainingOnVersion" :disabled="!canUpdate" />
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Periodic Review</p>
@@ -281,92 +263,20 @@ function goBack() {
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Auto Effective</p>
-              <BaseCheckbox
-                v-if="canUpdate"
-                v-model="template.autoEffectiveOnApproval"
-                label="Yes"
-              />
-              <template v-else>
-                <div class="tw:flex tw:items-center tw:gap-2">
-                  <IconCircleCheck
-                    v-if="template.autoEffectiveOnApproval"
-                    :size="20"
-                    class="tw:text-green-600"
-                  />
-                  <IconCircleX v-else :size="20" class="tw:text-gray-400" />
-                  <span>{{ template.autoEffectiveOnApproval ? 'Yes' : 'No' }}</span>
-                </div>
-              </template>
+              <BaseSwitch v-model="template.autoEffectiveOnApproval" :disabled="!canUpdate" />
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Show Section Titles</p>
-              <BaseCheckbox v-if="canUpdate" v-model="template.showSectionTitles" label="Yes" />
-              <template v-else>
-                <div class="tw:flex tw:items-center tw:gap-2">
-                  <IconCircleCheck
-                    v-if="template.showSectionTitles"
-                    :size="20"
-                    class="tw:text-green-600"
-                  />
-                  <IconCircleX v-else :size="20" class="tw:text-gray-400" />
-                  <span>{{ template.showSectionTitles ? 'Yes' : 'No' }}</span>
-                </div>
-              </template>
+              <BaseSwitch v-model="template.showSectionTitles" :disabled="!canUpdate" />
             </div>
           </div>
         </div>
 
-        <!-- Sections Preview Card -->
-        <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
-          <div
-            class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover tw:flex tw:items-center tw:gap-2"
-          >
-            <IconLayoutList :size="22" class="tw:text-primary" />
-            <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">
-              Template Sections ({{ template.sections?.length || 0 }})
-            </h2>
-          </div>
-          <div class="tw:p-6">
-            <div v-if="template.sections?.length" class="tw:space-y-3">
-              <div
-                v-for="section in template.sections"
-                :key="section.id"
-                class="tw:flex tw:items-center tw:gap-4 tw:p-4 tw:bg-main-hover tw:rounded-lg"
-              >
-                <div
-                  class="tw:flex tw:items-center tw:justify-center tw:w-8 tw:h-8 tw:rounded-full tw:bg-primary/10 tw:text-primary tw:font-bold tw:text-sm"
-                >
-                  {{ section.order }}
-                </div>
-                <div class="tw:flex-1">
-                  <div class="tw:font-bold tw:text-on-sidebar">{{ section.title }}</div>
-                  <div v-if="section.defaultContent" class="tw:text-xs tw:text-secondary tw:mt-1">
-                    {{ section.defaultContent.substring(0, 100)
-                    }}{{ section.defaultContent.length > 100 ? '...' : '' }}
-                  </div>
-                </div>
-                <span
-                  class="tw:inline-flex tw:items-center tw:rounded tw:px-3 tw:py-1 tw:text-xs tw:font-medium"
-                  :class="
-                    SECTION_TYPE_MAP[section.sectionType]?.class ||
-                    'tw:bg-gray-100 tw:text-gray-600'
-                  "
-                >
-                  {{
-                    (
-                      SECTION_TYPE_MAP[section.sectionType]?.label ||
-                      section.sectionType ||
-                      '—'
-                    ).toUpperCase()
-                  }}
-                </span>
-              </div>
-            </div>
-            <div v-else class="tw:text-center tw:py-8 tw:text-secondary">
-              No sections defined for this template.
-            </div>
-          </div>
-        </div>
+        <!-- Sections Card -->
+        <DocumentSectionsEditor
+          v-model="template.sections"
+          :readonly="!canUpdate"
+        />
       </div>
     </div>
 

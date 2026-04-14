@@ -1,23 +1,59 @@
 <script setup>
-defineProps({
-  stepEntry: { type: Object, required: true },
+const props = defineProps({
+  instanceStepId: { type: String, required: true },
 })
+
+const instanceStep = useLiveQueryWithDeps(
+  [() => props.instanceStepId],
+  async (db, [instanceStepId]) => {
+    if (!instanceStepId) return null
+    return db.ApprovalWorkflowInstanceStep.findByPk(instanceStepId)
+  },
+)
+
+const step = useLiveQueryWithDeps([() => instanceStep.value?.stepId], async (db, [stepId]) => {
+  if (!stepId) return null
+  return db.ApprovalWorkflowStep.findByPk(stepId)
+})
+
+const tasks = useLiveQueryWithDeps(
+  [() => props.instanceStepId],
+  async (db, [instanceStepId]) => {
+    if (!instanceStepId) return []
+    return db.TaskInstance.where('[entityType+entityId]', [
+      'ApprovalWorkflowInstanceStep',
+      instanceStepId,
+    ]).exec()
+  },
+  { initial: [] },
+)
+
+const usersMap = useLiveQueryWithDeps(
+  [() => tasks.value.map((t) => t.assignedTo)],
+  async (db, [userIds]) => {
+    const ids = [...new Set(userIds.filter(Boolean))]
+    if (!ids.length) return {}
+    const users = await Promise.all(ids.map((id) => db.User.findByPk(id)))
+    return Object.fromEntries(users.filter(Boolean).map((u) => [u.id, u]))
+  },
+  { initial: {} },
+)
 </script>
 
 <template>
   <div
     class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-dashed tw:border-divider tw:p-5"
-    :class="{ 'tw:opacity-60': !stepEntry.reviewers }"
+    :class="{ 'tw:opacity-60': !tasks.length }"
   >
     <div class="tw:flex tw:items-center tw:justify-between">
       <div>
         <h3 class="tw:font-bold tw:text-secondary">
-          Step {{ stepEntry.stepNumber }}: {{ stepEntry.step?.name }}
+          Step {{ instanceStep?.stepNumber }}: {{ step?.name }}
         </h3>
         <p class="tw:text-xs tw:text-secondary tw:italic">
-          Rule: {{ stepEntry.step?.approvalRule }} &bull;
+          Rule: {{ step?.approvalRule }} &bull;
           {{
-            stepEntry.step?.approvalRule === 'ANY'
+            step?.approvalRule === 'ANY'
               ? 'First approval completes step'
               : 'All approvers must sign'
           }}
@@ -25,36 +61,33 @@ defineProps({
       </div>
 
       <!-- Avatar stack -->
-      <div v-if="stepEntry.reviewers" class="tw:flex tw:-space-x-3 tw:overflow-hidden tw:my-4">
-        <UserAvatar
-          v-for="reviewer in stepEntry.reviewers"
-          :key="reviewer.id"
-          :user="reviewer.user"
+      <div v-if="tasks.length" class="tw:flex tw:-space-x-3 tw:overflow-hidden">
+        <UserAvatarById
+          v-for="task in tasks"
+          :key="task.id"
+          :userId="task.assignedTo"
           class="tw:size-8 tw:border-divider tw:grayscale tw:opacity-50"
         />
       </div>
-      <WStatusBadge v-else :status="stepEntry.statusId" variant="step" />
+      <ApprovalWorkflowInstanceStepStatusBadgeById v-else :statusId="instanceStep?.statusId" />
     </div>
 
-    <template v-if="stepEntry.reviewers">
-      <!-- Reviewer list -->
-      <div class="tw:space-y-3">
+    <template v-if="tasks.length">
+      <div class="tw:space-y-3 tw:mt-4">
         <div
-          v-for="reviewer in stepEntry.reviewers"
-          :key="reviewer.id"
+          v-for="task in tasks"
+          :key="task.id"
           class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:rounded-lg tw:border tw:bg-sidebar tw:border-divider tw:opacity-60"
         >
-          <UserAvatar
-            :user="reviewer"
+          <UserAvatarById
+            :userId="task.assignedTo"
             class="tw:size-10 tw:border-divider tw:grayscale tw:opacity-50"
           />
           <div>
             <p class="tw:text-sm tw:font-semibold tw:text-on-main">
-              {{ reviewer.user.firstName }} {{ reviewer.user.lastName }}
+              {{ usersMap[task.assignedTo]?.firstName }} {{ usersMap[task.assignedTo]?.lastName }}
             </p>
-            <p class="ds-label-sm tw:text-secondary">
-              {{ reviewer.user.email }}
-            </p>
+            <p class="ds-label-sm tw:text-secondary">{{ usersMap[task.assignedTo]?.email }}</p>
           </div>
         </div>
       </div>

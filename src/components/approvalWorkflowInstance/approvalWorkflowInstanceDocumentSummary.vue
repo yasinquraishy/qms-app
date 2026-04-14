@@ -1,4 +1,6 @@
 <script setup>
+import { IconFolder, IconHistory, IconUser, IconEye } from '@tabler/icons-vue'
+
 defineProps({
   doc: { type: Object, default: null },
   workflowVersion: { type: Object, default: null },
@@ -29,13 +31,13 @@ defineEmits(['viewDocument'])
           class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-6 tw:gap-y-2 tw:text-sm tw:text-secondary"
         >
           <div v-if="workflowVersion?.workflow?.module" class="tw:flex tw:items-center tw:gap-1.5">
-            <WIcon name="sym_o_folder_managed" size="14px" />
+            <IconFolder :size="14" />
             <span>
               Module: <b>{{ workflowVersion.workflow.module.name }}</b>
             </span>
           </div>
           <div v-if="doc?.currentVersion" class="tw:flex tw:items-center tw:gap-1.5">
-            <WIcon name="history_edu" size="14px" />
+            <IconHistory :size="14" />
             <span>
               Version:
               <b>
@@ -47,7 +49,7 @@ defineEmits(['viewDocument'])
             </span>
           </div>
           <div v-if="doc?.user" class="tw:flex tw:items-center tw:gap-1.5">
-            <WIcon name="person" size="14px" />
+            <IconUser :size="14" />
             <span>
               Owner: <b>{{ doc.user.firstName }} {{ doc.user.lastName }}</b>
             </span>
@@ -56,7 +58,6 @@ defineEmits(['viewDocument'])
       </div>
 
       <div class="tw:flex tw:flex-col tw:items-end tw:gap-3">
-        <!-- Status badge -->
         <span
           class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1 tw:rounded-full tw:text-xs tw:font-semibold"
           :class="{
@@ -78,10 +79,10 @@ defineEmits(['viewDocument'])
           {{ statusLabel }}
         </span>
 
-        <WBtn outline class="tw:text-primary tw:border-primary/20" @click="$emit('viewDocument')">
-          <WIcon name="visibility" size="14px" class="tw:mr-2" />
+        <BaseButton variant="outline" @click="$emit('viewDocument')">
+          <IconEye :size="14" class="tw:mr-1" />
           View Full Document
-        </WBtn>
+        </BaseButton>
       </div>
     </div>
   </div>

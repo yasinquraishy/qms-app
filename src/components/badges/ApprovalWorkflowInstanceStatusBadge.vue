@@ -1,14 +1,15 @@
 <script setup>
 defineProps({
   status: { type: Object, required: true },
-  showDot: { type: Boolean, default: true },
+  showDot: { type: Boolean, default: false },
 })
 
 const SCHEME_MAP = {
-  ACTIVE: { class: 'tw:bg-green-100 tw:text-green-700' },
-  DRAFT: { class: 'tw:bg-amber-100 tw:text-amber-700' },
-  ARCHIVED: { class: 'tw:bg-gray-100 tw:text-gray-600' },
-  INACTIVE: { class: 'tw:bg-gray-100 tw:text-gray-600' },
+  IN_PROGRESS: { class: 'tw:bg-blue-100 tw:text-blue-700' },
+  COMPLETED: { class: 'tw:bg-green-100 tw:text-green-700' },
+  REJECTED: { class: 'tw:bg-red-100 tw:text-red-700' },
+  CHANGES_REQUESTED: { class: 'tw:bg-orange-100 tw:text-orange-700' },
+  PENDING: { class: 'tw:bg-amber-100 tw:text-amber-700' },
 }
 
 const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-600' }

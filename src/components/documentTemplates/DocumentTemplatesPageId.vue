@@ -166,7 +166,7 @@ function goBack() {
                 {{ template.name }}
               </h1>
 
-              <DocumentTemplateStatusBadge :statusId="template.statusId" />
+              <DocumentTemplateStatusBadgeById :statusId="template.statusId" />
             </div>
             <p class="tw:text-secondary">
               Document prefix:
@@ -211,7 +211,7 @@ function goBack() {
                 v-model="template.statusId"
                 :required="true"
               />
-              <DocumentTemplateStatusBadge v-else :statusId="template.statusId" />
+              <DocumentTemplateStatusBadgeById v-else :statusId="template.statusId" />
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Created Date</p>

@@ -2,7 +2,7 @@
 import { IconHistory, IconLock, IconCheck } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession'
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { useApprovalWorkflows } from '@/composables/useApprovalWorkflows.js'
+import { post } from '@/api'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -11,7 +11,6 @@ const props = defineProps({
 
 const toast = useToast()
 const router = useRouter()
-const { createDraftVersion } = useApprovalWorkflows()
 
 // --- Live data ---
 const workflow = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
@@ -86,7 +85,7 @@ const canCreateDraft = computed(() => {
 // --- Handlers ---
 const saving = ref(false)
 
-async function handleSave(statusOverride) {
+async function handlePublish(statusOverride) {
   if (isViewingOldVersion.value) {
     toast.warning('Switch to the current version to make edits')
     return
@@ -112,7 +111,6 @@ async function handleSave(statusOverride) {
 
     // Update version status
     selectedVersion.value.statusId = statusOverride
-    await selectedVersion.value.save()
 
     toast.success(
       statusOverride === 'PUBLISHED'
@@ -131,7 +129,7 @@ const creatingDraft = ref(false)
 async function handleCreateDraft(majorBump = false) {
   creatingDraft.value = true
   try {
-    await createDraftVersion(props.id, { majorBump })
+    await post(`/v1/services/approvalWorkflows/${props.id}/versions`, { majorBump })
     toast.success('New draft version created')
     // Reset so watch(versions) will auto-select the new draft
     selectedVersionId.value = null
@@ -155,6 +153,25 @@ function handleVersionSelect(version, close) {
   selectVersion(version)
   close()
 }
+
+const isFirstLoad = ref(true)
+
+const debouncedSave = useDebounceFn(() => {
+  if (!selectedVersion.value) return
+  selectedVersion.value.save()
+}, 1000)
+
+watch(
+  selectedVersion,
+  () => {
+    if (isFirstLoad.value) {
+      isFirstLoad.value = false
+      return
+    }
+    debouncedSave()
+  },
+  { deep: true },
+)
 </script>
 
 <template>
@@ -170,7 +187,7 @@ function handleVersionSelect(version, close) {
     <template v-else>
       <!-- Header -->
       <SafeTeleport to="#main-header-title">
-        <WBreadcrumbs :items="breadcrumbItems" />
+        <BaseBreadcrumbs :items="breadcrumbItems" />
       </SafeTeleport>
 
       <SafeTeleport to="#main-header-actions">
@@ -225,7 +242,9 @@ function handleVersionSelect(version, close) {
 
           <BaseButton variant="outline" @click="goBack">Cancel</BaseButton>
           <template v-if="canUpdate">
-            <BaseButton :isLoading="saving" @click="handleSave('PUBLISHED')"> Publish </BaseButton>
+            <BaseButton :isLoading="saving" @click="handlePublish('PUBLISHED')">
+              Publish
+            </BaseButton>
           </template>
           <template v-else-if="!isViewingOldVersion">
             <BaseButton

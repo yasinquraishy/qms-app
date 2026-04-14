@@ -28,6 +28,7 @@ export class ApprovalWorkflowInstance extends BaseModel {
   @Property({ type: DateTime }) startedAt = null
   @Property({ type: DateTime }) completedAt = null
   @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String, required: true }) submittedBy = ''
   @Property({ type: String }) comment = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })

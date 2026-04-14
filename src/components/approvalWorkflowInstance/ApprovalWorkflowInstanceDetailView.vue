@@ -124,7 +124,7 @@ const breadcrumbs = computed(() => [
             @viewDocument="router.push(getCompanyPath(`/documents/${doc?.id}`))"
           />
 
-          <ApprovalWorkflowInstanceTimeline :steps="steps" />
+          <ApprovalWorkflowInstanceTimeline :workflowInstanceId="props.instanceId" />
         </div>
 
         <!-- ─── Sidebar Column ──────────────────────────────────────────── -->

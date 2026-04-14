@@ -9,8 +9,6 @@ defineProps({
     default: null,
   },
 })
-
-provideApprovalWorkflowInstances()
 </script>
 
 <template>

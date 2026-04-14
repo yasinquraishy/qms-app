@@ -82,7 +82,7 @@ function rowMenuItems(row) {
     </template>
 
     <template #body-cell-status="{ row }">
-      <DocumentTemplateStatusBadge :status="row.statusId" />
+      <DocumentTemplateStatusBadgeById :statusId="row.statusId" />
     </template>
 
     <template #body-cell-prefix="{ row }">

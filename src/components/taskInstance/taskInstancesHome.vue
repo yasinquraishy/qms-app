@@ -1,9 +1,5 @@
 <script setup>
-import { useTaskInstances } from '@/composables/useTaskInstances.js'
-
-const { filters, fetchTaskInstances } = useTaskInstances()
-
-onMounted(() => fetchTaskInstances())
+const filters = ref({ search: '', statusId: null })
 </script>
 
 <template>
@@ -21,7 +17,7 @@ onMounted(() => fetchTaskInstances())
 
     <div class="tw:flex tw:gap-4 tw:flex-1 tw:min-h-0">
       <div class="tw:flex-1 tw:min-w-0 tw:flex tw:flex-col">
-        <TaskInstancesTable />
+        <TaskInstancesTable :search="filters.search" :statusId="filters.statusId" />
       </div>
     </div>
   </div>

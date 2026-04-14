@@ -228,7 +228,7 @@ async function handleAvatarDelete() {
                 >
                   {{ user?.firstName }} {{ user?.lastName }}
                 </h2>
-                <UserStatusBadge :statusId="user?.userStatusId" />
+                <UserStatusBadgeById :statusId="user?.userStatusId" />
               </div>
               <div class="tw:flex tw:flex-wrap tw:gap-1 tw:mb-4">
                 <RoleBadgeById v-for="roleId in assignedRoleIds" :key="roleId" :roleId="roleId" />
@@ -287,7 +287,7 @@ async function handleAvatarDelete() {
                     v-model="user.userStatusId"
                     :required="true"
                   />
-                  <UserStatusBadge v-else :statusId="user?.userStatusId" />
+                  <UserStatusBadgeById v-else :statusId="user?.userStatusId" />
                 </div>
 
                 <!-- Site -->

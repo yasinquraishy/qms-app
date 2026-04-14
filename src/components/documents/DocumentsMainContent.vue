@@ -8,6 +8,10 @@ defineProps({
     type: String,
     default: null,
   },
+  reviewMode: {
+    type: Boolean,
+    default: false,
+  },
 })
 </script>
 
@@ -16,7 +20,11 @@ defineProps({
     <PrintTeleport>
       <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-4 tw:gap-8">
         <!-- Left Column: Document Content (3/4 width) -->
-        <DocumentsMainContentLeft :documentId="documentId" :versionId="versionId" />
+        <DocumentsMainContentLeft
+          :documentId="documentId"
+          :versionId="versionId"
+          :reviewMode="reviewMode"
+        />
 
         <!-- Right Column: Sidebar (1/4 width, sticky) -->
         <DocumentsMainContentRight :documentId="documentId" :versionId="versionId" />

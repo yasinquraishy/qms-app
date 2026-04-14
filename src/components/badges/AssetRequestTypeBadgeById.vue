@@ -3,16 +3,12 @@ const props = defineProps({
   typeId: { type: String, default: null },
 })
 
-const type = useLiveQueryWithDeps(
-  [() => props.typeId],
-  async (db, [typeId]) => {
-    if (!typeId) return null
-    return db.AssetRequestType.findByPk(typeId)
-  },
-  { initial: { id: props.typeId } },
-)
+const type = useLiveQueryWithDeps([() => props.typeId], async (db, [typeId]) => {
+  if (!typeId) return null
+  return db.AssetRequestType.findByPk(typeId)
+})
 </script>
 
 <template>
-  <AssetRequestTypeBadge v-if="typeId" :type="type" v-bind="$attrs" />
+  <AssetRequestTypeBadge v-if="type" :type="type" v-bind="$attrs" />
 </template>

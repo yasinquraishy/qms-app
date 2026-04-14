@@ -5,19 +5,15 @@ const props = defineProps({
   hideLabel: { type: Boolean, default: false },
 })
 
-const status = useLiveQueryWithDeps(
-  [() => props.statusId],
-  async (db, [statusId]) => {
-    if (!statusId) return null
-    return db.ApprovalWorkflowInstanceStepStatus.findByPk(statusId)
-  },
-  { initial: { id: props.statusId } },
-)
+const status = useLiveQueryWithDeps([() => props.statusId], async (db, [statusId]) => {
+  if (!statusId) return null
+  return db.ApprovalWorkflowInstanceStepStatus.findByPk(statusId)
+})
 </script>
 
 <template>
   <ApprovalWorkflowInstanceStepStatusBadge
-    v-if="statusId"
+    v-if="status"
     :status="status"
     :showDot="showDot"
     :hideLabel="hideLabel"

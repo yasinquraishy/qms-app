@@ -5,19 +5,15 @@ const props = defineProps({
   hideLabel: { type: Boolean, default: false },
 })
 
-const status = useLiveQueryWithDeps(
-  [() => props.statusId],
-  async (db, [statusId]) => {
-    if (!statusId) return null
-    return db.TaskInstanceStatus.findByPk(statusId)
-  },
-  { initial: { id: props.statusId } },
-)
+const status = useLiveQueryWithDeps([() => props.statusId], async (db, [statusId]) => {
+  if (!statusId) return null
+  return db.TaskInstanceStatus.findByPk(statusId)
+})
 </script>
 
 <template>
   <TaskInstanceStatusBadge
-    v-if="statusId"
+    v-if="status"
     :status="status"
     :showDot="showDot"
     :hideLabel="hideLabel"

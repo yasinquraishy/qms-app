@@ -4,21 +4,12 @@ const props = defineProps({
   showDot: { type: Boolean, default: true },
 })
 
-const status = useLiveQueryWithDeps(
-  [() => props.statusId],
-  async (db, [statusId]) => {
-    if (!statusId) return null
-    return db.DocumentTemplateStatus.findByPk(statusId)
-  },
-  { initial: { id: props.statusId } },
-)
+const status = useLiveQueryWithDeps([() => props.statusId], async (db, [statusId]) => {
+  if (!statusId) return null
+  return db.DocumentTemplateStatus.findByPk(statusId)
+})
 </script>
 
 <template>
-  <DocumentTemplateStatusBadge
-    v-if="statusId"
-    :status="status"
-    :showDot="showDot"
-    v-bind="$attrs"
-  />
+  <DocumentTemplateStatusBadge v-if="status" :status="status" :showDot="showDot" v-bind="$attrs" />
 </template>

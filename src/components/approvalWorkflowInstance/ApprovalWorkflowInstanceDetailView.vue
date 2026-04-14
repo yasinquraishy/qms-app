@@ -36,10 +36,21 @@ const auditLogs = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-const doc = useLiveQueryWithDeps([() => instance.value?.resourceId], async (db, [resourceId]) => {
-  if (!resourceId) return null
-  return db.Document.findByPk(resourceId)
-})
+const documentVersion = useLiveQueryWithDeps(
+  [() => instance.value?.resourceId],
+  async (db, [resourceId]) => {
+    if (!resourceId) return null
+    return db.DocumentVersion.findByPk(resourceId)
+  },
+)
+
+const doc = useLiveQueryWithDeps(
+  [() => documentVersion.value?.documentId],
+  async (db, [documentId]) => {
+    if (!documentId) return null
+    return db.Document.findByPk(documentId)
+  },
+)
 
 const workflowVersion = useLiveQueryWithDeps(
   [() => instance.value?.workflowVersionId],

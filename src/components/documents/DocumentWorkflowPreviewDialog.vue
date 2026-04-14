@@ -3,6 +3,7 @@ import { useDocuments } from '@/composables/useDocuments.js'
 
 const props = defineProps({
   documentId: { type: String, required: true },
+  versionId: { type: String, required: true },
 })
 const emit = defineEmits(['confirm'])
 
@@ -65,7 +66,7 @@ const loading = computed(() => document.value === undefined)
 // ── Actions ────────────────────────────────────────────────────────────────
 async function confirm() {
   try {
-    const result = await submitForReview(props.documentId)
+    const result = await submitForReview(props.versionId)
     if (result.error) {
       toast.error(result.error)
       return

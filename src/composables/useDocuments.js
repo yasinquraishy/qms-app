@@ -1,10 +1,10 @@
 import { post } from '@/api'
 
 export function useDocuments() {
-  async function submitForReview(documentId) {
+  async function submitForReview(versionId) {
     const data = await post('/v1/services/workflowInstances/submit', {
-      resourceType: 'Document',
-      resourceId: documentId,
+      resourceType: 'DocumentVersion',
+      resourceId: versionId,
     })
     return { workflowInstance: data.workflowInstance }
   }

@@ -200,6 +200,7 @@ async function createNewVersion() {
             <DocumentWorkflowPreviewDialog
               v-model:show="showPreviewDialog"
               :documentId="props.id"
+              :versionId="selectedVersion?.id"
             />
 
             <WBtn

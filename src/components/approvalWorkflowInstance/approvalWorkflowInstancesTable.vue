@@ -19,10 +19,25 @@ const instances = useLiveQueryWithDeps(
 const documentMap = useLiveQueryWithDeps(
   [() => instances.value.map((i) => i.resourceId)],
   async (db, [resourceIds]) => {
-    const ids = [...new Set(resourceIds.filter(Boolean))]
-    if (!ids.length) return {}
-    const documents = await Promise.all(ids.map((id) => db.Document.findByPk(id)))
-    return Object.fromEntries(documents.filter(Boolean).map((d) => [d.id, d]))
+    const versionIds = [...new Set(resourceIds.filter(Boolean))]
+    if (!versionIds.length) return {}
+    // resourceId is a documentVersionId — resolve version then parent document
+    const versions = await Promise.all(versionIds.map((id) => db.DocumentVersion.findByPk(id)))
+    const documentIds = [
+      ...new Set(
+        versions
+          .filter(Boolean)
+          .map((v) => v.documentId)
+          .filter(Boolean),
+      ),
+    ]
+    const documents = await Promise.all(documentIds.map((id) => db.Document.findByPk(id)))
+    const docById = Object.fromEntries(documents.filter(Boolean).map((d) => [d.id, d]))
+    const map = {}
+    for (const v of versions.filter(Boolean)) {
+      map[v.id] = docById[v.documentId]
+    }
+    return map
   },
   { initial: {} },
 )

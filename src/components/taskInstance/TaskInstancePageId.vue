@@ -13,15 +13,6 @@ const taskInstance = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
   db.TaskInstance.findByPk(id),
 )
 
-// Resolve entityId → DocumentVersion → Document
-const document = useLiveQueryWithDeps(
-  [() => taskInstance.value?.entityId],
-  async (db, [entityId]) => {
-    if (!entityId) return null
-    return db.Document.findByPk(entityId)
-  },
-)
-
 // Resolve sourceId → ApprovalWorkflowInstanceStep (to get workflowInstanceId)
 const instanceStep = useLiveQueryWithDeps(
   [() => taskInstance.value?.sourceId],
@@ -31,21 +22,20 @@ const instanceStep = useLiveQueryWithDeps(
   },
 )
 
-const instance = useLiveQueryWithDeps(
-  [() => instanceStep.value?.workflowInstanceId],
-  async (db, [workflowInstanceId]) => {
-    if (!workflowInstanceId) return null
-    return db.ApprovalWorkflowInstance.findByPk(workflowInstanceId)
+// Resolve the specific DocumentVersion locked for this workflow instance
+const documentVersion = useLiveQueryWithDeps(
+  [() => taskInstance.value?.entityId],
+  async (db, [documentVersionId]) => {
+    if (!documentVersionId) return null
+    return await db.DocumentVersion.findByPk(documentVersionId)
   },
 )
 
-// Resolve the specific DocumentVersion locked for this workflow instance
-const documentVersion = useLiveQueryWithDeps(
-  [() => document.value?.id, () => instance.value?.id],
-  async (db, [documentId, workflowInstanceId]) => {
-    if (!documentId || !workflowInstanceId) return null
-    const versions = await db.DocumentVersion.where('documentId', documentId).exec()
-    return versions.find((v) => v.workflowInstanceId === workflowInstanceId) || null
+const document = useLiveQueryWithDeps(
+  [() => documentVersion.value?.documentId],
+  async (db, [documentId]) => {
+    if (!documentId) return null
+    return db.Document.findByPk(documentId)
   },
 )
 

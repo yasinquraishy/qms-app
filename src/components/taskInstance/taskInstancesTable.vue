@@ -22,10 +22,24 @@ const taskInstances = useLiveQueryWithDeps(
 const documentMap = useLiveQueryWithDeps(
   [() => taskInstances.value.map((i) => i.entityId)],
   async (db, [entityIds]) => {
-    const ids = [...new Set(entityIds.filter(Boolean))]
-    if (!ids.length) return {}
-    const documents = await Promise.all(ids.map((id) => db.Document.findByPk(id)))
-    return Object.fromEntries(documents.filter(Boolean).map((d) => [d.id, d]))
+    const versionIds = [...new Set(entityIds.filter(Boolean))]
+    if (!versionIds.length) return {}
+    const versions = await Promise.all(versionIds.map((id) => db.DocumentVersion.findByPk(id)))
+    const documentIds = [
+      ...new Set(
+        versions
+          .filter(Boolean)
+          .map((v) => v.documentId)
+          .filter(Boolean),
+      ),
+    ]
+    const documents = await Promise.all(documentIds.map((id) => db.Document.findByPk(id)))
+    const docById = Object.fromEntries(documents.filter(Boolean).map((d) => [d.id, d]))
+    const map = {}
+    for (const v of versions.filter(Boolean)) {
+      map[v.id] = docById[v.documentId]
+    }
+    return map
   },
   { initial: {} },
 )

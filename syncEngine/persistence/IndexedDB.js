@@ -9,7 +9,6 @@ export class IndexedDB extends AbstractIndexedDB {
    */
   static ensureSchema(db) {
     const definitions = buildStoreDefinitions()
-    console.log('Ensuring IndexedDB schema with definitions:', definitions)
 
     for (const [storeName, def] of Object.entries(definitions)) {
       const store = db.createObjectStore(storeName, { keyPath: def.keyPath })

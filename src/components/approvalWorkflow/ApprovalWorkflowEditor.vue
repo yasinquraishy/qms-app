@@ -2,7 +2,6 @@
 import { IconHistory, IconLock, IconCheck } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession'
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { post } from '@/api'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -157,12 +156,64 @@ async function handlePublish(statusOverride) {
 
 const creatingDraft = ref(false)
 
+const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }) => {
+  const sourceVersion = await db.ApprovalWorkflowVersion.where('workflowId', workflowId)
+    .orderBy('versionMajor', 'desc')
+    .first()
+
+  const currentVersionMajor = sourceVersion ? sourceVersion.versionMajor : 0
+  const currentVersionMinor = sourceVersion ? sourceVersion.versionMinor : 0
+  const newMajor = majorBump ? currentVersionMajor + 1 : currentVersionMajor
+  const newMinor = majorBump ? 0 : currentVersionMinor + 1
+
+  const newVersion = db.ApprovalWorkflowVersion.create({
+    workflowId,
+    versionMajor: newMajor,
+    versionMinor: newMinor,
+    statusId: 'DRAFT',
+    isCurrent: false,
+  })
+  await newVersion.save()
+
+  const sourceSteps = await db.ApprovalWorkflowStep.where(
+    'workflowVersionId',
+    sourceVersion?.id,
+  ).exec()
+
+  for (const step of sourceSteps) {
+    const newStep = db.ApprovalWorkflowStep.create({
+      workflowVersionId: newVersion.id,
+      name: step.name,
+      description: step.description,
+      stepOrder: step.stepOrder,
+      approvalRule: step.approvalRule,
+      slaDays: step.slaDays,
+      requireComments: step.requireComments,
+      requireEsignature: step.requireEsignature,
+    })
+    await newStep.save()
+
+    const users = await db.ApprovalWorkflowStepUser.where('stepId', step.id).exec()
+    for (const su of users) {
+      const newSu = db.ApprovalWorkflowStepUser.create({ stepId: newStep.id, userId: su.userId })
+      await newSu.save()
+    }
+
+    const roles = await db.ApprovalWorkflowStepRole.where('stepId', step.id).exec()
+    for (const sr of roles) {
+      const newSr = db.ApprovalWorkflowStepRole.create({ stepId: newStep.id, roleId: sr.roleId })
+      await newSr.save()
+    }
+  }
+
+  return newVersion
+})
+
 async function handleCreateDraft(majorBump = false) {
   creatingDraft.value = true
   try {
-    await post(`/v1/services/approvalWorkflows/${props.id}/versions`, { majorBump })
+    await createDraftMutation({ workflowId: props.id, majorBump })
     toast.success('New draft version created')
-    // Reset so watch(versions) will auto-select the new draft
     selectedVersionId.value = null
   } catch {
     toast.error('Failed to create draft version')

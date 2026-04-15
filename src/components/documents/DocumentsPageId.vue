@@ -198,7 +198,7 @@ async function createNewVersion() {
               Submit For Review
             </WBtn>
             <DocumentWorkflowPreviewDialog
-              v-model:show="showPreviewDialog"
+              v-model="showPreviewDialog"
               :documentId="props.id"
               :versionId="selectedVersion?.id"
             />

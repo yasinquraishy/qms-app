@@ -7,7 +7,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['confirm'])
 
-const show = defineModel('show', { type: Boolean, default: false })
+const show = defineModel({ type: Boolean, default: false })
 
 const { submitForReview } = useDocuments()
 const toast = useToast()
@@ -80,10 +80,12 @@ async function confirm() {
 </script>
 
 <template>
-  <WDialog v-model="show" title="Workflow Preview" :minWidth="'640px'" persistent>
-    <div class="tw:p-4 tw:max-h-[60vh] tw:overflow-auto">
+  <BaseDialog v-model="show" title="Workflow Preview" maxWidth="lg" persistent>
+    <div class="tw:max-h-[60vh] tw:overflow-auto">
       <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:py-12">
-        <QSpinner size="40px" color="primary" />
+        <div
+          class="tw:animate-spin tw:rounded-full tw:size-10 tw:border-4 tw:border-primary tw:border-t-transparent"
+        />
       </div>
 
       <div v-else class="tw:space-y-4">
@@ -143,9 +145,9 @@ async function confirm() {
       </div>
     </div>
 
-    <template #actions>
-      <WBtn flat @click="show = false">Cancel</WBtn>
-      <WBtn color="primary" unelevated @click="confirm">Submit</WBtn>
+    <template #footer>
+      <BaseButton variant="outline" @click="show = false">Cancel</BaseButton>
+      <BaseButton @click="confirm">Submit</BaseButton>
     </template>
-  </WDialog>
+  </BaseDialog>
 </template>

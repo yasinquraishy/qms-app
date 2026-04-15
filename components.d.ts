@@ -325,6 +325,8 @@ declare module 'vue' {
     SuppliersOverview: typeof import('./src/components/suppliers/SuppliersOverview.vue')['default']
     SuppliersPageId: typeof import('./src/components/suppliers/SuppliersPageId.vue')['default']
     SuppliersRiskCard: typeof import('./src/components/suppliers/SuppliersRiskCard.vue')['default']
+    SuppliersSharedDocumentsTab: typeof import('./src/components/suppliers/SuppliersSharedDocumentsTab.vue')['default']
+    SuppliersShareDocumentDialog: typeof import('./src/components/suppliers/SuppliersShareDocumentDialog.vue')['default']
     SuppliersTable: typeof import('./src/components/suppliers/SuppliersTable.vue')['default']
     SupplierStatusBadge: typeof import('./src/components/badges/SupplierStatusBadge.vue')['default']
     SupplierStatusBadgeById: typeof import('./src/components/badges/SupplierStatusBadgeById.vue')['default']

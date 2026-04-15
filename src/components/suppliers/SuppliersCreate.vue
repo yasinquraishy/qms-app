@@ -454,10 +454,7 @@ function goBack() {
               </div>
               <div>
                 <label class="tw:block tw:text-sm tw:font-medium tw:mb-1">Country</label>
-                <select
-                  v-model="form.country"
-                  class="tw:w-full tw:rounded-md tw:border tw:border-border tw:bg-white tw:px-3 tw:py-2 tw:text-sm tw:text-on-sidebar tw:outline-none focus:tw:ring-2 focus:tw:ring-primary"
-                >
+                <select v-model="form.country" class="tw:w-full">
                   <option :value="null">-- Select country --</option>
                   <option v-for="opt in countryOptions" :key="opt" :value="opt">{{ opt }}</option>
                 </select>

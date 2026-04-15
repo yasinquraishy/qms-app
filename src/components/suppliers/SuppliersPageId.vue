@@ -9,6 +9,8 @@ const props = defineProps({
   },
 })
 
+const route = useRoute()
+const router = useRouter()
 const canUpdate = computed(() => isAllowed(['suppliers:update']))
 
 const supplier = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
@@ -51,18 +53,23 @@ watch(
   { deep: true },
 )
 
-const editingName = ref(false)
-
-const activeTab = ref('overview')
-
 const tabs = [
   { value: 'overview', label: 'Overview' },
   { value: 'documents', label: 'Documents' },
-  { value: 'linked-documents', label: 'Linked Documents' },
+  { value: 'shared-documents', label: 'Shared Documents' },
   { value: 'asset-requests', label: 'Asset Requests' },
   { value: 'evaluations', label: 'Evaluations' },
   { value: 'audit-logs', label: 'Audit Logs' },
 ]
+
+const editingName = ref(false)
+
+const activeTab = computed({
+  get: () => route.query.tab || tabs[0].value,
+  set: (value) => {
+    router.replace({ query: { ...route.query, tab: value } })
+  },
+})
 </script>
 
 <template>
@@ -149,8 +156,8 @@ const tabs = [
           :supplierId="props.id"
         />
         <SuppliersDocumentsTab v-else-if="activeTab === 'documents'" :supplier="supplier" />
-        <SuppliersLinkedDocumentsTab
-          v-else-if="activeTab === 'linked-documents'"
+        <SuppliersSharedDocumentsTab
+          v-else-if="activeTab === 'shared-documents'"
           :supplierId="props.id"
         />
         <SuppliersAssetRequestsTab

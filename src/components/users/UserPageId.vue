@@ -364,13 +364,13 @@ async function handleAvatarDelete() {
             <div class="tw:p-6 tw:space-y-4">
               <!-- Role badges -->
               <template v-if="assignedRoleIds.length > 0">
-                <div class="tw:flex tw:flex-wrap tw:gap-2">
-                  <RoleBadgeById
+                <div class="tw:flex tw:flex-col tw:gap-2">
+                  <UserRoleListItemById
                     v-for="roleId in assignedRoleIds"
                     :key="roleId"
                     :roleId="roleId"
                     :clearable="canUpdateUser"
-                    @clear="() => handleRolesChange(assignedRoleIds.filter((id) => id !== roleId))"
+                    @clear="handleRolesChange(assignedRoleIds.filter((id) => id !== roleId))"
                   />
                 </div>
                 <div class="tw:bg-primary/5 tw:rounded-lg tw:p-4 tw:mt-2">

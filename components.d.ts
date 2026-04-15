@@ -354,6 +354,7 @@ declare module 'vue' {
     UserBadgeById: typeof import('./src/components/badges/UserBadgeById.vue')['default']
     UserMention: typeof import('./src/components/editor/extensions/userMention/userMention.js')['default']
     UserPageId: typeof import('./src/components/users/UserPageId.vue')['default']
+    UserRoleListItemById: typeof import('./src/components/users/UserRoleListItemById.vue')['default']
     UsersCreateUserDialog: typeof import('./src/components/users/UsersCreateUserDialog.vue')['default']
     UserSelectMenu: typeof import('./src/components/menus/UserSelectMenu.vue')['default']
     UsersFilterToolbar: typeof import('./src/components/users/UsersFilterToolbar.vue')['default']

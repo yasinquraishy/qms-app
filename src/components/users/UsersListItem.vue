@@ -10,17 +10,19 @@ const props = defineProps({
 
 const router = useRouter()
 
-// Map user.name to user.fullName for UserAvatar compatibility
-const userForAvatar = computed(() => ({
-  ...props.user,
-  fullName: `${props.user.firstName} ${props.user.lastName}`,
-}))
+const roles = useLiveQueryWithDeps(
+  [() => props.user.id],
+  async (db, [userId]) => {
+    const assignments = await db.RoleOnUser.where('userId', userId).exec()
+    const roleResults = await Promise.all(assignments.map((ra) => db.Role.findByPk(ra.roleId)))
+    return roleResults.filter(Boolean)
+  },
+  { initial: [] },
+)
 
 const roleNames = computed(() => {
-  if (!props.user.roleAssignments || props.user.roleAssignments.length === 0) {
-    return 'No roles assigned'
-  }
-  return props.user.roleAssignments.map((ra) => ra.role?.name || 'Unknown').join(', ')
+  if (!roles.value.length) return 'No roles assigned'
+  return roles.value.map((r) => r.name).join(', ')
 })
 
 function onClick() {
@@ -33,7 +35,7 @@ function onClick() {
     class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:bg-sidebar tw:rounded-lg tw:border tw:border-divider tw:cursor-pointer tw:hover:border-primary/30 tw:transition-colors"
     @click="onClick"
   >
-    <UserAvatar :user="userForAvatar" class="tw:size-14" />
+    <UserAvatar :user="user" class="tw:size-14" />
 
     <div class="tw:flex-1 tw:min-w-0">
       <div class="tw:text-lg tw:font-bold tw:text-on-main">

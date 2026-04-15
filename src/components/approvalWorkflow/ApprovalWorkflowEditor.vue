@@ -203,6 +203,12 @@ watch(
   },
   { deep: true },
 )
+
+watch(steps, () => {
+  if (!steps.value.some((s) => s.id === selectedStepId.value)) {
+    selectedStepId.value = steps.value[0]?.id ?? null
+  }
+})
 </script>
 
 <template>

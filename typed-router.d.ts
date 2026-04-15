@@ -247,6 +247,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/supplier-document/[token]': RouteRecordInfo<
+      '/supplier-document/[token]',
+      '/supplier-document/:token',
+      { token: ParamValue<true> },
+      { token: ParamValue<false> },
+      | never
+    >,
   }
 
   /**
@@ -449,6 +456,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/signup.vue': {
       routes:
         | '/signup'
+      views:
+        | never
+    }
+    'src/pages/supplier-document/[token].vue': {
+      routes:
+        | '/supplier-document/[token]'
       views:
         | never
     }

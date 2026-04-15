@@ -17,6 +17,7 @@ export const AUTH_ROUTES = [
 export const PUBLIC_ROUTES = [
   ...AUTH_ROUTES,
   '/asset-request',
+  '/supplier-document',
 ]
 
 /**

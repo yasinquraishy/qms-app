@@ -119,6 +119,7 @@ declare module 'vue' {
     DepartmentsIndex: typeof import('./src/components/departments/DepartmentsIndex.vue')['default']
     DepartmentsTable: typeof import('./src/components/departments/DepartmentsTable.vue')['default']
     DialogCloseBtn: typeof import('./resource/js/shared/components/DialogCloseBtn.vue')['default']
+    DocumentContentReadonly: typeof import('./src/components/documents/DocumentContentReadonly.vue')['default']
     DocumentMention: typeof import('./src/components/editor/extensions/documentMention/documentMention.js')['default']
     DocumentsAddSectionDialog: typeof import('./src/components/documents/DocumentsAddSectionDialog.vue')['default']
     DocumentsAuditLog: typeof import('./src/components/documents/DocumentsAuditLog.vue')['default']

@@ -1,11 +1,12 @@
 <script setup>
-import { useQuasar } from 'quasar'
 import { isAllowed } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
+import { IconFileDescription, IconPlus } from '@tabler/icons-vue'
 
 const router = useRouter()
-const $q = useQuasar()
 const toast = useToast()
+
+const confirmArchive = ref({ open: false, doc: null })
 
 const filters = ref({
   search: '',
@@ -70,16 +71,16 @@ function navigateToDetail(row) {
 }
 
 async function onArchiveDocument(row) {
-  $q.dialog({
-    title: 'Confirm Archive',
-    message: `Are you sure you want to archive "${row.title}" (${row.docNumber})? This action will change the document status to Archived.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    row.statusId = 'ARCHIVED'
-    await row.save()
-    toast.success('Document archived successfully')
-  })
+  confirmArchive.value = { open: true, doc: row }
+}
+
+async function confirmArchiveDocument() {
+  const row = confirmArchive.value.doc
+  if (!row) return
+  row.statusId = 'ARCHIVED'
+  await row.save()
+  toast.success('Document archived successfully')
+  confirmArchive.value = { open: false, doc: null }
 }
 </script>
 
@@ -87,21 +88,16 @@ async function onArchiveDocument(row) {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="description" class="tw:text-primary" size="24px" />
+        <IconFileDescription :size="24" class="tw:text-primary" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Documents</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
-        v-if="canCreate"
-        label="Create Document"
-        icon="add"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        @click="navigateToCreate"
-      />
+      <BaseButton v-if="canCreate" @click="navigateToCreate">
+        <IconPlus :size="16" class="tw:mr-1" />
+        Create Document
+      </BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -128,6 +124,15 @@ async function onArchiveDocument(row) {
       :canArchive="canArchive"
       @view="navigateToDetail"
       @archive="onArchiveDocument"
+    />
+
+    <!-- Confirm Archive Dialog -->
+    <ConfirmDialog
+      v-model="confirmArchive.open"
+      title="Confirm Archive"
+      :message="`Are you sure you want to archive &quot;${confirmArchive.doc?.title}&quot; (${confirmArchive.doc?.docNumber})? This action will change the document status to Archived.`"
+      okLabel="Archive"
+      @ok="confirmArchiveDocument"
     />
   </div>
 </template>

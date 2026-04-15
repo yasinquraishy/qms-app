@@ -191,7 +191,7 @@ watch(
 )
 
 useEventListener('click', (event) => {
-  if (event.target.closest('.q-dialog')) return
+  if (event.target.closest('[role="dialog"]')) return
   stopEditing()
 })
 

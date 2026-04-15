@@ -1,4 +1,19 @@
 <script setup>
+import {
+  IconCirclePlus,
+  IconPencil,
+  IconTrash,
+  IconArrowsHorizontal,
+  IconSend,
+  IconCircleCheck,
+  IconCircleX,
+  IconArchive,
+  IconHistory,
+  IconLink,
+  IconLinkOff,
+  IconInfoCircle,
+  IconShieldCheck,
+} from '@tabler/icons-vue'
 const props = defineProps({
   documentId: {
     type: String,
@@ -26,19 +41,19 @@ const usersById = computed(() => {
 
 function getActionIcon(action) {
   const map = {
-    CREATE: 'add_circle',
-    UPDATE: 'edit',
-    DELETE: 'delete',
-    STATUS_CHANGE: 'swap_horiz',
-    SUBMIT_FOR_REVIEW: 'send',
-    APPROVE: 'check_circle',
-    REJECT: 'cancel',
-    ARCHIVE: 'inventory_2',
-    VERSION_CREATE: 'history',
-    LINK_CREATE: 'link',
-    LINK_DELETE: 'link_off',
+    CREATE: IconCirclePlus,
+    UPDATE: IconPencil,
+    DELETE: IconTrash,
+    STATUS_CHANGE: IconArrowsHorizontal,
+    SUBMIT_FOR_REVIEW: IconSend,
+    APPROVE: IconCircleCheck,
+    REJECT: IconCircleX,
+    ARCHIVE: IconArchive,
+    VERSION_CREATE: IconHistory,
+    LINK_CREATE: IconLink,
+    LINK_DELETE: IconLinkOff,
   }
-  return map[action] || 'info'
+  return map[action] || IconInfoCircle
 }
 
 function getActionColor(action) {
@@ -65,7 +80,9 @@ function getPerformerName(log) {
 
     <!-- Loading -->
     <div v-if="auditLogs === undefined" class="tw:flex tw:justify-center tw:py-8">
-      <QSpinner color="primary" size="32px" />
+      <div
+        class="tw:animate-spin tw:rounded-full tw:size-8 tw:border-4 tw:border-primary tw:border-t-transparent"
+      />
     </div>
 
     <!-- Timeline -->
@@ -76,10 +93,10 @@ function getPerformerName(log) {
         class="tw:flex tw:gap-4 tw:p-3 tw:bg-main-hover tw:rounded-lg"
       >
         <div class="tw:shrink-0">
-          <WIcon
-            :name="getActionIcon(log.action)"
+          <component
+            :is="getActionIcon(log.action)"
+            :size="22"
             :class="getActionColor(log.action)"
-            size="22px"
           />
         </div>
         <div class="tw:flex-1">
@@ -105,7 +122,7 @@ function getPerformerName(log) {
 
     <!-- Empty -->
     <div v-else class="tw:text-center tw:py-8 tw:text-secondary">
-      <WIcon name="policy" size="40px" class="tw:text-secondary tw:mb-2" />
+      <IconShieldCheck :size="40" class="tw:text-secondary tw:mb-2 tw:mx-auto" />
       <div>No audit log entries yet.</div>
     </div>
   </div>

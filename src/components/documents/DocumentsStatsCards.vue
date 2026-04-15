@@ -1,4 +1,14 @@
 <script setup>
+import {
+  IconNotes,
+  IconClipboardList,
+  IconCircleCheck,
+  IconChecks,
+  IconArchive,
+  IconFolder,
+  IconFileDescription,
+} from '@tabler/icons-vue'
+
 defineProps({
   stats: {
     type: Array,
@@ -15,12 +25,12 @@ defineProps({
 })
 
 const iconMap = {
-  DRAFT: 'edit_note',
-  IN_REVIEW: 'rate_review',
-  APPROVED: 'check_circle',
-  EFFECTIVE: 'verified',
-  OBSOLETE: 'archive',
-  ARCHIVED: 'inventory_2',
+  DRAFT: IconNotes,
+  IN_REVIEW: IconClipboardList,
+  APPROVED: IconCircleCheck,
+  EFFECTIVE: IconChecks,
+  OBSOLETE: IconArchive,
+  ARCHIVED: IconArchive,
 }
 
 const colorMap = {
@@ -42,7 +52,7 @@ const nameMap = {
 }
 
 function getIcon(statusId) {
-  return iconMap[statusId] || 'description'
+  return iconMap[statusId] || IconFileDescription
 }
 
 function getColorClass(statusId) {
@@ -57,29 +67,37 @@ function getName(statusId) {
 <template>
   <div class="tw:grid tw:grid-cols-2 tw:md:grid-cols-4 tw:xl:grid-cols-6 tw:gap-3">
     <!-- Total Card -->
-    <WCard flat class="tw:p-4">
+    <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:p-4">
       <div class="tw:flex tw:items-center tw:gap-3">
         <div class="tw:bg-primary/10 tw:rounded-lg tw:p-2">
-          <WIcon name="folder" size="24px" class="tw:text-primary" />
+          <IconFolder :size="24" class="tw:text-primary" />
         </div>
         <div>
           <div class="tw:text-2xl tw:font-bold tw:text-on-sidebar">{{ total }}</div>
           <div class="tw:text-xs tw:text-secondary">Total</div>
         </div>
       </div>
-    </WCard>
+    </div>
 
     <!-- Status Cards -->
-    <WCard v-for="stat in stats" :key="stat.statusId" flat class="tw:p-4">
+    <div
+      v-for="stat in stats"
+      :key="stat.statusId"
+      class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:p-4"
+    >
       <div class="tw:flex tw:items-center tw:gap-3">
         <div class="tw:bg-main-hover tw:rounded-lg tw:p-2">
-          <WIcon :name="getIcon(stat.statusId)" size="24px" :class="getColorClass(stat.statusId)" />
+          <component
+            :is="getIcon(stat.statusId)"
+            :size="24"
+            :class="getColorClass(stat.statusId)"
+          />
         </div>
         <div>
           <div class="tw:text-2xl tw:font-bold tw:text-on-sidebar">{{ stat.count }}</div>
           <div class="tw:text-xs tw:text-secondary">{{ getName(stat.statusId) }}</div>
         </div>
       </div>
-    </WCard>
+    </div>
   </div>
 </template>

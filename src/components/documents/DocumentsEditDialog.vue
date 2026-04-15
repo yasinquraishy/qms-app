@@ -1,4 +1,5 @@
 <script setup>
+import { IconMinus, IconPlus, IconX } from '@tabler/icons-vue'
 const props = defineProps({
   document: {
     type: Object,
@@ -94,7 +95,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <WDialog v-model="open" title="Edit Document Properties">
+  <BaseDialog v-model="open" title="Edit Document Properties">
     <div class="tw:space-y-6">
       <!-- Document Details -->
       <section class="tw:space-y-4">
@@ -102,33 +103,26 @@ async function onSubmit() {
         <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-4">
           <!-- Department -->
           <div>
-            <DocumentsDepartmentSelect
-              v-model:departmentId="editForm.departmentId"
-              label="Department"
-              hideBottomSpace
-              required
-            />
+            <label class="tw:block tw:mb-1 tw:text-sm tw:font-medium tw:text-on-main"
+              >Department</label
+            >
+            <DepartmentSelectMenu v-model="editForm.departmentId" :required="true" />
           </div>
 
           <!-- Effective Date -->
           <div>
-            <WDateTimeInput
-              v-model="editForm.effectiveDate"
-              label="Effective Date"
-              mode="date"
-              outlined
-              dense
-              hideBottomSpace
-            />
+            <label class="tw:block tw:mb-1 tw:text-sm tw:font-medium tw:text-on-main"
+              >Effective Date</label
+            >
+            <BaseDatePicker v-model="editForm.effectiveDate" :required="false" />
           </div>
 
           <!-- Related Standard -->
           <div>
-            <DocumentsRelatedStandardSelect
-              v-model:relatedStandardId="editForm.relatedStandardId"
-              label="Related Standard"
-              hideBottomSpace
-            />
+            <label class="tw:block tw:mb-1 tw:text-sm tw:font-medium tw:text-on-main"
+              >Related Standard</label
+            >
+            <RelatedStandardSelectMenu v-model="editForm.relatedStandardId" />
           </div>
         </div>
 
@@ -146,7 +140,7 @@ async function onSubmit() {
                     editForm.periodicReviewMonths = Math.max(1, editForm.periodicReviewMonths - 1)
                   "
                 >
-                  <WIcon name="remove" size="18px" />
+                  <IconMinus :size="18" />
                 </button>
                 <input
                   v-model.number="editForm.periodicReviewMonths"
@@ -158,7 +152,7 @@ async function onSubmit() {
                   class="tw:px-3 tw:py-2 tw:hover:bg-sidebar tw:text-secondary"
                   @click="editForm.periodicReviewMonths++"
                 >
-                  <WIcon name="add" size="18px" />
+                  <IconPlus :size="18" />
                 </button>
               </div>
               <span class="tw:text-sm tw:font-medium tw:text-secondary">months</span>
@@ -171,7 +165,7 @@ async function onSubmit() {
               <p class="tw:text-sm tw:font-bold tw:text-on-sidebar">Auto-effective on approval</p>
               <p class="tw:text-xs tw:text-secondary">Skip manual release after final approval</p>
             </div>
-            <QToggle v-model="editForm.autoEffectiveOnApproval" color="primary" />
+            <BaseSwitch v-model="editForm.autoEffectiveOnApproval" />
           </div>
         </div>
       </section>
@@ -189,7 +183,7 @@ async function onSubmit() {
           >
             {{ tag }}
             <button class="tw:hover:text-primary-dark" @click="removeTag(index)">
-              <WIcon name="close" size="14px" />
+              <IconX :size="14" />
             </button>
           </span>
           <input
@@ -209,15 +203,11 @@ async function onSubmit() {
       </section>
     </div>
 
-    <template #actions>
-      <WBtn flat label="Cancel" color="primary" @click="open = false" />
-      <WBtn
-        label="Save Changes"
-        color="primary"
-        unelevated
-        :loading="isSubmitting"
-        @click="onSubmit"
-      />
+    <template #footer>
+      <div class="tw:flex tw:justify-end tw:gap-2">
+        <BaseButton variant="outline" @click="open = false">Cancel</BaseButton>
+        <BaseButton :isLoading="isSubmitting" @click="onSubmit">Save Changes</BaseButton>
+      </div>
     </template>
-  </WDialog>
+  </BaseDialog>
 </template>

@@ -29,9 +29,14 @@ const canEdit = computed(
 const activeSection = ref(null)
 
 // Computed properties
-const documentSections = computed(() => {
-  return currentVersion.value?.sections || []
-})
+const documentSections = useLiveQueryWithDeps(
+  [() => props.versionId],
+  async (db, [versionId]) => {
+    if (!versionId) return []
+    return db.DocumentSection.where('documentVersionId', versionId).orderBy('order', 'asc').exec()
+  },
+  { initial: [], models: 'DocumentSection' },
+)
 
 // Section methods
 function scrollToSection(sectionId) {

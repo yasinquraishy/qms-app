@@ -156,11 +156,12 @@ const debouncedSaveComment = useDebounceFn(async () => {
       v-else
       class="tw:font-bold tw:flex tw:items-center tw:gap-2"
       :class="[
-        dense ? 'tw:text-base tw:mb-2' : 'tw:text-xl tw:mb-4',
+        dense ? 'tw:text-base' : 'tw:text-xl',
         { 'tw:cursor-pointer tw:px-2 tw:-mx-2 tw:group': canEdit },
       ]"
       @click.prevent.stop="startEditingTitle"
     >
+      <span>{{ section.order + 1 }}.</span>
       <span>{{ section.title }}</span>
       <IconPencil
         v-if="canUpdateSection"

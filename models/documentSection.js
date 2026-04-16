@@ -5,9 +5,7 @@ import { DateTime } from 'luxon'
 @ClientModel('documentSections', {
   primaryKey: 'id',
   syncField: 'updatedAt',
-  loadStrategy: 'instant',
   customIndex: 'documentVersionId, documentId, [documentId+documentVersionId]',
-  schemaVersion: 1,
 })
 export class DocumentSection extends BaseModel {
   static paranoid = true
@@ -33,12 +31,12 @@ export class DocumentSection extends BaseModel {
   @Property({ type: String, required: true }) documentId = ''
   @Property({ type: String, required: true }) documentVersionId = ''
   @Property({ type: String, required: true }) title = ''
-  @Property({ type: String }) sectionType = 'text'
+  @Property({ type: String, required: true }) sectionType = 'text'
   @Property({ type: String }) content = /** @type {string|null} */ (null)
   @Property({ type: Array }) attachments = /** @type {Array|null} */ (null)
   @Property({ type: Number }) order = 0
-  @Property({ type: String }) createdBy = /** @type {string|null} */ (null)
-  @Property({ type: String }) updatedBy = /** @type {string|null} */ (null)
+  @Property({ type: String, required: true }) createdBy = /** @type {string} */ (null)
+  @Property({ type: String, required: true }) updatedBy = /** @type {string|null} */ (null)
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

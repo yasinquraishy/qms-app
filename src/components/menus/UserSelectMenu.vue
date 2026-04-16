@@ -15,7 +15,13 @@ const modelValue = defineModel({
   default: null,
 })
 
-const users = useLiveQuery(async (db) => db.User.where().exec(), { initial: [] })
+const users = useLiveQuery(
+  async (db) => {
+    const users = await db.User.where().exec()
+    return users.map((user) => ({ id: user.id, name: `${user.firstName} ${user.lastName}` }))
+  },
+  { initial: [] },
+)
 
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []

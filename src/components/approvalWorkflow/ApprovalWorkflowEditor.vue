@@ -2,7 +2,6 @@
 import { IconHistory, IconLock, IconCheck } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession'
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { post } from '@/api'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -66,7 +65,7 @@ watch(
   versions,
   (vs) => {
     if (vs?.length > 0 && !selectedVersionId.value) {
-      selectedVersionId.value = vs.find((v) => v.isCurrent)?.id ?? vs[0].id
+      selectedVersionId.value = vs.find((v) => v.statusId === 'DRAFT')?.id ?? vs[0].id
     }
   },
   { immediate: true },
@@ -84,6 +83,10 @@ const selectedVersion = computed(
   () => versions.value?.find((v) => v.id === selectedVersionId.value) ?? null,
 )
 
+const currentVersion = computed(
+  () => versions.value.find((v) => v.statusId === 'DRAFT') ?? versions.value[0] ?? null,
+)
+
 // --- Computed ---
 const breadcrumbItems = computed(() => [
   { label: 'Approval Workflows', to: getCompanyPath('/approval-workflows') },
@@ -97,17 +100,15 @@ const versionLabel = computed(() => {
 })
 
 const isViewingOldVersion = computed(() => {
-  if (!selectedVersion.value) return false
-  return !selectedVersion.value.isCurrent
+  if (!selectedVersion.value || !currentVersion.value) return false
+  return selectedVersion.value.id !== currentVersion.value.id
 })
 
 const isDraftVersion = computed(() => selectedVersion.value?.statusId === 'DRAFT')
 
 const canUpdate = computed(() => {
   if (!workflow.value || !selectedVersion.value) return false
-  return (
-    isDraftVersion.value && !isViewingOldVersion.value && isAllowed(['approvalWorkflows:update'])
-  )
+  return isDraftVersion.value && isAllowed(['approvalWorkflows:update'])
 })
 
 const canCreateDraft = computed(() => {
@@ -118,7 +119,7 @@ const canCreateDraft = computed(() => {
 // --- Handlers ---
 const saving = ref(false)
 
-async function handlePublish(statusOverride) {
+const handlePublish = useLiveMutation(async (db) => {
   if (isViewingOldVersion.value) {
     toast.warning('Switch to the current version to make edits')
     return
@@ -127,7 +128,6 @@ async function handlePublish(statusOverride) {
     toast.warning('This version is locked. Create a new draft to make changes.')
     return
   }
-  if (!selectedVersion.value || !workflow.value) return
 
   // Validate each step has at least one role or reviewer
   if (stepsWithoutAssignees.value.length > 0) {
@@ -135,34 +135,85 @@ async function handlePublish(statusOverride) {
     return
   }
 
-  saving.value = true
-  try {
-    // Save workflow metadata
-    await workflow.value.save()
+  const allVersions = await db.ApprovalWorkflowVersion.where('workflowId', props.id).exec()
+  const draftVersion = allVersions.find((v) => v.statusId === 'DRAFT')
+  const publishedVersions = allVersions.filter((v) => v.statusId === 'PUBLISHED')
+  if (!draftVersion) return
 
-    // Update version status
-    selectedVersion.value.statusId = statusOverride
+  // set statusId to PUBLISHED for the current version, and PBLISHED to RETIRED
+  if (draftVersion.statusId === 'DRAFT') {
+    draftVersion.statusId = 'PUBLISHED'
+    await draftVersion.save()
+    toast.success('Workflow published successfully')
 
-    toast.success(
-      statusOverride === 'PUBLISHED'
-        ? 'Workflow published successfully'
-        : 'Workflow saved successfully',
+    await Promise.all(
+      publishedVersions.map(async (v) => {
+        v.statusId = 'RETIRED'
+        await v.save()
+      }),
     )
-  } catch {
-    toast.error('Failed to save workflow')
-  } finally {
-    saving.value = false
   }
-}
+})
 
 const creatingDraft = ref(false)
+
+const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }) => {
+  const sourceVersion = await db.ApprovalWorkflowVersion.where('workflowId', workflowId)
+    .orderBy('versionMajor', 'desc')
+    .first()
+
+  const currentVersionMajor = sourceVersion ? sourceVersion.versionMajor : 0
+  const currentVersionMinor = sourceVersion ? sourceVersion.versionMinor : 0
+  const newMajor = majorBump ? currentVersionMajor + 1 : currentVersionMajor
+  const newMinor = majorBump ? 0 : currentVersionMinor + 1
+
+  const newVersion = db.ApprovalWorkflowVersion.create({
+    workflowId,
+    versionMajor: newMajor,
+    versionMinor: newMinor,
+    statusId: 'DRAFT',
+  })
+  await newVersion.save()
+
+  const sourceSteps = await db.ApprovalWorkflowStep.where(
+    'workflowVersionId',
+    sourceVersion?.id,
+  ).exec()
+
+  for (const step of sourceSteps) {
+    const newStep = db.ApprovalWorkflowStep.create({
+      workflowVersionId: newVersion.id,
+      name: step.name,
+      description: step.description,
+      stepOrder: step.stepOrder,
+      approvalRule: step.approvalRule,
+      slaDays: step.slaDays,
+      requireComments: step.requireComments,
+      requireEsignature: step.requireEsignature,
+    })
+    await newStep.save()
+
+    const users = await db.ApprovalWorkflowStepUser.where('stepId', step.id).exec()
+    for (const su of users) {
+      const newSu = db.ApprovalWorkflowStepUser.create({ stepId: newStep.id, userId: su.userId })
+      await newSu.save()
+    }
+
+    const roles = await db.ApprovalWorkflowStepRole.where('stepId', step.id).exec()
+    for (const sr of roles) {
+      const newSr = db.ApprovalWorkflowStepRole.create({ stepId: newStep.id, roleId: sr.roleId })
+      await newSr.save()
+    }
+  }
+
+  return newVersion
+})
 
 async function handleCreateDraft(majorBump = false) {
   creatingDraft.value = true
   try {
-    await post(`/v1/services/approvalWorkflows/${props.id}/versions`, { majorBump })
+    await createDraftMutation({ workflowId: props.id, majorBump })
     toast.success('New draft version created')
-    // Reset so watch(versions) will auto-select the new draft
     selectedVersionId.value = null
   } catch {
     toast.error('Failed to create draft version')
@@ -266,7 +317,9 @@ watch(steps, () => {
                       :statusId="version.statusId"
                       class="tw:ml-1"
                     />
-                    <span v-if="version.isCurrent" class="tw:text-primary tw:font-bold tw:ml-1"
+                    <span
+                      v-if="version.id === currentVersion?.id"
+                      class="tw:text-primary tw:font-bold tw:ml-1"
                       >(Current)</span
                     >
                   </div>
@@ -279,9 +332,7 @@ watch(steps, () => {
 
           <BaseButton variant="outline" @click="goBack">Cancel</BaseButton>
           <template v-if="canUpdate">
-            <BaseButton :isLoading="saving" @click="handlePublish('PUBLISHED')">
-              Publish
-            </BaseButton>
+            <BaseButton :isLoading="saving" @click="handlePublish"> Publish </BaseButton>
           </template>
           <template v-else-if="!isViewingOldVersion">
             <BaseButton
@@ -308,10 +359,7 @@ watch(steps, () => {
           }}
           (read-only).
         </span>
-        <BaseButton
-          variant="text-link"
-          @click="selectVersion(versions.find((v) => v.isCurrent) || versions[0])"
-        >
+        <BaseButton variant="text-link" @click="selectVersion(currentVersion)">
           Back to current
         </BaseButton>
       </div>

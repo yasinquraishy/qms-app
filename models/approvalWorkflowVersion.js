@@ -32,7 +32,6 @@ export class ApprovalWorkflowVersion extends BaseModel {
   @Property({ type: String }) statusId = 'DRAFT'
   @Property({ type: String, required: true }) createdBy = ''
   @Property({ type: String, required: true }) companyId = ''
-  @Property({ type: Boolean }) isCurrent = false
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

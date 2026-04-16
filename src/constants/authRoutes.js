@@ -14,10 +14,7 @@ export const AUTH_ROUTES = [
  * Public/unauthorized routes that don't require authentication.
  * These routes are exempt from session expiry redirects.
  */
-export const PUBLIC_ROUTES = [
-  ...AUTH_ROUTES,
-  '/asset-request',
-]
+export const PUBLIC_ROUTES = [...AUTH_ROUTES, '/asset-request', '/supplier-document']
 
 /**
  * Check if a given path is a public route.

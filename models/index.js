@@ -22,6 +22,7 @@ import { Department } from './department'
 import { Document } from './document'
 import { DocumentCounter } from './documentCounter'
 import { DocumentLink } from './documentLink'
+import { DocumentSection } from './documentSection'
 import { DocumentStatus } from './documentStatus'
 import { DocumentTemplate } from './documentTemplate'
 import { DocumentTemplateStatus } from './documentTemplateStatus'
@@ -91,6 +92,7 @@ export const db = {
   Document,
   DocumentCounter,
   DocumentLink,
+  DocumentSection,
   DocumentStatus,
   DocumentTemplate,
   DocumentTemplateStatus,

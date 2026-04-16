@@ -2,6 +2,19 @@
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
 import { useDocuments } from '@/composables/useDocuments.js'
+import {
+  IconNotes,
+  IconSend,
+  IconX,
+  IconChecks,
+  IconChevronDown,
+  IconChartBar,
+  IconFileDescription,
+  IconMessage,
+  IconSitemap,
+  IconTrash,
+  IconArchive,
+} from '@tabler/icons-vue'
 
 const props = defineProps({
   id: {
@@ -141,8 +154,32 @@ async function handleSetEffective() {
   }
 }
 
+const moreActionsItems = computed(() => {
+  const items = []
+  if (selectedVersion.value?.workflowInstanceId) {
+    items.push({
+      name: 'View Workflow',
+      icon: IconSitemap,
+      click: () => {
+        showWorkflowSidebar.value = true
+      },
+    })
+  }
+  if (canDelete.value && selectedVersion.value?.statusId === 'DRAFT') {
+    items.push({ name: 'Delete Version', icon: IconTrash, click: handleDeleteVersion })
+  }
+  if (canEdit.value) {
+    items.push({ name: 'Archive Document', icon: IconArchive, click: handleDeleteDocument })
+  }
+  return items
+})
+
 async function createNewVersion() {
   const create = useLiveMutation(async (db) => {
+    const latestVersionSections = latestVersion.value?.id
+      ? await db.DocumentSection.where('documentVersionId', latestVersion.value.id).exec()
+      : []
+
     const version = db.DocumentVersion.create({
       documentId: props.id,
       versionMajor: latestVersion.value ? latestVersion.value.versionMajor + 1 : 1,
@@ -151,6 +188,21 @@ async function createNewVersion() {
     })
 
     await version.save()
+
+    await Promise.all(
+      latestVersionSections.map((section) =>
+        db.DocumentSection.create({
+          documentId: version.documentId,
+          documentVersionId: version.id,
+          sectionType: section.sectionType,
+          title: section.title,
+          content: section.content,
+          attachments: section.attachments,
+          order: section.order,
+        }).save(),
+      ),
+    )
+
     return version
   })
 
@@ -161,11 +213,13 @@ async function createNewVersion() {
 <template>
   <div class="tw:min-h-screen tw:bg-main">
     <SafeTeleport to="#main-header-title">
-      <WBreadcrumbs :items="breadcrumbs" />
+      <BaseBreadcrumbs :items="breadcrumbs" />
     </SafeTeleport>
     <!-- Loading State -->
     <div v-if="!document" class="tw:flex tw:items-center tw:justify-center tw:min-h-screen">
-      <QSpinner color="primary" size="50px" />
+      <div
+        class="tw:animate-spin tw:rounded-full tw:size-12 tw:border-4 tw:border-primary tw:border-t-transparent"
+      />
     </div>
 
     <!-- Main Content -->
@@ -176,168 +230,129 @@ async function createNewVersion() {
           class="tw:max-w-360 tw:mx-auto tw:px-6 tw:py-4 tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-4"
         >
           <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-3">
-            <WBtn
-              v-if="canCreate"
-              color="primary"
-              unelevated
-              class="tw:font-semibold"
-              @click="createNewVersion"
-            >
-              <WIcon name="edit_note" class="tw:mr-2" size="20px" />
+            <BaseButton v-if="canCreate" @click="createNewVersion">
+              <IconNotes :size="20" class="tw:mr-1" />
               Create New Draft
-            </WBtn>
+            </BaseButton>
 
-            <WBtn
-              v-if="canSubmitForReview"
-              color="positive"
-              unelevated
-              class="tw:font-semibold"
-              @click="handleSubmitForReview"
-            >
-              <WIcon name="send" class="tw:mr-2" size="20px" />
+            <BaseButton v-if="canSubmitForReview" @click="handleSubmitForReview">
+              <IconSend :size="20" class="tw:mr-1" />
               Submit For Review
-            </WBtn>
+            </BaseButton>
             <DocumentWorkflowPreviewDialog
-              v-model:show="showPreviewDialog"
+              v-model="showPreviewDialog"
               :documentId="props.id"
               :versionId="selectedVersion?.id"
             />
 
-            <WBtn
-              v-if="canCancelReview"
-              color="negative"
-              unelevated
-              class="tw:font-semibold"
-              @click="handleCancelReview"
-            >
-              <WIcon name="close" class="tw:mr-2" size="20px" />
+            <BaseButton v-if="canCancelReview" variant="danger" @click="handleCancelReview">
+              <IconX :size="20" class="tw:mr-1" />
               Cancel Review
-            </WBtn>
+            </BaseButton>
 
-            <WBtn
-              v-if="canSetEffective"
-              color="positive"
-              unelevated
-              class="tw:font-semibold"
-              @click="handleSetEffective"
-            >
-              <WIcon name="verified" class="tw:mr-2" size="20px" />
+            <BaseButton v-if="canSetEffective" @click="handleSetEffective">
+              <IconChecks :size="20" class="tw:mr-1" />
               Set Effective
-            </WBtn>
+            </BaseButton>
 
-            <WBtn
+            <BaseButton
               v-if="
                 selectedVersion?.statusId === 'IN_REVIEW' &&
                 canEdit &&
                 selectedVersion.workflowInstanceId
               "
-              color="positive"
-              unelevated
-              class="tw:font-semibold"
-              :to="getCompanyPath(`/workflow-instances/${selectedVersion.workflowInstanceId}`)"
+              variant="outline"
+              @click="
+                router.push(
+                  getCompanyPath(`/workflow-instances/${selectedVersion.workflowInstanceId}`),
+                )
+              "
             >
               Show Workflow
-            </WBtn>
+            </BaseButton>
 
             <!-- Version Selector -->
             <div class="tw:relative">
-              <WBtn outline>
-                Version: {{ versionLabel }} ({{ selectedVersion?.statusId }})
-                <WIcon name="expand_more" class="tw:ml-2" size="18px" />
-
-                <!-- Version Dropdown -->
-                <QMenu>
-                  <QList class="tw:w-48">
-                    <QItemLabel header class="ds-label-sm tw:text-secondary">
+              <BasePopover placement="bottom-start">
+                <template #button>
+                  <BaseButton variant="outline">
+                    Version: {{ versionLabel }} ({{ selectedVersion?.statusId }})
+                    <IconChevronDown :size="16" class="tw:ml-1" />
+                  </BaseButton>
+                </template>
+                <template #content="{ close }">
+                  <div class="tw:flex tw:flex-col tw:py-1 tw:min-w-48">
+                    <div class="tw:text-xs tw:font-semibold tw:text-secondary tw:px-3 tw:py-1">
                       Document History
-                    </QItemLabel>
-                    <QItem
+                    </div>
+                    <button
                       v-for="version in versions"
                       :key="version.id"
-                      clickable
-                      :active="version.id === selectedVersion?.id"
-                      @click="selectVersion(version)"
+                      class="tw:flex tw:w-full tw:items-start tw:px-3 tw:py-2 tw:text-sm tw:hover:bg-main-hover"
+                      :class="
+                        version.id === selectedVersion?.id
+                          ? 'tw:text-primary tw:font-semibold'
+                          : 'tw:text-on-sidebar'
+                      "
+                      @click="
+                        () => {
+                          selectVersion(version)
+                          close()
+                        }
+                      "
                     >
-                      <QItemSection>
-                        <div class="tw:text-sm">
-                          Version
-                          {{
-                            version.versionLabel ||
-                            `${version.versionMajor}.${version.versionMinor}`
-                          }}
-                          <span
-                            v-if="version.statusId === 'EFFECTIVE'"
-                            class="tw:text-primary tw:font-bold"
-                          >
-                            (Current)
-                          </span>
-                          <span v-else-if="version.statusId === 'DRAFT'" class="tw:text-secondary">
-                            (Draft)
-                          </span>
-                        </div>
-                      </QItemSection>
-                    </QItem>
-                  </QList>
-                </QMenu>
-              </WBtn>
+                      Version
+                      {{
+                        version.versionLabel || `${version.versionMajor}.${version.versionMinor}`
+                      }}
+                      <span
+                        v-if="version.statusId === 'EFFECTIVE'"
+                        class="tw:text-primary tw:font-bold tw:ml-1"
+                      >
+                        (Current)
+                      </span>
+                      <span
+                        v-else-if="version.statusId === 'DRAFT'"
+                        class="tw:text-secondary tw:ml-1"
+                      >
+                        (Draft)
+                      </span>
+                    </button>
+                  </div>
+                </template>
+              </BasePopover>
             </div>
 
             <div class="tw:h-6 tw:w-px tw:bg-divider tw:mx-2"></div>
 
-            <WBtn flat class="tw:text-secondary" @click="handleReports">
-              <WIcon name="bar_chart" class="tw:mr-1" size="20px" />
+            <BaseButton variant="secondary" @click="handleReports">
+              <IconChartBar :size="20" class="tw:mr-1" />
               Reports
-            </WBtn>
+            </BaseButton>
 
-            <WBtn flat class="tw:text-secondary" @click="handleExport">
-              <WIcon name="notes" class="tw:mr-1" size="20px" />
+            <BaseButton variant="secondary" @click="handleExport">
+              <IconFileDescription :size="20" class="tw:mr-1" />
               Export
-            </WBtn>
+            </BaseButton>
 
-            <WBtn flat class="tw:text-secondary" @click="showMessages = true">
-              <WIcon name="forum" class="tw:mr-1" size="20px" />
+            <BaseButton variant="secondary" @click="showMessages = true">
+              <IconMessage :size="20" class="tw:mr-1" />
               Discussion
-            </WBtn>
+            </BaseButton>
           </div>
 
           <div class="tw:flex tw:items-center tw:gap-2">
-            <WBtn v-if="document.statusId !== 'ARCHIVED' && (canEdit || canDelete)" flat>
-              More Actions
-              <WIcon name="more_vert" class="tw:ml-2" size="18px" />
-
-              <QMenu>
-                <QList>
-                  <QItem
-                    v-if="selectedVersion?.workflowInstanceId"
-                    clickable
-                    @click="showWorkflowSidebar = true"
-                  >
-                    <QItemSection avatar>
-                      <WIcon name="account_tree" size="20px" />
-                    </QItemSection>
-                    <QItemSection>View Workflow</QItemSection>
-                  </QItem>
-
-                  <QItem
-                    v-if="canDelete && selectedVersion?.statusId === 'DRAFT'"
-                    clickable
-                    @click="handleDeleteVersion"
-                  >
-                    <QItemSection avatar>
-                      <WIcon name="delete" size="20px" />
-                    </QItemSection>
-                    <QItemSection>Delete Version</QItemSection>
-                  </QItem>
-
-                  <QItem v-if="canEdit" clickable @click="handleDeleteDocument">
-                    <QItemSection avatar>
-                      <WIcon name="archive" size="20px" class="tw:text-negative" />
-                    </QItemSection>
-                    <QItemSection class="tw:text-negative">Archive Document</QItemSection>
-                  </QItem>
-                </QList>
-              </QMenu>
-            </WBtn>
+            <BaseMenu
+              v-if="document.statusId !== 'ARCHIVED' && (canEdit || canDelete)"
+              :items="moreActionsItems"
+            >
+              <template #trigger>
+                <BaseButton variant="outline">
+                  More Actions
+                  <IconChevronDown :size="16" class="tw:ml-1" />
+                </BaseButton>
+              </template>
+            </BaseMenu>
           </div>
         </div>
       </div>

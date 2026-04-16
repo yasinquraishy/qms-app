@@ -1,5 +1,5 @@
 <script setup>
-import { useQuasar } from 'quasar'
+import { IconLink, IconLinkOff, IconTrash, IconLinkPlus } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 
 const props = defineProps({
@@ -13,15 +13,16 @@ const props = defineProps({
   },
 })
 
-const $q = useQuasar()
 const toast = useToast()
+
+const confirmRemove = ref({ open: false, link: null })
 
 const links = useLiveQueryWithDeps(
   [() => props.versionId],
   async (db, [versionId]) => {
     if (!versionId) return []
     const all = await db.DocumentLink.where().exec()
-    return all.filter((l) => l.fromDocumentVersionId === versionId && !l.deletedAt)
+    return all.filter((l) => l.fromDocumentVersionId === versionId)
   },
   { initial: [] },
 )
@@ -44,7 +45,7 @@ const versionsById = computed(() => {
 const availableDocuments = computed(() =>
   (allDocuments.value ?? [])
     .filter((d) => d.id !== props.documentId)
-    .map((d) => ({ label: `${d.docNumber} - ${d.title}`, value: d.id })),
+    .map((d) => ({ id: d.id, name: `${d.docNumber} - ${d.title}` })),
 )
 
 const showAddDialog = ref(false)
@@ -96,29 +97,29 @@ async function onAddLink() {
 }
 
 async function onDeleteLink(link) {
-  $q.dialog({
-    title: 'Remove Link',
-    message: 'Are you sure you want to remove this link?',
-    cancel: true,
-  }).onOk(async () => {
-    await link.delete()
-    toast.success('Link removed')
-  })
+  confirmRemove.value = { open: true, link }
+}
+
+async function confirmDeleteLink() {
+  if (!confirmRemove.value.link) return
+  await confirmRemove.value.link.delete()
+  toast.success('Link removed')
+  confirmRemove.value = { open: false, link: null }
 }
 
 function openAddDialog() {
   showAddDialog.value = true
 }
 
-function getLinkTypeBadgeColor(linkType) {
+function getLinkTypeBadgeClass(linkType) {
   const map = {
-    RELATED: 'primary',
-    SUPERSEDES: 'orange',
-    REFERENCES: 'info',
-    PARENT: 'positive',
-    CHILD: 'positive',
+    RELATED: 'tw:bg-blue-100 tw:text-blue-700',
+    SUPERSEDES: 'tw:bg-orange-100 tw:text-orange-700',
+    REFERENCES: 'tw:bg-sky-100 tw:text-sky-700',
+    PARENT: 'tw:bg-green-100 tw:text-green-700',
+    CHILD: 'tw:bg-green-100 tw:text-green-700',
   }
-  return map[linkType] || 'grey-6'
+  return map[linkType] || 'tw:bg-gray-100 tw:text-gray-600'
 }
 </script>
 
@@ -126,7 +127,10 @@ function getLinkTypeBadgeColor(linkType) {
   <div class="tw:p-6">
     <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">
       <h3 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Document Links</h3>
-      <WBtn label="Add Link" icon="add_link" color="primary" outline @click="openAddDialog" />
+      <BaseButton variant="outline" @click="openAddDialog">
+        <IconLinkPlus :size="16" class="tw:mr-1" />
+        Add Link
+      </BaseButton>
     </div>
 
     <!-- Links List -->
@@ -137,7 +141,7 @@ function getLinkTypeBadgeColor(linkType) {
         class="tw:flex tw:items-center tw:justify-between tw:p-3 tw:bg-main-hover tw:rounded-lg tw:border tw:border-divider"
       >
         <div class="tw:flex tw:items-center tw:gap-3">
-          <WIcon name="link" size="20px" class="tw:text-primary" />
+          <IconLink :size="20" class="tw:text-primary tw:shrink-0" />
           <div>
             <div class="tw:text-sm tw:font-semibold tw:text-on-sidebar">
               {{ getTargetDocument(link)?.docNumber || link.toDocumentVersionId }}
@@ -146,17 +150,25 @@ function getLinkTypeBadgeColor(linkType) {
               </span>
             </div>
           </div>
-          <QBadge :color="getLinkTypeBadgeColor(link.relationshipType)" outline class="tw:ml-2">
+          <span
+            :class="getLinkTypeBadgeClass(link.relationshipType)"
+            class="tw:text-xs tw:font-bold tw:px-2 tw:py-0.5 tw:rounded tw:ml-2"
+          >
             {{ link.relationshipType }}
-          </QBadge>
+          </span>
         </div>
-        <WBtn flat round dense icon="delete" color="negative" @click="onDeleteLink(link)" />
+        <button
+          class="tw:p-1.5 tw:rounded tw:hover:bg-red-50 tw:text-secondary tw:hover:text-red-600"
+          @click="onDeleteLink(link)"
+        >
+          <IconTrash :size="16" />
+        </button>
       </div>
     </div>
 
     <!-- Empty -->
     <div v-else class="tw:text-center tw:py-8 tw:text-secondary">
-      <WIcon name="link_off" size="40px" class="tw:text-secondary tw:mb-2" />
+      <IconLinkOff :size="40" class="tw:text-secondary tw:mb-2 tw:mx-auto" />
       <div>No linked documents.</div>
       <div class="tw:text-xs tw:mt-1">
         Link related documents, references, or parent/child relationships.
@@ -164,52 +176,52 @@ function getLinkTypeBadgeColor(linkType) {
     </div>
 
     <!-- Add Link Dialog -->
-    <WDialog v-model="showAddDialog" title="Add Document Link" persistent>
-      <div class="tw:p-4 tw:space-y-4">
-        <WSelect
-          v-model="linkForm.targetDocumentId"
-          :options="availableDocuments"
-          :loading="loadingDocs"
-          label="Target Document"
-          outlined
-          dense
-          emitValue
-          mapOptions
-          optionLabel="label"
-          optionValue="value"
-          hideBottomSpace
-          useInput
-          inputDebounce="200"
-        />
-        <WSelect
-          v-model="linkForm.linkType"
-          :options="[
-            { label: 'Related', value: 'RELATED' },
-            { label: 'Supersedes', value: 'SUPERSEDES' },
-            { label: 'References', value: 'REFERENCES' },
-            { label: 'Parent', value: 'PARENT' },
-            { label: 'Child', value: 'CHILD' },
-          ]"
-          label="Link Type"
-          outlined
-          dense
-          emitValue
-          mapOptions
-          optionLabel="label"
-          optionValue="value"
-          hideBottomSpace
-        />
+    <BaseDialog v-model="showAddDialog" title="Add Document Link" persistent>
+      <div class="tw:space-y-4">
+        <div>
+          <label class="tw:block tw:mb-1 tw:text-sm tw:font-medium tw:text-on-main"
+            >Target Document</label
+          >
+          <BaseSelectMenu
+            v-model="linkForm.targetDocumentId"
+            :items="availableDocuments"
+            :required="true"
+          />
+        </div>
+        <div>
+          <label class="tw:block tw:mb-1 tw:text-sm tw:font-medium tw:text-on-main"
+            >Link Type</label
+          >
+          <BaseSelectMenu
+            v-model="linkForm.linkType"
+            :items="[
+              { id: 'RELATED', name: 'Related' },
+              { id: 'SUPERSEDES', name: 'Supersedes' },
+              { id: 'REFERENCES', name: 'References' },
+              { id: 'PARENT', name: 'Parent' },
+              { id: 'CHILD', name: 'Child' },
+            ]"
+            :required="true"
+          />
+        </div>
       </div>
-      <template #actions>
-        <WBtn flat label="Cancel" @click="showAddDialog = false" />
-        <WBtn
-          color="primary"
-          label="Add Link"
-          unelevated
-          :disable="!linkForm.targetDocumentId"
-          @click="onAddLink"
-        />
+      <template #footer>
+        <div class="tw:flex tw:justify-end tw:gap-2">
+          <BaseButton variant="outline" @click="showAddDialog = false">Cancel</BaseButton>
+          <BaseButton :disabled="!linkForm.targetDocumentId" @click="onAddLink"
+            >Add Link</BaseButton
+          >
+        </div>
       </template>
-    </WDialog>
+    </BaseDialog>
+
+    <!-- Confirm Remove Dialog -->
+    <ConfirmDialog
+      v-model="confirmRemove.open"
+      title="Remove Link"
+      message="Are you sure you want to remove this link?"
+      okLabel="Remove"
+      @ok="confirmDeleteLink"
+    />
   </div>
 </template>

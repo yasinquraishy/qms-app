@@ -1,6 +1,5 @@
 <script setup>
-import { useUsers } from '@/composables/useUsers.js'
-import { provideRoles } from '@/composables/useRoles.js'
+import { IconUsersGroup, IconUserPlus, IconUsers, IconCheck } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession'
 
 const open = defineModel({
@@ -8,15 +7,14 @@ const open = defineModel({
   default: false,
 })
 
-const { users, loading, fetchUsers } = useUsers()
+const users = useLiveQuery(
+  async (db) => {
+    return await db.User.where().exec()
+  },
+  { initial: [] },
+)
 const showCreateUserDialog = ref(false)
 const currentUserId = computed(() => currentSession.value?.userId)
-
-provideRoles()
-
-function onUserCreated() {
-  fetchUsers()
-}
 
 function finish() {
   open.value = false
@@ -28,111 +26,92 @@ function finish() {
 </script>
 
 <template>
-  <QDialog
-    v-model="open"
-    persistent
-    maximized
-    transitionShow="slide-up"
-    transitionHide="slide-down"
-  >
-    <div class="tw:flex tw:items-center tw:justify-center tw:min-h-screen tw:bg-black/50 tw:p-6">
-      <WCard flat class="tw:w-full tw:max-w-2xl tw:rounded-2xl">
-        <!-- Header -->
-        <QCardSection class="tw:pb-0">
-          <div class="tw:flex tw:items-center tw:gap-3 tw:mb-2">
-            <div
-              class="tw:bg-primary tw:flex tw:items-center tw:justify-center tw:rounded-xl tw:size-12 tw:text-white"
-            >
-              <WIcon name="group_add" size="28px" />
-            </div>
-            <div>
-              <div class="tw:text-2xl tw:font-bold tw:text-on-main">Invite Your Team</div>
-              <div class="tw:text-sm tw:text-secondary">
-                Add team members to get started. You can always add more later.
-              </div>
-            </div>
+  <BaseDialog v-model="open" persistent maxWidth="2xl">
+    <div class="tw:space-y-4">
+      <!-- Header -->
+      <div class="tw:flex tw:items-center tw:gap-3">
+        <div
+          class="tw:bg-primary tw:flex tw:items-center tw:justify-center tw:rounded-xl tw:size-12 tw:text-white tw:shrink-0"
+        >
+          <IconUsersGroup :size="28" />
+        </div>
+        <div>
+          <div class="tw:text-2xl tw:font-bold tw:text-on-main">Invite Your Team</div>
+          <div class="tw:text-sm tw:text-secondary">
+            Add team members to get started. You can always add more later.
           </div>
-        </QCardSection>
+        </div>
+      </div>
 
-        <!-- User List -->
-        <QCardSection class="tw:pt-4">
-          <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
-            <div class="tw:text-sm tw:font-semibold tw:text-secondary">
-              Team Members ({{ users.length }})
-            </div>
-            <WBtn
-              color="primary"
-              icon="person_add"
-              label="Add User"
-              unelevated
-              noCaps
-              dense
-              @click="showCreateUserDialog = true"
-            />
+      <!-- User List -->
+      <div>
+        <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
+          <div class="tw:text-sm tw:font-semibold tw:text-secondary">
+            Team Members ({{ users.length }})
           </div>
+          <BaseButton @click="showCreateUserDialog = true">
+            <IconUserPlus :size="16" class="tw:mr-1.5" />
+            Add User
+          </BaseButton>
+        </div>
 
-          <div v-if="loading" class="tw:flex tw:justify-center tw:py-8">
-            <QSpinner color="primary" size="32px" />
-          </div>
+        <div
+          v-if="users.length === 0"
+          class="tw:flex tw:flex-col tw:items-center tw:py-8 tw:text-secondary"
+        >
+          <IconUsers :size="48" class="tw:mb-2 tw:opacity-40" />
+          <div class="tw:text-sm">No team members added yet</div>
+          <div class="tw:text-xs tw:mt-1">Click "Add User" to invite your first team member</div>
+        </div>
 
+        <div
+          v-else
+          class="tw:rounded-lg tw:border tw:border-divider tw:max-h-80 tw:overflow-auto tw:divide-y tw:divide-divider"
+        >
           <div
-            v-else-if="users.length === 0"
-            class="tw:flex tw:flex-col tw:items-center tw:py-8 tw:text-secondary"
+            v-for="user in users"
+            :key="user.id"
+            class="tw:flex tw:items-center tw:gap-3 tw:px-4 tw:py-3"
           >
-            <WIcon name="group" size="48px" class="tw:mb-2 tw:opacity-40" />
-            <div class="tw:text-sm">No team members added yet</div>
-            <div class="tw:text-xs tw:mt-1">Click "Add User" to invite your first team member</div>
+            <UserAvatar
+              :user="{ ...user, fullName: `${user.firstName} ${user.lastName}` }"
+              class="tw:size-10 tw:shrink-0"
+            />
+            <div class="tw:flex-1 tw:min-w-0">
+              <div class="tw:font-medium tw:text-on-main tw:truncate">
+                {{ user.firstName }} {{ user.lastName }}
+              </div>
+              <div class="tw:text-sm tw:text-secondary tw:truncate">{{ user.email }}</div>
+            </div>
+            <div v-if="user.id !== currentUserId" class="tw:shrink-0">
+              <span
+                v-if="user.inviteSent"
+                class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-full tw:text-xs tw:font-medium tw:bg-green-100 tw:text-green-800"
+              >
+                Invited
+              </span>
+              <span
+                v-else
+                class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-full tw:text-xs tw:font-medium tw:bg-gray-100 tw:text-gray-600"
+              >
+                Not Invited
+              </span>
+            </div>
           </div>
+        </div>
+      </div>
 
-          <QList
-            v-else
-            separator
-            class="tw:rounded-lg tw:border tw:border-divider tw:max-h-80 tw:overflow-auto"
-          >
-            <QItem v-for="user in users" :key="user.id" class="tw:py-3">
-              <QItemSection avatar>
-                <UserAvatar
-                  :user="{ ...user, fullName: `${user.firstName} ${user.lastName}` }"
-                  class="tw:size-10"
-                />
-              </QItemSection>
-              <QItemSection>
-                <QItemLabel class="tw:font-medium tw:text-on-main">
-                  {{ user.firstName }} {{ user.lastName }}
-                </QItemLabel>
-                <QItemLabel caption>{{ user.email }}</QItemLabel>
-              </QItemSection>
-              <QItemSection v-if="user.id !== currentUserId" side>
-                <QChip
-                  v-if="user.inviteSent"
-                  color="positive"
-                  textColor="white"
-                  dense
-                  label="Invited"
-                />
-                <QChip v-else color="grey" textColor="white" dense label="Not Invited" />
-              </QItemSection>
-            </QItem>
-          </QList>
-        </QCardSection>
+      <!-- Actions -->
+      <div class="tw:flex tw:justify-end tw:items-center tw:gap-2 tw:pt-2">
+        <BaseButton variant="text" @click="finish">Skip for now</BaseButton>
+        <BaseButton v-if="users.length > 0" @click="finish">
+          <IconCheck :size="16" class="tw:mr-1.5" />
+          Done
+        </BaseButton>
+      </div>
 
-        <!-- Actions -->
-        <QCardSection class="tw:flex tw:justify-end tw:items-center tw:gap-2 tw:pt-2">
-          <WBtn flat noCaps color="primary" label="Skip for now" @click="finish" />
-          <WBtn
-            v-if="users.length > 0"
-            unelevated
-            noCaps
-            color="primary"
-            icon="check"
-            label="Done"
-            @click="finish"
-          />
-        </QCardSection>
-      </WCard>
+      <!-- Create User Dialog -->
+      <UsersCreateUserDialog v-model="showCreateUserDialog" />
     </div>
-
-    <!-- Create User Dialog -->
-    <UsersCreateUserDialog v-model="showCreateUserDialog" @created="onUserCreated" />
-  </QDialog>
+  </BaseDialog>
 </template>

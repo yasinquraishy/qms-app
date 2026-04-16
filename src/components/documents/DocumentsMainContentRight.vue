@@ -1,5 +1,6 @@
 <script setup>
 import { isAllowed } from '@/utils/currentSession.js'
+import { IconSettings } from '@tabler/icons-vue'
 
 const props = defineProps({
   documentId: {
@@ -28,9 +29,14 @@ const canEdit = computed(
 const activeSection = ref(null)
 
 // Computed properties
-const documentSections = computed(() => {
-  return currentVersion.value?.sections || []
-})
+const documentSections = useLiveQueryWithDeps(
+  [() => props.versionId],
+  async (db, [versionId]) => {
+    if (!versionId) return []
+    return db.DocumentSection.where('documentVersionId', versionId).orderBy('order', 'asc').exec()
+  },
+  { initial: [], models: 'DocumentSection' },
+)
 
 // Section methods
 function scrollToSection(sectionId) {
@@ -75,7 +81,7 @@ watch(
       <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5">
         <h4 class="ds-label tw:text-secondary tw:mb-4 tw:flex tw:items-center tw:justify-between">
           Properties
-          <WIcon name="settings" size="16px" />
+          <IconSettings class="tw:size-4" />
         </h4>
         <div class="tw:space-y-4">
           <div>
@@ -104,7 +110,7 @@ watch(
             <div class="tw:flex tw:flex-col tw:w-fit">
               <label class="ds-label"> Status </label>
 
-              <WStatusBadge :status="currentVersion.statusId" class="size-3" />
+              <DocumentVersionStatusBadgeById :statusId="currentVersion.statusId" />
             </div>
           </div>
 

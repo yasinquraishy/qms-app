@@ -138,11 +138,25 @@ const createDocument = useLiveMutation(async (db, formData) => {
     versionMajor: 1,
     versionMinor: 0,
     statusId: 'DRAFT',
-    sections: formData.sections || [],
-    changeSummary: formData.changeNotes || '',
+    changeSummary: formData.changeSummary || '',
     effectiveDate: formData.effectiveDate,
   })
   await version.save()
+
+  if (formData.sections?.length > 0) {
+    for (const [index, section] of formData.sections.entries()) {
+      const docSection = db.DocumentSection.create({
+        documentVersionId: version.id,
+        documentId: doc.id,
+        title: section.title,
+        sectionType: section.sectionType || 'text',
+        content: section.content || null,
+        attachments: section.attachments || null,
+        order: section.order ?? index,
+      })
+      await docSection.save()
+    }
+  }
 
   return doc
 })

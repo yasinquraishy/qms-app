@@ -19,7 +19,7 @@ const activeWorkflows = computed(() => {
     .filter((w) => w.statusId === 'ACTIVE')
     .map((w) => {
       const version = versions.value.find(
-        (v) => v.workflowId === w.id && v.isCurrent && v.statusId === 'PUBLISHED',
+        (v) => v.workflowId === w.id && v.statusId === 'PUBLISHED',
       )
       return version ? { workflow: w, version } : null
     })

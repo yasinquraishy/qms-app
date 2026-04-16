@@ -1,4 +1,14 @@
 <script setup>
+import {
+  IconCircleCheck,
+  IconNotes,
+  IconClipboardList,
+  IconCircleX,
+  IconChecks,
+  IconArchive,
+  IconHelpCircle,
+} from '@tabler/icons-vue'
+
 const props = defineProps({
   status: {
     type: String,
@@ -32,17 +42,17 @@ const colors = {
 }
 
 const statusConfig = {
-  ACTIVE: { color: colors.ACTIVE, icon: 'check_circle', label: 'Active' },
-  DRAFT: { color: colors.DRAFT, icon: 'edit_note', label: 'Draft' },
-  IN_REVIEW: { color: colors.REVIEW, icon: 'rate_review', label: 'In Review' },
-  APPROVED: { color: colors.APPROVED, icon: 'check_circle', label: 'Approved' },
-  REJECTED: { color: colors.REJECTED, icon: 'cancel', label: 'Rejected' },
-  EFFECTIVE: { color: colors.EFFECTIVE, icon: 'verified', label: 'Effective' },
-  OBSOLETE: { color: colors.OBSOLETE, icon: 'archive', label: 'Obsolete' },
-  ARCHIVED: { color: colors.ARCHIVED, icon: 'inventory_2', label: 'Archived' },
+  ACTIVE: { color: colors.ACTIVE, icon: IconCircleCheck, label: 'Active' },
+  DRAFT: { color: colors.DRAFT, icon: IconNotes, label: 'Draft' },
+  IN_REVIEW: { color: colors.REVIEW, icon: IconClipboardList, label: 'In Review' },
+  APPROVED: { color: colors.APPROVED, icon: IconCircleCheck, label: 'Approved' },
+  REJECTED: { color: colors.REJECTED, icon: IconCircleX, label: 'Rejected' },
+  EFFECTIVE: { color: colors.EFFECTIVE, icon: IconChecks, label: 'Effective' },
+  OBSOLETE: { color: colors.OBSOLETE, icon: IconArchive, label: 'Obsolete' },
+  ARCHIVED: { color: colors.ARCHIVED, icon: IconArchive, label: 'Archived' },
   CHANGES_REQUESTED: {
     color: colors.CHANGES_REQUESTED,
-    icon: 'edit_note',
+    icon: IconNotes,
     label: 'Changes Requested',
   },
 }
@@ -52,7 +62,7 @@ const config = computed(() => {
     statusConfig[props.status] || {
       color:
         'tw:bg-gray-100 tw:text-gray-700 tw:dark:bg-gray-900/30 tw:dark:text-gray-400 tw:border-gray-200 tw:dark:border-gray-800',
-      icon: 'help',
+      icon: IconHelpCircle,
       label: props.status,
     }
   )
@@ -60,14 +70,11 @@ const config = computed(() => {
 </script>
 
 <template>
-  <span
-    :class="[
-      config.color,
-      'tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-widest tw:px-2 tw:py-1 tw:rounded tw:border',
-    ]"
-  >
-    <WIcon :name="config.icon" size="14px" class="tw:mr-1" />
+  <BaseBadge :class="[config.color]">
+    <template #icon>
+      <component :is="config.icon" :size="14" class="tw:mr-1" />
+    </template>
     <span v-if="props.version" class="tw-mr-1">v{{ props.version }}</span>
     {{ config.label }}
-  </span>
+  </BaseBadge>
 </template>

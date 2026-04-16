@@ -4,9 +4,17 @@ import { useValidator } from '@shared/composables/validator.js'
 import { IconHeading, IconNotes, IconPaperclip } from '@tabler/icons-vue'
 
 const props = defineProps({
-  currentVersion: {
-    type: Object,
-    default: null,
+  documentVersionId: {
+    type: String,
+    required: true,
+  },
+  documentId: {
+    type: String,
+    required: true,
+  },
+  currentSectionCount: {
+    type: Number,
+    default: 0,
   },
 })
 
@@ -39,22 +47,21 @@ async function handleAddSection() {
   const valid = await sectionValidator.value.$validate()
   if (!valid) return
 
-  // Create a new section object
-  const section = {
-    id: crypto.randomUUID(),
-    title: newSection.value.title,
-    sectionType: newSection.value.sectionType,
-    content: newSection.value.sectionType === 'text' ? '' : null,
-    attachments: newSection.value.sectionType === 'attachment' ? [] : null,
-  }
+  const create = useLiveMutation(async (db) => {
+    const section = db.DocumentSection.create({
+      documentVersionId: props.documentVersionId,
+      documentId: props.documentId,
+      title: newSection.value.title,
+      sectionType: newSection.value.sectionType,
+      content: newSection.value.sectionType === 'text' ? '' : null,
+      attachments: newSection.value.sectionType === 'attachment' ? [] : null,
+      order: props.currentSectionCount,
+    })
+    await section.save()
+    return section
+  })
 
-  // Add to current version sections
-  if (props.currentVersion) {
-    if (!props.currentVersion.sections) {
-      props.currentVersion.sections = []
-    }
-    props.currentVersion.sections.push(section)
-  }
+  const section = await create()
 
   toast.success('Section added successfully')
   emit('sectionAdded', section)

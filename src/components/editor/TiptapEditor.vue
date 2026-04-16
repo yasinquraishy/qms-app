@@ -227,7 +227,7 @@ function getContent(editorInstance) {
 
   switch (props.contentType) {
     case 'json':
-      return JSON.stringify(editorInstance.getJSON())
+      return editorInstance.getJSON()
     case 'text':
       return editorInstance.getText()
     case 'html':
@@ -244,7 +244,7 @@ function setContent(content) {
 
   try {
     if (props.contentType === 'json') {
-      editor.value.commands.setContent(JSON.parse(content))
+      editor.value.commands.setContent(content)
     } else {
       editor.value.commands.setContent(content)
     }

@@ -70,8 +70,12 @@ onMounted(() => {
         class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-24 tw:text-center"
       >
         <IconClockOff :size="56" class="tw:text-secondary tw:mb-4" />
-        <h2 class="tw:text-2xl tw:font-bold tw:text-on-sidebar tw:mb-2">Link No Longer Available</h2>
-        <p class="tw:text-secondary">This document link has been revoked or is no longer accessible.</p>
+        <h2 class="tw:text-2xl tw:font-bold tw:text-on-sidebar tw:mb-2">
+          Link No Longer Available
+        </h2>
+        <p class="tw:text-secondary">
+          This document link has been revoked or is no longer accessible.
+        </p>
       </div>
 
       <!-- Error -->

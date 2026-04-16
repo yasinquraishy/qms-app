@@ -34,7 +34,7 @@ export class DocumentSection extends BaseModel {
   @Property({ type: String, required: true }) sectionType = 'text'
   @Property({ type: String }) content = /** @type {string|null} */ (null)
   @Property({ type: Array }) attachments = /** @type {Array|null} */ (null)
-  @Property({ type: Number }) order = 0
+  @Property({ type: Number }) order = 1
   @Property({ type: String, required: true }) createdBy = /** @type {string} */ (null)
   @Property({ type: String, required: true }) updatedBy = /** @type {string|null} */ (null)
   @Property({ type: DateTime }) deletedAt = null

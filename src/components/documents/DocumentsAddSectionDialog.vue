@@ -14,7 +14,7 @@ const props = defineProps({
   },
   currentSectionCount: {
     type: Number,
-    default: 0,
+    default: 1,
   },
 })
 

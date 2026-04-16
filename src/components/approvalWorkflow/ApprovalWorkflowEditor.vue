@@ -117,7 +117,7 @@ const canCreateDraft = computed(() => {
 // --- Handlers ---
 const saving = ref(false)
 
-async function handlePublish(statusOverride) {
+const handlePublish = useLiveMutation(async (db) => {
   if (isViewingOldVersion.value) {
     toast.warning('Switch to the current version to make edits')
     return
@@ -126,7 +126,6 @@ async function handlePublish(statusOverride) {
     toast.warning('This version is locked. Create a new draft to make changes.')
     return
   }
-  if (!selectedVersion.value || !workflow.value) return
 
   // Validate each step has at least one role or reviewer
   if (stepsWithoutAssignees.value.length > 0) {
@@ -134,25 +133,25 @@ async function handlePublish(statusOverride) {
     return
   }
 
-  saving.value = true
-  try {
-    // Save workflow metadata
-    await workflow.value.save()
+  const allVersions = await db.ApprovalWorkflowVersion.where('workflowId', props.id).exec()
+  const currentVersion = allVersions.find((v) => v.isCurrent)
+  const publishedVersions = allVersions.filter((v) => v.statusId === 'PUBLISHED')
+  if (!currentVersion) return
 
-    // Update version status
-    selectedVersion.value.statusId = statusOverride
+  // set statusId to PUBLISHED for the current version, and PBLISHED to RETIRED
+  if (currentVersion.statusId === 'DRAFT') {
+    currentVersion.statusId = 'PUBLISHED'
+    await currentVersion.save()
+    toast.success('Workflow published successfully')
 
-    toast.success(
-      statusOverride === 'PUBLISHED'
-        ? 'Workflow published successfully'
-        : 'Workflow saved successfully',
+    await Promise.all(
+      publishedVersions.map(async (v) => {
+        v.statusId = 'RETIRED'
+        await v.save()
+      }),
     )
-  } catch {
-    toast.error('Failed to save workflow')
-  } finally {
-    saving.value = false
   }
-}
+})
 
 const creatingDraft = ref(false)
 
@@ -171,7 +170,7 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
     versionMajor: newMajor,
     versionMinor: newMinor,
     statusId: 'DRAFT',
-    isCurrent: false,
+    isCurrent: true,
   })
   await newVersion.save()
 
@@ -204,6 +203,11 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
       const newSr = db.ApprovalWorkflowStepRole.create({ stepId: newStep.id, roleId: sr.roleId })
       await newSr.save()
     }
+  }
+
+  if (sourceVersion) {
+    sourceVersion.isCurrent = false
+    await sourceVersion.save()
   }
 
   return newVersion
@@ -330,9 +334,7 @@ watch(steps, () => {
 
           <BaseButton variant="outline" @click="goBack">Cancel</BaseButton>
           <template v-if="canUpdate">
-            <BaseButton :isLoading="saving" @click="handlePublish('PUBLISHED')">
-              Publish
-            </BaseButton>
+            <BaseButton :isLoading="saving" @click="handlePublish"> Publish </BaseButton>
           </template>
           <template v-else-if="!isViewingOldVersion">
             <BaseButton

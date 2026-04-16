@@ -109,9 +109,9 @@ function finish() {
           Done
         </BaseButton>
       </div>
+
+      <!-- Create User Dialog -->
+      <UsersCreateUserDialog v-model="showCreateUserDialog" />
     </div>
   </BaseDialog>
-
-  <!-- Create User Dialog -->
-  <UsersCreateUserDialog v-model="showCreateUserDialog" />
 </template>

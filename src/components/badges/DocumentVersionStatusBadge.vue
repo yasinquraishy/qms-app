@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  status: { type: Object, required: true },
+  status: { type: [Object, Function], required: true },
   showDot: { type: Boolean, default: false },
 })
 

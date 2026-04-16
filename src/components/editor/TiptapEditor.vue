@@ -35,7 +35,7 @@ const props = defineProps({
   },
 })
 
-const modelValue = defineModel({ type: String, default: '' })
+const modelValue = defineModel({ type: [String, Object], default: '' })
 
 const menuItems = [
   { icon: 'format_bold', action: 'bold', label: 'Bold' },
@@ -239,15 +239,17 @@ function getContent(editorInstance) {
 function setContent(content) {
   if (!editor.value || !content) return
 
-  const currentContent = getContent(editor.value)
-  if (currentContent === content) return
+  const rawCurrentContent = getContent(editor.value)
+  const currentContent =
+    typeof rawCurrentContent === 'string'
+      ? rawCurrentContent.trim()
+      : JSON.stringify(rawCurrentContent)
+  const newContent = typeof content === 'string' ? content.trim() : JSON.stringify(content)
+
+  if (currentContent === newContent) return
 
   try {
-    if (props.contentType === 'json') {
-      editor.value.commands.setContent(content)
-    } else {
-      editor.value.commands.setContent(content)
-    }
+    editor.value.commands.setContent(content)
   } catch (error) {
     console.error('Error setting editor content:', error)
   }

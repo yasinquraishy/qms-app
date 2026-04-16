@@ -354,7 +354,6 @@ const debouncedSaveComment = useDebounceFn(async (sectionId) => {
               :key="`${section.id}-${isEditingContent(section.id)}`"
               v-model="section.content"
               :editable="isEditingContent(section.id)"
-              contentType="json"
               class="tw:border-0! tw:min-h-fit!"
               :class="{ 'tw:cursor-pointer': canEdit && !isEditingContent(section.id) }"
             />

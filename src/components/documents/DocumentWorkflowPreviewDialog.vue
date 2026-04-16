@@ -40,6 +40,24 @@ const allStepUsers = useLiveQueryWithDeps(
   },
 )
 
+const allStepRoles = useLiveQueryWithDeps(
+  [stepIds],
+  async (db, [stepIds]) => db.ApprovalWorkflowStepRole.where('stepId', stepIds).exec(),
+  {
+    initial: [],
+  },
+)
+
+const rolesOnUsers = useLiveQueryWithDeps(
+  [allStepRoles],
+  async (db, [allStepRoles]) => {
+    const roleIds = [...new Set(allStepRoles.map((sr) => sr.roleId))]
+    if (roleIds.length === 0) return []
+    return await db.RoleOnUser.where('roleId', roleIds).exec()
+  },
+  { initial: [] },
+)
+
 const allUsers = useLiveQuery(async (db) => db.User.where().exec(), { initial: [] })
 
 const usersById = computed(() => {
@@ -49,14 +67,24 @@ const usersById = computed(() => {
 })
 
 const steps = computed(() => {
-  const stepUserMap = {}
+  const stepUserIdMap = {}
   for (const su of allStepUsers.value ?? []) {
-    if (!stepUserMap[su.stepId]) stepUserMap[su.stepId] = []
-    stepUserMap[su.stepId].push(su)
+    if (!stepUserIdMap[su.stepId]) stepUserIdMap[su.stepId] = []
+    stepUserIdMap[su.stepId].push(su.userId)
+  }
+
+  for (const sr of allStepRoles.value ?? []) {
+    const roleUsers = rolesOnUsers.value.filter((ru) => ru.roleId === sr.roleId)
+    if (!stepUserIdMap[sr.stepId]) stepUserIdMap[sr.stepId] = []
+    for (const ru of roleUsers) {
+      if (!stepUserIdMap[sr.stepId].includes(ru.userId)) {
+        stepUserIdMap[sr.stepId].push(ru.userId)
+      }
+    }
   }
 
   return allWorkflowSteps.value.map((step) => {
-    step.reviewers = (stepUserMap[step.id] ?? []).map((su) => usersById.value[su.userId])
+    step.reviewers = (stepUserIdMap[step.id] ?? []).map((userId) => usersById.value[userId])
     return step
   })
 })

@@ -2,8 +2,6 @@
 import { required, email, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
 
-const emit = defineEmits(['created'])
-
 const open = defineModel({
   type: Boolean,
   default: false,
@@ -62,17 +60,7 @@ async function onSubmit() {
 
   isSubmitting.value = true
   try {
-    const newUser = await createUser({
-      firstName: form.value.firstName,
-      lastName: form.value.lastName,
-      email: form.value.email,
-      roleIds: form.value.roleIds,
-      siteId: form.value.siteId,
-      departmentId: form.value.departmentId,
-      color: form.value.color,
-      inviteSent: form.value.inviteSent,
-    })
-    emit('created', newUser)
+    await createUser(form.value)
     open.value = false
   } finally {
     isSubmitting.value = false
@@ -148,9 +136,9 @@ async function onSubmit() {
             <BaseColorPicker v-model="form.color" />
           </div>
 
-          <div class="tw:flex tw:flex-col tw:gap-1">
+          <div class="tw:flex tw:gap-1">
             <BaseCheckbox v-model="form.inviteSent" label="Send Invite" />
-            <div class="tw:text-[10px] tw:text-secondary tw:ml-8">Send an email invitation.</div>
+            <div class="tw:text-[10px] tw:text-secondary tw:ml-2">Send an email invitation.</div>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { currentCompany } from '@/utils/currentCompany'
 import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
@@ -15,16 +16,20 @@ export class User extends BaseModel {
     if (!this.id) {
       this.id = crypto.randomUUID()
     }
+
+    if (!this.timeZone) {
+      this.timeZone = currentCompany.value?.defaultTimeZone || 'UTC'
+    }
   }
   @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String, required: true }) firstName = ''
   @Property({ type: String }) lastName = ''
   @Property({ type: String, required: true }) email = ''
-  @Property({ type: String, required: true }) userStatusId = ''
+  @Property({ type: String, required: true }) userStatusId = 'INACTIVE'
   @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String }) jobTitle = ''
   @Property({ type: String }) languageId = ''
-  @Property({ type: String, required: true }) timeZone = ''
+  @Property({ type: String, required: true }) timeZone = 'UTC'
   @Property({ type: Boolean }) inviteSent = false
   @Property({ type: String }) color = '#2563eb'
   @Property({ type: String }) avatar = ''

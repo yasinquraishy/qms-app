@@ -84,16 +84,16 @@ async function onSubmit() {
 
           <div class="tw:flex tw:flex-col tw:gap-1">
             <label class="tw:flex tw:items-center tw:gap-2 tw:cursor-pointer">
-              <BaseSwitch v-model="form.isLeadership" />
+              <BaseCheckbox v-model="form.isLeadership" />
               <span class="tw:text-sm tw:font-medium tw:text-on-main">Leadership Team</span>
             </label>
-            <div class="tw:text-[10px] tw:text-secondary tw:ml-11">Core management group.</div>
+            <div class="tw:text-[10px] tw:text-secondary">Core management group.</div>
           </div>
         </div>
       </div>
     </div>
 
-    <template #actions>
+    <template #footer>
       <button
         class="tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-secondary tw:hover:text-on-main tw:transition-colors"
         @click="open = false"

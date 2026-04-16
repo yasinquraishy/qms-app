@@ -176,6 +176,10 @@ const moreActionsItems = computed(() => {
 
 async function createNewVersion() {
   const create = useLiveMutation(async (db) => {
+    const latestVersionSections = latestVersion.value?.id
+      ? await db.DocumentSection.where('documentVersionId', latestVersion.value.id).exec()
+      : []
+
     const version = db.DocumentVersion.create({
       documentId: props.id,
       versionMajor: latestVersion.value ? latestVersion.value.versionMajor + 1 : 1,
@@ -184,6 +188,21 @@ async function createNewVersion() {
     })
 
     await version.save()
+
+    await Promise.all(
+      latestVersionSections.map((section) =>
+        db.DocumentSection.create({
+          documentId: version.documentId,
+          documentVersionId: version.id,
+          sectionType: section.sectionType,
+          title: section.title,
+          content: section.content,
+          attachments: section.attachments,
+          order: section.order,
+        }).save(),
+      ),
+    )
+
     return version
   })
 

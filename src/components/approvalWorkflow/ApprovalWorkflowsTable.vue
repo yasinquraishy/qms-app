@@ -48,13 +48,17 @@ const workflowMetaMap = useLiveQueryWithDeps(
   async (db, [ids]) => {
     if (!ids?.length) return {}
     const versions = await db.ApprovalWorkflowVersion.where().exec()
-    const current = versions.filter((v) => v.isCurrent && ids.includes(v.workflowId))
     const steps = await db.ApprovalWorkflowStep.where().exec()
     const map = {}
-    for (const v of current) {
-      map[v.workflowId] = {
-        version: v,
-        stepCount: steps.filter((s) => s.workflowVersionId === v.id).length,
+    for (const id of ids) {
+      const workflowVersions = versions.filter((v) => v.workflowId === id)
+      const representative =
+        workflowVersions.find((v) => v.statusId === 'PUBLISHED') ?? workflowVersions[0]
+      if (representative) {
+        map[id] = {
+          version: representative,
+          stepCount: steps.filter((s) => s.workflowVersionId === representative.id).length,
+        }
       }
     }
     return map

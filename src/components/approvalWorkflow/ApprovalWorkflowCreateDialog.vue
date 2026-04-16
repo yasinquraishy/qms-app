@@ -41,7 +41,6 @@ const createWorkflowAndVersion = useLiveMutation(
       versionMajor: 1,
       versionMinor: 0,
       statusId: 'DRAFT',
-      isCurrent: true,
     })
     await version.save()
     return workflow

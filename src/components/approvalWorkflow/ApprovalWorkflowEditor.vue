@@ -65,7 +65,7 @@ watch(
   versions,
   (vs) => {
     if (vs?.length > 0 && !selectedVersionId.value) {
-      selectedVersionId.value = vs.find((v) => v.isCurrent)?.id ?? vs[0].id
+      selectedVersionId.value = vs.find((v) => v.statusId === 'DRAFT')?.id ?? vs[0].id
     }
   },
   { immediate: true },
@@ -83,6 +83,10 @@ const selectedVersion = computed(
   () => versions.value?.find((v) => v.id === selectedVersionId.value) ?? null,
 )
 
+const currentVersion = computed(
+  () => versions.value.find((v) => v.statusId === 'DRAFT') ?? versions.value[0] ?? null,
+)
+
 // --- Computed ---
 const breadcrumbItems = computed(() => [
   { label: 'Approval Workflows', to: getCompanyPath('/approval-workflows') },
@@ -96,17 +100,15 @@ const versionLabel = computed(() => {
 })
 
 const isViewingOldVersion = computed(() => {
-  if (!selectedVersion.value) return false
-  return !selectedVersion.value.isCurrent
+  if (!selectedVersion.value || !currentVersion.value) return false
+  return selectedVersion.value.id !== currentVersion.value.id
 })
 
 const isDraftVersion = computed(() => selectedVersion.value?.statusId === 'DRAFT')
 
 const canUpdate = computed(() => {
   if (!workflow.value || !selectedVersion.value) return false
-  return (
-    isDraftVersion.value && !isViewingOldVersion.value && isAllowed(['approvalWorkflows:update'])
-  )
+  return isDraftVersion.value && isAllowed(['approvalWorkflows:update'])
 })
 
 const canCreateDraft = computed(() => {
@@ -134,14 +136,14 @@ const handlePublish = useLiveMutation(async (db) => {
   }
 
   const allVersions = await db.ApprovalWorkflowVersion.where('workflowId', props.id).exec()
-  const currentVersion = allVersions.find((v) => v.isCurrent)
+  const draftVersion = allVersions.find((v) => v.statusId === 'DRAFT')
   const publishedVersions = allVersions.filter((v) => v.statusId === 'PUBLISHED')
-  if (!currentVersion) return
+  if (!draftVersion) return
 
   // set statusId to PUBLISHED for the current version, and PBLISHED to RETIRED
-  if (currentVersion.statusId === 'DRAFT') {
-    currentVersion.statusId = 'PUBLISHED'
-    await currentVersion.save()
+  if (draftVersion.statusId === 'DRAFT') {
+    draftVersion.statusId = 'PUBLISHED'
+    await draftVersion.save()
     toast.success('Workflow published successfully')
 
     await Promise.all(
@@ -170,7 +172,6 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
     versionMajor: newMajor,
     versionMinor: newMinor,
     statusId: 'DRAFT',
-    isCurrent: true,
   })
   await newVersion.save()
 
@@ -203,11 +204,6 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
       const newSr = db.ApprovalWorkflowStepRole.create({ stepId: newStep.id, roleId: sr.roleId })
       await newSr.save()
     }
-  }
-
-  if (sourceVersion) {
-    sourceVersion.isCurrent = false
-    await sourceVersion.save()
   }
 
   return newVersion
@@ -321,7 +317,9 @@ watch(steps, () => {
                       :statusId="version.statusId"
                       class="tw:ml-1"
                     />
-                    <span v-if="version.isCurrent" class="tw:text-primary tw:font-bold tw:ml-1"
+                    <span
+                      v-if="version.id === currentVersion?.id"
+                      class="tw:text-primary tw:font-bold tw:ml-1"
                       >(Current)</span
                     >
                   </div>
@@ -361,10 +359,7 @@ watch(steps, () => {
           }}
           (read-only).
         </span>
-        <BaseButton
-          variant="text-link"
-          @click="selectVersion(versions.find((v) => v.isCurrent) || versions[0])"
-        >
+        <BaseButton variant="text-link" @click="selectVersion(currentVersion)">
           Back to current
         </BaseButton>
       </div>

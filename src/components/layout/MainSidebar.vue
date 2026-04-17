@@ -83,9 +83,15 @@ const navItems = computed(() => {
     },
     {
       label: 'Products',
-      permissions: ['products:read'],
+      // permissions: ['products:read'],
       icon: 'inventory',
       to: getCompanyPath('/products'),
+    },
+    {
+      label: 'NC Records',
+      // permissions: ['nc_records:read'],
+      icon: 'report',
+      to: getCompanyPath('/nc-records'),
     },
     {}, // Divider
     {

@@ -69,11 +69,15 @@ export const CATEGORY_METADATA = {
     icon: 'local_shipping',
     description: 'Manage access for Suppliers',
   },
-
   products: {
     label: 'Products',
     icon: 'inventory_2',
     description: 'Manage access for Products',
+  },
+  nc_records: {
+    label: 'NC Records',
+    icon: 'report',
+    description: 'Manage access for Non-Conformance Records',
   },
 }
 
@@ -90,6 +94,7 @@ export const PERMISSION_SECTIONS = [
       'optionSets',
       'suppliers',
       'products',
+      'nc_records',
     ],
   },
   {

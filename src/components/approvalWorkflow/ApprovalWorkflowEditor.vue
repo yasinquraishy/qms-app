@@ -13,6 +13,7 @@ const router = useRouter()
 
 const selectedVersionId = ref(null)
 const selectedStepId = ref(null)
+const publishing = ref(false)
 
 // --- Live data ---
 const workflow = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
@@ -23,7 +24,13 @@ const versions = useLiveQueryWithDeps(
   [() => props.id],
   async (db, [id]) => {
     if (!id) return []
-    return db.ApprovalWorkflowVersion.where('workflowId', id).orderBy('versionMajor', 'desc').exec()
+    const vs = await db.ApprovalWorkflowVersion.where('workflowId', id).exec()
+    return vs.sort((a, b) => {
+      if (a.versionMajor !== b.versionMajor) {
+        return b.versionMajor - a.versionMajor
+      }
+      return b.versionMinor - a.versionMinor
+    })
   },
   { initial: [] },
 )
@@ -83,10 +90,6 @@ const selectedVersion = computed(
   () => versions.value?.find((v) => v.id === selectedVersionId.value) ?? null,
 )
 
-const currentVersion = computed(
-  () => versions.value.find((v) => v.statusId === 'DRAFT') ?? versions.value[0] ?? null,
-)
-
 // --- Computed ---
 const breadcrumbItems = computed(() => [
   { label: 'Approval Workflows', to: getCompanyPath('/approval-workflows') },
@@ -100,8 +103,7 @@ const versionLabel = computed(() => {
 })
 
 const isViewingOldVersion = computed(() => {
-  if (!selectedVersion.value || !currentVersion.value) return false
-  return selectedVersion.value.id !== currentVersion.value.id
+  return selectedVersion.value?.statusId === 'RETIRED'
 })
 
 const isDraftVersion = computed(() => selectedVersion.value?.statusId === 'DRAFT')
@@ -117,15 +119,10 @@ const canCreateDraft = computed(() => {
 })
 
 // --- Handlers ---
-const saving = ref(false)
 
-const handlePublish = useLiveMutation(async (db) => {
-  if (isViewingOldVersion.value) {
-    toast.warning('Switch to the current version to make edits')
-    return
-  }
+const handlePublish = useLiveMutation(async () => {
   if (!isDraftVersion.value) {
-    toast.warning('This version is locked. Create a new draft to make changes.')
+    toast.warning('Switch to a draft version to publish.')
     return
   }
 
@@ -135,33 +132,30 @@ const handlePublish = useLiveMutation(async (db) => {
     return
   }
 
-  const allVersions = await db.ApprovalWorkflowVersion.where('workflowId', props.id).exec()
-  const draftVersion = allVersions.find((v) => v.statusId === 'DRAFT')
-  const publishedVersions = allVersions.filter((v) => v.statusId === 'PUBLISHED')
-  if (!draftVersion) return
-
-  // set statusId to PUBLISHED for the current version, and PBLISHED to RETIRED
-  if (draftVersion.statusId === 'DRAFT') {
-    draftVersion.statusId = 'PUBLISHED'
-    await draftVersion.save()
+  publishing.value = true
+  try {
+    selectedVersion.value.statusId = 'PUBLISHED'
+    await selectedVersion.value.save()
     toast.success('Workflow published successfully')
-
-    await Promise.all(
-      publishedVersions.map(async (v) => {
-        v.statusId = 'RETIRED'
-        await v.save()
-      }),
-    )
+  } finally {
+    publishing.value = false
   }
 })
 
 const creatingDraft = ref(false)
 
 const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }) => {
-  const sourceVersion = await db.ApprovalWorkflowVersion.where('workflowId', workflowId)
-    .orderBy('versionMajor', 'desc')
-    .first()
+  const sourceVersions = await db.ApprovalWorkflowVersion.where('workflowId', workflowId, {
+    force: true,
+  }).exec()
+  const sortedVersions = sourceVersions.sort((a, b) => {
+    if (a.versionMajor !== b.versionMajor) {
+      return b.versionMajor - a.versionMajor
+    }
+    return b.versionMinor - a.versionMinor
+  })
 
+  const sourceVersion = sortedVersions[0]
   const currentVersionMajor = sourceVersion ? sourceVersion.versionMajor : 0
   const currentVersionMinor = sourceVersion ? sourceVersion.versionMinor : 0
   const newMajor = majorBump ? currentVersionMajor + 1 : currentVersionMajor
@@ -307,19 +301,17 @@ watch(steps, () => {
                   @click="handleVersionSelect(version, close)"
                 >
                   <div class="tw:flex tw:flex-nowrap tw:items-center tw:text-sm">
-                    <span
-                      >v{{
+                    <span>
+                      v{{
                         version.versionLabel || `${version.versionMajor}.${version.versionMinor}`
-                      }}</span
-                    >
+                      }}
+                    </span>
                     <ApprovalWorkflowVersionStatusBadgeById
                       v-if="version.statusId"
                       :statusId="version.statusId"
                       class="tw:ml-1"
                     />
-                    <span
-                      v-if="version.id === currentVersion?.id"
-                      class="tw:text-primary tw:font-bold tw:ml-1"
+                    <span v-if="version.isCurrent" class="tw:text-primary tw:font-bold tw:ml-1"
                       >(Current)</span
                     >
                   </div>
@@ -332,17 +324,15 @@ watch(steps, () => {
 
           <BaseButton variant="outline" @click="goBack">Cancel</BaseButton>
           <template v-if="canUpdate">
-            <BaseButton :isLoading="saving" @click="handlePublish"> Publish </BaseButton>
+            <BaseButton :isLoading="publishing" @click="handlePublish"> Publish </BaseButton>
           </template>
-          <template v-else-if="!isViewingOldVersion">
-            <BaseButton
-              v-if="canCreateDraft"
-              :isLoading="creatingDraft"
-              @click="handleCreateDraft(false)"
-            >
-              Create New Draft
-            </BaseButton>
-          </template>
+          <BaseButton
+            v-if="canCreateDraft"
+            :isLoading="creatingDraft"
+            @click="handleCreateDraft(false)"
+          >
+            Create New Draft
+          </BaseButton>
         </div>
       </SafeTeleport>
 
@@ -359,12 +349,9 @@ watch(steps, () => {
           }}
           (read-only).
         </span>
-        <BaseButton variant="text-link" @click="selectVersion(currentVersion)">
-          Back to current
-        </BaseButton>
       </div>
       <div
-        v-else-if="!isDraftVersion"
+        v-else-if="selectedVersion?.statusId === 'PUBLISHED'"
         class="tw:bg-amber-50 tw:border-b tw:border-amber-200 tw:px-6 tw:py-3 tw:flex tw:items-center tw:gap-3"
       >
         <IconLock :size="20" class="tw:text-amber-600" />

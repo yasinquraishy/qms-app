@@ -52,8 +52,7 @@ const workflowMetaMap = useLiveQueryWithDeps(
     const map = {}
     for (const id of ids) {
       const workflowVersions = versions.filter((v) => v.workflowId === id)
-      const representative =
-        workflowVersions.find((v) => v.statusId === 'PUBLISHED') ?? workflowVersions[0]
+      const representative = workflowVersions.find((v) => v.isCurrent) ?? workflowVersions[0]
       if (representative) {
         map[id] = {
           version: representative,

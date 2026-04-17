@@ -32,26 +32,22 @@ function navigateToDetail(row) {
 async function onArchiveTemplate(row) {
   row.statusId = 'ARCHIVED'
 
-  nextTick(async () => {
-    try {
-      await row.save()
-      toast.success('Template archived successfully')
-    } catch {
-      toast.error('Failed to archive template. Please try again.')
-    }
-  })
+  try {
+    await row.save()
+    toast.success('Template archived successfully')
+  } catch {
+    toast.error('Failed to archive template. Please try again.')
+  }
 }
 
 async function onUnarchiveTemplate(row) {
   row.statusId = 'ACTIVE'
-  nextTick(async () => {
-    try {
-      await row.save()
-      toast.success('Template unarchived successfully')
-    } catch {
-      toast.error('Failed to unarchive template. Please try again.')
-    }
-  })
+  try {
+    await row.save()
+    toast.success('Template unarchived successfully')
+  } catch {
+    toast.error('Failed to unarchive template. Please try again.')
+  }
 }
 
 const columns = [

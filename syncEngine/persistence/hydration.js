@@ -63,7 +63,7 @@ export function serializeValue(value, propertyMeta) {
  * @param {*} id
  * @param {object} [overrides] - partial field values to apply after hydration
  * @param {object} [rawRecord] - pre-fetched raw record to skip IndexedDB read
- * @returns {Promise<object|null>}
+ * @returns {Promise<InstanceType<typeof import('../core/BaseModel.js').BaseModel>|null>}
  */
 export async function hydrate(modelName, id, overrides = {}, rawRecord = null) {
   const schema = ModelRegistry.getSchema(modelName)

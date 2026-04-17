@@ -99,15 +99,11 @@ async function onSubmit() {
 
   isSubmitting.value = true
   try {
-    const serialized = {
-      ...form.value,
-      detectedDate: form.value.detectedDate?.toISODate() ?? null,
-    }
     if (!isEdit.value) {
-      const created = await createRecord(serialized)
+      const created = await createRecord(form.value)
       emit('created', created)
     } else {
-      Object.assign(record.value, serialized)
+      Object.assign(record.value, form.value)
       await record.value.save()
       emit('updated', record.value)
     }

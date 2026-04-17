@@ -49,12 +49,20 @@ function scrollToSection(sectionId) {
 
 const debounceSaveDocument = useDebounceFn(() => {
   if (!document.value || !canEdit.value) return
-  document.value.save()
+  try {
+    document.value.save()
+  } catch (error) {
+    console.error('Error saving document:', error)
+  }
 }, 500)
 
 const debounceSaveVersion = useDebounceFn(() => {
   if (!currentVersion.value || !canEdit.value) return
-  currentVersion.value.save()
+  try {
+    currentVersion.value.save()
+  } catch (error) {
+    console.error('Error saving document version:', error)
+  }
 }, 500)
 
 watch(
@@ -100,7 +108,9 @@ watch(
             <div>
               <label class="ds-label"> Type </label>
               <div class="tw:mt-1">
+                <DocumentTypeSelectMenu v-if="canEdit" v-model="document.documentTypeId" required />
                 <DocumentTypeBadgeById
+                  v-else
                   :documentTypeId="document.documentTypeId"
                   :iconOnly="false"
                 />
@@ -130,7 +140,18 @@ watch(
 
           <div>
             <label class="ds-label"> Periodic Review </label>
-            <p class="tw:text-sm tw:font-medium">{{ document.periodicReviewMonths }} months</p>
+            <div v-if="canEdit" class="tw:flex tw:items-center tw:gap-2 tw:mt-1">
+              <input
+                v-model.number="document.periodicReviewMonths"
+                type="number"
+                min="1"
+                class="tw:w-20 tw:rounded-md tw:border tw:border-divider tw:bg-sidebar tw:px-2 tw:py-1 tw:text-sm tw:text-on-sidebar tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary/50"
+              />
+              <span class="tw:text-sm tw:text-secondary">months</span>
+            </div>
+            <p v-else class="tw:text-sm tw:font-medium">
+              {{ document.periodicReviewMonths }} months
+            </p>
           </div>
 
           <div>
@@ -152,6 +173,10 @@ watch(
           <!-- Collaborators Section -->
           <DocumentsCollaborators :documentId="document.id" :canEdit="canEdit" />
         </div>
+      </div>
+
+      <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5">
+        <DocumentsWorkflowVersionSelect v-model="document.workflowVersionId" dense />
       </div>
 
       <!-- Table of Contents Card -->

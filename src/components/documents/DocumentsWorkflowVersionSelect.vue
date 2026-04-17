@@ -1,6 +1,13 @@
 <script setup>
 import { IconHierarchy, IconList } from '@tabler/icons-vue'
 
+defineProps({
+  dense: {
+    type: Boolean,
+    default: false,
+  },
+})
+
 const selectedVersionId = defineModel({
   type: [String, null],
   default: null,
@@ -73,15 +80,19 @@ function versionLabel(version) {
         v-for="entry in displayWorkflows"
         :key="entry.workflow.id"
         class="tw:w-full tw:flex tw:items-center tw:justify-between tw:p-4 tw:rounded-xl tw:border-2 tw:cursor-pointer tw:transition-all tw:group"
-        :class="
-          selectedVersionId === entry.version.id
-            ? 'tw:border-primary tw:bg-primary/5'
-            : 'tw:border-divider tw:bg-sidebar tw:hover:border-primary/50 tw:hover:bg-sidebar-hover'
-        "
+        :class="[
+          [
+            selectedVersionId === entry.version.id
+              ? 'tw:border-primary tw:bg-primary/5'
+              : 'tw:border-divider tw:bg-sidebar tw:hover:border-primary/50 tw:hover:bg-sidebar-hover',
+            { 'tw:flex-col': dense },
+          ],
+        ]"
         @click="pickWorkflow(entry)"
       >
         <div class="tw:flex tw:items-center tw:gap-3">
           <div
+            v-if="!dense"
             class="tw:h-9 tw:w-9 tw:rounded-lg tw:flex tw:items-center tw:justify-center tw:shrink-0"
             :class="
               selectedVersionId === entry.version.id

@@ -74,7 +74,6 @@ import { NcSeverity } from './NcSeverity'
 import { NcSource } from './NcSource'
 import { NcType } from './NcType'
 import { NcStatus } from './NcStatus'
-import { NcStatusTransition } from './NcStatusTransition'
 import { RootCauseCategory } from './RootCauseCategory'
 import { NcCounter } from './NcCounter'
 
@@ -155,7 +154,6 @@ export const db = {
   NcSource,
   NcType,
   NcStatus,
-  NcStatusTransition,
   RootCauseCategory,
   NcCounter,
 }

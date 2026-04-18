@@ -19,19 +19,13 @@ export class NcAttachment extends BaseModel {
     if (!this.id) {
       this.id = crypto.randomUUID()
     }
-    if (!this.uploadedBy) {
-      this.uploadedBy = currentSession.value?.userId || ''
-    }
   }
 
   @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String, required: true }) ncId = ''
-  @Property({ type: String, required: true }) fileName = ''
-  @Property({ type: Number }) fileSizeBytes = null
-  @Property({ type: String }) mimeType = null
-  @Property({ type: String }) storageKey = null
-  @Property({ type: String, required: true }) uploadedBy = ''
+  @Property({ type: String, required: true }) assetId = ''
+  @Property({ type: String }) documentType = null
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

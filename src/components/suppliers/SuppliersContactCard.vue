@@ -14,19 +14,32 @@ const props = defineProps({
 
 const contacts = useLiveQueryWithDeps(
   [() => props.supplierId],
-  async (db, [supplierId]) => db.SupplierContact.where('supplierId', supplierId).exec(),
+  async (db, [supplierId]) =>
+    db.SupplierContact.where('supplierId', supplierId).orderBy('createdAt').exec(),
   { initial: [] },
 )
 
-const addContact = useLiveMutation(async (db, { supplierId }) => {
+const draft = ref(null)
+
+function addContact() {
+  if (draft.value) return
+  draft.value = { email: '', phoneNumber: '' }
+}
+
+function cancelDraft() {
+  draft.value = null
+}
+
+const saveDraft = useLiveMutation(async (db) => {
   const isFirst = contacts.value.length === 0
   const contact = db.SupplierContact.create({
-    supplierId,
-    email: '',
-    phoneNumber: '',
+    supplierId: props.supplierId,
+    email: draft.value.email,
+    phoneNumber: draft.value.phoneNumber,
     isPrimary: isFirst,
   })
   await contact.save()
+  draft.value = null
   return contact
 })
 
@@ -61,18 +74,13 @@ async function setPrimary(contact) {
         </div>
         <h3 class="tw:text-lg tw:font-bold tw:text-on-main">Contact Details</h3>
       </div>
-      <BaseButton
-        v-if="canUpdate"
-        variant="text-link"
-        size="sm"
-        @click="addContact({ supplierId })"
-      >
+      <BaseButton v-if="canUpdate && !draft" variant="text-link" size="sm" @click="addContact">
         <IconPlus :size="14" />
         Add Contact
       </BaseButton>
     </div>
     <div class="tw:p-6">
-      <div v-if="contacts.length" class="tw:space-y-4">
+      <div v-if="contacts.length || draft" class="tw:space-y-4">
         <div
           v-for="contact in contacts"
           :key="contact.id"
@@ -133,6 +141,39 @@ async function setPrimary(contact) {
                 contact.phoneNumber || '—'
               }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Draft new contact row -->
+        <div
+          v-if="draft"
+          class="tw:flex tw:flex-col tw:gap-3 tw:p-4 tw:border tw:border-primary/40 tw:rounded-lg tw:bg-primary/5"
+        >
+          <div class="tw:flex tw:items-center tw:justify-between">
+            <span class="tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:tracking-wide"
+              >New Contact</span
+            >
+            <button
+              class="tw:p-1 tw:rounded tw:text-secondary tw:hover:text-red-500 tw:transition-colors"
+              @click="cancelDraft"
+            >
+              <IconTrash :size="14" />
+            </button>
+          </div>
+          <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-3">
+            <div>
+              <label class="tw:block tw:text-xs tw:text-secondary tw:mb-1">Email</label>
+              <BaseTextInput v-model="draft.email" placeholder="email@supplier.com" />
+            </div>
+            <div>
+              <label class="tw:block tw:text-xs tw:text-secondary tw:mb-1">Phone</label>
+              <BaseTextInput v-model="draft.phoneNumber" placeholder="+1 (555) 000-0000" />
+            </div>
+          </div>
+          <div class="tw:flex tw:justify-end">
+            <BaseButton size="sm" :disabled="!draft.email || !draft.phoneNumber" @click="saveDraft">
+              Save Contact
+            </BaseButton>
           </div>
         </div>
       </div>

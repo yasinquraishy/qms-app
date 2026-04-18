@@ -1,6 +1,6 @@
 <script setup>
 import { isAllowed } from '@/utils/currentSession.js'
-import { IconMessageExclamation } from '@tabler/icons-vue'
+import { IconMessageExclamation, IconPencil } from '@tabler/icons-vue'
 
 const props = defineProps({
   documentId: {
@@ -47,6 +47,22 @@ const versionLabel = computed(() => {
   if (!v) return ''
   return v.versionLabel || `${v.versionMajor}.${v.versionMinor}`
 })
+
+// ─── Inline title edit ────────────────────────────────────────────────────────
+
+const editingTitle = ref(false)
+const isSavingTitle = ref(false)
+
+async function saveTitle() {
+  editingTitle.value = false
+  if (!document.value) return
+  isSavingTitle.value = true
+  try {
+    await document.value.save()
+  } finally {
+    isSavingTitle.value = false
+  }
+}
 </script>
 
 <template>
@@ -70,11 +86,29 @@ const versionLabel = computed(() => {
             {{ document.docNumber }} v{{ versionLabel }}
           </span>
         </div>
+        <template v-if="editingTitle && canEdit">
+          <BaseTextInput
+            v-model="document.title"
+            autofocus
+            class="tw:font-extrabold"
+            :class="dense ? 'tw:text-xl' : 'tw:text-3xl'"
+            @blur="saveTitle"
+            @keyup.enter="saveTitle"
+            @keyup.esc="editingTitle = false"
+          />
+        </template>
         <h2
-          class="tw:font-extrabold tw:text-on-sidebar tw:leading-tight"
-          :class="dense ? 'tw:text-xl' : 'tw:text-3xl'"
+          v-else
+          class="tw:font-extrabold tw:text-on-sidebar tw:leading-tight tw:flex tw:items-center tw:gap-2 tw:group"
+          :class="[dense ? 'tw:text-xl' : 'tw:text-3xl', { 'tw:cursor-pointer': canEdit }]"
+          @click="canEdit && (editingTitle = true)"
         >
           {{ document.title }}
+          <IconPencil
+            v-if="canEdit"
+            :size="dense ? 14 : 18"
+            class="tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity tw:text-primary/50 tw:shrink-0"
+          />
         </h2>
         <p
           v-if="currentVersion?.changeSummary"

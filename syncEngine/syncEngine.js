@@ -7,7 +7,6 @@ import { ObjectPool } from './core/ObjectPool.js'
 import { MSG } from './shared/messageTypes.js'
 import { shouldNuke, computeSchemaHash } from './persistence/schemaManager.js'
 import { DB_NAME, SCHEMA_HASH_KEY } from './shared/constants.js'
-import { nextTick } from 'vue'
 
 export class SyncEngine {
   /**
@@ -67,7 +66,6 @@ export class SyncEngine {
     // Set save strategy to use SyncTransaction (OCP — no monkey-patching)
     if (!BaseModel._saveStrategy) {
       BaseModel._saveStrategy = async (instance) => {
-        await nextTick() // ensure all property changes are flushed to the instance before we read modified properties
         const changes = instance.getModifiedProperties()
         const transaction = new SyncTransaction(instance, changes, instance.action)
         await transaction.commit()

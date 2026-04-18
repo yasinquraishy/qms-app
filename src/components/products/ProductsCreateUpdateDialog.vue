@@ -87,14 +87,7 @@ async function onSubmit() {
   isSubmitting.value = true
   try {
     if (!isEdit.value) {
-      const newProduct = await createProduct({
-        name: form.value.name,
-        sku: form.value.sku,
-        family: form.value.family,
-        description: form.value.description,
-        productTypeId: form.value.productTypeId,
-        statusId: form.value.statusId,
-      })
+      const newProduct = await createProduct(form.value)
       emit('created', newProduct)
     } else {
       Object.assign(product.value, form.value)

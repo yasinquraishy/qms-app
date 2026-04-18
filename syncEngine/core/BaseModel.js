@@ -6,6 +6,7 @@ import { QueryBuilder } from '../query/QueryBuilder.js'
 import { OPERATION } from '../shared/constants.js'
 import { ModelValidator, ValidationError } from './ModelValidator.js'
 import { DateTime } from 'luxon'
+import { nextTick } from 'vue'
 
 // Re-export for backwards compatibility
 export { ValidationError }
@@ -263,6 +264,8 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async save() {
+    await nextTick() // ensure all property changes are flushed to the instance before we read modified properties
+
     if (!this.isDirty() && this.#action === OPERATION.UPDATE) {
       return // early exit if no changes to save (but still allow create/delete actions)
     }

@@ -1,12 +1,19 @@
 <script setup>
 import { getCompanyPath } from '@/utils/routeHelpers'
+import { IconTrash } from '@tabler/icons-vue'
 
 const props = defineProps({
   user: {
     type: Object,
     required: true,
   },
+  clearable: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['clear'])
 
 const router = useRouter()
 
@@ -45,6 +52,14 @@ function onClick() {
       <div class="tw:text-xs tw:text-secondary tw:mt-1">{{ roleNames }}</div>
     </div>
 
-    <div class="tw:flex-none"></div>
+    <div class="tw:flex-none">
+      <button
+        v-if="clearable"
+        class="tw:p-1.5 tw:rounded-md tw:text-secondary tw:hover:text-red-600 tw:hover:bg-red-50 tw:transition-colors"
+        @click.stop="emit('clear', user)"
+      >
+        <IconTrash :size="14" />
+      </button>
+    </div>
   </div>
 </template>

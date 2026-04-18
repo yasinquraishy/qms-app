@@ -1,5 +1,5 @@
 <script setup>
-import { IconCamera, IconBuilding, IconUserPlus, IconCopy, IconTrash } from '@tabler/icons-vue'
+import { IconCamera, IconBuilding, IconUserPlus, IconCopy } from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers'
 import { isAllowed } from '@/utils/currentSession'
 import { uploadFile } from '@/utils/uploadService.js'
@@ -16,13 +16,19 @@ const canUpdate = computed(() => isAllowed(['teams:update']))
 // ─── Live queries ─────────────────────────────────────────────────────────────
 
 const group = useLiveQueryWithDeps([() => props.id], async (db, [id]) => db.Team.findByPk(id))
+const users = useLiveQuery((db) => db.User.where().exec(), { initial: [] })
+const userMapById = computed(() => {
+  const map = new Map()
+  users.value.forEach((u) => map.set(u.id, u))
+  return map
+})
 
 const memberships = useLiveQueryWithDeps(
   [() => props.id],
   async (db, [id]) => {
     const records = await db.UserOnTeam.where('teamId', id).exec()
     const resolved = await Promise.all(
-      records.map(async (m) => ({ m, user: await db.User.findByPk(m.userId) })),
+      records.map(async (m) => ({ m, user: userMapById.value.get(m.userId) })),
     )
     return resolved.filter((e) => e.user)
   },
@@ -31,6 +37,17 @@ const memberships = useLiveQueryWithDeps(
 
 const loading = computed(() => group.value === undefined)
 const memberCount = computed(() => memberships.value.length)
+const userIdsOnTeam = computed(() => memberships.value.map((e) => e.user.id))
+const membershipMapById = computed(() => {
+  const map = new Map()
+  memberships.value.forEach((e) => map.set(e.user.id, e))
+  return map
+})
+const filteredUsers = computed(() => {
+  return users.value
+    .filter((u) => !userIdsOnTeam.value.includes(u.id))
+    .map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}` }))
+})
 
 // ─── Breadcrumbs ──────────────────────────────────────────────────────────────
 
@@ -106,24 +123,24 @@ async function handleAvatarDelete() {
 
 // ─── Members ──────────────────────────────────────────────────────────────────
 
-const showAddMember = ref(false)
-const newMemberIds = ref([])
-
-const addMember = useLiveMutation(async (db, { userId }) => {
-  const m = db.UserOnTeam.create({ teamId: props.id, userId })
-  await m.save()
-  return m
+const addMember = useLiveMutation(async (db, userId) => {
+  const existing = await db.UserOnTeam.where('teamId', props.id, { force: true })
+    .where('userId', userId)
+    .first()
+  if (existing) {
+    await existing.restore()
+  } else {
+    const m = db.UserOnTeam.create({ teamId: props.id, userId })
+    await m.save()
+  }
 })
 
-async function onAddMembers() {
-  for (const userId of newMemberIds.value) {
-    const alreadyMember = memberships.value.some((e) => e.user?.id === userId)
-    if (!alreadyMember) {
-      await addMember({ userId })
-    }
-  }
-  newMemberIds.value = []
-  showAddMember.value = false
+async function onAddMembers(userIds) {
+  const toAdd = userIds.filter((id) => !userIdsOnTeam.value.includes(id))
+  const toRemove = userIdsOnTeam.value.filter((id) => !userIds.includes(id))
+
+  await Promise.all(toAdd.map((userId) => addMember(userId)))
+  await Promise.all(toRemove.map((userId) => membershipMapById.value.get(userId)?.m.delete()))
 }
 
 async function onRemoveMember(entry) {
@@ -314,27 +331,24 @@ function copyToClipboard(text) {
                     {{ memberCount }}
                   </span>
                 </div>
-                <button
-                  v-if="canUpdate"
-                  class="tw:flex tw:items-center tw:gap-1.5 tw:text-xs tw:font-medium tw:text-primary tw:hover:underline"
-                  @click="showAddMember = !showAddMember"
+                <BaseSelectMenu
+                  :modelValue="userIdsOnTeam"
+                  :items="filteredUsers"
+                  :required="true"
+                  :multiple="true"
+                  @update:modelValue="onAddMembers"
                 >
-                  <IconUserPlus :size="14" />
-                  Add Members
-                </button>
-              </div>
-
-              <!-- Add Member Panel -->
-              <div
-                v-if="showAddMember && canUpdate"
-                class="tw:p-4 tw:border-b tw:border-divider tw:bg-main-hover/40 tw:flex tw:items-end tw:gap-3"
-              >
-                <div class="tw:flex-1">
-                  <UserSelectMenu v-model="newMemberIds" multiple />
-                </div>
-                <BaseButton :disabled="!newMemberIds.length" @click="onAddMembers">
-                  Add
-                </BaseButton>
+                  <template #button="scope">
+                    <slot name="button" v-bind="scope">
+                      <button
+                        class="tw:flex tw:items-center tw:gap-1.5 tw:text-xs tw:font-medium tw:text-primary tw:hover:underline"
+                      >
+                        <IconUserPlus :size="14" />
+                        Add Members
+                      </button>
+                    </slot>
+                  </template>
+                </BaseSelectMenu>
               </div>
 
               <!-- Member List -->
@@ -342,16 +356,14 @@ function copyToClipboard(text) {
                 <div
                   v-for="entry in memberships"
                   :key="entry.m.id"
-                  class="tw:flex tw:items-center tw:justify-between tw:p-4 tw:hover:bg-main-hover tw:transition-colors"
+                  class="tw:flex tw:items-center tw:p-4 tw:hover:bg-main-hover tw:transition-colors"
                 >
-                  <UsersListItem :user="entry.user" />
-                  <button
-                    v-if="canUpdate"
-                    class="tw:p-1.5 tw:rounded-md tw:text-secondary tw:hover:text-red-600 tw:hover:bg-red-50 tw:transition-colors"
-                    @click="onRemoveMember(entry)"
-                  >
-                    <IconTrash :size="14" />
-                  </button>
+                  <UsersListItem
+                    class="tw:w-full"
+                    :user="entry.user"
+                    :clearable="canUpdate"
+                    @clear="onRemoveMember(entry)"
+                  />
                 </div>
               </div>
 

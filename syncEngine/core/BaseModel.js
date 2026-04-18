@@ -170,8 +170,9 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async delete() {
-    if (this.paranoid) {
-      const field = typeof this.paranoid === 'string' ? this.paranoid : 'deletedAt'
+    const paranoid = this.constructor.paranoid
+    if (paranoid) {
+      const field = typeof paranoid === 'string' ? paranoid : 'deletedAt'
       const schema = ModelRegistry.getSchema(this.constructor.name)
       const propMeta = schema?.properties?.get(field)
       const fieldType = propMeta?.options?.type

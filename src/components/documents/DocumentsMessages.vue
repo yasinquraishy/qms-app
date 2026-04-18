@@ -22,7 +22,7 @@ const messages = useLiveQueryWithDeps(
     db.Comment.where('[objectType+objectId]', ['Document', id])
       .orderBy('createdAt', (a, b) => new Date(a) - new Date(b))
       .exec(),
-  { initial: [], models: 'Comment' },
+  { initial: [] },
 )
 
 const loading = computed(() => messages.value === undefined)

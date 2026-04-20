@@ -82,7 +82,7 @@ onMounted(async () => {
   <div v-else-if="!currentSession?.email" class="tw:min-h-screen tw:bg-gray-100 tw:flex">
     <!-- Left branding -->
     <div
-      class="tw:flex-1 tw:bg-gradient-to-br tw:from-indigo-900 tw:to-indigo-700 tw:hidden md:tw:flex tw:items-center tw:justify-center tw:p-12 tw:text-white"
+      class="tw:flex-1 tw:bg-linear-to-br tw:from-indigo-900 tw:to-indigo-700 tw:hidden md:tw:flex tw:items-center tw:justify-center tw:p-12 tw:text-white"
     >
       <div class="tw:max-w-sm">
         <div class="tw:flex tw:items-center tw:gap-2">
@@ -120,7 +120,7 @@ onMounted(async () => {
   <div v-else class="tw:min-h-screen tw:bg-gray-100 tw:flex">
     <!-- Left branding -->
     <div
-      class="tw:flex-1 tw:bg-gradient-to-br tw:from-indigo-900 tw:to-indigo-700 tw:hidden md:tw:flex tw:items-center tw:justify-center tw:p-12 tw:text-white"
+      class="tw:flex-1 tw:bg-linear-to-br tw:from-indigo-900 tw:to-indigo-700 tw:hidden md:tw:flex tw:items-center tw:justify-center tw:p-12 tw:text-white"
     >
       <div class="tw:max-w-sm">
         <IconShieldCheck :size="48" />
@@ -145,7 +145,7 @@ onMounted(async () => {
 
     <!-- Right - Signup Form -->
     <div class="tw:flex-1 tw:bg-white tw:flex tw:flex-col tw:items-center tw:justify-center tw:p-8">
-      <div class="tw:w-full tw:max-w-[500px]">
+      <div class="tw:w-full tw:max-w-125">
         <!-- User Info Header -->
         <div
           class="tw:bg-gray-50 tw:rounded-t-lg tw:p-4 tw:flex tw:items-center tw:justify-between"
@@ -260,7 +260,7 @@ onMounted(async () => {
           <hr class="tw:border-divider tw:my-6" />
           <div class="tw:text-xs tw:text-secondary tw:text-center">
             Already have an account?
-            <a href="/login" class="tw:text-primary">Sign In</a>
+            <a href="/login" class="tw:text-primary!">Sign In</a>
           </div>
         </div>
       </div>

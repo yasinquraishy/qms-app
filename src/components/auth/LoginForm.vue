@@ -293,11 +293,11 @@ async function submitForm() {
       <div class="tw:text-xs tw:text-secondary tw:text-center tw:mt-3">
         <template v-if="isSignup">
           Already have an account?
-          <a href="/login" class="tw:text-primary">Sign in</a>
+          <a href="/login" class="tw:text-primary!">Sign in</a>
         </template>
         <template v-else>
           Don't have an account?
-          <a href="/signup" class="tw:text-primary">Sign up</a>
+          <a href="/signup" class="tw:text-primary!">Sign up</a>
         </template>
       </div>
       <div class="tw:text-xs tw:text-secondary tw:text-center tw:mt-2">

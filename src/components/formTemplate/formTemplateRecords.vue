@@ -1,4 +1,13 @@
 <script setup>
+import {
+  IconDownload,
+  IconSearch,
+  IconX,
+  IconColumns,
+  IconFilter,
+  IconLock,
+  IconLockOpen,
+} from '@tabler/icons-vue'
 import { exportToCSV, exportToExcel } from '@/utils/exportUtils.js'
 import { exportRecordPDFs } from '@/utils/exportRecordPDFs.js'
 import { exportRecordPDFsHTML } from '@/utils/exportRecordPDFsHTML.js'
@@ -12,38 +21,42 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  templateName: {
-    type: String,
-    required: true,
-  },
-  schema: {
-    type: Array,
-    default: () => [],
-  },
 })
 
-// Composables
-const { templateRecords, recordsLoading, fetchTemplateRecords, updateRecord } = useFormTemplates()
 const toast = useToast()
 
+const template = useLiveQueryWithDeps([() => props.templateId], async (db, [id]) => {
+  if (!id) return null
+  return db.FormTemplate.findByPk(id)
+})
+
+const templateRecords = useLiveQueryWithDeps(
+  [() => props.templateId],
+  async (db, [id]) => {
+    if (!id) return []
+    return db.Record.where('templateId', id).exec()
+  },
+  { initial: [] },
+)
+
+const recordsLoading = computed(() => templateRecords.value === undefined)
+const schema = computed(() => template.value?.schema || [])
+const templateName = computed(() => template.value?.title || '')
+
 // ---- Refs ----
-// Search
 const searchQuery = ref('')
-
-// Column visibility
 const visibleColumns = ref([])
-
-// Editable columns tracking
 const editableColumns = ref(new Set())
-
-// Advanced filters
 const advancedFilters = ref([])
+const showColumnMenu = ref(false)
+const showFilterMenu = ref(false)
 
 // Inline cell editing
 const editModel = ref({})
 const editingRecord = ref(null)
 const editingField = ref(null)
 const editSaving = ref(false)
+const showEditDialog = ref(false)
 
 // ---- Helpers ----
 function getRawValue(obj, path) {
@@ -71,32 +84,20 @@ function getMaxRepeaterItems(path) {
   return max
 }
 
-// Extract leaf field metadata from a repeater template (for cell preview)
-// Recursively flattens all leaf fields, handling nested sections/rows/columns
 function extractTemplateLeafFields(templateItems) {
   const leaves = []
   function walk(items, path = []) {
     items.forEach((item) => {
       if (item.type === 'separator') return
-
-      // Handle nested containers
       if (['section', 'row', 'column'].includes(item.type)) {
         const newPath = item.name ? [...path, item.name] : path
         if (item.children) walk(item.children, newPath)
         return
       }
-
-      // Skip nested repeaters (too complex for preview)
       if (item.type === 'repeater') return
-
-      // Leaf field
       if (item.name) {
         const fullPath = [...path, item.name].join('.')
-        leaves.push({
-          name: item.name,
-          path: fullPath,
-          label: item.label || item.name,
-        })
+        leaves.push({ name: item.name, path: fullPath, label: item.label || item.name })
       }
     })
   }
@@ -105,25 +106,19 @@ function extractTemplateLeafFields(templateItems) {
 }
 
 // ---- Computed ----
-// Web columns: flat labels, repeaters collapsed into single column
 const schemaFields = computed(() => {
   const fields = []
 
   function extractFields(schemaItems, dataPath) {
     schemaItems.forEach((item) => {
       if (item.type === 'separator') return
-
       const newDataPath = item.name ? (dataPath ? `${dataPath}.${item.name}` : item.name) : dataPath
 
-      // Container types: traverse children (labels NOT accumulated for web)
       if (['section', 'row', 'column'].includes(item.type)) {
-        if (item.children) {
-          extractFields(item.children, newDataPath)
-        }
+        if (item.children) extractFields(item.children, newDataPath)
         return
       }
 
-      // Repeater: single collapsed column
       if (item.type === 'repeater' && item.name) {
         fields.push({
           name: newDataPath,
@@ -135,7 +130,6 @@ const schemaFields = computed(() => {
         return
       }
 
-      // Leaf data fields — flat label (just the field's own label)
       if (item.name) {
         fields.push({
           name: newDataPath,
@@ -147,28 +141,21 @@ const schemaFields = computed(() => {
     })
   }
 
-  if (props.schema) {
-    extractFields(props.schema, '')
-  }
-
+  if (schema.value) extractFields(schema.value, '')
   return fields
 })
 
-// Export columns: full hierarchical labels, repeaters expanded per item
 const exportSchemaFields = computed(() => {
   const fields = []
 
   function extractFields(schemaItems, dataPath, labelParts) {
     schemaItems.forEach((item) => {
       if (item.type === 'separator') return
-
       const newDataPath = item.name ? (dataPath ? `${dataPath}.${item.name}` : item.name) : dataPath
 
       if (['section', 'row', 'column'].includes(item.type)) {
         const newLabelParts = item.label ? [...labelParts, item.label] : labelParts
-        if (item.children) {
-          extractFields(item.children, newDataPath, newLabelParts)
-        }
+        if (item.children) extractFields(item.children, newDataPath, newLabelParts)
         return
       }
 
@@ -177,9 +164,10 @@ const exportSchemaFields = computed(() => {
         const maxItems = Math.max(getMaxRepeaterItems(newDataPath), item.minItems || 0)
         if (item.template && maxItems > 0) {
           for (let i = 0; i < maxItems; i++) {
-            const itemDataPath = `${newDataPath}.${i}`
-            const itemLabelParts = [...labelParts, `${repeaterLabel} (${i + 1})`]
-            extractFields(item.template, itemDataPath, itemLabelParts)
+            extractFields(item.template, `${newDataPath}.${i}`, [
+              ...labelParts,
+              `${repeaterLabel} (${i + 1})`,
+            ])
           }
         }
         return
@@ -196,14 +184,10 @@ const exportSchemaFields = computed(() => {
     })
   }
 
-  if (props.schema) {
-    extractFields(props.schema, '', [])
-  }
-
+  if (schema.value) extractFields(schema.value, '', [])
   return fields
 })
 
-// Generate table columns
 const columns = computed(() => {
   const standardColumns = [
     {
@@ -250,7 +234,6 @@ const columns = computed(() => {
     },
   ]
 
-  // Add dynamic schema columns (web: flat labels, repeaters as single columns)
   const schemaColumns = schemaFields.value.map((field) => ({
     name: field.name,
     label: field.label.toUpperCase(),
@@ -267,7 +250,6 @@ const columns = computed(() => {
   return [...standardColumns, ...schemaColumns]
 })
 
-// Export columns: full hierarchical labels, repeaters expanded
 const exportColumns = computed(() => {
   const standardColumns = [
     {
@@ -277,13 +259,7 @@ const exportColumns = computed(() => {
       align: 'left',
       sortable: true,
     },
-    {
-      name: 'statusId',
-      label: 'STATUS',
-      field: 'statusId',
-      align: 'left',
-      sortable: true,
-    },
+    { name: 'statusId', label: 'STATUS', field: 'statusId', align: 'left', sortable: true },
     {
       name: 'createdAt',
       label: 'SUBMISSION DATE',
@@ -319,31 +295,22 @@ const exportColumns = computed(() => {
   return [...standardColumns, ...schemaColumns]
 })
 
-// Selectable columns (excluding required ones)
-const selectableColumns = computed(() => {
-  return columns.value.filter((col) => !col.required)
-})
+const activeColumns = computed(() =>
+  columns.value.filter((c) => visibleColumns.value.includes(c.name)),
+)
 
-// All columns visibility state
-const allColumnsVisible = computed(() => {
-  return visibleColumns.value.length === columns.value.length
-})
+const selectableColumns = computed(() => columns.value.filter((col) => !col.required))
 
-// Filter records based on search query and advanced filters
+const allColumnsVisible = computed(() => visibleColumns.value.length === columns.value.length)
+
 const filteredRecords = computed(() => {
   let records = templateRecords.value
 
-  // Apply advanced filters
   if (advancedFilters.value.length > 0) {
     records = records.filter((record) => {
       return advancedFilters.value.every((filter) => {
-        // Payload field
         const value = getProp(record, filter.column)
-
-        if (value === null || value === undefined) {
-          return false
-        }
-
+        if (value === null || value === undefined) return false
         const valueStr = String(value).toLowerCase()
         const filterValue = filter.value.toLowerCase()
 
@@ -361,13 +328,9 @@ const filteredRecords = computed(() => {
     })
   }
 
-  // Apply search query
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
-    records = records.filter((record) => {
-      const recordStr = JSON.stringify(record).toLowerCase()
-      return recordStr.includes(query)
-    })
+    records = records.filter((record) => JSON.stringify(record).toLowerCase().includes(query))
   }
 
   return records
@@ -376,14 +339,12 @@ const filteredRecords = computed(() => {
 const canUpdate = computed(() => isAllowed(['records:update']))
 
 // ---- Watchers ----
-// Initialize visible columns and editable columns on mount
 watch(
   columns,
   (newColumns) => {
     if (visibleColumns.value.length === 0) {
       visibleColumns.value = newColumns.map((col) => col.name)
     }
-    // Initialize editable columns with columns that have editable: true
     if (editableColumns.value.size === 0) {
       editableColumns.value = new Set(
         newColumns.filter((col) => col.editable).map((col) => col.name),
@@ -393,22 +354,11 @@ watch(
   { immediate: true },
 )
 
-// ---- Lifecycle Hooks ----
-// Fetch records on mount
-onMounted(() => {
-  if (props.templateId) {
-    fetchTemplateRecords(props.templateId)
-  }
-})
-
 // ---- Functions ----
-// Helper to get nested field value from payload
 function getFieldValue(payload, fieldPath) {
   if (!payload) return '-'
-
   const parts = fieldPath.split('.')
   let value = payload
-
   for (const part of parts) {
     if (value && typeof value === 'object' && part in value) {
       value = value[part]
@@ -416,137 +366,107 @@ function getFieldValue(payload, fieldPath) {
       return '-'
     }
   }
-
-  // Format value based on type
-  if (value === null || value === undefined || value === '') {
-    return '-'
-  }
-
-  if (Array.isArray(value)) {
-    return value.length > 0 ? `${value.length} items` : '-'
-  }
-
-  if (typeof value === 'object') {
-    return JSON.stringify(value)
-  }
-
+  if (value === null || value === undefined || value === '') return '-'
+  if (Array.isArray(value)) return value.length > 0 ? `${value.length} items` : '-'
+  if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
 }
 
-// Toggle all columns
 function toggleAllColumns() {
   if (visibleColumns.value.length === columns.value.length) {
-    // Hide all except required
     visibleColumns.value = columns.value.filter((col) => col.required).map((col) => col.name)
   } else {
-    // Show all
     visibleColumns.value = columns.value.map((col) => col.name)
   }
 }
 
-// Toggle column editable state
-function toggleColumnEditable(columnName, event) {
-  event.stopPropagation()
-  const column = columns.value.find((col) => col.name === columnName)
-  if (!column || !column.editable) return // Only toggle if column supports editing
+function toggleColumnVisible(colName) {
+  const idx = visibleColumns.value.indexOf(colName)
+  if (idx >= 0) {
+    visibleColumns.value.splice(idx, 1)
+  } else {
+    visibleColumns.value.push(colName)
+  }
+}
 
+function toggleColumnEditable(columnName) {
+  const column = columns.value.find((col) => col.name === columnName)
+  if (!column || !column.editable) return
   if (editableColumns.value.has(columnName)) {
     editableColumns.value.delete(columnName)
   } else {
     editableColumns.value.add(columnName)
   }
-  // Trigger reactivity
   editableColumns.value = new Set(editableColumns.value)
 }
 
-// Check if column is editable
 function isColumnEditable(columnName) {
   return editableColumns.value.has(columnName)
 }
 
-// Get edit field schema
 function getEditFieldSchema(field) {
   if (!field) return []
-  if (field.type === 'repeater') {
-    return [{ ...field.schemaItem, name: 'value' }]
-  }
-  const item = { ...field.schemaItem, name: 'value', label: field.schemaItem.label }
-  return [item]
+  if (field.type === 'repeater') return [{ ...field.schemaItem, name: 'value' }]
+  return [{ ...field.schemaItem, name: 'value', label: field.schemaItem.label }]
 }
 
-// Handle menu show for inline editing
-function onMenuShow(scope) {
-  const field = schemaFields.value.find((f) => f.name === scope.col.name)
-  if (!field) return
+function openCellEdit(row, colName) {
+  if (!canUpdate.value) return
+  const field = schemaFields.value.find((f) => f.name === colName)
+  if (!field || !isColumnEditable(colName)) return
 
-  editingRecord.value = scope.row
+  editingRecord.value = row
   editingField.value = field
-  const currentValue = getProp(scope.row.payload, field.name)
+  const currentValue = getProp(row.payload, field.name)
   if (field.type === 'repeater') {
     editModel.value = { value: JSON.parse(JSON.stringify(currentValue || [])) }
   } else {
     editModel.value = { value: currentValue ?? null }
   }
+  showEditDialog.value = true
 }
 
-// Get repeater cell preview text
 function getRepeaterPreview(items, templateFields) {
   if (!Array.isArray(items) || items.length === 0) return { text: '-', moreCount: 0 }
 
   const firstItem = items[0]
-  const maxFieldsToShow = 3 // Show only first 3 fields to avoid clutter
+  const maxFieldsToShow = 3
 
-  // Collect all non-empty field values
   const allParts = templateFields
     .map((f) => {
-      // Handle nested paths (e.g., 'row1.actionTaken')
       const val = f.path ? getRawValue(firstItem, f.path) : firstItem?.[f.name]
       if (val === null || val === undefined || val === '') return null
-
-      // Handle complex values
       let displayVal = val
-      if (Array.isArray(val)) {
-        displayVal = `[${val.length} items]`
-      } else if (typeof val === 'object') {
-        displayVal = '[Object]'
-      } else if (String(val).length > 50) {
-        displayVal = String(val).substring(0, 47) + '...'
-      }
-
+      if (Array.isArray(val)) displayVal = `[${val.length} items]`
+      else if (typeof val === 'object') displayVal = '[Object]'
+      else if (String(val).length > 50) displayVal = String(val).substring(0, 47) + '...'
       return { label: f.label, value: displayVal }
     })
     .filter(Boolean)
 
-  // Show only first N fields
   const visibleParts = allParts.slice(0, maxFieldsToShow)
   const hasMoreFields = allParts.length > maxFieldsToShow
-
   const text = visibleParts.map((p) => `${p.label}: ${p.value}`).join(', ')
-
   const suffix = hasMoreFields
     ? ` (+${allParts.length - maxFieldsToShow} more field${allParts.length - maxFieldsToShow > 1 ? 's' : ''})`
     : ''
 
-  return {
-    text: text ? text + suffix : '-',
-    moreCount: items.length > 1 ? items.length - 1 : 0,
-  }
+  return { text: text ? text + suffix : '-', moreCount: items.length > 1 ? items.length - 1 : 0 }
 }
 
-// Handle menu hide and save edited value
-async function onMenuHide() {
+async function saveEditedCell() {
   const record = editingRecord.value
   const field = editingField.value
-
   if (!record || !field) {
+    showEditDialog.value = false
     return
   }
 
   const oldValue = getProp(record.payload, field.name)
   const newValue = editModel.value.value
 
-  // Skip save if value didn't change
   if (JSON.stringify(oldValue) === JSON.stringify(newValue)) {
+    showEditDialog.value = false
     return
   }
 
@@ -554,18 +474,18 @@ async function onMenuHide() {
   const newPayload = JSON.parse(JSON.stringify(record.payload))
   setProp(newPayload, field.name, newValue, true)
 
-  const success = await updateRecord(record.id, { payload: newPayload })
-
-  if (success) {
+  try {
+    record.payload = newPayload
+    await record.save()
     toast.success('Record updated')
-  } else {
+  } catch {
     toast.error('Failed to update record')
   }
 
   editSaving.value = false
+  showEditDialog.value = false
 }
 
-// Export function
 async function handleExport(format) {
   if (!templateRecords.value || templateRecords.value.length === 0) {
     toast.warning('No data to export')
@@ -573,27 +493,25 @@ async function handleExport(format) {
   }
 
   try {
-    const filename = `${props.templateName}_records_${new Date().toISOString().split('T')[0]}`
+    const filename = `${templateName.value}_records_${new Date().toISOString().split('T')[0]}`
 
     if (format === 'csv') {
       exportToCSV(templateRecords.value, exportColumns.value, filename)
     } else if (format === 'excel') {
       await exportToExcel(templateRecords.value, exportColumns.value, filename, 'Records')
     } else if (format === 'pdf') {
-      await exportRecordPDFs(templateRecords.value, props.schema, props.templateName)
+      await exportRecordPDFs(templateRecords.value, schema.value, templateName.value)
     } else if (format === 'pdf-html') {
-      await exportRecordPDFsHTML(templateRecords.value, props.schema, props.templateName)
+      await exportRecordPDFsHTML(templateRecords.value, schema.value, templateName.value)
     }
 
     toast.success(`Exported to ${format.toUpperCase()} successfully`)
   } catch (error) {
     console.error('Export failed:', error)
-
     let errorMessage = `Failed to export to ${format.toUpperCase()}`
     if (error.message.includes('Cannot find module')) {
       errorMessage = `${format.toUpperCase()} export requires additional libraries. Please contact administrator.`
     }
-
     toast.error(errorMessage)
   }
 }
@@ -603,242 +521,228 @@ async function handleExport(format) {
   <div class="tw:flex tw:flex-col tw:h-full tw:p-6">
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:gap-1">
-        <WBtn icon="download" label="CSV" outline color="primary" @click="handleExport('csv')" />
-        <WBtn
-          icon="download"
-          label="Excel"
-          outline
-          color="primary"
-          @click="handleExport('excel')"
-        />
-        <WBtn icon="download" label="PDF" outline color="primary" @click="handleExport('pdf')" />
+        <BaseButton variant="outline" size="sm" @click="handleExport('csv')">
+          <IconDownload :size="14" class="tw:mr-1" /> CSV
+        </BaseButton>
+        <BaseButton variant="outline" size="sm" @click="handleExport('excel')">
+          <IconDownload :size="14" class="tw:mr-1" /> Excel
+        </BaseButton>
+        <BaseButton variant="outline" size="sm" @click="handleExport('pdf')">
+          <IconDownload :size="14" class="tw:mr-1" /> PDF
+        </BaseButton>
       </div>
     </SafeTeleport>
 
-    <!-- Toolbar with Search and Export Buttons -->
+    <!-- Toolbar -->
     <div
       v-if="!recordsLoading && templateRecords.length > 0"
       class="tw:flex tw:justify-between tw:items-center tw:mb-4 tw:gap-4"
     >
       <div class="tw:flex tw:items-center tw:gap-2">
-        <WInput v-model="searchQuery" placeholder="Search records..." class="tw:w-64">
-          <template #prepend>
-            <WIcon icon="search" />
-          </template>
-          <template #append>
-            <WIcon
-              v-if="searchQuery"
-              icon="close"
-              class="tw:cursor-pointer"
-              @click="searchQuery = ''"
-            />
-          </template>
-        </WInput>
-        <div class="tw:text-sm tw:text-gray-600">
+        <div class="tw:relative tw:w-64">
+          <IconSearch
+            :size="16"
+            class="tw:absolute tw:left-2 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary"
+          />
+          <BaseTextInput v-model="searchQuery" placeholder="Search records..." class="tw:pl-8" />
+          <button
+            v-if="searchQuery"
+            class="tw:absolute tw:right-2 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary tw:hover:text-on-main"
+            @click="searchQuery = ''"
+          >
+            <IconX :size="14" />
+          </button>
+        </div>
+        <div class="tw:text-sm tw:text-secondary">
           {{ filteredRecords.length }} / {{ templateRecords.length }} record{{
             templateRecords.length !== 1 ? 's' : ''
           }}
         </div>
       </div>
       <div class="tw:flex tw:gap-2">
-        <!-- Column Visibility Dropdown -->
-        <QBtn flat dense icon="view_column" color="primary">
-          <QMenu>
-            <QList class="tw:min-w-62.5 tw:max-w-110">
-              <QItem>
-                <QItemSection class="tw:font-semibold tw:text-sm"> Show/Hide Columns </QItemSection>
-                <QItemSection side>
-                  <WBtn
-                    flat
-                    dense
-                    size="xs"
-                    :label="allColumnsVisible ? 'Hide All' : 'Show All'"
-                    @click="toggleAllColumns"
+        <!-- Column Visibility -->
+        <div class="tw:relative">
+          <button
+            class="tw:p-2 tw:rounded tw:text-primary tw:hover:bg-main-hover"
+            title="Show/Hide Columns"
+            @click="showColumnMenu = !showColumnMenu"
+          >
+            <IconColumns :size="18" />
+          </button>
+          <div
+            v-if="showColumnMenu"
+            class="tw:absolute tw:right-0 tw:top-full tw:z-50 tw:bg-main tw:border tw:border-divider tw:rounded-lg tw:shadow-lg tw:min-w-64 tw:max-w-96 tw:max-h-80 tw:overflow-y-auto"
+          >
+            <div
+              class="tw:flex tw:justify-between tw:items-center tw:p-3 tw:border-b tw:border-divider"
+            >
+              <span class="tw:text-sm tw:font-semibold tw:text-on-main">Show/Hide Columns</span>
+              <button
+                class="tw:text-xs tw:text-primary tw:hover:underline"
+                @click="toggleAllColumns"
+              >
+                {{ allColumnsVisible ? 'Hide All' : 'Show All' }}
+              </button>
+            </div>
+            <div class="tw:p-2">
+              <div
+                v-for="column in selectableColumns"
+                :key="column.name"
+                class="tw:flex tw:items-center tw:justify-between tw:px-2 tw:py-1.5 tw:rounded tw:hover:bg-main-hover"
+              >
+                <div class="tw:flex tw:items-center tw:gap-2">
+                  <BaseCheckbox
+                    :modelValue="visibleColumns.includes(column.name)"
+                    @update:modelValue="toggleColumnVisible(column.name)"
                   />
-                </QItemSection>
-              </QItem>
-              <QSeparator />
-              <QItem v-for="column in selectableColumns" :key="column.name" dense>
-                <QItemSection side top>
-                  <QCheckbox v-model="visibleColumns" :val="column.name" />
-                </QItemSection>
-                <QItemSection>
-                  <QItemLabel>{{ column.label }}</QItemLabel>
-                </QItemSection>
-                <QItemSection side>
-                  <WBtn
-                    v-if="column.editable"
-                    flat
-                    round
-                    dense
-                    size="xs"
-                    :icon="isColumnEditable(column.name) ? 'lock_open' : 'lock'"
-                    :color="isColumnEditable(column.name) ? 'positive' : 'grey'"
-                    @click="toggleColumnEditable(column.name, $event)"
-                  >
-                    <QTooltip>{{
-                      isColumnEditable(column.name) ? 'Lock column' : 'Unlock column'
-                    }}</QTooltip>
-                  </WBtn>
-                  <WIcon v-else name="lock" size="14px" class="tw:text-gray-400" />
-                </QItemSection>
-              </QItem>
-            </QList>
-          </QMenu>
-          <QTooltip>Show/Hide Columns</QTooltip>
-        </QBtn>
+                  <span class="tw:text-sm tw:text-on-main">{{ column.label }}</span>
+                </div>
+                <button
+                  v-if="column.editable"
+                  class="tw:p-1 tw:rounded tw:hover:bg-main-hover"
+                  :class="isColumnEditable(column.name) ? 'tw:text-green-600' : 'tw:text-secondary'"
+                  :title="isColumnEditable(column.name) ? 'Lock column' : 'Unlock column'"
+                  @click.stop="toggleColumnEditable(column.name)"
+                >
+                  <IconLockOpen v-if="isColumnEditable(column.name)" :size="14" />
+                  <IconLock v-else :size="14" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <!-- Advanced Filter Button -->
-        <QBtn flat dense icon="filter_alt" color="primary">
-          <QMenu>
+        <!-- Advanced Filter -->
+        <div class="tw:relative">
+          <button
+            class="tw:p-2 tw:rounded tw:text-primary tw:hover:bg-main-hover tw:relative"
+            title="Advanced Filters"
+            @click="showFilterMenu = !showFilterMenu"
+          >
+            <IconFilter :size="18" />
+            <span
+              v-if="advancedFilters.length > 0"
+              class="tw:absolute tw:-top-1 tw:-right-1 tw:size-4 tw:rounded-full tw:bg-primary tw:text-white tw:text-[10px] tw:flex tw:items-center tw:justify-center"
+            >
+              {{ advancedFilters.length }}
+            </span>
+          </button>
+          <div
+            v-if="showFilterMenu"
+            class="tw:absolute tw:right-0 tw:top-full tw:z-50 tw:bg-main tw:border tw:border-divider tw:rounded-lg tw:shadow-lg"
+          >
             <FormTemplateRecordsAdvancedFilter v-model="advancedFilters" :columns="columns" />
-          </QMenu>
-          <QTooltip>Advanced Filters</QTooltip>
-          <QBadge v-if="advancedFilters.length > 0" color="primary" floating rounded>
-            {{ advancedFilters.length }}
-          </QBadge>
-        </QBtn>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Empty State -->
-    <WEmptyState
+    <BaseEmptyState
       v-if="!recordsLoading && templateRecords.length === 0"
-      icon="description"
       title="No Records Found"
       description="No records have been created using this template yet."
     />
 
     <!-- Table -->
-    <WTable
+    <BaseTable
       v-else
+      :columns="activeColumns"
       :rows="filteredRecords"
-      :columns="columns"
-      :visibleColumns="visibleColumns"
       :loading="recordsLoading"
       class="tw:flex-1"
-      hideTop
-      noBorder
     >
-      <template #header-cell="scope">
-        <QTh :props="scope">
-          {{ scope.col.label }}
-        </QTh>
+      <template #body-cell-statusId="{ row }">
+        <span class="tw:text-xs tw:bg-gray-100 tw:text-gray-700 tw:px-2 tw:py-0.5 tw:rounded">
+          {{ row.statusId }}
+        </span>
       </template>
 
-      <!-- Status Badge -->
-      <template #body-cell-statusId="scope">
-        <QTd :props="scope">
-          <QBadge color="grey-3" textColor="grey-9" :label="scope.row.statusId" />
-        </QTd>
+      <template #body-cell-createdAt="{ row }">
+        {{ row.createdAt?.formatDate('date') }}
       </template>
 
-      <!-- Created At Date -->
-      <template #body-cell-createdAt="scope">
-        <QTd :props="scope">
-          {{ scope.row.createdAt.formatDate('date') }}
-        </QTd>
+      <template #body-cell-createdBy="{ row }">
+        <div v-if="row.user" class="tw:flex tw:flex-col">
+          <span class="tw:font-medium">{{ row.user.firstName }} {{ row.user.lastName }}</span>
+          <span class="tw:text-xs tw:text-secondary">{{ row.user.email }}</span>
+        </div>
+        <span v-else class="tw:text-secondary">-</span>
       </template>
 
-      <!-- Created By User -->
-      <template #body-cell-createdBy="scope">
-        <QTd :props="scope">
-          <div v-if="scope.row.user" class="tw:flex tw:flex-col">
-            <span class="tw:font-medium">
-              {{ scope.row.user.firstName }} {{ scope.row.user.lastName }}
-            </span>
-            <span class="tw:text-xs tw:text-gray-500">{{ scope.row.user.email }}</span>
+      <template #body-cell="{ row, column }">
+        <template v-if="column.fieldType === 'repeater'">
+          <div
+            v-for="(preview, idx) in [
+              getRepeaterPreview(
+                getRawValue(row.payload, column.name) || [],
+                schemaFields.find((f) => f.name === column.name)?.templateFields || [],
+              ),
+            ]"
+            :key="idx"
+            :class="['tw:max-w-80', isColumnEditable(column.name) ? 'tw:cursor-pointer' : '']"
+            @click="isColumnEditable(column.name) && openCellEdit(row, column.name)"
+          >
+            <template v-if="preview.text !== '-'">
+              <span
+                class="tw:text-sm tw:whitespace-nowrap tw:text-ellipsis tw:overflow-hidden tw:block"
+                >{{ preview.text }}</span
+              >
+              <span v-if="preview.moreCount > 0" class="tw:text-xs tw:text-secondary tw:ml-1"
+                >+{{ preview.moreCount }} more</span
+              >
+            </template>
+            <span v-else class="tw:text-secondary">-</span>
           </div>
-          <span v-else class="tw:text-gray-500">-</span>
-        </QTd>
-      </template>
-
-      <!-- Dynamic Schema Fields (click-to-edit) -->
-      <template #body-cell="scope">
-        <!-- Repeater column -->
-        <template v-if="scope.col.fieldType === 'repeater'">
-          <QTd :props="scope">
-            <div
-              v-for="(preview, idx) in [
-                getRepeaterPreview(
-                  scope.value,
-                  schemaFields.find((f) => f.name === scope.col.name)?.templateFields || [],
-                ),
-              ]"
-              :key="idx"
-              :class="['tw:max-w-80', isColumnEditable(scope.col.name) ? 'tw:cursor-pointer' : '']"
-            >
-              <template v-if="preview.text !== '-'">
-                <span
-                  class="tw:text-sm tw:flow-root tw:text-nowrap tw:text-ellipsis tw:overflow-hidden"
-                >
-                  {{ preview.text }}
-                </span>
-                <span v-if="preview.moreCount > 0" class="tw:text-xs tw:text-gray-500 tw:ml-1">
-                  +{{ preview.moreCount }} more
-                </span>
-              </template>
-              <span v-else class="tw:text-gray-500">-</span>
-            </div>
-            <QMenu
-              v-if="isColumnEditable(scope.col.name)"
-              :offset="[0, 4]"
-              anchor="bottom left"
-              self="top left"
-              :readonly="!canUpdate"
-              @beforeShow="onMenuShow(scope)"
-              @hide="onMenuHide"
-            >
-              <div class="tw:p-3 tw:min-w-80 tw:max-w-120">
-                <DynamicForm
-                  v-model="editModel"
-                  :fields="getEditFieldSchema(editingField)"
-                  :loading="editSaving"
-                />
-              </div>
-            </QMenu>
-          </QTd>
         </template>
-        <!-- Editable leaf cell -->
         <template
           v-else-if="
-            schemaFields.find((f) => f.name === scope.col.name) && isColumnEditable(scope.col.name)
+            schemaFields.find((f) => f.name === column.name) && isColumnEditable(column.name)
           "
         >
-          <QTd :props="scope">
-            <div
-              class="tw:cursor-pointer tw:border-gray-400 tw:max-w-60 tw:overflow-hidden tw:whitespace-nowrap tw:text-ellipsis"
-            >
-              <span>{{ scope.value }}</span>
-            </div>
-            <QMenu
-              :offset="[0, 4]"
-              anchor="bottom left"
-              self="top left"
-              @beforeShow="onMenuShow(scope)"
-              @hide="onMenuHide"
-            >
-              <div class="tw:p-3 tw:min-w-60">
-                <DynamicForm
-                  v-model="editModel"
-                  :fields="getEditFieldSchema(editingField)"
-                  :loading="editSaving"
-                  :readonly="!canUpdate"
-                />
-              </div>
-            </QMenu>
-          </QTd>
-        </template>
-        <!-- Non-editable cell -->
-        <template v-else>
-          <QTd
-            :props="scope"
-            class="tw:max-w-60 tw:overflow-hidden tw:whitespace-nowrap tw:text-ellipsis"
+          <div
+            class="tw:cursor-pointer tw:max-w-60 tw:overflow-hidden tw:whitespace-nowrap tw:text-ellipsis"
+            @click="openCellEdit(row, column.name)"
           >
-            {{ scope.value }}
-          </QTd>
+            {{ getFieldValue(row.payload, column.name) }}
+          </div>
+        </template>
+        <template v-else-if="schemaFields.find((f) => f.name === column.name)">
+          <div class="tw:max-w-60 tw:overflow-hidden tw:whitespace-nowrap tw:text-ellipsis">
+            {{ getFieldValue(row.payload, column.name) }}
+          </div>
+        </template>
+        <template v-else>
+          {{ typeof column.field === 'function' ? column.field(row) : row[column.field] }}
         </template>
       </template>
-    </WTable>
+    </BaseTable>
+
+    <!-- Inline Edit Dialog -->
+    <BaseDialog v-model="showEditDialog" maxWidth="lg">
+      <div class="tw:flex tw:justify-between tw:items-center tw:mb-4">
+        <h3 class="tw:text-lg tw:font-bold tw:text-on-main">
+          Edit: {{ editingField?.label || '' }}
+        </h3>
+        <button
+          class="tw:p-1 tw:rounded tw:text-secondary tw:hover:bg-main-hover"
+          @click="showEditDialog = false"
+        >
+          <IconX :size="20" />
+        </button>
+      </div>
+      <div class="tw:min-w-80">
+        <DynamicForm
+          v-model="editModel"
+          :fields="getEditFieldSchema(editingField)"
+          :loading="editSaving"
+          :readonly="!canUpdate"
+        />
+      </div>
+      <div class="tw:flex tw:justify-end tw:gap-3 tw:mt-4">
+        <BaseButton variant="outline" @click="showEditDialog = false">Cancel</BaseButton>
+        <BaseButton :disabled="editSaving" @click="saveEditedCell">Save</BaseButton>
+      </div>
+    </BaseDialog>
   </div>
 </template>

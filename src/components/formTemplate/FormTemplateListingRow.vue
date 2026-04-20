@@ -1,4 +1,5 @@
 <script setup>
+import { IconHistory, IconClock, IconEdit, IconBrush, IconEye, IconTrash } from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers'
 
 const props = defineProps({
@@ -23,12 +24,16 @@ function navigateToTemplate(mode) {
   emit('navigate', props.template, mode)
 }
 
-function handlePreview() {
-  emit('preview', props.template)
-}
-
-function handleDelete() {
-  emit('delete', props.template)
+function menuItems() {
+  const items = [
+    { name: 'Edit', icon: IconEdit, click: () => navigateToTemplate() },
+    { name: 'Design', icon: IconBrush, click: () => navigateToTemplate('schema') },
+    { name: 'Preview', icon: IconEye, click: () => emit('preview', props.template) },
+  ]
+  if (props.canDelete) {
+    items.push({ name: 'Delete', icon: IconTrash, click: () => emit('delete', props.template) })
+  }
+  return items
 }
 </script>
 
@@ -47,7 +52,7 @@ function handleDelete() {
               {{ template.title }}
             </h4>
             <span
-              class="ds-label-sm tw:px-2 tw:py-0.5 tw:rounded tw:bg-main tw:text-secondary tw:font-mono"
+              class="tw:text-xs tw:px-2 tw:py-0.5 tw:rounded tw:bg-main tw:text-secondary tw:font-mono"
             >
               Code: {{ template.code }}
             </span>
@@ -56,12 +61,12 @@ function handleDelete() {
           <!-- Metadata Row -->
           <div class="tw:flex tw:items-center tw:gap-4 tw:text-sm tw:text-secondary">
             <div class="tw:flex tw:items-center tw:gap-1.5">
-              <WIcon icon="history" size="18px" />
+              <IconHistory :size="18" />
               <span>Version: v{{ template.version }}</span>
             </div>
             <div class="tw:flex tw:items-center tw:gap-1.5">
-              <WIcon icon="update" size="18px" />
-              <span>Modified: {{ template.updatedAt.toRelative() }}</span>
+              <IconClock :size="18" />
+              <span>Modified: {{ template.updatedAt?.toRelative() }}</span>
             </div>
           </div>
         </div>
@@ -69,59 +74,8 @@ function handleDelete() {
 
       <!-- Status and Actions -->
       <div class="tw:flex tw:items-center tw:gap-3">
-        <!-- Status Badge -->
-        <div class="tw:flex tw:flex-col tw:items-end tw:gap-2">
-          <WStatusBadge :status="template.statusId" variant="formTemplate" showDot />
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="tw:flex tw:items-center tw:gap-2">
-          <WBtn flat round icon="more_vert" class="tw:text-secondary">
-            <QMenu>
-              <QList dense style="min-width: 160px">
-                <QItem v-close-popup clickable @click="navigateToTemplate()">
-                  <QItemSection>
-                    <div class="tw:flex tw:items-center tw:gap-2">
-                      <WIcon icon="edit" size="20px" class="tw:text-primary" />
-                      <div>Edit</div>
-                    </div>
-                  </QItemSection>
-                </QItem>
-                <QItem v-close-popup clickable @click="navigateToTemplate('schema')">
-                  <QItemSection>
-                    <div class="tw:flex tw:items-center tw:gap-2">
-                      <WIcon icon="design_services" size="20px" class="tw:text-primary" />
-                      <div>Design</div>
-                    </div>
-                  </QItemSection>
-                </QItem>
-                <QItem v-close-popup clickable @click="handlePreview">
-                  <QItemSection>
-                    <div class="tw:flex tw:items-center tw:gap-2">
-                      <WIcon icon="visibility" size="20px" class="tw:text-secondary" />
-                      <div>Preview</div>
-                    </div>
-                  </QItemSection>
-                </QItem>
-                <QSeparator />
-                <QItem
-                  v-if="canDelete"
-                  v-close-popup
-                  clickable
-                  class="tw:text-negative"
-                  @click="handleDelete"
-                >
-                  <QItemSection>
-                    <div class="tw:flex tw:items-center tw:gap-2">
-                      <WIcon icon="delete" size="20px" />
-                      <div>Delete</div>
-                    </div>
-                  </QItemSection>
-                </QItem>
-              </QList>
-            </QMenu>
-          </WBtn>
-        </div>
+        <FormTemplateStatusBadgeById :statusId="template.statusId" />
+        <BaseMenu :items="menuItems()" @click.stop />
       </div>
     </div>
   </div>

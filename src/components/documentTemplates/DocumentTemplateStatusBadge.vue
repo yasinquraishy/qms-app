@@ -21,15 +21,15 @@ const statusName = computed(() => {
   return statusId.value
 })
 
-const statusColor = computed(() => {
-  const colors = {
-    ACTIVE: 'green',
-    DRAFT: 'amber',
-    ARCHIVE: 'grey',
-    ARCHIVED: 'grey',
-    INACTIVE: 'grey',
+const badgeClass = computed(() => {
+  const classes = {
+    ACTIVE: 'tw:bg-green-100 tw:text-green-700',
+    DRAFT: 'tw:bg-amber-100 tw:text-amber-700',
+    ARCHIVE: 'tw:bg-gray-100 tw:text-gray-500',
+    ARCHIVED: 'tw:bg-gray-100 tw:text-gray-500',
+    INACTIVE: 'tw:bg-gray-100 tw:text-gray-500',
   }
-  return colors[statusId.value] || 'grey'
+  return classes[statusId.value] || 'tw:bg-gray-100 tw:text-gray-500'
 })
 
 const statusDotClass = computed(() => {
@@ -45,18 +45,15 @@ const statusDotClass = computed(() => {
 </script>
 
 <template>
-  <QBadge
-    :color="`${statusColor}-1`"
-    :textColor="`${statusColor}-${statusColor === 'amber' ? '9' : '8'}`"
-    class="tw:px-2 tw:py-1 tw:text-xs tw:font-medium tw:flex tw:items-center tw:gap-1"
-    rounded
+  <span
+    class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-1 tw:text-xs tw:font-medium tw:rounded-full"
+    :class="badgeClass"
   >
-    <div
+    <span
       v-if="showDot"
-      class="tw:rounded-full"
+      class="tw:rounded-full tw:w-1.5 tw:h-1.5 tw:shrink-0"
       :class="statusDotClass"
-      style="width: 6px; height: 6px"
     />
     {{ statusName }}
-  </QBadge>
+  </span>
 </template>

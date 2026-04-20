@@ -1,4 +1,16 @@
 <script setup>
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconColumns,
+  IconArrowUp,
+  IconArrowDown,
+  IconLayoutRows,
+  IconTablePlus,
+  IconTableMinus,
+  IconTrash,
+} from '@tabler/icons-vue'
+
 const props = defineProps({
   editor: {
     type: Object,
@@ -9,55 +21,55 @@ const props = defineProps({
 const tableActions = [
   // Column actions
   {
-    icon: 'arrow_back',
+    icon: IconArrowLeft,
     action: 'addColumnBefore',
     label: 'Add column left',
     group: 'column',
   },
   {
-    icon: 'arrow_forward',
+    icon: IconArrowRight,
     action: 'addColumnAfter',
     label: 'Add column right',
     group: 'column',
   },
   {
-    icon: 'view_week',
+    icon: IconColumns,
     action: 'deleteColumn',
     label: 'Delete column',
     group: 'column',
-    color: 'negative',
+    danger: true,
   },
   { divider: true },
   // Row actions
   {
-    icon: 'arrow_upward',
+    icon: IconArrowUp,
     action: 'addRowBefore',
     label: 'Add row above',
     group: 'row',
   },
   {
-    icon: 'arrow_downward',
+    icon: IconArrowDown,
     action: 'addRowAfter',
     label: 'Add row below',
     group: 'row',
   },
   {
-    icon: 'table_rows',
+    icon: IconLayoutRows,
     action: 'deleteRow',
     label: 'Delete row',
     group: 'row',
-    color: 'negative',
+    danger: true,
   },
   { divider: true },
   // Cell actions
   {
-    icon: 'merge',
+    icon: IconTablePlus,
     action: 'mergeCells',
     label: 'Merge cells',
     group: 'cell',
   },
   {
-    icon: 'splitscreen',
+    icon: IconTableMinus,
     action: 'splitCell',
     label: 'Split cell',
     group: 'cell',
@@ -65,11 +77,11 @@ const tableActions = [
   { divider: true },
   // Table action
   {
-    icon: 'delete_forever',
+    icon: IconTrash,
     action: 'deleteTable',
     label: 'Delete table',
     group: 'table',
-    color: 'negative',
+    danger: true,
   },
 ]
 
@@ -94,39 +106,22 @@ function canExecute(action) {
       <div v-if="item.divider" class="tw:w-px tw:h-6 tw:bg-divider tw:mx-1" />
 
       <!-- Action Button -->
-      <WBtn
+      <button
         v-else
-        flat
-        dense
-        :disable="!canExecute(item.action)"
-        class="tw:min-w-8! tw:min-h-8! tw:rounded! tw:transition-colors!"
+        :disabled="!canExecute(item.action)"
+        :title="item.label"
+        class="tw:min-w-8 tw:min-h-8 tw:rounded tw:transition-colors tw:border-0 tw:flex tw:items-center tw:justify-center tw:p-1"
         :class="
           !canExecute(item.action)
-            ? 'tw:opacity-40! tw:cursor-not-allowed!'
-            : item.color === 'negative'
-              ? 'tw:text-negative! tw:hover:bg-negative/10!'
-              : 'tw:text-secondary! tw:hover:bg-primary/10! tw:hover:text-primary!'
+            ? 'tw:opacity-40 tw:cursor-not-allowed tw:bg-transparent'
+            : item.danger
+              ? 'tw:text-red-600 tw:cursor-pointer tw:bg-transparent tw:hover:bg-red-50'
+              : 'tw:text-secondary tw:cursor-pointer tw:bg-transparent tw:hover:bg-primary/10 tw:hover:text-primary'
         "
         @click="executeCommand(item.action)"
       >
-        <WIcon :icon="item.icon" size="18px" />
-        <QTooltip
-          anchor="top middle"
-          self="bottom middle"
-          :offset="[0, 8]"
-          class="tw:bg-dark tw:text-white tw:text-xs tw:px-2 tw:py-1 tw:rounded"
-        >
-          {{ item.label }}
-        </QTooltip>
-      </WBtn>
+        <component :is="item.icon" :size="18" />
+      </button>
     </template>
   </div>
 </template>
-
-<style lang="scss" scoped>
-/* Ensure disabled styling */
-:deep(.q-btn[disabled]) {
-  opacity: 0.4 !important;
-  cursor: not-allowed !important;
-}
-</style>

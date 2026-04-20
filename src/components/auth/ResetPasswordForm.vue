@@ -1,4 +1,5 @@
 <script setup>
+import { IconLock } from '@tabler/icons-vue'
 import { useAuth } from '@/composables/useAuth.js'
 
 const router = useRouter()
@@ -70,57 +71,55 @@ function goToLogin() {
 </script>
 
 <template>
-  <WCard class="login-card" flat>
-    <QCardSection class="tw:pb-1">
+  <div class="tw:w-full tw:max-w-105">
+    <div class="tw:pb-1">
       <div class="tw:text-2xl tw:font-bold tw:text-on-main">Set new password</div>
       <div class="tw:text-sm tw:text-secondary tw:mt-1">Enter your new password below.</div>
-    </QCardSection>
+    </div>
 
-    <QCardSection class="tw:pt-4">
+    <div class="tw:pt-4">
       <div class="tw:flex tw:flex-col tw:gap-4">
-        <WInput
+        <BaseTextInput
           v-model="password"
           type="password"
           placeholder="New password"
-          outlined
-          dense
           autocomplete="new-password"
-          :disable="loading"
+          :disabled="loading"
           @keyup.enter="handleSubmit"
         >
-          <template #prepend>
-            <WIcon name="lock" />
+          <template #icon>
+            <IconLock :size="16" class="tw:text-secondary" />
           </template>
-        </WInput>
+        </BaseTextInput>
 
-        <WInput
+        <BaseTextInput
           v-model="confirmPassword"
           type="password"
           placeholder="Confirm new password"
-          outlined
-          dense
           autocomplete="new-password"
-          :disable="loading"
+          :disabled="loading"
           @keyup.enter="handleSubmit"
         >
-          <template #prepend>
-            <WIcon name="lock" />
+          <template #icon>
+            <IconLock :size="16" class="tw:text-secondary" />
           </template>
-        </WInput>
+        </BaseTextInput>
 
         <div class="tw:text-xs tw:text-secondary">Password must be at least 8 characters long</div>
 
-        <WBtn
-          unelevated
-          noCaps
-          color="primary"
-          class="tw:w-full"
-          :loading="loading"
-          :disable="loading || !password || !confirmPassword"
+        <button
+          class="tw:w-full tw:py-3 tw:px-4 tw:rounded-lg tw:bg-primary tw:text-white tw:font-medium tw:text-sm tw:hover:opacity-90 tw:transition-opacity tw:cursor-pointer tw:border-0 disabled:tw:opacity-50 disabled:tw:cursor-not-allowed"
+          :disabled="loading || !password || !confirmPassword"
           @click="handleSubmit"
         >
-          Reset password
-        </WBtn>
+          <span v-if="loading" class="tw:inline-flex tw:items-center tw:justify-center tw:gap-2">
+            <span
+              class="tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent tw:inline-block"
+            ></span>
+            Resetting...
+          </span>
+          <span v-else>Reset password</span>
+        </button>
 
         <div class="tw:text-center">
           <a href="#" class="tw:text-sm tw:text-primary" @click.prevent="goToLogin">
@@ -128,23 +127,6 @@ function goToLogin() {
           </a>
         </div>
       </div>
-    </QCardSection>
-  </WCard>
+    </div>
+  </div>
 </template>
-
-<style lang="scss" scoped>
-.login-card {
-  width: 100%;
-  max-width: 420px;
-  background-color: $content-bg;
-}
-
-a {
-  color: $primary;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-</style>

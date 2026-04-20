@@ -1,13 +1,27 @@
 <script setup>
-import { useNotifications } from '@/composables/useNotifications.js'
+import { IconBellOff } from '@tabler/icons-vue'
+import { DateTime } from 'luxon'
 
 const emit = defineEmits(['close'])
-const { notifications, unreadCount, loading, markAllAsRead } = useNotifications()
 const route = useRoute()
 
-const previewNotifications = computed(() => notifications.value.slice(0, 6))
+const notifications = useLiveQuery(
+  async (db) => db.Notification.where().orderBy('createdAt', 'desc').exec(),
+  { initial: [] },
+)
 
+const unreadCount = computed(() => notifications.value.filter((n) => !n.isRead).length)
+const previewNotifications = computed(() => notifications.value.slice(0, 6))
 const viewAllPath = computed(() => `/${route.params.companyCode}/notifications`)
+
+const markAllAsRead = useLiveMutation(async (db) => {
+  const all = await db.Notification.where().exec()
+  for (const n of all.filter((n) => !n.isRead)) {
+    n.isRead = true
+    n.readAt = DateTime.now()
+    await n.save()
+  }
+})
 
 async function handleMarkAllRead() {
   await markAllAsRead()
@@ -25,20 +39,20 @@ function handleViewAll() {
       class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:border-divider"
     >
       <span class="tw:font-semibold tw:text-base">Notifications</span>
-      <QBtn
+      <button
         v-if="unreadCount > 0"
-        flat
-        dense
-        noCaps
-        color="primary"
-        label="Mark all read"
+        class="tw:text-sm tw:text-primary tw:font-medium tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:underline"
         @click="handleMarkAllRead"
-      />
+      >
+        Mark all read
+      </button>
     </div>
 
     <!-- Loading -->
     <div v-if="loading" class="tw:flex tw:justify-center tw:py-8">
-      <QSpinner color="primary" size="32px" />
+      <div
+        class="tw:size-8 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      ></div>
     </div>
 
     <!-- Empty state -->
@@ -46,19 +60,19 @@ function handleViewAll() {
       v-else-if="notifications.length === 0"
       class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-8 tw:text-gray-400"
     >
-      <QIcon name="notifications_none" size="48px" />
+      <IconBellOff :size="48" class="tw:text-gray-300" />
       <span class="tw:mt-2 tw:text-sm">No notifications yet</span>
     </div>
 
     <!-- Notification list (latest 6) -->
-    <QList v-else class="tw:overflow-y-auto" separator>
+    <div v-else class="tw:overflow-y-auto tw:divide-y tw:divide-divider">
       <NotificationsItem
         v-for="notification in previewNotifications"
         :key="notification.id"
         :notification="notification"
         @close="emit('close')"
       />
-    </QList>
+    </div>
 
     <!-- View all footer -->
     <div

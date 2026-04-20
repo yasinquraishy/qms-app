@@ -1,6 +1,7 @@
 <script setup>
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
+import { IconLock, IconLockOpen, IconCheck } from '@tabler/icons-vue'
 
 const emit = defineEmits(['confirm'])
 
@@ -110,67 +111,71 @@ defineExpose({ open })
 </script>
 
 <template>
-  <QDialog v-model="model" @hide="model = false">
-    <QCard class="tw:min-w-135 tw:max-w-[90vw]">
-      <QCardSection class="tw:flex tw:items-center tw:justify-between">
-        <div class="tw:text-lg tw:font-semibold">Edit Image</div>
-        <WBtn flat round dense icon="close" @click="cancel" />
-      </QCardSection>
+  <BaseDialog v-model="model" title="Edit Image" @close="cancel">
+    <div class="tw:flex tw:flex-col tw:gap-4 tw:p-4">
+      <!-- Cropper -->
+      <div v-if="imageSrc" class="tw:h-80 tw:bg-main tw:rounded-lg tw:overflow-hidden">
+        <Cropper ref="cropper" :src="imageSrc" class="tw:h-full" />
+      </div>
 
-      <QCardSection class="tw:space-y-4 tw:pt-0!">
-        <!-- Cropper -->
-        <div v-if="imageSrc" class="tw:h-80 tw:bg-main tw:rounded-lg tw:overflow-hidden">
-          <Cropper ref="cropper" :src="imageSrc" class="tw:h-full" />
-        </div>
-
-        <!-- Dimension Controls -->
-        <div class="tw:flex tw:items-end tw:gap-3">
-          <WInput
+      <!-- Dimension Controls -->
+      <div class="tw:flex tw:items-end tw:gap-3">
+        <div class="tw:flex-1">
+          <label class="tw:block tw:text-xs tw:font-medium tw:text-secondary tw:mb-1"
+            >Width (px)</label
+          >
+          <BaseTextInput
             :modelValue="outputWidth"
-            label="Width (px)"
             type="number"
-            outlined
-            dense
-            class="tw:flex-1"
             @update:modelValue="onWidthChange"
           />
+        </div>
 
-          <WBtn
-            flat
-            dense
-            :icon="lockAspect ? 'lock' : 'lock_open'"
-            :title="lockAspect ? 'Unlock aspect ratio' : 'Lock aspect ratio'"
-            class="tw:min-w-9! tw:min-h-9! tw:mb-0.5"
-            :class="lockAspect ? 'tw:text-primary!' : 'tw:text-secondary!'"
-            @click="lockAspect = !lockAspect"
-          />
+        <button
+          :title="lockAspect ? 'Unlock aspect ratio' : 'Lock aspect ratio'"
+          class="tw:min-w-9 tw:min-h-9 tw:rounded tw:mb-0.5 tw:border-0 tw:cursor-pointer tw:flex tw:items-center tw:justify-center tw:bg-transparent tw:transition-colors"
+          :class="lockAspect ? 'tw:text-primary' : 'tw:text-secondary'"
+          @click="lockAspect = !lockAspect"
+        >
+          <IconLock v-if="lockAspect" :size="18" />
+          <IconLockOpen v-else :size="18" />
+        </button>
 
-          <WInput
+        <div class="tw:flex-1">
+          <label class="tw:block tw:text-xs tw:font-medium tw:text-secondary tw:mb-1"
+            >Height (px)</label
+          >
+          <BaseTextInput
             :modelValue="outputHeight"
-            label="Height (px)"
             type="number"
-            outlined
-            dense
-            class="tw:flex-1"
             @update:modelValue="onHeightChange"
           />
         </div>
-        <p class="tw:text-xs tw:text-secondary">
-          Drag to crop. Adjust width and height to resize the output.
-        </p>
-      </QCardSection>
+      </div>
+      <p class="tw:text-xs tw:text-secondary">
+        Drag to crop. Adjust width and height to resize the output.
+      </p>
+    </div>
 
-      <QCardActions class="tw:justify-end tw:px-4 tw:pb-4">
-        <WBtn flat label="Cancel" color="secondary" @click="cancel" />
-        <WBtn
-          unelevated
-          label="Insert Image"
-          icon="check"
-          color="primary"
-          :loading="processing"
-          @click="confirm"
-        />
-      </QCardActions>
-    </QCard>
-  </QDialog>
+    <template #actions>
+      <button
+        class="tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-secondary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:text-on-main"
+        @click="cancel"
+      >
+        Cancel
+      </button>
+      <button
+        class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0 tw:disabled:opacity-50"
+        :disabled="processing"
+        @click="confirm"
+      >
+        <span
+          v-if="processing"
+          class="tw:inline-block tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent"
+        ></span>
+        <IconCheck v-else :size="18" />
+        Insert Image
+      </button>
+    </template>
+  </BaseDialog>
 </template>

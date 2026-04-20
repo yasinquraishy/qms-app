@@ -1,7 +1,7 @@
 <script setup>
+import { IconCircleCheck, IconBan, IconUsers, IconHistory } from '@tabler/icons-vue'
 import { useRoles } from '@/composables/useRoles.js'
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { useQuasar } from 'quasar'
 import { isAllowed } from '@/utils/currentSession.js'
 
 const props = defineProps({
@@ -11,7 +11,6 @@ const props = defineProps({
   },
 })
 
-const $q = useQuasar()
 const toast = useToast()
 const router = useRouter()
 const { deactivateRole, activateRole } = useRoles()
@@ -23,36 +22,29 @@ function navigateToRole() {
   router.push(getCompanyPath(`/roles/${props.role.id}`))
 }
 
-function handleDeactivate() {
-  $q.dialog({
-    title: 'Deactivate Role',
-    message: `Are you sure you want to deactivate the role "${props.role.name}"?\n\nDeactivating a role will set its status to Inactive. The role will no longer be assignable to new users, but existing user assignments will remain unaffected.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const success = await deactivateRole(props.role.id)
-    if (success) {
-      toast.success('Role deactivated successfully')
-    } else {
-      toast.error('Failed to deactivate role')
-    }
-  })
+async function handleDeactivate() {
+  if (
+    !confirm(
+      `Are you sure you want to deactivate the role "${props.role.name}"?\n\nDeactivating a role will set its status to Inactive.`,
+    )
+  )
+    return
+  const success = await deactivateRole(props.role.id)
+  if (success) {
+    toast.success('Role deactivated successfully')
+  } else {
+    toast.error('Failed to deactivate role')
+  }
 }
 
-function handleActivate() {
-  $q.dialog({
-    title: 'Activate Role',
-    message: `Are you sure you want to activate the role "${props.role.name}"?\n\nActivating the role will set its status back to Active and allow it to be assigned to new users.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const success = await activateRole(props.role.id)
-    if (success) {
-      toast.success('Role activated successfully')
-    } else {
-      toast.error('Failed to activate role')
-    }
-  })
+async function handleActivate() {
+  if (!confirm(`Are you sure you want to activate the role "${props.role.name}"?`)) return
+  const success = await activateRole(props.role.id)
+  if (success) {
+    toast.success('Role activated successfully')
+  } else {
+    toast.error('Failed to activate role')
+  }
 }
 </script>
 
@@ -79,32 +71,26 @@ function handleActivate() {
       </div>
 
       <!-- More Options Button -->
-      <QBtn
-        v-if="canUpdateRole"
-        icon="more_horiz"
-        flat
-        dense
-        round
-        class="tw:text-secondary tw:hover:text-primary"
-        @click.stop
-      >
-        <QMenu>
-          <QList class="tw:min-w-40">
-            <QItem v-if="isInactive" v-close-popup clickable @click="handleActivate">
-              <QItemSection avatar>
-                <WIcon icon="check_circle" size="20px" class="tw:text-positive!" />
-              </QItemSection>
-              <QItemSection class="tw:text-positive">Activate Role</QItemSection>
-            </QItem>
-            <QItem v-else v-close-popup clickable @click="handleDeactivate">
-              <QItemSection avatar>
-                <WIcon icon="block" size="20px" class="tw:text-warning!" />
-              </QItemSection>
-              <QItemSection class="tw:text-warning">Deactivate Role</QItemSection>
-            </QItem>
-          </QList>
-        </QMenu>
-      </QBtn>
+      <BaseMenu v-if="canUpdateRole" @click.stop>
+        <template #items>
+          <button
+            v-if="isInactive"
+            class="tw:group tw:flex tw:w-full tw:items-center tw:gap-2 tw:px-3 tw:py-2 tw:text-sm tw:text-green-700 tw:transition-colors tw:hover:bg-main-hover tw:bg-transparent tw:border-0 tw:cursor-pointer"
+            @click="handleActivate"
+          >
+            <IconCircleCheck :size="16" class="tw:shrink-0" />
+            Activate Role
+          </button>
+          <button
+            v-else
+            class="tw:group tw:flex tw:w-full tw:items-center tw:gap-2 tw:px-3 tw:py-2 tw:text-sm tw:text-amber-700 tw:transition-colors tw:hover:bg-main-hover tw:bg-transparent tw:border-0 tw:cursor-pointer"
+            @click="handleDeactivate"
+          >
+            <IconBan :size="16" class="tw:shrink-0" />
+            Deactivate Role
+          </button>
+        </template>
+      </BaseMenu>
     </div>
 
     <!-- Role Metadata Footer -->
@@ -112,14 +98,14 @@ function handleActivate() {
       class="tw:mt-2 tw:flex tw:flex-wrap tw:items-center tw:gap-6 tw:border-t tw:border-divider tw:pt-2"
     >
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-sm">
-        <WIcon icon="group" class="tw:text-secondary" />
+        <IconUsers :size="16" class="tw:text-secondary" />
         <span class="tw:font-medium tw:text-on-sidebar">
           {{ role.userCount || 0 }} Assigned Users
         </span>
       </div>
 
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-sm">
-        <WIcon icon="history" class="tw:text-secondary" />
+        <IconHistory :size="16" class="tw:text-secondary" />
         <span class="tw:text-secondary"
           >Last Modified: {{ role.updatedAt.formatDate('date') }}</span
         >

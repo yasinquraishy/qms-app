@@ -18,19 +18,22 @@ function onClick() {
 </script>
 
 <template>
-  <WCard
-    flat
-    bordered
-    class="tw:p-3 tw:cursor-pointer tw:hover:bg-main-hover tw:transition-colors"
+  <div
+    class="tw:p-3 tw:cursor-pointer tw:hover:bg-main-hover tw:transition-colors tw:rounded-xl tw:border tw:border-divider"
     @click="onClick"
   >
     <div class="tw:flex tw:items-center tw:gap-3">
       <UserAvatar :user="userForAvatar" class="tw:size-14" />
 
       <div class="tw:flex-1 tw:min-w-0">
-        <div class="tw:text-lg tw:font-bold tw:text-on-main">
+        <div class="tw:text-lg tw:font-bold tw:text-on-main tw:flex tw:items-center tw:gap-2">
           {{ user.firstName }} {{ user.lastName }}
-          <WStatusBadge v-if="user.isOwner" status="OWNER" />
+          <span
+            v-if="user.isOwner"
+            class="tw:text-xs tw:font-semibold tw:bg-primary/10 tw:text-primary tw:px-2 tw:py-0.5 tw:rounded-full"
+          >
+            Owner
+          </span>
         </div>
         <div class="tw:text-sm tw:text-secondary">{{ user.email }}</div>
         <div v-if="user.jobTitle" class="tw:text-xs tw:text-secondary tw:mt-1">
@@ -38,5 +41,5 @@ function onClick() {
         </div>
       </div>
     </div>
-  </WCard>
+  </div>
 </template>

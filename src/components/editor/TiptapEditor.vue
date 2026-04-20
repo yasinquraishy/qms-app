@@ -1,4 +1,15 @@
 <script setup>
+import {
+  IconBold,
+  IconItalic,
+  IconStrikethrough,
+  IconHighlight,
+  IconCode,
+  IconLink,
+  IconLinkOff,
+  IconX,
+  IconCheck,
+} from '@tabler/icons-vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
 import StarterKit from '@tiptap/starter-kit'
@@ -38,12 +49,12 @@ const props = defineProps({
 const modelValue = defineModel({ type: [String, Object], default: '' })
 
 const menuItems = [
-  { icon: 'format_bold', action: 'bold', label: 'Bold' },
-  { icon: 'format_italic', action: 'italic', label: 'Italic' },
-  { icon: 'format_strikethrough', action: 'strike', label: 'Strikethrough' },
-  { icon: 'highlight', action: 'highlight', label: 'Highlight' },
+  { icon: IconBold, action: 'bold', label: 'Bold' },
+  { icon: IconItalic, action: 'italic', label: 'Italic' },
+  { icon: IconStrikethrough, action: 'strike', label: 'Strikethrough' },
+  { icon: IconHighlight, action: 'highlight', label: 'Highlight' },
   { divider: true },
-  { icon: 'code', action: 'code', label: 'Code' },
+  { icon: IconCode, action: 'code', label: 'Code' },
 ]
 
 const showLinkInput = ref(false)
@@ -319,72 +330,69 @@ defineExpose({
       >
         <!-- Link Input Mode -->
         <template v-if="showLinkInput">
-          <WInput
-            v-model="linkUrl"
-            dense
-            outlined
-            placeholder="Enter URL"
-            class="tw:min-w-64!"
-            autofocus
-            @keydown="handleLinkKeydown"
-          >
-            <template #append>
-              <WIcon icon="check" class="tw:cursor-pointer tw:text-positive" @click="setLink" />
-            </template>
-          </WInput>
-          <WBtn
-            flat
-            dense
-            class="tw:min-w-8! tw:min-h-8! tw:rounded!"
+          <div class="tw:relative">
+            <BaseTextInput
+              v-model="linkUrl"
+              placeholder="Enter URL"
+              class="tw:min-w-64! tw:pr-8"
+              autofocus
+              @keydown="handleLinkKeydown"
+            />
+            <button
+              class="tw:absolute tw:right-2 tw:top-1/2 tw:-translate-y-1/2 tw:text-green-600 tw:bg-transparent tw:border-0 tw:cursor-pointer tw:p-0"
+              @click="setLink"
+            >
+              <IconCheck :size="18" />
+            </button>
+          </div>
+          <button
+            class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:text-secondary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-sidebar"
             @click="showLinkInput = false"
           >
-            <WIcon icon="close" size="18px" />
-          </WBtn>
+            <IconX :size="18" />
+          </button>
         </template>
 
         <!-- Normal Menu Items -->
         <template v-else>
           <template v-for="(item, index) in menuItems" :key="index">
             <div v-if="item.divider" class="tw:w-px tw:h-5 tw:bg-divider tw:mx-0.5" />
-            <WBtn
+            <button
               v-else
-              flat
-              dense
-              class="tw:min-w-8! tw:min-h-8! tw:rounded! tw:transition-colors!"
+              class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:transition-colors tw:border-0 tw:cursor-pointer"
               :class="
                 editor.isActive(item.action)
-                  ? 'tw:bg-primary! tw:text-white!'
-                  : 'tw:text-secondary! tw:hover:bg-sidebar! tw:hover:text-on-sidebar!'
+                  ? 'tw:bg-primary tw:text-white'
+                  : 'tw:text-secondary tw:bg-transparent tw:hover:bg-sidebar tw:hover:text-on-sidebar'
               "
+              :title="item.label"
               @click="executeCommand(item)"
             >
-              <WIcon :icon="item.icon" size="18px" />
-            </WBtn>
+              <component :is="item.icon" :size="18" />
+            </button>
           </template>
           <!-- Link Button -->
-          <WBtn
-            flat
-            dense
-            class="tw:min-w-8! tw:min-h-8! tw:rounded! tw:transition-colors!"
+          <button
+            class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:transition-colors tw:border-0 tw:cursor-pointer"
             :class="
               editor.isActive('link')
-                ? 'tw:bg-primary! tw:text-white!'
-                : 'tw:text-secondary! tw:hover:bg-sidebar! tw:hover:text-on-sidebar!'
+                ? 'tw:bg-primary tw:text-white'
+                : 'tw:text-secondary tw:bg-transparent tw:hover:bg-sidebar tw:hover:text-on-sidebar'
             "
+            title="Link"
             @click="toggleLinkInput"
           >
-            <WIcon icon="link" size="18px" />
-          </WBtn>
+            <IconLink :size="18" />
+          </button>
           <!-- Unlink Button (only show when link is active) -->
-          <WBtn
+          <button
             v-if="editor.isActive('link')"
-            flat
-            dense
-            class="tw:min-w-8! tw:min-h-8! tw:rounded! tw:transition-colors! tw:text-negative! tw:hover:bg-sidebar! tw:hover:text-negative!"
+            class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:transition-colors tw:border-0 tw:cursor-pointer tw:text-red-500 tw:bg-transparent tw:hover:bg-sidebar"
+            title="Remove Link"
             @click="handleLinkRemove"
           >
-            <WIcon icon="link_off" size="18px" />
-          </WBtn>
+            <IconLinkOff :size="18" />
+          </button>
         </template>
       </div>
     </BubbleMenu>

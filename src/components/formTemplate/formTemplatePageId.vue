@@ -1,9 +1,6 @@
 <script setup>
-import { currentCompany } from '@/utils/currentCompany.js'
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { get } from '@/api'
 
-// Props
 const props = defineProps({
   id: {
     type: String,
@@ -11,15 +8,13 @@ const props = defineProps({
   },
 })
 
-// Composables
 const route = useRoute()
 
-// Refs
-const template = ref(null)
-const loading = ref(false)
-const error = ref(null)
+const template = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  if (!id) return null
+  return db.FormTemplate.findByPk(id)
+})
 
-// Computed
 const mode = computed(() => route.query.mode || 'details')
 
 const breadcrumbItems = computed(() => {
@@ -37,48 +32,16 @@ const breadcrumbItems = computed(() => {
 
   return items
 })
-
-// Functions
-async function fetchTemplate() {
-  if (!props.id) return
-
-  error.value = null
-
-  const data = await get(`/v1/services/formTemplates/${props.id}`, {
-    loader: loading,
-  })
-  template.value = data.formTemplate
-}
-
-// Watchers
-watch(
-  [() => props.id, () => currentCompany.value?.id],
-  () => {
-    fetchTemplate()
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
   <!-- Header Title Section -->
   <SafeTeleport to="#main-header-title">
-    <WBreadcrumbs :items="breadcrumbItems" />
+    <BaseBreadcrumbs :items="breadcrumbItems" />
   </SafeTeleport>
 
   <!-- Conditional Content Based on Mode -->
-  <FormTemplatePageIdDetails
-    v-if="mode === 'details'"
-    :template="template"
-    :loading="loading"
-    :error="error"
-    @refresh="fetchTemplate"
-  />
+  <FormTemplatePageIdDetails v-if="mode === 'details'" :id="props.id" />
 
-  <FormTemplateRecords
-    v-else-if="mode === 'records' && template"
-    :templateId="template.id"
-    :templateName="template.title"
-    :schema="template.schema"
-  />
+  <FormTemplateRecords v-else-if="mode === 'records' && template" :templateId="props.id" />
 </template>

@@ -1,4 +1,5 @@
 <script setup>
+import { IconShield } from '@tabler/icons-vue'
 import { useAuditLogs } from '@/composables/useAuditLogs.js'
 
 const { grouped, loading, filters, fetchAuditLogs } = useAuditLogs()
@@ -11,6 +12,8 @@ const ENTITY_TYPES = [
   { label: 'Document Link', value: 'DocumentLink' },
   { label: 'Approval Workflow', value: 'ApprovalWorkflowInstance' },
 ]
+
+const entityTypeItems = computed(() => ENTITY_TYPES.map((t) => ({ id: t.value, name: t.label })))
 
 const moduleOrder = ['DOCUMENT_CONTROL', 'TRAINING_MANAGEMENT', 'NON_CONFORMANCE', 'CAPA', 'OTHER']
 
@@ -35,34 +38,36 @@ onMounted(() => fetchAuditLogs())
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WSelect
+      <BaseSelectMenu
         v-model="filters.entityType"
-        :options="ENTITY_TYPES"
-        outlined
-        dense
-        emitValue
-        mapOptions
-        optionLabel="label"
-        optionValue="value"
+        :items="entityTypeItems"
         style="min-width: 180px"
-      />
+      >
+        <template #button>
+          <span class="tw:text-sm tw:font-medium tw:min-w-40">
+            {{ entityTypeItems.find((i) => i.id === filters.entityType)?.name || 'All Types' }}
+          </span>
+        </template>
+      </BaseSelectMenu>
     </SafeTeleport>
 
     <!-- Loading -->
     <div v-if="loading" class="tw:flex tw:justify-center tw:py-16">
-      <QSpinner color="primary" size="40px" />
+      <div
+        class="tw:size-10 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      ></div>
     </div>
 
     <!-- Module groups -->
     <AuditLogsList v-else-if="sortedModules.length" :sortedModules="sortedModules" />
 
     <!-- Empty state -->
-    <WEmptyState
+    <BaseEmptyState
       v-else
-      icon="policy"
+      :icon="IconShield"
       title="No audit log entries found"
       description="Audit logs will appear here as actions are performed."
-      compact
+      dense
     />
   </div>
 </template>

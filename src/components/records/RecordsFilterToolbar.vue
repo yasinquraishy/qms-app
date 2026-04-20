@@ -1,4 +1,6 @@
 <script setup>
+import { IconSearch } from '@tabler/icons-vue'
+
 const filters = defineModel('filters', {
   type: Object,
   required: true,
@@ -6,25 +8,18 @@ const filters = defineModel('filters', {
 </script>
 
 <template>
-  <WCard flat class="tw:bg-main-hover tw:mb-2">
+  <div class="tw:bg-main-hover tw:mb-2 tw:rounded-lg">
     <div class="tw:flex tw:items-center tw:p-2 tw:gap-2">
       <!-- Search -->
       <div class="tw:w-full tw:md:w-1/3">
-        <WInput
-          v-model="filters.search"
-          placeholder="Search records..."
-          dense
-          bgColor="white"
-          hideBottomSpace
-          clearable
-        >
-          <template #prepend>
-            <WIcon name="search" color="grey-6" />
+        <BaseTextInput v-model="filters.search" placeholder="Search records...">
+          <template #icon>
+            <IconSearch :size="16" class="tw:text-secondary tw:mr-1" />
           </template>
-        </WInput>
+        </BaseTextInput>
       </div>
 
-      <QSpace />
+      <div class="tw:flex-1"></div>
 
       <!-- Active Filters Summary (Optional) -->
       <div class="tw:flex-none">
@@ -33,5 +28,5 @@ const filters = defineModel('filters', {
         </div>
       </div>
     </div>
-  </WCard>
+  </div>
 </template>

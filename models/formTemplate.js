@@ -2,8 +2,9 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('formTemplates', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('formTemplates', { primaryKey: 'id', syncField: 'updatedAt', customIndex: 'statusId' })
 export class FormTemplate extends BaseModel {
+  static paranoid = true
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation
@@ -18,7 +19,7 @@ export class FormTemplate extends BaseModel {
   @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String }) title = ''
   @Property({ type: String, required: true }) code = ''
-  @Property({ type: Object }) schema = null
+  @Property({ type: Array }) schema = /** @type {Array} */ ([])
   @Property({ type: String, required: true }) documentTypeId = ''
   @Property({ type: String, required: true }) companyId = ''
   @Property({ type: String }) statusId = 'DRAFT'

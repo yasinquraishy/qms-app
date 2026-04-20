@@ -1,4 +1,32 @@
 <script setup>
+import {
+  IconForms,
+  IconTable,
+  IconFileText,
+  IconArrowsShuffle,
+  IconInbox,
+  IconCheckbox,
+  IconTruck,
+  IconPackage,
+  IconReport,
+  IconShieldCheck,
+  IconSettings,
+  IconAdjustments,
+  IconArticle,
+  IconList,
+  IconBuilding,
+  IconBuildingCommunity,
+  IconUsers,
+  IconShield,
+  IconUsersGroup,
+  IconKey,
+  IconShieldHalf,
+  IconUserCircle,
+  IconLogout,
+  IconChartBar,
+  IconChevronDown,
+  IconChevronRight,
+} from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany'
 import { logoutCurrentSession, currentSession, isAllowed, isAdmin } from '@/utils/currentSession'
 import { getCompanyPath } from '@/utils/routeHelpers'
@@ -6,6 +34,17 @@ import { useCompanyLocalStorage } from '@/utils/useCompanyLocalStorage'
 
 const drawer = useCompanyLocalStorage('sidebar-drawer', true)
 const route = useRoute()
+
+// Track expanded state for grouped nav items
+const expandedGroups = ref({})
+
+function toggleGroup(label) {
+  expandedGroups.value[label] = !(expandedGroups.value[label] ?? true)
+}
+
+function isGroupExpanded(label) {
+  return expandedGroups.value[label] ?? true
+}
 
 // Check if a route is active (including nested routes)
 function isActive(targetPath) {
@@ -43,113 +82,113 @@ const navItems = computed(() => {
     {
       label: 'Templates',
       permissions: ['formTemplates:read'],
-      icon: 'dynamic_form',
+      icon: IconForms,
       to: getCompanyPath('/templates'),
     },
     {
       label: 'Records',
       permissions: ['records:read'],
-      icon: 'table_chart',
+      icon: IconTable,
       to: getCompanyPath('/records'),
     },
     {
       label: 'Documents',
       permissions: ['documents:read'],
-      icon: 'description',
+      icon: IconFileText,
       to: getCompanyPath('/documents'),
     },
     {
       label: 'Approval Workflows',
       permissions: ['approvalWorkflows:read'],
-      icon: 'sym_o_automation',
+      icon: IconArrowsShuffle,
       to: getCompanyPath('/approval-workflows'),
     },
     {
       label: 'Workflow Instances',
       permissions: ['documents:read'],
-      icon: 'inbox',
+      icon: IconInbox,
       to: getCompanyPath('/workflow-instances'),
     },
     {
       label: 'My Tasks',
-      icon: 'task',
+      icon: IconCheckbox,
       to: getCompanyPath('/task-instances'),
     },
     {
       label: 'Suppliers',
       permissions: ['suppliers:read'],
-      icon: 'local_shipping',
+      icon: IconTruck,
       to: getCompanyPath('/suppliers'),
     },
     {
       label: 'Products',
       // permissions: ['products:read'],
-      icon: 'inventory',
+      icon: IconPackage,
       to: getCompanyPath('/products'),
     },
     {
       label: 'NC Records',
       // permissions: ['nc_records:read'],
-      icon: 'report',
+      icon: IconReport,
       to: getCompanyPath('/nc-records'),
     },
     {}, // Divider
     {
       label: 'Audit Logs',
-      icon: 'policy',
+      icon: IconShieldCheck,
       to: getCompanyPath('/audit-logs'),
     },
     {
       label: 'Settings',
-      icon: 'settings',
+      icon: IconSettings,
       children: [
         {
           label: 'General',
-          icon: 'tune',
+          icon: IconAdjustments,
           to: getCompanyPath('/settings'),
         },
         {
           label: 'Document Templates',
           permissions: ['document-templates:read'],
-          icon: 'article',
+          icon: IconArticle,
           to: getCompanyPath('/document-templates'),
         },
         {
           label: 'Option Sets',
-          icon: 'list_alt',
+          icon: IconList,
           to: getCompanyPath('/option-sets'),
         },
         {
           label: 'Sites',
-          icon: 'business',
+          icon: IconBuilding,
           to: getCompanyPath('/sites'),
         },
         {
           label: 'Departments',
-          icon: 'corporate_fare',
+          icon: IconBuildingCommunity,
           to: getCompanyPath('/departments'),
         },
         {
           label: 'Users',
           permissions: ['users:read'],
-          icon: 'people',
+          icon: IconUsers,
           to: getCompanyPath('/users'),
         },
         {
           label: 'Roles',
           permissions: ['roles:read'],
-          icon: 'shield',
+          icon: IconShield,
           to: getCompanyPath('/roles'),
         },
         {
           label: 'Groups',
           permissions: ['teams:read'],
-          icon: 'group_work',
+          icon: IconUsersGroup,
           to: getCompanyPath('/groups'),
         },
         {
           label: 'API Keys',
-          icon: 'key',
+          icon: IconKey,
           to: getCompanyPath('/api-keys'),
         },
       ].filter((item) => {
@@ -164,11 +203,11 @@ const navItems = computed(() => {
           {}, // Divider
           {
             label: 'Admin',
-            icon: 'admin_panel_settings',
+            icon: IconShieldHalf,
             children: [
               {
                 label: 'Impersonate',
-                icon: 'supervisor_account',
+                icon: IconUserCircle,
                 to: getCompanyPath('/admin/impersonate'),
               },
             ],
@@ -200,7 +239,7 @@ const navItems = computed(() => {
             v-else
             class="tw:bg-primary tw:flex tw:items-center tw:justify-center tw:rounded-lg tw:size-10 tw:text-white"
           >
-            <WIcon icon="sym_o_analytics" size="24px" />
+            <IconChartBar :size="24" />
           </div>
           <div class="tw:flex tw:flex-col">
             <div class="tw:text-on-sidebar tw:text-base tw:font-bold tw:leading-tight">
@@ -211,59 +250,55 @@ const navItems = computed(() => {
         </div>
 
         <!-- Nav Links -->
-        <QList tag="nav" class="tw:flex! tw:flex-col tw:gap-1 tw:flex-1 tw:overflow-auto">
+        <nav class="tw:flex tw:flex-col tw:gap-1 tw:flex-1 tw:overflow-auto">
           <template v-for="item in navItems" :key="item.label">
             <!-- Parent item with children -->
             <template v-if="item.children">
-              <QExpansionItem
-                :label="item.label"
-                :icon="item.icon"
-                defaultOpened
-                class="tw:rounded-lg"
-                headerClass="tw:px-3 tw:py-2 tw:text-secondary tw:hover:bg-sidebar-hover tw:transition-colors tw:rounded-lg"
+              <button
+                class="tw:flex tw:items-center tw:gap-3 tw:w-full tw:px-3 tw:py-2 tw:rounded-lg tw:text-secondary tw:hover:bg-sidebar-hover tw:transition-colors tw:bg-transparent tw:border-0 tw:cursor-pointer"
+                @click="toggleGroup(item.label)"
               >
-                <QList class="tw:ml-3">
-                  <QItem
-                    v-for="child in item.children"
-                    :key="child.label"
-                    :to="child.to"
-                    :active="isActive(child.to)"
-                    clickable
-                    class="tw:rounded-lg tw:px-3 tw:py-2 tw:text-secondary tw:hover:bg-sidebar-hover tw:transition-colors"
-                    activeClass="tw:bg-main-selected tw:text-primary"
-                  >
-                    <QItemSection avatar class="tw:min-w-0 tw:pr-3">
-                      <WIcon :icon="child.icon" size="20px" />
-                    </QItemSection>
-                    <QItemSection class="tw:text-sm tw:font-medium">
-                      {{ child.label }}
-                    </QItemSection>
-                  </QItem>
-                </QList>
-              </QExpansionItem>
+                <component :is="item.icon" :size="20" />
+                <span class="tw:text-sm tw:font-medium tw:flex-1 tw:text-left">{{
+                  item.label
+                }}</span>
+                <component
+                  :is="isGroupExpanded(item.label) ? IconChevronDown : IconChevronRight"
+                  :size="16"
+                />
+              </button>
+              <div
+                v-if="isGroupExpanded(item.label)"
+                class="tw:ml-3 tw:flex tw:flex-col tw:gap-0.5"
+              >
+                <RouterLink
+                  v-for="child in item.children"
+                  :key="child.label"
+                  :to="child.to"
+                  class="tw:flex tw:items-center tw:gap-3 tw:rounded-lg tw:px-3 tw:py-2 tw:text-secondary tw:hover:bg-sidebar-hover tw:transition-colors tw:no-underline"
+                  :class="isActive(child.to) ? 'tw:bg-main-selected tw:text-primary' : ''"
+                >
+                  <component :is="child.icon" :size="20" />
+                  <span class="tw:text-sm tw:font-medium">{{ child.label }}</span>
+                </RouterLink>
+              </div>
             </template>
 
             <!-- Single item without children -->
-            <QItem
+            <RouterLink
               v-else-if="item.to"
               :to="item.to"
-              :active="isActive(item.to)"
-              clickable
-              class="tw:rounded-lg tw:px-3 tw:py-2 tw:text-secondary tw:hover:bg-sidebar-hover tw:transition-colors"
-              activeClass="tw:bg-main-selected tw:text-primary!"
+              class="tw:flex tw:items-center tw:gap-3 tw:rounded-lg tw:px-3 tw:py-2 tw:text-secondary tw:hover:bg-sidebar-hover tw:transition-colors tw:no-underline"
+              :class="isActive(item.to) ? 'tw:bg-main-selected tw:text-primary!' : ''"
             >
-              <QItemSection avatar class="tw:min-w-0 tw:pr-3">
-                <WIcon :icon="item.icon" size="24px" />
-              </QItemSection>
-              <QItemSection class="tw:text-sm tw:font-medium">
-                {{ item.label }}
-              </QItemSection>
-            </QItem>
+              <component :is="item.icon" :size="24" />
+              <span class="tw:text-sm tw:font-medium">{{ item.label }}</span>
+            </RouterLink>
 
             <!-- Divider -->
             <hr v-else class="tw:border-t tw:border-divider tw:my-2" />
           </template>
-        </QList>
+        </nav>
       </div>
 
       <!-- Profile / Bottom -->
@@ -274,13 +309,12 @@ const navItems = computed(() => {
             <div class="tw:text-sm tw:font-bold tw:text-on-sidebar">{{ currentUser.fullName }}</div>
             <div class="tw:text-xs tw:text-secondary">{{ currentUser.jobTitle }}</div>
           </div>
-          <WBtn
-            flat
-            round
-            icon="logout"
-            class="tw:text-secondary tw:hover:text-primary"
+          <button
+            class="tw:p-1.5 tw:rounded-full tw:text-secondary tw:hover:text-primary tw:hover:bg-main-hover tw:transition-colors tw:bg-transparent tw:border-0 tw:cursor-pointer"
             @click="logoutCurrentSession"
-          />
+          >
+            <IconLogout :size="18" />
+          </button>
         </div>
       </div>
     </aside>
@@ -294,7 +328,6 @@ const navItems = computed(() => {
   overflow: hidden;
 }
 
-.mainSidebar-enter-from,
 .mainSidebar-leave-to {
   width: 0;
 }

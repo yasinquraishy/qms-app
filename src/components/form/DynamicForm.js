@@ -1,17 +1,25 @@
 import { defineComponent, ref, computed, h } from 'vue'
 import { useVModels } from '@vueuse/core'
 import { getProp, injectMultipleProps, setProp } from '@shared/composables/object.js'
-import { QForm, QInnerLoading, QSeparator, QSlider, QToggle, QRating, QExpansionItem } from 'quasar'
-import WInput from '@shared/components/input/WInput.js'
-import WColorPicker from '@shared/components/WColorPicker.vue'
+import {
+  IconStar,
+  IconStarFilled,
+  IconTrash,
+  IconPlus,
+  IconChevronDown,
+  IconChevronRight,
+} from '@tabler/icons-vue'
+import BaseTextInput from '@shared/components/BaseTextInput.vue'
+import BaseTextarea from '@shared/components/BaseTextarea.vue'
+import BaseCheckbox from '@shared/components/BaseCheckbox.vue'
+import BaseSwitch from '@shared/components/BaseSwitch.vue'
+import BaseColorPicker from '@shared/components/BaseColorPicker.vue'
 import TextEditor from '@shared/components/Editor/TextEditor.vue'
 import WDateTimeInput from '@shared/components/input/WDateTimeInput.js'
 import OptionSetSelect from '@/components/common/OptionSetSelect.vue'
 import OptionSetOptionGroup from '@/components/common/OptionSetOptionGroup.vue'
 import WChecklist from '@shared/components/input/WChecklist.js'
 import { useValidator } from '@shared/composables/validator.js'
-import WCheckbox from '@shared/components/checkbox/WCheckbox.js'
-import WBtn from '@shared/components/button/WBtn.js'
 import WPhoto from '@shared/components/WPhoto.js'
 import WUploader from '@/components/common/WUploader.vue'
 import { required } from '@vuelidate/validators'
@@ -41,7 +49,7 @@ export default defineComponent({
     },
   },
   emits: ['update:modelValue', 'submit'],
-  setup(props, { emit, slots, attrs }) {
+  setup(props, { emit, slots, attrs, expose }) {
     const { modelValue } = useVModels(props, emit)
     const innerLoading = ref(false)
     const collapsedSections = ref({})
@@ -159,7 +167,7 @@ export default defineComponent({
         label: field.label,
         modelValue: scope.value,
         readonly: props.readonly || field.readonly,
-        disable: props.disabled || field.disabled,
+        disabled: props.disabled || field.disabled,
         [updateModelValueEvent]: (val) => {
           scope.value = val
           if (typeof field.props?.[updateModelValueEvent] === 'function') {
@@ -171,8 +179,7 @@ export default defineComponent({
       const inputFieldProps = {
         ...fieldProps,
         placeholder: field.placeholder,
-        hint: field.hint,
-        autogrow: field.autogrow,
+        instructions: field.hint,
       }
 
       const selectFieldProps = {
@@ -184,7 +191,7 @@ export default defineComponent({
 
       switch (field.type) {
         case 'checkbox':
-          return h(WCheckbox, fieldProps)
+          return h(BaseCheckbox, fieldProps, () => field.label)
 
         case 'radio':
           return h(OptionSetOptionGroup, {
@@ -202,15 +209,20 @@ export default defineComponent({
           })
 
         case 'input':
-        case 'textarea':
         case 'password':
-          return h(WInput, {
+          return h(BaseTextInput, {
             ...inputFieldProps,
             type: field.type,
           })
 
+        case 'textarea':
+          return h(BaseTextarea, {
+            ...inputFieldProps,
+            autosize: field.autogrow,
+          })
+
         case 'number':
-          return h(WInput, {
+          return h(BaseTextInput, {
             ...inputFieldProps,
             type: 'number',
             step: field.step,
@@ -225,7 +237,12 @@ export default defineComponent({
           return h(WDateTimeInput, { ...inputFieldProps, mode: field.mode })
 
         case 'colorPicker':
-          return h('div', { class: 'tw:flex tw:flex-row' }, h(WColorPicker, fieldProps))
+          return h('div', { class: 'tw:flex tw:flex-col tw:gap-1' }, [
+            field.label
+              ? h('div', { class: 'tw:text-sm tw:font-medium tw:text-secondary' }, field.label)
+              : null,
+            h(BaseColorPicker, fieldProps),
+          ])
 
         case 'select':
           return h(OptionSetSelect, {
@@ -236,25 +253,45 @@ export default defineComponent({
         case 'slider':
           return h('div', { class: 'tw:px-2' }, [
             field.label
-              ? h('div', { class: 'tw:text-xs tw:text-gray-600 tw:mb-1' }, field.label)
+              ? h(
+                  'div',
+                  { class: 'tw:text-sm tw:font-medium tw:text-secondary tw:mb-1' },
+                  field.label,
+                )
               : null,
-            h(QSlider, {
-              ...fieldProps,
-              min: field.min ?? 0,
-              max: field.max ?? 100,
-              step: field.step ?? 1,
-              label: true,
-              labelAlways: field.labelAlways,
-              markers: field.markers,
-            }),
+            h('div', { class: 'tw:flex tw:items-center tw:gap-3' }, [
+              h('input', {
+                type: 'range',
+                min: field.min ?? 0,
+                max: field.max ?? 100,
+                step: field.step ?? 1,
+                value: scope.value ?? 0,
+                disabled: props.readonly || field.readonly || props.disabled || field.disabled,
+                class:
+                  'tw:w-full tw:accent-primary tw:h-2 tw:rounded-lg tw:appearance-none tw:bg-gray-200 tw:cursor-pointer',
+                onInput: (e) => {
+                  scope.value = Number(e.target.value)
+                },
+              }),
+              h(
+                'span',
+                { class: 'tw:text-sm tw:font-medium tw:text-secondary tw:min-w-8 tw:text-right' },
+                String(scope.value ?? 0),
+              ),
+            ]),
           ])
 
         case 'toggle':
-          return h(QToggle, {
-            ...fieldProps,
-            label: field.label,
-            color: field.color || 'primary',
-          })
+          return h('div', { class: 'tw:flex tw:items-center tw:gap-2 tw:py-1' }, [
+            h(BaseSwitch, {
+              modelValue: scope.value ?? false,
+              disabled: props.readonly || field.readonly || props.disabled || field.disabled,
+              [updateModelValueEvent]: (val) => {
+                scope.value = val
+              },
+            }),
+            field.label ? h('span', { class: 'tw:text-sm tw:text-on-main' }, field.label) : null,
+          ])
 
         case 'file':
           return h(WUploader, {
@@ -267,20 +304,40 @@ export default defineComponent({
             required: field.required || false,
           })
 
-        case 'rating':
+        case 'rating': {
+          const max = field.max ?? 5
+          const currentVal = scope.value || 0
+          const isDisabled = props.readonly || field.readonly || props.disabled || field.disabled
           return h('div', { class: 'tw:py-1' }, [
             field.label
-              ? h('div', { class: 'tw:text-xs tw:text-gray-600 tw:mb-1' }, field.label)
+              ? h(
+                  'div',
+                  { class: 'tw:text-sm tw:font-medium tw:text-secondary tw:mb-1' },
+                  field.label,
+                )
               : null,
-            h(QRating, {
-              ...fieldProps,
-              max: field.max ?? 5,
-              size: field.size || 'md',
-              color: field.color || 'primary',
-              icon: field.icon || 'star_border',
-              iconSelected: field.iconSelected || 'star',
-            }),
+            h(
+              'div',
+              { class: 'tw:flex tw:gap-1' },
+              Array.from({ length: max }, (_, i) => {
+                const filled = i < currentVal
+                return h(filled ? IconStarFilled : IconStar, {
+                  key: i,
+                  size: 24,
+                  class: [
+                    filled ? 'tw:text-amber-400' : 'tw:text-gray-300',
+                    isDisabled ? 'tw:cursor-default' : 'tw:cursor-pointer tw:hover:text-amber-400',
+                  ],
+                  onClick: isDisabled
+                    ? undefined
+                    : () => {
+                        scope.value = i + 1
+                      },
+                })
+              }),
+            ),
           ])
+        }
 
         case 'checklist':
           return h(WChecklist, {
@@ -350,14 +407,15 @@ export default defineComponent({
               ),
               h('div', { class: 'tw:flex-1' }),
               !props.readonly && !props.disabled && items.length > minItems
-                ? h(WBtn, {
-                    flat: true,
-                    round: true,
-                    dense: true,
-                    icon: 'delete',
-                    color: 'negative',
-                    onClick: () => removeRepeaterItem(field, path, itemIndex),
-                  })
+                ? h(
+                    'button',
+                    {
+                      class:
+                        'tw:p-1.5 tw:rounded tw:text-red-500 tw:hover:bg-red-50 tw:transition-colors',
+                      onClick: () => removeRepeaterItem(field, path, itemIndex),
+                    },
+                    [h(IconTrash, { size: 16 })],
+                  )
                 : null,
             ]),
             h('div', { class: 'tw:flex tw:flex-col tw:gap-2' }, itemFields),
@@ -369,14 +427,15 @@ export default defineComponent({
         field.label ? h('div', { class: 'tw:text-base tw:mb-2' }, field.label) : null,
         ...repeaterItems,
         !props.readonly && !props.disabled && items.length < maxItems
-          ? h(WBtn, {
-              flat: true,
-              icon: 'add',
-              label: field.addLabel || 'Add Item',
-              color: 'primary',
-              class: 'tw:mt-2',
-              onClick: () => addRepeaterItem(field, path),
-            })
+          ? h(
+              'button',
+              {
+                class:
+                  'tw:mt-2 tw:flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:text-primary tw:rounded-lg tw:hover:bg-primary/10 tw:transition-colors tw:text-sm tw:font-medium',
+                onClick: () => addRepeaterItem(field, path),
+              },
+              [h(IconPlus, { size: 14 }), field.addLabel || 'Add Item'],
+            )
           : null,
       ])
     }
@@ -388,24 +447,40 @@ export default defineComponent({
 
       if (field.collapsible) {
         return h(
-          QExpansionItem,
+          'div',
           {
-            modelValue: !isCollapsed,
-            'onUpdate:modelValue': (val) => {
-              collapsedSections.value[sectionKey] = !val
-            },
-            label: field.label,
-            headerClass: 'tw:text-base tw:bg-gray-200',
-            expandIconClass: 'tw:text-gray-700',
-            class: ['section-field tw:mb-4', field.class],
+            class: [
+              'section-field tw:mb-4 tw:border tw:border-divider tw:rounded-lg tw:overflow-hidden',
+              field.class,
+            ],
             style: field.style,
           },
-          () =>
+          [
             h(
-              'div',
-              { class: 'tw:p-4 tw:flex tw:flex-col tw:gap-4' },
-              createFields(field.children, sectionAncestors),
+              'button',
+              {
+                class:
+                  'tw:flex tw:items-center tw:w-full tw:px-4 tw:py-3 tw:bg-gray-100 tw:text-left tw:hover:bg-gray-200 tw:transition-colors',
+                onClick: () => {
+                  collapsedSections.value[sectionKey] = !isCollapsed
+                },
+              },
+              [
+                h('span', { class: 'tw:flex-1 tw:text-base tw:font-medium' }, field.label),
+                h(isCollapsed ? IconChevronRight : IconChevronDown, {
+                  size: 18,
+                  class: 'tw:text-secondary',
+                }),
+              ],
             ),
+            !isCollapsed
+              ? h(
+                  'div',
+                  { class: 'tw:p-4 tw:flex tw:flex-col tw:gap-4' },
+                  createFields(field.children, sectionAncestors),
+                )
+              : null,
+          ],
         )
       }
 
@@ -426,7 +501,7 @@ export default defineComponent({
       }
 
       if (field.type === 'separator') {
-        return h(QSeparator, field.props)
+        return h('hr', { class: 'tw:border-divider tw:my-2', ...field.props })
       }
 
       if (field.type === 'section') {
@@ -515,7 +590,7 @@ export default defineComponent({
     }
 
     async function submit(e) {
-      e.preventDefault()
+      if (e?.preventDefault) e.preventDefault()
       computedLoading.value = true
       const isValid = await validator.value.$validate()
 
@@ -528,6 +603,9 @@ export default defineComponent({
       }
     }
 
+    // Expose submit for parent components to call via ref
+    expose({ submit })
+
     return () => {
       const contents = []
 
@@ -538,19 +616,34 @@ export default defineComponent({
       contents.push(h('div', { class: 'tw:flex tw:flex-col tw:gap-4' }, createFields(props.fields)))
 
       if (slots.footer) {
-        contents.push(slots.footer())
+        contents.push(slots.footer({ submit }))
       }
 
-      contents.push(h(QInnerLoading, { showing: computedLoading.value, color: 'primary' }))
+      if (computedLoading.value) {
+        contents.push(
+          h(
+            'div',
+            {
+              class:
+                'tw:absolute tw:inset-0 tw:bg-white/70 tw:flex tw:items-center tw:justify-center tw:z-10',
+            },
+            [
+              h('div', {
+                class:
+                  'tw:size-10 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent',
+              }),
+            ],
+          ),
+        )
+      }
 
       return h(
-        QForm,
+        'div',
         {
           ...attrs,
-          onSubmit: submit,
-          class: [attrs.class, 'tw:flex tw:flex-col tw:gap-4 dynamic-form'],
+          class: [attrs.class, 'tw:relative tw:flex tw:flex-col tw:gap-4 dynamic-form'],
         },
-        () => contents,
+        contents,
       )
     }
   },

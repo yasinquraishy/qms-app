@@ -1,14 +1,10 @@
 <script setup>
-import { provideRecords } from '@/composables/useRecords.js'
-
 defineProps({
   id: {
     type: String,
     default: undefined,
   },
 })
-
-provideRecords()
 </script>
 
 <template>

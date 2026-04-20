@@ -1,4 +1,12 @@
 <script setup>
+import {
+  IconAlertCircle,
+  IconCircleCheck,
+  IconClock,
+  IconCloudUpload,
+  IconFileText,
+  IconX,
+} from '@tabler/icons-vue'
 import { get, upload } from '@/api'
 
 const route = useRoute()
@@ -93,13 +101,15 @@ onMounted(() => {
       <div class="tw:w-full tw:max-w-150 tw:bg-sidebar tw:rounded-lg tw:shadow-lg tw:p-6 tw:m-4">
         <!-- Loading -->
         <div v-if="loading" class="tw:text-center tw:py-16">
-          <QSpinner color="primary" size="3em" />
+          <div
+            class="tw:size-12 tw:animate-spin tw:rounded-full tw:border-4 tw:border-primary tw:border-t-transparent tw:mx-auto"
+          ></div>
           <div class="tw:text-secondary tw:mt-4">Loading...</div>
         </div>
 
         <!-- Expired -->
         <div v-else-if="expired" class="tw:text-center tw:py-16">
-          <WIcon icon="schedule" class="tw:text-warning" size="4em" />
+          <IconClock :size="64" class="tw:text-warning tw:mx-auto" />
           <div class="tw:text-2xl tw:mt-4 tw:text-on-sidebar">Link Expired</div>
           <p class="tw:text-secondary tw:mt-2">
             This link has expired or the document has already been submitted.
@@ -108,13 +118,13 @@ onMounted(() => {
 
         <!-- Error -->
         <div v-else-if="error" class="tw:text-center tw:py-16">
-          <WIcon icon="error_outline" class="tw:text-bad" size="4em" />
+          <IconAlertCircle :size="64" class="tw:text-bad tw:mx-auto" />
           <div class="tw:text-xl tw:mt-4 tw:text-bad">{{ error }}</div>
         </div>
 
         <!-- Success -->
         <div v-else-if="success" class="tw:text-center tw:py-16">
-          <WIcon icon="check_circle" class="tw:text-good" size="4em" />
+          <IconCircleCheck :size="64" class="tw:text-good tw:mx-auto" />
           <div class="tw:text-2xl tw:mt-4 tw:text-good">Document Submitted!</div>
           <p class="tw:text-secondary tw:mt-2">
             Thank you. Your document has been received successfully.
@@ -163,7 +173,7 @@ onMounted(() => {
               class="tw:border-2 tw:border-dashed tw:border-gray-300 tw:rounded-lg tw:p-8 tw:text-center tw:cursor-pointer tw:hover:border-primary tw:transition-colors"
               @click="$refs.fileInput.click()"
             >
-              <WIcon icon="cloud_upload" size="3em" class="tw:text-secondary" />
+              <IconCloudUpload :size="48" class="tw:text-secondary tw:mx-auto" />
               <p class="tw:text-secondary tw:mt-2">Click to select a file</p>
               <p class="tw:text-xs tw:text-secondary tw:mt-1">
                 PDF, Word, Excel, Images (max 100 MB)
@@ -174,14 +184,20 @@ onMounted(() => {
               v-else
               class="tw:border tw:border-gray-300 tw:rounded-lg tw:p-4 tw:flex tw:items-center tw:gap-3"
             >
-              <WIcon icon="description" size="2em" class="tw:text-primary" />
+              <IconFileText :size="32" class="tw:text-primary" />
               <div class="tw:flex-1 tw:min-w-0">
                 <div class="tw:text-on-sidebar tw:truncate">{{ selectedFile.name }}</div>
                 <div class="tw:text-xs tw:text-secondary">
                   {{ formatFileSize(selectedFile.size) }}
                 </div>
               </div>
-              <QBtn flat round dense icon="close" :disable="submitting" @click="removeFile" />
+              <button
+                class="tw:p-1.5 tw:rounded-full tw:text-secondary tw:hover:text-on-main tw:hover:bg-main-hover tw:transition-colors tw:bg-transparent tw:border-0 tw:cursor-pointer"
+                :disabled="submitting"
+                @click="removeFile"
+              >
+                <IconX :size="18" />
+              </button>
             </div>
 
             <input
@@ -193,24 +209,32 @@ onMounted(() => {
             />
 
             <!-- Upload progress -->
-            <QLinearProgress
+            <div
               v-if="uploading"
-              :value="uploadProgress / 100"
-              color="primary"
-              class="tw:mt-2"
-            />
+              class="tw:mt-2 tw:h-1.5 tw:bg-gray-200 tw:rounded-full tw:overflow-hidden"
+            >
+              <div
+                class="tw:h-full tw:bg-primary tw:rounded-full tw:transition-all tw:duration-200"
+                :style="{ width: uploadProgress + '%' }"
+              ></div>
+            </div>
           </div>
 
           <!-- Submit button -->
           <div class="tw:flex tw:justify-end">
-            <WBtn
-              label="Submit Document"
-              color="primary"
-              :loading="submitting"
-              :disable="!selectedFile"
-              unelevated
+            <button
+              class="tw:py-2.5 tw:px-6 tw:rounded-lg tw:bg-primary tw:text-white tw:font-medium tw:text-sm tw:hover:opacity-90 tw:transition-opacity tw:cursor-pointer tw:border-0 disabled:tw:opacity-50 disabled:tw:cursor-not-allowed"
+              :disabled="submitting || !selectedFile"
               @click="onSubmit"
-            />
+            >
+              <span v-if="submitting" class="tw:inline-flex tw:items-center tw:gap-2">
+                <span
+                  class="tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent tw:inline-block"
+                ></span>
+                Submitting...
+              </span>
+              <span v-else>Submit Document</span>
+            </button>
           </div>
         </div>
       </div>

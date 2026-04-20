@@ -1,4 +1,6 @@
 <script setup>
+import { IconInfoCircle } from '@tabler/icons-vue'
+
 const field = defineModel('field', {
   type: Object,
   required: true,
@@ -17,7 +19,7 @@ const field = defineModel('field', {
       class="tw:mb-3 tw:text-xs tw:text-on-sidebar tw:bg-main-selected tw:p-2 tw:rounded tw:border tw:border-primary/20"
     >
       <div class="tw:mb-1 tw:flex tw:items-center">
-        <WIcon icon="info" size="14px" class="tw:text-primary tw:mr-1" />
+        <IconInfoCircle :size="14" class="tw:text-primary tw:mr-1" />
         <strong>Advanced Settings</strong>
       </div>
       <div class="tw:mb-1">Only modify these settings if you are familiar with CSS.</div>
@@ -25,15 +27,12 @@ const field = defineModel('field', {
         Useful references:
         <ul class="tw:pl-4 tw:my-1 tw:pr-2">
           <li>
-            <a href="https://quasar.dev/style/typography" target="_blank" class="tw:text-primary"
-              >Typography</a
+            <a href="https://tailwindcss.com/docs" target="_blank" class="tw:text-primary"
+              >Tailwind CSS</a
             >
           </li>
           <li>
-            <a
-              href="https://quasar.dev/layout/grid/introduction-to-flexbox"
-              target="_blank"
-              class="tw:text-primary"
+            <a href="https://tailwindcss.com/docs/flex" target="_blank" class="tw:text-primary"
               >Flexbox & Grid</a
             >
           </li>
@@ -42,9 +41,9 @@ const field = defineModel('field', {
     </div>
 
     <div class="tw:flex tw:flex-col tw:gap-3">
-      <WInput v-model="field.class" label="CSS Classes" placeholder="col-6 q-mb-md" />
+      <BaseTextInput v-model="field.class" label="CSS Classes" placeholder="tw:w-1/2 tw:mb-4" />
 
-      <WInput v-model="field.style" label="Inline Styles" placeholder="width: 100%" />
+      <BaseTextInput v-model="field.style" label="Inline Styles" placeholder="width: 100%" />
     </div>
   </div>
 </template>

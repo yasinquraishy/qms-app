@@ -1,4 +1,5 @@
 <script setup>
+import { IconCirclePlus } from '@tabler/icons-vue'
 import { useSortable } from '@vueuse/integrations/useSortable'
 import FormCanvasField from './FormCanvasField.vue'
 
@@ -76,12 +77,12 @@ function onAddField(payload) {
       'tw:items-center tw:justify-center': fields.length === 0,
     }"
   >
-    <WEmptyState
+    <BaseEmptyState
       v-if="fields.length === 0"
-      icon="add_circle_outline"
+      :icon="IconCirclePlus"
       title="Start Building"
       description="Drag fields from the sidebar or click to add."
-      compact
+      :dense="true"
       data-no-sortable="true"
     />
 

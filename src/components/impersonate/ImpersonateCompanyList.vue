@@ -1,4 +1,5 @@
 <script setup>
+import { IconBuilding, IconChevronRight } from '@tabler/icons-vue'
 import { useImpersonate } from '@/composables/useImpersonate.js'
 import { getCompanyPath } from '@/utils/routeHelpers'
 
@@ -13,12 +14,10 @@ function onClick(company) {
 
 <template>
   <div class="tw:flex tw:flex-col tw:gap-2">
-    <WCard
+    <div
       v-for="company in companies"
       :key="company.id"
-      flat
-      bordered
-      class="tw:p-3 tw:cursor-pointer tw:hover:bg-main-hover tw:transition-colors"
+      class="tw:p-3 tw:cursor-pointer tw:hover:bg-main-hover tw:transition-colors tw:rounded-xl tw:border tw:border-divider"
       @click="onClick(company)"
     >
       <div class="tw:flex tw:items-center tw:gap-3">
@@ -29,7 +28,7 @@ function onClick(company) {
           v-else
           class="tw:bg-primary tw:flex tw:items-center tw:justify-center tw:rounded-lg tw:size-12 tw:text-white"
         >
-          <WIcon icon="business" size="24px" />
+          <IconBuilding :size="24" />
         </div>
 
         <div class="tw:flex-1 tw:min-w-0">
@@ -40,8 +39,8 @@ function onClick(company) {
           </div>
         </div>
 
-        <WIcon icon="chevron_right" size="24px" class="tw:text-secondary" />
+        <IconChevronRight :size="24" class="tw:text-secondary" />
       </div>
-    </WCard>
+    </div>
   </div>
 </template>

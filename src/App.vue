@@ -2,10 +2,7 @@
 import { initSession, currentSession } from '@/utils/currentSession'
 import { initCurrentCompany, companies } from '@/utils/currentCompany'
 import { isPublicRoute as isPublicRouteFn, isAuthRoute } from '@/constants/authRoutes'
-import { provideNotifications } from '@/composables/useNotifications.js'
 import { initSync } from '@/utils/initSyncEngine.js'
-
-provideNotifications()
 
 const pageInfo = ref({
   showHeader: true,
@@ -79,7 +76,9 @@ onMounted(async () => {
   <!-- Full-screen loader overlay -->
   <div v-if="loading" class="fixed-full flex flex-center bg-dark" style="z-index: 9999">
     <div class="tw:text-center">
-      <QSpinner color="primary" size="80px" />
+      <div
+        class="tw:size-20 tw:animate-spin tw:rounded-full tw:border-4 tw:border-white tw:border-t-transparent"
+      ></div>
       <div class="tw:text-lg tw:font-semibold tw:text-white tw:mt-4">Loading...</div>
     </div>
   </div>

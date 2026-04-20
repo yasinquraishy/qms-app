@@ -1,4 +1,5 @@
 <script setup>
+import { IconSearch, IconHome, IconGripVertical } from '@tabler/icons-vue'
 import { useSortable } from '@vueuse/integrations/useSortable'
 import { FIELD_TYPES, CATEGORY_LABELS } from '@/constants/formBuilderConfig'
 import { getCompanyPath } from '@/utils/routeHelpers'
@@ -105,15 +106,20 @@ function onFieldClick(fieldType) {
       class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:border-divider"
     >
       <div class="tw:text-lg tw:font-bold tw:text-on-sidebar">Components</div>
-      <WBtn flat round icon="sym_o_home" :to="getCompanyPath('/templates')" />
+      <RouterLink
+        :to="getCompanyPath('/templates')"
+        class="tw:p-2 tw:rounded-lg tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
+      >
+        <IconHome :size="20" />
+      </RouterLink>
     </div>
 
     <div class="tw:px-4 tw:py-2 tw:bg-main/30">
-      <WInput v-model="search" dense placeholder="Search components..." bgColor="white">
-        <template #prepend>
-          <WIcon icon="search" size="18px" color="grey-5" />
+      <BaseTextInput v-model="search" placeholder="Search components..." size="sm">
+        <template #icon>
+          <IconSearch :size="18" class="tw:text-secondary/50" />
         </template>
-      </WInput>
+      </BaseTextInput>
     </div>
 
     <div class="tw:flex-1 tw:overflow-y-auto tw:px-3 tw:py-4 tw:flex tw:flex-col tw:gap-4">
@@ -134,12 +140,12 @@ function onFieldClick(fieldType) {
               <div
                 class="tw:w-8 tw:h-8 tw:bg-main-hover tw:rounded-lg tw:flex tw:items-center tw:justify-center"
               >
-                <WIcon :icon="fieldMeta.icon" size="18px" class="tw:text-primary" />
+                <component :is="fieldMeta.icon" :size="18" class="tw:text-primary" />
               </div>
               <div class="tw:flex-1 tw:text-sm tw:font-medium tw:text-on-sidebar">
                 {{ fieldMeta.label }}
               </div>
-              <WIcon icon="drag_indicator" size="18px" class="tw:text-divider" />
+              <IconGripVertical :size="18" class="tw:text-divider" />
             </div>
           </div>
         </div>

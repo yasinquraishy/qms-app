@@ -1,4 +1,5 @@
 <script setup>
+import { IconX, IconFileDescription } from '@tabler/icons-vue'
 import DynamicForm from '@/components/form/DynamicForm.js'
 
 const props = defineProps({
@@ -64,18 +65,23 @@ function handleClose() {
 </script>
 
 <template>
-  <QCard class="tw:flex tw:flex-col tw:h-full tw:flex-nowrap">
-    <QCardSection class="tw:flex tw:items-center tw:border-b tw:border-divider tw:py-3">
+  <div class="tw:flex tw:flex-col tw:h-full tw:flex-nowrap">
+    <div class="tw:flex tw:items-center tw:border-b tw:border-divider tw:py-3 tw:px-4">
       <div class="tw:flex tw:flex-col">
         <div class="tw:text-lg tw:font-medium tw:text-on-main">{{ title }}</div>
       </div>
-      <QSpace />
-      <WBtn flat round dense icon="close" @click="handleClose" />
-    </QCardSection>
+      <div class="tw:flex-1" />
+      <button
+        class="tw:p-1 tw:rounded tw:text-secondary tw:hover:bg-main-hover"
+        @click="handleClose"
+      >
+        <IconX :size="20" />
+      </button>
+    </div>
 
-    <QCardSection class="tw:flex-1 tw:p-0 tw:overflow-auto tw:bg-sidebar">
+    <div class="tw:flex-1 tw:p-0 tw:overflow-auto tw:bg-sidebar">
       <div v-if="loading" class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:h-full">
-        <QSpinner color="primary" size="48px" />
+        <BaseSpinner />
         <div class="tw:text-sm tw:text-secondary tw:mt-4">Loading preview...</div>
       </div>
 
@@ -83,32 +89,29 @@ function handleClose() {
         v-else-if="!schema || schema.length === 0"
         class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:h-full"
       >
-        <WIcon name="description" size="48px" color="grey-4" />
+        <IconFileDescription :size="48" class="tw:text-secondary/40" />
         <div class="tw:text-lg tw:text-secondary tw:mt-4">No fields defined in this template</div>
       </div>
 
       <div v-else class="tw:p-5 tw:min-h-full">
-        <QCard flat bordered class="tw:mx-auto" :style="{ maxWidth: maxWidth }">
-          <QCardSection>
-            <DynamicForm
-              v-model="formData"
-              :fields="schema"
-              :readonly="readonly"
-              @submit="handleSubmit"
-            >
-              <template #footer>
-                <div v-if="!readonly" class="tw:flex tw:justify-end tw:mt-4">
-                  <WBtn type="submit" color="primary" :label="submitLabel" />
-                </div>
-              </template>
-            </DynamicForm>
-          </QCardSection>
-        </QCard>
+        <div
+          class="tw:mx-auto tw:border tw:border-divider tw:rounded-lg tw:bg-main tw:p-4"
+          :style="{ maxWidth: maxWidth }"
+        >
+          <DynamicForm
+            v-model="formData"
+            :fields="schema"
+            :readonly="readonly"
+            @submit="handleSubmit"
+          >
+            <template #footer>
+              <div v-if="!readonly" class="tw:flex tw:justify-end tw:mt-4">
+                <BaseButton type="submit">{{ submitLabel }}</BaseButton>
+              </div>
+            </template>
+          </DynamicForm>
+        </div>
       </div>
-    </QCardSection>
-  </QCard>
+    </div>
+  </div>
 </template>
-
-<style scoped lang="scss">
-// Removed custom style as spacing and overflow are handled by Tailwind
-</style>

@@ -1,4 +1,6 @@
 <script setup>
+import { IconUser, IconMail, IconLock } from '@tabler/icons-vue'
+
 const props = defineProps({
   mode: {
     type: String,
@@ -123,8 +125,8 @@ async function submitForm() {
 </script>
 
 <template>
-  <WCard class="login-card" flat>
-    <QCardSection class="tw:pb-1">
+  <div class="tw:w-full tw:max-w-105">
+    <div class="tw:pb-1">
       <div class="tw:text-2xl tw:font-bold tw:text-on-main">
         {{ mode === 'signup' ? 'Sign up to continue' : 'Welcome back' }}
       </div>
@@ -135,20 +137,21 @@ async function submitForm() {
             : 'Sign in to access your dashboard'
         }}
       </div>
-    </QCardSection>
+    </div>
 
-    <QCardSection class="tw:pt-4">
+    <div class="tw:pt-4">
       <div class="tw:flex tw:flex-col tw:gap-3">
-        <WBtn
-          unelevated
-          noCaps
-          class="login-btn"
-          :loading="loadingGoogle"
-          :disable="loadingMicrosoft"
+        <button
+          class="tw:flex tw:items-center tw:justify-center tw:w-full tw:gap-2 tw:px-5 tw:py-3.5 tw:rounded-lg tw:font-medium tw:bg-slate-100 tw:text-on-main tw:border tw:border-slate-300 tw:hover:bg-slate-200 tw:transition-colors tw:cursor-pointer"
+          :disabled="loadingMicrosoft"
           @click="loginWithGoogle"
         >
-          <div class="tw:flex tw:items-center tw:justify-center tw:w-full tw:gap-2">
-            <svg class="login-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <span
+            v-if="loadingGoogle"
+            class="tw:size-5 tw:animate-spin tw:rounded-full tw:border-2 tw:border-slate-400 tw:border-t-transparent tw:inline-block"
+          ></span>
+          <template v-else>
+            <svg class="tw:size-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -166,107 +169,98 @@ async function submitForm() {
                 fill="#EA4335"
               />
             </svg>
-            <span class="tw:font-medium">Continue with Google</span>
-          </div>
-        </WBtn>
+          </template>
+          <span class="tw:font-medium tw:text-sm">Continue with Google</span>
+        </button>
 
-        <WBtn
-          unelevated
-          noCaps
-          class="login-btn"
-          :loading="loadingMicrosoft"
-          :disable="loadingGoogle"
+        <button
+          class="tw:flex tw:items-center tw:justify-center tw:w-full tw:gap-2 tw:px-5 tw:py-3.5 tw:rounded-lg tw:font-medium tw:bg-slate-100 tw:text-on-main tw:border tw:border-slate-300 tw:hover:bg-slate-200 tw:transition-colors tw:cursor-pointer"
+          :disabled="loadingGoogle"
           @click="loginWithMicrosoft"
         >
-          <div class="tw:flex tw:items-center tw:justify-center tw:w-full tw:gap-2">
-            <svg class="login-icon" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+          <span
+            v-if="loadingMicrosoft"
+            class="tw:size-5 tw:animate-spin tw:rounded-full tw:border-2 tw:border-slate-400 tw:border-t-transparent tw:inline-block"
+          ></span>
+          <template v-else>
+            <svg class="tw:size-5" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
               <rect x="1" y="1" width="10" height="10" fill="#f25022" />
               <rect x="12" y="1" width="10" height="10" fill="#7fba00" />
               <rect x="1" y="12" width="10" height="10" fill="#00a4ef" />
               <rect x="12" y="12" width="10" height="10" fill="#ffb900" />
             </svg>
-            <span class="tw:font-medium">Continue with Microsoft</span>
-          </div>
-        </WBtn>
+          </template>
+          <span class="tw:font-medium tw:text-sm">Continue with Microsoft</span>
+        </button>
 
-        <div class="separator tw:mt-3 tw:mb-3">
-          <QSeparator />
-          <span class="separator-text">or</span>
-          <QSeparator />
+        <div class="tw:flex tw:items-center tw:gap-4 tw:my-3">
+          <hr class="tw:flex-1 tw:border-divider" />
+          <span class="tw:text-xs tw:text-secondary tw:whitespace-nowrap">or</span>
+          <hr class="tw:flex-1 tw:border-divider" />
         </div>
 
         <!-- email/password login form -->
         <div class="tw:flex tw:flex-col tw:gap-3">
           <template v-if="isSignup">
-            <WInput
-              v-model="firstName"
-              placeholder="First Name"
-              outlined
-              dense
-              @keyup.enter="submitForm"
-            >
-              <template #prepend>
-                <WIcon name="person" />
+            <BaseTextInput v-model="firstName" placeholder="First Name" @keyup.enter="submitForm">
+              <template #icon>
+                <IconUser :size="16" class="tw:text-secondary" />
               </template>
-            </WInput>
+            </BaseTextInput>
 
-            <WInput
-              v-model="lastName"
-              placeholder="Last Name"
-              outlined
-              dense
-              @keyup.enter="submitForm"
-            >
-              <template #prepend>
-                <WIcon name="person" />
+            <BaseTextInput v-model="lastName" placeholder="Last Name" @keyup.enter="submitForm">
+              <template #icon>
+                <IconUser :size="16" class="tw:text-secondary" />
               </template>
-            </WInput>
+            </BaseTextInput>
           </template>
 
-          <WInput
+          <BaseTextInput
             v-model="email"
             type="email"
             placeholder="Email"
-            outlined
-            dense
-            autocomplete
+            autocomplete="email"
             @keyup.enter="submitForm"
           >
-            <template #prepend>
-              <WIcon name="email" />
+            <template #icon>
+              <IconMail :size="16" class="tw:text-secondary" />
             </template>
-          </WInput>
+          </BaseTextInput>
 
-          <WInput
-            v-model="password"
-            type="password"
-            placeholder="Password"
-            outlined
-            dense
-            autocomplete
-            :hint="isSignup ? 'At least 8 characters' : ''"
-            @keyup.enter="submitForm"
-          >
-            <template #prepend>
-              <WIcon name="lock" />
-            </template>
-          </WInput>
+          <div>
+            <BaseTextInput
+              v-model="password"
+              type="password"
+              placeholder="Password"
+              autocomplete="current-password"
+              @keyup.enter="submitForm"
+            >
+              <template #icon>
+                <IconLock :size="16" class="tw:text-secondary" />
+              </template>
+            </BaseTextInput>
+            <p v-if="isSignup" class="tw:text-xs tw:text-secondary tw:mt-1">
+              At least 8 characters
+            </p>
+          </div>
 
-          <WInput
+          <BaseTextInput
             v-if="isSignup"
             v-model="confirmPassword"
             type="password"
             placeholder="Confirm Password"
-            outlined
-            dense
-            :error="confirmPassword.length > 0 && password !== confirmPassword"
-            errorMessage="Passwords do not match"
+            autocomplete="new-password"
+            :errorMsg="
+              confirmPassword.length > 0 && password !== confirmPassword
+                ? 'Passwords do not match'
+                : ''
+            "
             @keyup.enter="submitForm"
           >
-            <template #prepend>
-              <WIcon name="lock" />
+            <template #icon>
+              <IconLock :size="16" class="tw:text-secondary" />
             </template>
-          </WInput>
+          </BaseTextInput>
 
           <div v-if="mode === 'signin'" class="tw:text-right tw:mb-2">
             <RouterLink to="/forgot-password" class="tw:text-sm tw:text-primary">
@@ -274,23 +268,28 @@ async function submitForm() {
             </RouterLink>
           </div>
 
-          <WBtn
-            unelevated
-            noCaps
-            color="primary"
-            class="tw:w-full"
-            :loading="loadingLogin"
-            :disable="loadingLogin || !isFormValid"
+          <button
+            class="tw:w-full tw:py-3 tw:px-4 tw:rounded-lg tw:bg-primary tw:text-white tw:font-medium tw:text-sm tw:hover:opacity-90 tw:transition-opacity tw:cursor-pointer tw:border-0 disabled:tw:opacity-50 disabled:tw:cursor-not-allowed"
+            :disabled="loadingLogin || !isFormValid"
             @click="submitForm"
           >
-            {{ isSignup ? 'Sign up with email' : 'Sign in' }}
-          </WBtn>
+            <span
+              v-if="loadingLogin"
+              class="tw:inline-flex tw:items-center tw:gap-2 tw:justify-center"
+            >
+              <span
+                class="tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent tw:inline-block"
+              ></span>
+              {{ isSignup ? 'Signing up...' : 'Signing in...' }}
+            </span>
+            <span v-else>{{ isSignup ? 'Sign up with email' : 'Sign in' }}</span>
+          </button>
         </div>
       </div>
-    </QCardSection>
+    </div>
 
-    <QCardSection class="tw:pt-6">
-      <QSeparator />
+    <div class="tw:pt-6">
+      <hr class="tw:border-divider" />
       <div class="tw:text-xs tw:text-secondary tw:text-center tw:mt-3">
         <template v-if="isSignup">
           Already have an account?
@@ -307,65 +306,6 @@ async function submitForm() {
         and
         <a href="#" class="tw:text-primary">Privacy Policy</a>
       </div>
-    </QCardSection>
-  </WCard>
+    </div>
+  </div>
 </template>
-
-<style lang="scss" scoped>
-.login-card {
-  width: 100%;
-  max-width: 420px;
-  background-color: $content-bg;
-}
-
-.login-btn {
-  padding: 14px 20px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  background-color: $slate-100;
-  color: $text-primary;
-  border: 1px solid $slate-300;
-
-  &:hover {
-    background-color: $slate-200;
-  }
-}
-
-.login-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.separator {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.separator-text {
-  color: $text-secondary;
-  font-size: 0.8rem;
-  padding: 0 8px;
-  white-space: nowrap;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-a {
-  color: $primary;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-</style>

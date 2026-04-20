@@ -1,30 +1,85 @@
 <script setup>
-import { useFormTemplates } from '@/composables/useFormTemplates.js'
+import { IconStack2 } from '@tabler/icons-vue'
+import { IconLayoutList, IconTable } from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers'
 import { useCompanyLocalStorage } from '@/utils/useCompanyLocalStorage'
 import { isAllowed } from '@/utils/currentSession.js'
 
-// Composables
 const router = useRouter()
 
-// Refs
 const showCreateDialog = ref(false)
-const viewMode = useCompanyLocalStorage('templates-view-mode', 'list') // 'list' or 'table'
+const viewMode = useCompanyLocalStorage('templates-view-mode', 'list')
+const confirmDelete = ref({ open: false, template: null })
 
 const canCreateTemplate = computed(() => isAllowed(['formTemplates:create']))
+const canUpdateTemplate = computed(() => isAllowed(['formTemplates:update']))
+const canDeleteTemplate = computed(() => isAllowed(['formTemplates:delete']))
 
-// Data
-const { filters } = useFormTemplates()
+const filters = ref({
+  search: '',
+  documentTypeId: null,
+  siteId: null,
+  statusId: null,
+})
+
+const templates = useLiveQueryWithDeps(
+  [
+    () => filters.value.search,
+    () => filters.value.statusId,
+    () => filters.value.siteId,
+    () => filters.value.documentTypeId,
+  ],
+  async (db, [search, statusId, siteId, documentTypeId]) => {
+    let results = await db.FormTemplate.where().exec()
+
+    if (statusId) results = results.filter((t) => t.statusId === statusId)
+    if (documentTypeId) {
+      const ids = Array.isArray(documentTypeId) ? documentTypeId : [documentTypeId]
+      if (ids.length) results = results.filter((t) => ids.includes(t.documentTypeId))
+    }
+
+    if (siteId) {
+      const siteIds = Array.isArray(siteId) ? siteId : [siteId]
+      if (siteIds.length) {
+        const siteOnTemplates = await db.SiteOnTemplate.where().exec()
+        const templateIdsForSites = new Set(
+          siteOnTemplates.filter((s) => siteIds.includes(s.siteId)).map((s) => s.templateId),
+        )
+        results = results.filter((t) => templateIdsForSites.has(t.id))
+      }
+    }
+
+    if (search) {
+      const q = search.toLowerCase()
+      results = results.filter(
+        (t) => t.title.toLowerCase().includes(q) || t.code.toLowerCase().includes(q),
+      )
+    }
+
+    return results.sort(
+      (a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0),
+    )
+  },
+  { initial: [] },
+)
 
 const viewSwitches = [
-  { icon: 'view_agenda', value: 'list', tooltip: 'List View' },
-  { icon: 'table_rows', value: 'table', tooltip: 'Table View' },
+  { icon: IconLayoutList, value: 'list', tooltip: 'List View' },
+  { icon: IconTable, value: 'table', tooltip: 'Table View' },
 ]
 
-// Functions
 function handleTemplateCreated(template) {
   const path = getCompanyPath(`/templates/${template.id}`)
   router.push({ path, query: { mode: 'schema' } })
+}
+
+function onDeleteTemplate(template) {
+  confirmDelete.value = { open: true, template }
+}
+
+async function confirmDeleteTemplate() {
+  await confirmDelete.value.template.delete()
+  confirmDelete.value = { open: false, template: null }
 }
 </script>
 
@@ -32,21 +87,15 @@ function handleTemplateCreated(template) {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="layers" class="tw:text-primary" size="24px" />
+        <IconStack2 class="tw:text-primary" :size="24" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Form Templates</h2>
       </div>
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
-        v-if="canCreateTemplate"
-        label="Create New Template"
-        icon="add"
-        color="primary"
-        unelevated
-        class="tw:font-medium"
-        @click="showCreateDialog = true"
-      />
+      <BaseButton v-if="canCreateTemplate" @click="showCreateDialog = true">
+        Create New Template
+      </BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -59,25 +108,38 @@ function handleTemplateCreated(template) {
       </div>
     </div>
 
-    <formTemplatesFilterToolbar v-model:filters="filters">
+    <FormTemplatesFilterToolbar v-model:filters="filters">
       <template #actions>
-        <WSwitcher v-model="viewMode" :switches="viewSwitches" />
+        <BaseSwitcher v-model="viewMode" :switches="viewSwitches" />
       </template>
-    </formTemplatesFilterToolbar>
+    </FormTemplatesFilterToolbar>
 
     <!-- Content Views -->
-    <FormTemplatesTable v-if="viewMode === 'table'" />
+    <FormTemplatesTable
+      v-if="viewMode === 'table'"
+      :rows="templates"
+      :canUpdate="canUpdateTemplate"
+      :canDelete="canDeleteTemplate"
+      @delete="onDeleteTemplate"
+    />
     <div v-else class="tw:flex-1 tw:overflow-y-auto">
-      <FormTemplatesList />
+      <FormTemplatesList
+        :templates="templates"
+        :canDelete="canDeleteTemplate"
+        @delete="onDeleteTemplate"
+      />
     </div>
   </div>
 
   <!-- Create Template Dialog -->
-  <formTemplateCreateTemplate v-model="showCreateDialog" @next="handleTemplateCreated" />
-</template>
+  <FormTemplateCreateTemplate v-model="showCreateDialog" @next="handleTemplateCreated" />
 
-<style scoped lang="scss">
-.text-slate-800 {
-  color: #1e293b;
-}
-</style>
+  <!-- Delete Confirm Dialog -->
+  <ConfirmDialog
+    v-model="confirmDelete.open"
+    title="Delete Template"
+    :message="`Are you sure you want to delete '${confirmDelete.template?.title}' (${confirmDelete.template?.code})? This cannot be undone.`"
+    okLabel="Delete"
+    @ok="confirmDeleteTemplate"
+  />
+</template>

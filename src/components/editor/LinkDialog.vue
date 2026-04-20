@@ -1,4 +1,5 @@
 <script setup>
+import { IconLink, IconLetterT, IconLinkOff, IconCheck } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
 
@@ -71,61 +72,70 @@ function handleKeydown(event) {
 </script>
 
 <template>
-  <QDialog v-model="show" @hide="show = false">
-    <QCard class="tw:min-w-96">
-      <QCardSection class="tw:flex tw:items-center tw:justify-between">
-        <div class="tw:text-lg tw:font-semibold">
-          {{ initialUrl ? 'Edit Link' : 'Insert Link' }}
-        </div>
-        <WBtn flat round dense icon="close" @click="show = false" />
-      </QCardSection>
-
-      <QCardSection class="tw:space-y-4">
-        <WInput
+  <BaseDialog
+    v-model="show"
+    :title="initialUrl ? 'Edit Link' : 'Insert Link'"
+    @close="show = false"
+  >
+    <div class="tw:flex tw:flex-col tw:gap-4 tw:p-4">
+      <div class="tw:relative">
+        <IconLink
+          :size="18"
+          class="tw:absolute tw:left-3 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary tw:pointer-events-none"
+        />
+        <BaseTextInput
           v-model="linkUrl"
           name="url"
           label="URL"
-          outlined
           placeholder="https://example.com"
           autofocus
-          dense
+          class="tw:pl-9"
           @keydown="handleKeydown"
-        >
-          <template #prepend>
-            <WIcon icon="link" />
-          </template>
-        </WInput>
+        />
+      </div>
 
-        <WInput
+      <div class="tw:relative">
+        <IconLetterT
+          :size="18"
+          class="tw:absolute tw:left-3 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary tw:pointer-events-none"
+        />
+        <BaseTextInput
           v-model="linkText"
           label="Link Text (optional)"
-          outlined
           placeholder="Leave empty to use selection"
-          dense
+          class="tw:pl-9"
           @keydown="handleKeydown"
-        >
-          <template #prepend>
-            <WIcon icon="title" />
-          </template>
-        </WInput>
-      </QCardSection>
+        />
+      </div>
+    </div>
 
-      <QCardActions class="tw:justify-between tw:px-4 tw:pb-4">
-        <div>
-          <WBtn
-            v-if="initialUrl"
-            flat
-            color="negative"
-            label="Remove Link"
-            icon="link_off"
-            @click="handleRemove"
-          />
-        </div>
+    <template #actions>
+      <div class="tw:flex tw:w-full tw:items-center tw:justify-between">
+        <button
+          v-if="initialUrl"
+          class="tw:flex tw:items-center tw:gap-1.5 tw:text-sm tw:font-medium tw:text-red-600 tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:underline"
+          @click="handleRemove"
+        >
+          <IconLinkOff :size="16" />
+          Remove Link
+        </button>
+        <div v-else />
         <div class="tw:flex tw:gap-2">
-          <WBtn flat label="Cancel" @click="show = false" />
-          <WBtn unelevated color="primary" label="Apply" icon="check" @click="handleSubmit" />
+          <button
+            class="tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-secondary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:text-on-main"
+            @click="show = false"
+          >
+            Cancel
+          </button>
+          <button
+            class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0"
+            @click="handleSubmit"
+          >
+            <IconCheck :size="16" />
+            Apply
+          </button>
         </div>
-      </QCardActions>
-    </QCard>
-  </QDialog>
+      </div>
+    </template>
+  </BaseDialog>
 </template>

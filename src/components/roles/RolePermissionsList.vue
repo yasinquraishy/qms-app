@@ -1,4 +1,5 @@
 <script setup>
+import { IconSearchOff } from '@tabler/icons-vue'
 defineProps({
   permissionActions: { type: Array, required: true },
   isSelected: { type: Function, required: true },
@@ -26,11 +27,11 @@ const model = defineModel({
       :canUpdateRole="canUpdateRole"
     />
 
-    <WEmptyState
+    <BaseEmptyState
       v-if="model.length === 0"
-      icon="search_off"
+      :icon="IconSearchOff"
       title="No permissions found matching your search"
-      compact
+      dense
     />
   </div>
 </template>

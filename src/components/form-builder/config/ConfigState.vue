@@ -19,15 +19,9 @@ const hasState = computed(() => !NO_STATE_TYPES.has(field.value.type))
     </div>
 
     <div class="tw:grid tw:grid-cols-3 tw:gap-2">
-      <div>
-        <QCheckbox v-model="field.required" label="Required" dense />
-      </div>
-      <div>
-        <QCheckbox v-model="field.readonly" label="Readonly" dense />
-      </div>
-      <div>
-        <QCheckbox v-model="field.disabled" label="Disabled" dense />
-      </div>
+      <BaseCheckbox v-model="field.required">Required</BaseCheckbox>
+      <BaseCheckbox v-model="field.readonly">Readonly</BaseCheckbox>
+      <BaseCheckbox v-model="field.disabled">Disabled</BaseCheckbox>
     </div>
   </div>
 </template>

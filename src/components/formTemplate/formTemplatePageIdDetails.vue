@@ -1,114 +1,105 @@
 <script setup>
+import { IconTrash, IconEdit, IconCode } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession'
-
 import { getCompanyPath } from '@/utils/routeHelpers'
-import { useQuasar } from 'quasar'
+import { useDebounceFn } from '@vueuse/core'
 
-// Props
 const props = defineProps({
-  template: {
-    type: Object,
-    default: null,
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  error: {
+  id: {
     type: String,
-    default: null,
+    required: true,
   },
 })
 
-// Emits
-const emit = defineEmits(['refresh', 'update', 'delete'])
-
-// Composables
-const $q = useQuasar()
 const toast = useToast()
 const router = useRouter()
-const { updateTemplate, deleteTemplate } = useFormTemplates()
-const { statusOptions, fetchFormStatuses } = useTemplateForm()
 
-// Refs
-const formData = ref({}) // Using DynamicForm requires a v-model, even if read-only
-const editingField = ref(null) // Inline editing state
-const editValue = ref(null)
-
-// Computed
-const formattedCreatedAt = computed(() => {
-  return props.template?.createdAt?.formatDate('date')
+const template = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  if (!id) return null
+  return db.FormTemplate.findByPk(id)
 })
 
-const relativeUpdatedAt = computed(() => {
-  return props.template?.updatedAt?.formatDate('date')
-})
+const siteAssignments = useLiveQueryWithDeps(
+  [() => props.id],
+  async (db, [id]) => {
+    if (!id) return []
+    return db.SiteOnTemplate.where('templateId', id).exec()
+  },
+  { initial: [] },
+)
 
+const assignedSiteIds = computed(() => siteAssignments.value.map((s) => s.siteId))
+
+const formData = ref({})
+
+const formattedCreatedAt = computed(() => template.value?.createdAt?.formatDate('date'))
+const relativeUpdatedAt = computed(() => template.value?.updatedAt?.formatDate('date'))
 const canUpdate = computed(() => isAllowed(['formTemplates:update']))
 const canDelete = computed(() => isAllowed(['formTemplates:delete']))
+const loading = computed(() => template.value === undefined)
 
-// Functions
-function startEdit(field) {
-  if (!canUpdate.value) return
+// Auto-save for template fields
+const isSaving = ref(false)
+const isFirstLoad = ref(true)
 
-  editingField.value = field
-  if (field === 'siteIds') {
-    editValue.value = props.template.sites?.map((s) => s.id) || []
-  } else {
-    editValue.value = props.template[field]
+const debouncedSave = useDebounceFn(async () => {
+  if (!template.value) return
+  isSaving.value = true
+  try {
+    await template.value.save()
+  } catch (err) {
+    toast.error(err.message || 'Failed to save')
+  } finally {
+    isSaving.value = false
+  }
+}, 500)
+
+watch(
+  template,
+  (t) => {
+    if (isFirstLoad.value) {
+      isFirstLoad.value = false
+      return
+    }
+    if (t) debouncedSave()
+  },
+  { deep: true },
+)
+
+// Site assignments (junction table — separate handler)
+const addSiteOnTemplate = useLiveMutation(async (db, { templateId, siteId }) => {
+  const sot = db.SiteOnTemplate.create({ templateId, siteId })
+  await sot.save()
+  return sot
+})
+
+async function handleSitesChange(newSiteIds) {
+  const currentIds = assignedSiteIds.value
+  const toAdd = newSiteIds.filter((id) => !currentIds.includes(id))
+  const toRemove = currentIds.filter((id) => !newSiteIds.includes(id))
+
+  for (const siteId of toAdd) {
+    await addSiteOnTemplate({ templateId: props.id, siteId })
+  }
+  for (const siteId of toRemove) {
+    const match = siteAssignments.value.find((sa) => sa.siteId === siteId)
+    if (match) await match.delete()
   }
 }
 
-async function saveEdit() {
-  if (!editingField.value && !canUpdate.value) return
-
-  // Check if value actually changed
-  if (editValue.value === props.template[editingField.value]) {
-    cancelEdit()
-    return
-  }
-
-  const data = {
-    [editingField.value]: editValue.value,
-  }
-
-  const success = await updateTemplate(props.template.id, data)
-
-  if (success) {
-    emit('refresh')
-    toast.success('Template updated successfully')
-    cancelEdit()
-  } else {
-    toast.error('Failed to update template')
-  }
-}
-
-function cancelEdit() {
-  editingField.value = null
-  editValue.value = null
-}
+// Delete
+const showDeleteConfirm = ref(false)
 
 async function handleDelete() {
-  $q.dialog({
-    title: 'Confirm Deletion',
-    message: `Are you sure you want to delete form template "${props.template.title}" (${props.template.code})? This action cannot be undone.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const success = await deleteTemplate(props.template.id)
-    if (success) {
-      toast.success('Form template deleted successfully')
-      router.push(getCompanyPath('/templates'))
-    } else {
-      toast.error('Failed to delete form template')
-    }
-  })
+  if (!template.value) return
+  try {
+    await template.value.delete()
+    toast.success('Form template deleted successfully')
+    router.push(getCompanyPath('/templates'))
+  } catch {
+    toast.error('Failed to delete form template')
+  }
 }
-
-// Lifecycle
-onMounted(() => {
-  fetchFormStatuses()
-})
 </script>
 
 <template>
@@ -116,29 +107,29 @@ onMounted(() => {
     <!-- Header Actions Section -->
     <SafeTeleport to="#main-header-actions">
       <div v-if="template" class="tw:flex tw:items-center tw:gap-3">
-        <WBtn
+        <BaseButton
           v-if="canDelete"
-          icon="delete"
-          label="Delete"
-          color="null"
-          outline
-          class="tw:font-semibold tw:text-bad!"
-          @click="handleDelete"
-        />
-        <WBtn
+          variant="outline"
+          class="tw:text-bad!"
+          @click="showDeleteConfirm = true"
+        >
+          <IconTrash :size="16" class="tw:mr-1" />
+          Delete
+        </BaseButton>
+        <BaseButton
           v-if="canUpdate"
-          icon="edit"
-          label="Edit Template"
-          outline
-          class="tw:font-semibold"
+          variant="outline"
           :to="getCompanyPath(`/templates/${template.id}?mode=schema`)"
-        />
-        <WBtn
-          label="View records"
-          outline
-          class="tw:font-semibold"
+        >
+          <IconEdit :size="16" class="tw:mr-1" />
+          Edit Template
+        </BaseButton>
+        <BaseButton
+          variant="outline"
           :to="getCompanyPath(`/templates/${template.id}?mode=records`)"
-        />
+        >
+          View records
+        </BaseButton>
       </div>
     </SafeTeleport>
 
@@ -146,18 +137,10 @@ onMounted(() => {
     <div class="tw:grow tw:flex tw:flex-col tw:min-w-0 tw:overflow-hidden">
       <!-- Loading State -->
       <div v-if="loading" class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:h-full">
-        <QSpinner color="primary" size="48px" />
+        <div
+          class="tw:size-12 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+        />
         <div class="tw:text-sm tw:text-on-main tw:mt-4">Loading template...</div>
-      </div>
-
-      <!-- Error State -->
-      <div
-        v-else-if="error"
-        class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:h-full"
-      >
-        <WIcon name="error_outline" size="48px" class="tw:text-bad" />
-        <div class="tw:text-body1 tw:text-bad tw:mt-4">{{ error }}</div>
-        <WBtn label="Try Again" color="primary" outline class="tw:mt-6" @click="emit('refresh')" />
       </div>
 
       <div v-else-if="template" class="tw:grow tw:flex tw:flex-col tw:p-8 tw:overflow-hidden">
@@ -173,7 +156,8 @@ onMounted(() => {
                 Live representation of the form generated from metadata.
               </p>
             </div>
-            <span class="ds-label-sm tw:text-secondary tw:bg-main-hover tw:px-2 tw:py-1 tw:rounded"
+            <span
+              class="tw:text-xs tw:font-semibold tw:uppercase tw:text-secondary tw:bg-main-hover tw:px-2 tw:py-1 tw:rounded"
               >Read-only view</span
             >
           </div>
@@ -183,7 +167,6 @@ onMounted(() => {
             <div
               class="tw:bg-sidebar tw:p-4 tw:rounded-xl tw:border tw:border-divider tw:shadow-sm"
             >
-              <!-- Dynamic Form Preview -->
               <DynamicForm v-model="formData" :fields="template.schema || []" readonly />
 
               <div
@@ -205,13 +188,15 @@ onMounted(() => {
     >
       <div class="tw:p-6">
         <div class="tw:flex tw:items-center tw:gap-2 tw:mb-6 tw:text-on-sidebar">
-          <WIcon name="data_object" class="tw:text-primary" />
+          <IconCode :size="20" class="tw:text-primary" />
           <h3 class="tw:text-base tw:font-bold">Metadata Properties</h3>
         </div>
         <div class="tw:space-y-6">
           <!-- Template Identity -->
           <div class="tw:space-y-4">
-            <h4 class="ds-label-sm tw:text-secondary">Template Identity</h4>
+            <h4 class="tw:text-xs tw:font-semibold tw:uppercase tw:text-secondary">
+              Template Identity
+            </h4>
             <div class="tw:grid tw:gap-4">
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">ID</label>
@@ -223,43 +208,21 @@ onMounted(() => {
               </div>
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Internal Title</label>
-                <div v-if="editingField === 'title'">
-                  <WInput
-                    v-model="editValue"
-                    noOutline
-                    autofocus
-                    @blur="saveEdit"
-                    @keyup.enter="saveEdit"
-                    @keyup.esc="cancelEdit"
-                  />
-                </div>
-                <div
-                  v-else
-                  class="tw:mt-3 tw:text-sm tw:font-medium tw:text-on-main tw:border-b tw:border-divider tw:pb-1 tw:cursor-pointer tw:hover:bg-main-hover tw:px-2 tw:-mx-2 tw:rounded"
-                  @click="startEdit('title')"
-                >
+                <BaseTextInput v-if="canUpdate" v-model="template.title" size="sm" />
+                <div v-else class="tw:text-sm tw:font-medium tw:text-on-main">
                   {{ template.title }}
                 </div>
               </div>
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Description</label>
-                <div v-if="editingField === 'description'">
-                  <WInput
-                    v-model="editValue"
-                    noOutline
-                    autofocus
-                    type="textarea"
-                    @blur="saveEdit"
-                    @keyup.enter="saveEdit"
-                    @keyup.esc="cancelEdit"
-                  />
-                </div>
-                <div
-                  v-else
-                  class="tw:mt-3 tw:text-sm tw:font-medium tw:text-on-main tw:border-b tw:border-divider tw:pb-1 tw:cursor-pointer tw:hover:bg-main-hover tw:px-2 tw:-mx-2 tw:rounded tw:min-h-5"
-                  @click="startEdit('description')"
-                >
-                  {{ template.description || 'Click to add description...' }}
+                <BaseTextarea
+                  v-if="canUpdate"
+                  v-model="template.description"
+                  placeholder="Click to add description..."
+                  size="sm"
+                />
+                <div v-else class="tw:text-sm tw:text-on-main tw:min-h-5">
+                  {{ template.description || '—' }}
                 </div>
               </div>
             </div>
@@ -267,7 +230,9 @@ onMounted(() => {
 
           <!-- Classification -->
           <div class="tw:space-y-4 tw:pt-4 tw:border-t tw:border-divider">
-            <h4 class="ds-label-sm tw:text-secondary">Classification</h4>
+            <h4 class="tw:text-xs tw:font-semibold tw:uppercase tw:text-secondary">
+              Classification
+            </h4>
             <div class="tw:grid tw:gap-4">
               <div class="tw:space-y-1 tw:flex tw:flex-col">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Template Code</label>
@@ -279,61 +244,31 @@ onMounted(() => {
               </div>
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Status</label>
-                <div v-if="editingField === 'statusId'">
-                  <WSelect
-                    v-model="editValue"
-                    :options="statusOptions"
-                    mapOptions
-                    emitValue
-                    dense
-                    autofocus
-                    optionLabel="name"
-                    optionValue="id"
-                    @update:modelValue="saveEdit"
-                    @blur="cancelEdit"
-                  />
-                </div>
-                <div
-                  v-else
-                  class="tw:cursor-pointer tw:hover:bg-main-hover tw:px-2 tw:-mx-2 tw:rounded"
-                  @click="startEdit('statusId')"
-                >
-                  <WStatusBadge :status="template.statusId" variant="formTemplate" showDot />
-                </div>
+                <FormTemplateStatusSelectMenu
+                  v-if="canUpdate"
+                  v-model="template.statusId"
+                  required
+                />
+                <FormTemplateStatusBadgeById v-else :statusId="template.statusId" showDot />
               </div>
               <!-- Assigned Sites -->
               <div class="tw:space-y-1">
                 <label class="tw:text-xs tw:font-medium tw:text-secondary">Assigned Sites</label>
-                <div v-if="editingField === 'siteIds'">
-                  <FormTemplatesSiteSelect
-                    v-model:siteId="editValue"
-                    :multiple="true"
-                    :required="true"
-                    autofocus
-                    @update:modelValue="saveEdit"
-                    @blur="cancelEdit"
+                <SiteSelectMenu
+                  v-if="canUpdate"
+                  multiple
+                  :modelValue="assignedSiteIds"
+                  @update:modelValue="handleSitesChange"
+                />
+                <div v-else class="tw:flex tw:flex-wrap tw:gap-1">
+                  <SiteBadgeById
+                    v-for="sa in siteAssignments"
+                    :key="sa.siteId"
+                    :siteId="sa.siteId"
                   />
-                </div>
-                <div
-                  v-else
-                  class="tw:cursor-pointer tw:hover:bg-main-hover tw:px-2 tw:-mx-2 tw:rounded"
-                  @click="startEdit('siteIds')"
-                >
-                  <div class="tw:flex tw:flex-wrap tw:gap-1">
-                    <span
-                      v-for="site in template.sites"
-                      :key="site.id"
-                      class="tw:text-xs tw:bg-gray-100 tw:dark:bg-gray-700 tw:px-2 tw:py-0.5 tw:rounded-full tw:text-gray-700 tw:dark:text-gray-300"
-                    >
-                      {{ site.name }}
-                    </span>
-                    <span
-                      v-if="!template.sites || template.sites.length === 0"
-                      class="tw:text-sm tw:text-gray-500"
-                    >
-                      No sites assigned
-                    </span>
-                  </div>
+                  <span v-if="siteAssignments.length === 0" class="tw:text-sm tw:text-secondary">
+                    No sites assigned
+                  </span>
                 </div>
               </div>
             </div>
@@ -344,7 +279,9 @@ onMounted(() => {
             v-if="template.config && Object.keys(template.config).length"
             class="tw:space-y-4 tw:pt-4 tw:border-t tw:border-divider"
           >
-            <h4 class="ds-label-sm tw:text-secondary">JSON Configuration</h4>
+            <h4 class="tw:text-xs tw:font-semibold tw:uppercase tw:text-secondary">
+              JSON Configuration
+            </h4>
             <div class="tw:rounded-lg tw:bg-[#111827] tw:p-3 tw:overflow-hidden">
               <pre
                 class="tw:text-[10px] tw:text-good tw:font-mono tw:leading-relaxed tw:whitespace-pre-wrap"
@@ -374,5 +311,15 @@ onMounted(() => {
         </div>
       </div>
     </aside>
+
+    <!-- Delete Confirmation -->
+    <ConfirmDialog
+      v-model="showDeleteConfirm"
+      title="Delete Template"
+      :message="`Are you sure you want to delete form template &quot;${template?.title}&quot; (${template?.code})? This action cannot be undone.`"
+      confirmLabel="Delete"
+      variant="danger"
+      @confirm="handleDelete"
+    />
   </div>
 </template>

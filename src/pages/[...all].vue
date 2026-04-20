@@ -13,15 +13,12 @@ defineOptions({
 
       <div class="tw:text-3xl tw:font-bold tw:opacity-60">Oops. Nothing here...</div>
 
-      <WBtn
-        class="tw:mt-8 tw:px-8 tw:font-bold"
-        color="white"
-        textColor="primary"
-        unelevated
+      <RouterLink
         to="/"
-        label="Go Home"
-        size="lg"
-      />
+        class="tw:mt-8 tw:px-8 tw:font-bold tw:inline-flex tw:items-center tw:justify-center tw:h-12 tw:bg-white tw:text-primary tw:rounded-lg tw:text-lg tw:hover:bg-gray-100 tw:transition-colors"
+      >
+        Go Home
+      </RouterLink>
     </div>
   </div>
 </template>

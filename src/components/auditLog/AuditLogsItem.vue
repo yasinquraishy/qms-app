@@ -1,4 +1,17 @@
 <script setup>
+import {
+  IconCirclePlus,
+  IconCircleCheck,
+  IconCircleX,
+  IconEditCircle,
+  IconSend,
+  IconEdit,
+  IconTrash,
+  IconPackage,
+  IconBan,
+  IconHistory,
+} from '@tabler/icons-vue'
+
 defineProps({
   log: {
     type: Object,
@@ -7,17 +20,17 @@ defineProps({
 })
 
 function getActionIcon(action) {
-  if (action?.includes('CREATE')) return 'add_circle'
-  if (action?.includes('APPROVE')) return 'check_circle'
-  if (action?.includes('REJECT')) return 'cancel'
-  if (action?.includes('REQUEST_CHANGES')) return 'edit_note'
-  if (action?.includes('SUBMIT')) return 'send'
-  if (action?.includes('UPDATE')) return 'edit'
-  if (action?.includes('DELETE')) return 'delete'
-  if (action?.includes('ARCHIVE')) return 'inventory_2'
-  if (action?.includes('CANCEL')) return 'block'
-  if (action?.includes('SET_EFFECTIVE')) return 'verified'
-  return 'history'
+  if (action?.includes('CREATE')) return IconCirclePlus
+  if (action?.includes('APPROVE')) return IconCircleCheck
+  if (action?.includes('REJECT')) return IconCircleX
+  if (action?.includes('REQUEST_CHANGES')) return IconEditCircle
+  if (action?.includes('SUBMIT')) return IconSend
+  if (action?.includes('UPDATE')) return IconEdit
+  if (action?.includes('DELETE')) return IconTrash
+  if (action?.includes('ARCHIVE')) return IconPackage
+  if (action?.includes('CANCEL')) return IconBan
+  if (action?.includes('SET_EFFECTIVE')) return IconCircleCheck
+  return IconHistory
 }
 
 function getActionColor(action) {
@@ -43,7 +56,7 @@ function getPerformerName(log) {
   >
     <!-- Action icon -->
     <div class="tw:shrink-0 tw:pt-0.5">
-      <WIcon :name="getActionIcon(log.action)" size="20px" :class="getActionColor(log.action)" />
+      <component :is="getActionIcon(log.action)" :size="20" :class="getActionColor(log.action)" />
     </div>
 
     <!-- Content -->

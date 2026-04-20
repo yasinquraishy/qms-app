@@ -1,4 +1,5 @@
 <script setup>
+import { IconSearch, IconBuilding } from '@tabler/icons-vue'
 import { useImpersonate } from '@/composables/useImpersonate.js'
 
 const { companies, loading, search, fetchCompanies, hasMore } = useImpersonate()
@@ -25,29 +26,47 @@ function loadMore() {
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-search">
-      <WInput v-model="search" placeholder="Search companies..." clearable class="tw:w-full">
-        <template #prepend>
-          <WIcon icon="search" />
-        </template>
-      </WInput>
+      <div class="tw:relative tw:w-full">
+        <IconSearch
+          :size="18"
+          class="tw:absolute tw:left-3 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary tw:pointer-events-none"
+        />
+        <BaseTextInput
+          v-model="search"
+          placeholder="Search companies..."
+          class="tw:w-full tw:pl-9"
+        />
+      </div>
     </SafeTeleport>
 
     <div v-if="loading && companies.length === 0" class="tw:flex tw:justify-center tw:p-8">
-      <QSpinner color="primary" size="3em" />
+      <div
+        class="tw:size-12 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      ></div>
     </div>
 
-    <WEmptyState
+    <BaseEmptyState
       v-else-if="companies.length === 0"
-      icon="business"
+      :icon="IconBuilding"
       title="No companies found"
-      compact
+      dense
     />
 
     <template v-else>
       <ImpersonateCompanyList />
 
       <div v-if="hasMore" class="tw:flex tw:justify-center tw:py-4">
-        <WBtn label="Load More" flat color="primary" :loading="loading" @click="loadMore" />
+        <button
+          class="tw:text-sm tw:font-medium tw:text-primary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:underline tw:disabled:opacity-50"
+          :disabled="loading"
+          @click="loadMore"
+        >
+          <span
+            v-if="loading"
+            class="tw:inline-block tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent tw:mr-2"
+          ></span>
+          Load More
+        </button>
       </div>
     </template>
   </div>

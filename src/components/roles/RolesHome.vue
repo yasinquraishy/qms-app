@@ -1,4 +1,5 @@
 <script setup>
+import { IconShield, IconPlus, IconSearch, IconFilter } from '@tabler/icons-vue'
 import { useRoles } from '@/composables/useRoles.js'
 import { isAllowed } from '@/utils/currentSession.js'
 
@@ -16,7 +17,7 @@ onMounted(() => {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="admin_panel_settings" class="tw:text-primary" size="24px" />
+        <IconShield :size="24" class="tw:text-primary" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">
           Roles Administration
         </h2>
@@ -24,15 +25,14 @@ onMounted(() => {
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <WBtn
+      <button
         v-if="canCreateRole"
-        label="Create New Role"
-        icon="add_circle"
-        color="primary"
-        unelevated
-        class="tw:font-bold"
+        class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:bg-primary tw:text-white tw:font-bold tw:rounded-lg tw:hover:bg-primary/90 tw:transition-colors tw:border-0 tw:cursor-pointer"
         @click="showCreateDialog = true"
-      />
+      >
+        <IconPlus :size="18" />
+        Create New Role
+      </button>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -48,19 +48,21 @@ onMounted(() => {
     <!-- Filter Toolbar -->
     <div class="tw:flex tw:items-center tw:gap-3">
       <div class="tw:relative tw:flex-1">
-        <WInput
+        <IconSearch
+          :size="18"
+          class="tw:absolute tw:left-3 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary tw:pointer-events-none"
+        />
+        <BaseTextInput
           v-model="filters.search"
           placeholder="Search roles by name or description..."
-          dense
-          outlined
-          class="tw:w-full"
-        >
-          <template #prepend>
-            <WIcon icon="search" size="20px" class="tw:text-secondary" />
-          </template>
-        </WInput>
+          class="tw:pl-9"
+        />
       </div>
-      <WBtn icon="filter_list" flat dense class="tw:text-secondary" />
+      <button
+        class="tw:p-2 tw:text-secondary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:text-on-main"
+      >
+        <IconFilter :size="20" />
+      </button>
     </div>
 
     <!-- Roles List -->

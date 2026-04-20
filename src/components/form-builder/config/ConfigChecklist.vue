@@ -1,4 +1,5 @@
 <script setup>
+import { IconTrash, IconPlus } from '@tabler/icons-vue'
 import { computed } from 'vue'
 import { COLUMN_INPUT_TYPES } from '@/constants/formBuilderConfig'
 
@@ -6,6 +7,10 @@ const field = defineModel('field', {
   type: Object,
   required: true,
 })
+
+const columnInputTypeItems = computed(() =>
+  COLUMN_INPUT_TYPES.map((opt) => ({ id: opt.value, name: opt.label })),
+)
 
 function addRow() {
   if (!field.value.rows) {
@@ -105,20 +110,23 @@ function removeColumnOption(selectColumnIndex, optionIndex) {
       >
         <div class="tw:flex tw:gap-2 tw:items-center">
           <div class="tw:flex-1">
-            <WInput v-model="field.rows[index]" placeholder="Row Label" dense />
+            <BaseTextInput v-model="field.rows[index]" placeholder="Row Label" size="sm" />
           </div>
-          <WBtn flat round dense icon="sym_o_delete" color="negative" @click="removeRow(index)" />
+          <button
+            class="tw:p-1.5 tw:rounded tw:text-red-500 tw:hover:bg-red-50 tw:transition-colors"
+            @click="removeRow(index)"
+          >
+            <IconTrash :size="16" />
+          </button>
         </div>
       </div>
-      <WBtn
-        flat
-        dense
-        icon="sym_o_add"
-        label="Add Row"
-        color="primary"
-        class="tw:self-start"
+      <button
+        class="tw:self-start tw:flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:text-primary tw:rounded-lg tw:hover:bg-primary/10 tw:transition-colors tw:text-sm tw:font-medium"
         @click="addRow"
-      />
+      >
+        <IconPlus :size="14" />
+        Add Row
+      </button>
     </div>
 
     <div class="tw:flex tw:flex-col tw:gap-3">
@@ -131,43 +139,38 @@ function removeColumnOption(selectColumnIndex, optionIndex) {
         <div class="tw:flex tw:flex-col tw:gap-3">
           <div class="tw:flex tw:gap-2 tw:items-center">
             <div class="tw:flex-1">
-              <WInput
+              <BaseTextInput
                 v-model="col.label"
                 placeholder="Header Label"
-                dense
+                size="sm"
                 @update:modelValue="updateColumnValue(index)"
               />
             </div>
-            <WBtn
-              flat
-              round
-              dense
-              icon="sym_o_delete"
-              color="negative"
+            <button
+              class="tw:p-1.5 tw:rounded tw:text-red-500 tw:hover:bg-red-50 tw:transition-colors"
               @click="removeColumn(index)"
-            />
+            >
+              <IconTrash :size="16" />
+            </button>
           </div>
-          <WSelect
-            v-model="col.inputType"
-            :options="COLUMN_INPUT_TYPES"
-            label="Input Type"
-            dense
-            emitValue
-            mapOptions
-            optionLabel="label"
-            optionValue="value"
-          />
+          <BaseSelectMenu v-model="col.inputType" :items="columnInputTypeItems" :required="true">
+            <template #button>
+              <span class="tw:text-sm tw:font-medium">
+                {{
+                  columnInputTypeItems.find((i) => i.id === col.inputType)?.name || 'Select Type'
+                }}
+              </span>
+            </template>
+          </BaseSelectMenu>
         </div>
       </div>
-      <WBtn
-        flat
-        dense
-        icon="sym_o_add"
-        label="Add Column"
-        color="primary"
-        class="tw:self-start"
+      <button
+        class="tw:self-start tw:flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:text-primary tw:rounded-lg tw:hover:bg-primary/10 tw:transition-colors tw:text-sm tw:font-medium"
         @click="addColumn"
-      />
+      >
+        <IconPlus :size="14" />
+        Add Column
+      </button>
     </div>
 
     <!-- Options for each Select/Dropdown column -->
@@ -183,32 +186,28 @@ function removeColumnOption(selectColumnIndex, optionIndex) {
         >
           <div class="tw:flex tw:gap-2 tw:items-center">
             <div class="tw:flex-1">
-              <WInput v-model="col.options[optIndex]" placeholder="Option" dense />
+              <BaseTextInput v-model="col.options[optIndex]" placeholder="Option" size="sm" />
             </div>
-            <WBtn
-              flat
-              round
-              dense
-              icon="sym_o_delete"
-              color="negative"
+            <button
+              class="tw:p-1.5 tw:rounded tw:text-red-500 tw:hover:bg-red-50 tw:transition-colors"
               @click="removeColumnOption(colIndex, optIndex)"
-            />
+            >
+              <IconTrash :size="16" />
+            </button>
           </div>
         </div>
-        <WBtn
-          flat
-          dense
-          icon="sym_o_add"
-          label="Add Option"
-          color="primary"
-          class="tw:self-start"
+        <button
+          class="tw:self-start tw:flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:text-primary tw:rounded-lg tw:hover:bg-primary/10 tw:transition-colors tw:text-sm tw:font-medium"
           @click="addColumnOption(colIndex)"
-        />
+        >
+          <IconPlus :size="14" />
+          Add Option
+        </button>
       </div>
     </template>
 
     <div class="tw:pt-2">
-      <QCheckbox v-model="field.dense" label="Dense mode" dense />
+      <BaseCheckbox v-model="field.dense">Dense mode</BaseCheckbox>
     </div>
   </div>
 </template>

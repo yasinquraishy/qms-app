@@ -1,3 +1,18 @@
+import {
+  IconFileText,
+  IconForms,
+  IconMapPin,
+  IconSitemap,
+  IconUsersGroup,
+  IconUser,
+  IconShield,
+  IconBuilding,
+  IconList,
+  IconTruck,
+  IconPackage,
+  IconReport,
+} from '@tabler/icons-vue'
+
 /**
  * Category configuration for permissions and other entities
  * Centralized metadata for consistent categorization across the app
@@ -6,77 +21,77 @@
 export const CATEGORY_METADATA = {
   records: {
     label: 'Records & Compliance',
-    icon: 'description',
+    icon: IconFileText,
     description: 'Manage access for Records & Compliance',
   },
   formTemplates: {
     label: 'Form Templates',
-    icon: 'dynamic_form',
+    icon: IconForms,
     description: 'Manage access for Form Templates',
   },
   sites: {
     label: 'Sites',
-    icon: 'location_on',
+    icon: IconMapPin,
     description: 'Manage access for Sites',
   },
   departments: {
     label: 'Departments',
-    icon: 'account_tree',
+    icon: IconSitemap,
     description: 'Manage access for Departments',
   },
   teams: {
     label: 'Teams',
-    icon: 'groups',
+    icon: IconUsersGroup,
     description: 'Manage access for Teams',
   },
   users: {
     label: 'Users',
-    icon: 'person',
+    icon: IconUser,
     description: 'Manage access for Users',
   },
   roles: {
     label: 'Roles',
-    icon: 'shield',
+    icon: IconShield,
     description: 'Manage access for Roles',
   },
   company: {
     label: 'Company',
-    icon: 'business',
+    icon: IconBuilding,
     description: 'Manage access for Company',
   },
   optionSets: {
     label: 'Option Sets',
-    icon: 'list',
+    icon: IconList,
     description: 'Manage access for Option Sets',
   },
   documents: {
     label: 'Documents',
-    icon: 'description',
+    icon: IconFileText,
     description: 'Manage access for Documents',
   },
   'document-templates': {
     label: 'Document Templates',
-    icon: 'description',
+    icon: IconFileText,
     description: 'Manage access for Document Templates',
   },
   approvalWorkflows: {
     label: 'Approval Workflows',
-    icon: 'account_tree',
+    icon: IconSitemap,
     description: 'Manage access for Approval Workflows',
   },
   suppliers: {
     label: 'Suppliers',
-    icon: 'local_shipping',
+    icon: IconTruck,
     description: 'Manage access for Suppliers',
   },
   products: {
     label: 'Products',
-    icon: 'inventory_2',
+    icon: IconPackage,
     description: 'Manage access for Products',
   },
   nc_records: {
     label: 'NC Records',
-    icon: 'report',
+    icon: IconReport,
     description: 'Manage access for Non-Conformance Records',
   },
 }
@@ -126,7 +141,7 @@ export function getCategoryLabel(category) {
  * @returns {string} Material icon name
  */
 export function getCategoryIcon(category) {
-  return CATEGORY_METADATA[category]?.icon || 'settings'
+  return CATEGORY_METADATA[category]?.icon || IconList
 }
 
 /**

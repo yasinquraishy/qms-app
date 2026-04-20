@@ -1,4 +1,6 @@
 <script setup>
+import { IconPlus, IconX } from '@tabler/icons-vue'
+
 const props = defineProps({
   columns: {
     type: Array,
@@ -11,44 +13,26 @@ const modelValue = defineModel({
   default: () => [],
 })
 
-// Filter sections - initialize from modelValue if provided
 const filterSections = ref(
   modelValue.value.length > 0
     ? modelValue.value.map((filter) => ({ ...filter, id: Date.now() + Math.random() }))
-    : [
-        {
-          id: Date.now(),
-          column: null,
-          operator: 'includes',
-          value: '',
-        },
-      ],
+    : [{ id: Date.now(), column: null, operator: 'includes', value: '' }],
 )
 
-// Operator options
 const operatorOptions = [
-  { label: 'Includes', value: 'includes' },
-  { label: 'Equals', value: 'equals' },
-  { label: 'Not Equals', value: 'not-equals' },
+  { id: 'includes', name: 'Includes' },
+  { id: 'equals', name: 'Equals' },
+  { id: 'not-equals', name: 'Not Equals' },
 ]
 
-// Column options (exclude required columns that aren't filterable)
 const columnOptions = computed(() => {
   return props.columns
     .filter((col) => !col.required || col.name === 'statusId')
-    .map((col) => ({
-      label: col.label,
-      value: col.name,
-    }))
+    .map((col) => ({ id: col.name, name: col.label }))
 })
 
 function addFilterSection() {
-  filterSections.value.push({
-    id: Date.now(),
-    column: null,
-    operator: 'includes',
-    value: '',
-  })
+  filterSections.value.push({ id: Date.now(), column: null, operator: 'includes', value: '' })
 }
 
 function removeFilterSection(index) {
@@ -65,14 +49,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  filterSections.value = [
-    {
-      id: Date.now(),
-      column: null,
-      operator: 'includes',
-      value: '',
-    },
-  ]
+  filterSections.value = [{ id: Date.now(), column: null, operator: 'includes', value: '' }]
   modelValue.value = []
 }
 </script>
@@ -88,50 +65,39 @@ function resetFilters() {
         class="tw:flex tw:items-start tw:gap-2"
       >
         <div class="tw:grid tw:grid-cols-3 tw:gap-2 tw:flex-1">
-          <WSelect
-            v-model="section.column"
-            :options="columnOptions"
-            label="Column"
-            optionLabel="label"
-            optionValue="value"
-            dense
-            emitValue
-            mapOptions
-          />
-          <WSelect
-            v-model="section.operator"
-            :options="operatorOptions"
-            label="Operator"
-            optionLabel="label"
-            optionValue="value"
-            dense
-            emitValue
-            mapOptions
-          />
-          <WInput v-model="section.value" label="Value" dense />
+          <div>
+            <label class="tw:text-xs tw:font-medium tw:text-secondary">Column</label>
+            <BaseSelectMenu v-model="section.column" :items="columnOptions" required />
+          </div>
+          <div>
+            <label class="tw:text-xs tw:font-medium tw:text-secondary">Operator</label>
+            <BaseSelectMenu v-model="section.operator" :items="operatorOptions" required />
+          </div>
+          <div>
+            <label class="tw:text-xs tw:font-medium tw:text-secondary">Value</label>
+            <BaseTextInput v-model="section.value" size="sm" />
+          </div>
         </div>
-        <WBtn
+        <button
           v-if="filterSections.length > 1"
-          flat
-          round
-          dense
-          icon="close"
-          color="negative"
-          class="tw:mt-1"
+          class="tw:mt-5 tw:p-1 tw:rounded tw:text-bad tw:hover:bg-main-hover"
+          title="Remove filter"
           @click="removeFilterSection(index)"
         >
-          <QTooltip>Remove filter</QTooltip>
-        </WBtn>
+          <IconX :size="16" />
+        </button>
       </div>
     </div>
 
     <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4">
-      <WBtn flat icon="add" label="Add Filter" color="primary" @click="addFilterSection" />
+      <BaseButton variant="text" size="sm" @click="addFilterSection">
+        <IconPlus :size="14" class="tw:mr-1" /> Add Filter
+      </BaseButton>
     </div>
 
     <div class="tw:flex tw:justify-end tw:gap-2 tw:border-t tw:pt-3 tw:border-divider">
-      <WBtn v-close-popup flat label="Reset" color="grey" @click="resetFilters" />
-      <WBtn v-close-popup label="Apply Filters" color="primary" @click="applyFilters" />
+      <BaseButton variant="text" @click="resetFilters">Reset</BaseButton>
+      <BaseButton @click="applyFilters">Apply Filters</BaseButton>
     </div>
   </div>
 </template>

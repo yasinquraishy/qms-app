@@ -1,3 +1,28 @@
+import {
+  IconTextSize,
+  IconNotes,
+  IconHash,
+  IconLock,
+  IconSelector,
+  IconSquareCheck,
+  IconListCheck,
+  IconTable,
+  IconCalendar,
+  IconPaperclip,
+  IconCamera,
+  IconStar,
+  IconAdjustments,
+  IconToggleRight,
+  IconPalette,
+  IconBold,
+  IconLayoutList,
+  IconColumns,
+  IconLayoutRows,
+  IconRepeat,
+  IconMinus,
+  IconGrid3x3,
+} from '@tabler/icons-vue'
+
 export const CATEGORY_LABELS = Object.freeze({
   input: 'Input Fields',
   selection: 'Selection Fields',
@@ -9,36 +34,36 @@ export const CATEGORY_LABELS = Object.freeze({
 // Field type definitions with icons and labels
 export const FIELD_TYPES = Object.freeze({
   // Input Types
-  input: { icon: 'sym_o_text_fields', label: 'Text Input', category: 'input' },
-  textarea: { icon: 'sym_o_notes', label: 'Text Area', category: 'input' },
-  number: { icon: 'sym_o_123', label: 'Number', category: 'input' },
-  password: { icon: 'sym_o_password', label: 'Password', category: 'input' },
+  input: { icon: IconTextSize, label: 'Text Input', category: 'input' },
+  textarea: { icon: IconNotes, label: 'Text Area', category: 'input' },
+  number: { icon: IconHash, label: 'Number', category: 'input' },
+  password: { icon: IconLock, label: 'Password', category: 'input' },
 
   // Selection Types
-  select: { icon: 'sym_o_expand_circle_down', label: 'Dropdown', category: 'selection' },
-  checkbox: { icon: 'sym_o_check_box', label: 'Checkbox', category: 'selection' },
-  optionGroup: { icon: 'sym_o_checklist', label: 'Option Group', category: 'selection' },
-  checklist: { icon: 'sym_o_table_chart', label: 'Checklist', category: 'selection' },
+  select: { icon: IconSelector, label: 'Dropdown', category: 'selection' },
+  checkbox: { icon: IconSquareCheck, label: 'Checkbox', category: 'selection' },
+  optionGroup: { icon: IconListCheck, label: 'Option Group', category: 'selection' },
+  checklist: { icon: IconTable, label: 'Checklist', category: 'selection' },
 
   // Special Types
-  datetime: { icon: 'sym_o_calendar_month', label: 'Date/Time', category: 'special' },
-  file: { icon: 'sym_o_attach_file', label: 'File Upload', category: 'special' },
-  photo: { icon: 'sym_o_photo_camera', label: 'Photo', category: 'special' },
-  rating: { icon: 'sym_o_star', label: 'Rating', category: 'special' },
-  slider: { icon: 'sym_o_tune', label: 'Slider', category: 'special' },
-  toggle: { icon: 'sym_o_toggle_on', label: 'Toggle', category: 'special' },
-  colorPicker: { icon: 'sym_o_palette', label: 'Color Picker', category: 'special' },
-  textEditor: { icon: 'sym_o_format_bold', label: 'Rich Text', category: 'special' },
+  datetime: { icon: IconCalendar, label: 'Date/Time', category: 'special' },
+  file: { icon: IconPaperclip, label: 'File Upload', category: 'special' },
+  photo: { icon: IconCamera, label: 'Photo', category: 'special' },
+  rating: { icon: IconStar, label: 'Rating', category: 'special' },
+  slider: { icon: IconAdjustments, label: 'Slider', category: 'special' },
+  toggle: { icon: IconToggleRight, label: 'Toggle', category: 'special' },
+  colorPicker: { icon: IconPalette, label: 'Color Picker', category: 'special' },
+  textEditor: { icon: IconBold, label: 'Rich Text', category: 'special' },
 
   // Layout Types
-  section: { icon: 'sym_o_view_agenda', label: 'Section', category: 'layout' },
-  row: { icon: 'sym_o_view_column', label: 'Row', category: 'layout' },
-  column: { icon: 'sym_o_view_stream', label: 'Column', category: 'layout' },
-  repeater: { icon: 'sym_o_repeat', label: 'Repeater', category: 'layout' },
-  separator: { icon: 'sym_o_horizontal_rule', label: 'Separator', category: 'layout' },
+  section: { icon: IconLayoutList, label: 'Section', category: 'layout' },
+  row: { icon: IconColumns, label: 'Row', category: 'layout' },
+  column: { icon: IconLayoutRows, label: 'Column', category: 'layout' },
+  repeater: { icon: IconRepeat, label: 'Repeater', category: 'layout' },
+  separator: { icon: IconMinus, label: 'Separator', category: 'layout' },
 
   // widgets
-  inputTable: { icon: 'sym_o_grid_on', label: 'Input Table', category: 'widget' },
+  inputTable: { icon: IconGrid3x3, label: 'Input Table', category: 'widget' },
 })
 
 export const WIDGET_CONFIG = Object.freeze({

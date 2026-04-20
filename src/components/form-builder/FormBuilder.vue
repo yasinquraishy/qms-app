@@ -1,4 +1,16 @@
 <script setup>
+import {
+  IconMenu2,
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconEdit,
+  IconEye,
+  IconCode,
+  IconTrash,
+  IconDeviceFloppy,
+  IconX,
+  IconCopy,
+} from '@tabler/icons-vue'
 import { useFormBuilder } from '@/composables/useFormBuilder'
 import FormFieldPalette from './FormFieldPalette.vue'
 import FormCanvas from './FormCanvas.vue'
@@ -227,9 +239,13 @@ function copyJson() {
       >
         <div class="tw:flex tw:items-center tw:justify-between">
           <div class="tw:flex tw:items-center tw:gap-3">
-            <WBtn flat round dense icon="menu" @click="leftDrawerOpen = !leftDrawerOpen">
-              <QTooltip>Toggle Fields Panel</QTooltip>
-            </WBtn>
+            <button
+              class="tw:p-2 tw:rounded-lg tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
+              title="Toggle Fields Panel"
+              @click="leftDrawerOpen = !leftDrawerOpen"
+            >
+              <IconMenu2 :size="20" />
+            </button>
 
             <div class="tw:text-lg tw:font-bold tw:text-on-sidebar">
               <slot name="title">
@@ -240,47 +256,73 @@ function copyJson() {
 
           <div class="tw:flex tw:items-center tw:gap-3">
             <div class="tw:flex tw:items-center tw:gap-1">
-              <WBtn flat round dense icon="undo" :disable="!canUndo" @click="undo">
-                <QTooltip>Undo</QTooltip>
-              </WBtn>
-              <WBtn flat round dense icon="redo" :disable="!canRedo" @click="redo">
-                <QTooltip>Redo</QTooltip>
-              </WBtn>
+              <button
+                class="tw:p-2 tw:rounded-lg tw:transition-colors"
+                :class="
+                  canUndo
+                    ? 'tw:text-secondary tw:hover:bg-main-hover'
+                    : 'tw:text-secondary/30 tw:cursor-not-allowed'
+                "
+                :disabled="!canUndo"
+                title="Undo"
+                @click="undo"
+              >
+                <IconArrowBackUp :size="20" />
+              </button>
+              <button
+                class="tw:p-2 tw:rounded-lg tw:transition-colors"
+                :class="
+                  canRedo
+                    ? 'tw:text-secondary tw:hover:bg-main-hover'
+                    : 'tw:text-secondary/30 tw:cursor-not-allowed'
+                "
+                :disabled="!canRedo"
+                title="Redo"
+                @click="redo"
+              >
+                <IconArrowForwardUp :size="20" />
+              </button>
             </div>
 
             <div class="tw:w-px tw:h-6 tw:bg-divider tw:mx-1" />
 
             <div class="tw:flex tw:items-center tw:gap-1">
-              <WBtn
-                flat
-                round
-                dense
-                :icon="showPreview ? 'edit' : 'visibility'"
-                :color="showPreview ? 'primary' : 'grey-7'"
+              <button
+                class="tw:p-2 tw:rounded-lg tw:transition-colors"
+                :class="
+                  showPreview
+                    ? 'tw:text-primary tw:bg-primary/10'
+                    : 'tw:text-secondary tw:hover:bg-main-hover'
+                "
+                :title="showPreview ? 'Edit Mode' : 'Preview'"
                 @click="togglePreview"
               >
-                <QTooltip>{{ showPreview ? 'Edit Mode' : 'Preview' }}</QTooltip>
-              </WBtn>
+                <component :is="showPreview ? IconEdit : IconEye" :size="20" />
+              </button>
 
-              <WBtn flat round dense icon="code" @click="showJsonDialog = true">
-                <QTooltip>View JSON</QTooltip>
-              </WBtn>
+              <button
+                class="tw:p-2 tw:rounded-lg tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
+                title="View JSON"
+                @click="showJsonDialog = true"
+              >
+                <IconCode :size="20" />
+              </button>
 
-              <WBtn flat round dense icon="delete_outline" color="negative" @click="confirmClear">
-                <QTooltip>Clear All</QTooltip>
-              </WBtn>
+              <button
+                class="tw:p-2 tw:rounded-lg tw:text-red-500 tw:hover:bg-red-50 tw:transition-colors"
+                title="Clear All"
+                @click="confirmClear"
+              >
+                <IconTrash :size="20" />
+              </button>
             </div>
 
             <div class="tw:w-px tw:h-6 tw:bg-divider tw:mx-2" />
 
-            <WBtn
-              unelevated
-              icon="save"
-              label="Save"
-              color="primary"
-              class="tw:px-6 tw:font-bold"
-              @click="onSave"
-            />
+            <BaseButton variant="primary" @click="onSave">
+              <IconDeviceFloppy :size="18" />
+              Save
+            </BaseButton>
           </div>
         </div>
       </header>
@@ -314,18 +356,13 @@ function copyJson() {
               </div>
               <div class="tw:p-5">
                 <DynamicForm v-model="previewData" :fields="schema" @submit="onPreviewSubmit">
-                  <template #footer>
+                  <template #footer="{ submit }">
                     <div
                       class="tw:flex tw:justify-end tw:mt-5 tw:pt-4 tw:border-t tw:border-divider"
                     >
-                      <WBtn
-                        type="submit"
-                        color="primary"
-                        label="Submit Application"
-                        size="lg"
-                        unelevated
-                        class="tw:px-10"
-                      />
+                      <BaseButton variant="primary" size="lg" @click="submit">
+                        Submit Application
+                      </BaseButton>
                     </div>
                   </template>
                 </DynamicForm>
@@ -344,7 +381,12 @@ function copyJson() {
               class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:border-divider tw:bg-main/50"
             >
               <div class="tw:text-lg tw:font-bold tw:text-on-sidebar">Field Settings</div>
-              <WBtn flat round dense icon="close" @click="closeRightDrawer" />
+              <button
+                class="tw:p-2 tw:rounded-lg tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
+                @click="closeRightDrawer"
+              >
+                <IconX :size="20" />
+              </button>
             </div>
             <div class="tw:flex tw:flex-col tw:grow tw:overflow-y-auto">
               <FormFieldConfig v-model:field="selectedField" :path="selectedFieldPath" />
@@ -355,14 +397,8 @@ function copyJson() {
     </div>
 
     <!-- JSON Dialog -->
-    <QDialog v-model="showJsonDialog" maximized>
-      <div class="tw:flex tw:flex-col tw:h-full tw:bg-sidebar">
-        <div
-          class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:border-divider"
-        >
-          <div class="tw:text-xl tw:font-bold">Form Schema JSON</div>
-          <WBtn flat round dense icon="close" @click="showJsonDialog = false" />
-        </div>
+    <BaseDialog v-model="showJsonDialog" title="Form Schema JSON" maxWidth="full">
+      <template #default>
         <div class="tw:grow tw:overflow-hidden tw:p-5">
           <div
             class="tw:h-full tw:bg-main tw:rounded-2xl tw:border tw:border-divider tw:overflow-hidden tw:flex tw:flex-col"
@@ -371,46 +407,31 @@ function copyJson() {
               class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-2 tw:bg-divider/20 tw:border-b tw:border-divider"
             >
               <div class="ds-label-sm tw:text-secondary">Schema Output</div>
-              <WBtn
-                flat
-                dense
-                icon="content_copy"
-                label="Copy JSON"
-                color="primary"
+              <button
+                class="tw:flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:text-primary tw:rounded-lg tw:hover:bg-primary/10 tw:transition-colors tw:text-sm tw:font-medium"
                 @click="copyJson"
-              />
+              >
+                <IconCopy :size="16" />
+                Copy JSON
+              </button>
             </div>
             <pre
               class="tw:flex-1 tw:p-4 tw:overflow-auto tw:font-mono tw:text-sm tw:leading-relaxed tw:text-on-main"
             ><code>{{ jsonContent }}</code></pre>
           </div>
         </div>
-      </div>
-    </QDialog>
+      </template>
+    </BaseDialog>
 
     <!-- Clear Confirmation Dialog -->
-    <QDialog v-model="showClearDialog">
-      <div class="tw:bg-sidebar tw:rounded-2xl tw:max-w-sm tw:overflow-hidden tw:shadow-2xl">
-        <div class="tw:p-5">
-          <div class="tw:flex tw:items-center tw:gap-3 tw:mb-3">
-            <div
-              class="tw:w-12 tw:h-12 tw:bg-bad/10 tw:text-bad tw:rounded-full tw:flex tw:items-center tw:justify-center"
-            >
-              <WIcon icon="warning" size="24px" />
-            </div>
-            <div class="tw:text-2xl tw:font-bold tw:text-on-sidebar">Clear Form?</div>
-          </div>
-          <div class="tw:text-secondary tw:leading-relaxed">
-            Are you sure you want to clear all fields? This action will remove all current content
-            and cannot be undone.
-          </div>
-        </div>
-        <div class="tw:flex tw:justify-end tw:gap-3 tw:px-5 tw:pb-5">
-          <WBtn flat label="Keep Current" color="grey-7" @click="showClearDialog = false" />
-          <WBtn unelevated label="Delete All" color="negative" @click="doClear" />
-        </div>
-      </div>
-    </QDialog>
+    <ConfirmDialog
+      v-model="showClearDialog"
+      title="Clear Form?"
+      message="Are you sure you want to clear all fields? This action will remove all current content and cannot be undone."
+      confirmLabel="Delete All"
+      variant="danger"
+      @confirm="doClear"
+    />
   </div>
 </template>
 

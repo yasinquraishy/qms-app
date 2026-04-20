@@ -1,4 +1,5 @@
 <script setup>
+import { IconHandClick } from '@tabler/icons-vue'
 import { computed } from 'vue'
 import {
   TYPE_SETTINGS_TYPES,
@@ -24,11 +25,16 @@ const hasTypeSettings = computed(() => TYPE_SETTINGS_TYPES.has(field.value?.type
 const isNumberType = computed(() => NUMBER_TYPES.has(field.value?.type))
 const hasOptions = computed(() => OPTIONS_TYPES.has(field.value?.type))
 
-function updateRowColClass(value) {
-  // Update the row's own property
-  field.value.colClass = value
+const colClassItems = computed(() =>
+  COL_CLASS_OPTIONS.map((opt) => ({ id: opt.value, name: opt.label })),
+)
 
-  // Update all children's class property
+const datetimeModeItems = computed(() =>
+  DATETIME_MODE_OPTIONS.map((opt) => ({ id: opt.value, name: opt.label })),
+)
+
+function updateRowColClass(value) {
+  field.value.colClass = value
   if (field.value.children) {
     field.value.children.forEach((child) => {
       child.class = value
@@ -43,7 +49,7 @@ function updateRowColClass(value) {
       v-if="!field"
       class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:p-6 tw:text-center"
     >
-      <WIcon icon="touch_app" size="40px" class="tw:text-secondary/40 tw:mb-4" />
+      <IconHandClick :size="40" class="tw:text-secondary/40 tw:mb-4" />
       <div class="tw:text-sm tw:text-secondary">Select a field to configure</div>
     </div>
 
@@ -64,9 +70,9 @@ function updateRowColClass(value) {
         <!-- Number/Slider Settings -->
         <template v-if="isNumberType">
           <div class="tw:grid tw:grid-cols-3 tw:gap-3">
-            <WInput v-model.number="field.min" type="number" label="Min" dense />
-            <WInput v-model.number="field.max" type="number" label="Max" dense />
-            <WInput v-model.number="field.step" type="number" label="Step" dense />
+            <BaseTextInput v-model.number="field.min" type="number" label="Min" size="sm" />
+            <BaseTextInput v-model.number="field.max" type="number" label="Max" size="sm" />
+            <BaseTextInput v-model.number="field.step" type="number" label="Step" size="sm" />
           </div>
         </template>
 
@@ -78,45 +84,48 @@ function updateRowColClass(value) {
 
         <!-- Rating Settings -->
         <template v-if="field.type === 'rating'">
-          <WInput v-model.number="field.max" type="number" label="Max Stars" />
+          <BaseTextInput v-model.number="field.max" type="number" label="Max Stars" />
         </template>
 
         <!-- Section Settings -->
         <template v-if="field.type === 'section'">
           <div class="tw:flex tw:flex-col tw:gap-3">
-            <QCheckbox v-model="field.collapsible" label="Collapsible" dense />
-            <QCheckbox
-              v-if="field.collapsible"
-              v-model="field.collapsed"
-              label="Start collapsed"
-              dense
-            />
+            <BaseCheckbox v-model="field.collapsible">Collapsible</BaseCheckbox>
+            <BaseCheckbox v-if="field.collapsible" v-model="field.collapsed">
+              Start collapsed
+            </BaseCheckbox>
           </div>
         </template>
 
         <!-- Row Settings -->
         <template v-if="field.type === 'row'">
-          <WSelect
+          <BaseSelectMenu
             :modelValue="field.colClass"
-            :options="COL_CLASS_OPTIONS"
-            label="Item Width"
-            emitValue
-            mapOptions
-            optionLabel="label"
-            optionValue="value"
-            hint="Sets the width for all items in this row"
+            :items="colClassItems"
+            :required="true"
             @update:modelValue="updateRowColClass"
-          />
+          >
+            <template #button>
+              <span class="tw:text-sm tw:font-medium">
+                {{
+                  colClassItems.find((i) => i.id === field.colClass)?.name || 'Select Item Width'
+                }}
+              </span>
+            </template>
+          </BaseSelectMenu>
+          <p class="tw:text-xs tw:text-secondary tw:mt-1">
+            Sets the width for all items in this row
+          </p>
         </template>
 
         <template v-if="field.type === 'repeater'">
           <div class="tw:flex tw:flex-col tw:gap-3">
             <div class="tw:grid tw:grid-cols-2 tw:gap-3">
-              <WInput v-model.number="field.minItems" type="number" label="Min Items" />
-              <WInput v-model.number="field.maxItems" type="number" label="Max Items" />
+              <BaseTextInput v-model.number="field.minItems" type="number" label="Min Items" />
+              <BaseTextInput v-model.number="field.maxItems" type="number" label="Max Items" />
             </div>
-            <WInput v-model="field.addLabel" label="Add Button Label" />
-            <WInput v-model="field.itemLabel" label="Item Label" />
+            <BaseTextInput v-model="field.addLabel" label="Add Button Label" />
+            <BaseTextInput v-model="field.itemLabel" label="Item Label" />
           </div>
         </template>
 
@@ -125,16 +134,14 @@ function updateRowColClass(value) {
 
         <!-- Datetime Settings -->
         <template v-if="field.type === 'datetime'">
-          <WSelect
-            v-model="field.mode"
-            :options="DATETIME_MODE_OPTIONS"
-            label="Display Mode"
-            emitValue
-            mapOptions
-            optionLabel="label"
-            optionValue="value"
-            hint="Format for date/time selection"
-          />
+          <BaseSelectMenu v-model="field.mode" :items="datetimeModeItems" :required="true">
+            <template #button>
+              <span class="tw:text-sm tw:font-medium">
+                {{ datetimeModeItems.find((i) => i.id === field.mode)?.name || 'Select Mode' }}
+              </span>
+            </template>
+          </BaseSelectMenu>
+          <p class="tw:text-xs tw:text-secondary tw:mt-1">Format for date/time selection</p>
         </template>
       </div>
 

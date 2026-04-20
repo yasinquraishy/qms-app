@@ -1,5 +1,6 @@
 <script setup>
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm.vue'
+import { IconShieldCheck, IconCircleCheck } from '@tabler/icons-vue'
 
 defineOptions({
   name: 'ForgotPasswordPage',
@@ -12,20 +13,20 @@ defineOptions({
       <!-- Left side - Branding -->
       <div class="login-branding">
         <div class="branding-content">
-          <WIcon name="verified" size="48px" color="white" />
+          <IconShieldCheck :size="48" class="tw:text-white" />
           <h1 class="branding-title">QMS</h1>
           <p class="branding-subtitle">Quality Management System</p>
           <div class="branding-features">
             <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4">
-              <WIcon name="check_circle" size="20px" color="white" />
+              <IconCircleCheck :size="20" class="tw:text-white" />
               <span>Document Control</span>
             </div>
             <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4">
-              <WIcon name="check_circle" size="20px" color="white" />
+              <IconCircleCheck :size="20" class="tw:text-white" />
               <span>Audit Management</span>
             </div>
             <div class="tw:flex tw:items-center tw:gap-2">
-              <WIcon name="check_circle" size="20px" color="white" />
+              <IconCircleCheck :size="20" class="tw:text-white" />
               <span>Compliance Tracking</span>
             </div>
           </div>

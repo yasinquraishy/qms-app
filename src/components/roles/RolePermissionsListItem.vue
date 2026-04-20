@@ -1,4 +1,5 @@
 <script setup>
+import { IconCategory } from '@tabler/icons-vue'
 import {
   getCategoryLabel,
   getCategoryIcon,
@@ -24,7 +25,7 @@ const model = defineModel({
   <div class="tw:flex tw:flex-col tw:gap-3">
     <!-- Section Header -->
     <div class="tw:flex tw:items-center tw:gap-3">
-      <WIcon icon="category" size="20px" class="tw:text-secondary" />
+      <IconCategory :size="20" class="tw:text-secondary" />
       <h4 class="tw:font-bold tw:text-on-sidebar">
         {{ model.name }}
       </h4>
@@ -41,7 +42,7 @@ const model = defineModel({
         <div
           class="tw:bg-sidebar/30 tw:px-5 tw:py-3 tw:border-b tw:border-sidebar tw:flex tw:items-center tw:gap-3"
         >
-          <WIcon :icon="getCategoryIcon(item.key)" size="20px" class="tw:text-secondary" />
+          <component :is="getCategoryIcon(item.key)" :size="20" class="tw:text-secondary" />
           <div>
             <p class="tw:text-sm tw:font-semibold tw:text-on-sidebar">
               {{ getCategoryLabel(item.key) }}
@@ -55,16 +56,16 @@ const model = defineModel({
         <!-- Item Body - Checkboxes in a wrapping row -->
         <div class="tw:px-5 tw:py-3 tw:flex tw:flex-wrap tw:gap-x-6 tw:gap-y-1">
           <template v-for="action in permissionActions" :key="`${item.key}-${action}`">
-            <QCheckbox
+            <BaseCheckbox
               v-if="getPermissionForAction(item.group.permissions, action)"
               :modelValue="isSelected(getPermissionForAction(item.group.permissions, action))"
-              :label="formatActionLabel(action)"
-              color="primary"
-              :disable="!canUpdateRole"
+              :disabled="!canUpdateRole"
               @update:modelValue="
                 togglePermission(getPermissionForAction(item.group.permissions, action))
               "
-            />
+            >
+              {{ formatActionLabel(action) }}
+            </BaseCheckbox>
           </template>
         </div>
       </div>

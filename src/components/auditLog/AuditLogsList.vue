@@ -1,4 +1,6 @@
 <script setup>
+import { IconFileText, IconSchool, IconAlertTriangle, IconTool, IconDots } from '@tabler/icons-vue'
+
 defineProps({
   sortedModules: {
     type: Array,
@@ -7,19 +9,19 @@ defineProps({
 })
 
 const MODULE_META = {
-  DOCUMENT_CONTROL: { label: 'Document Control', icon: 'description', color: 'tw:text-blue-600' },
+  DOCUMENT_CONTROL: { label: 'Document Control', icon: IconFileText, color: 'tw:text-blue-600' },
   TRAINING_MANAGEMENT: {
     label: 'Training Management',
-    icon: 'school',
+    icon: IconSchool,
     color: 'tw:text-purple-600',
   },
   NON_CONFORMANCE: {
     label: 'Non-Conformance',
-    icon: 'report_problem',
+    icon: IconAlertTriangle,
     color: 'tw:text-orange-600',
   },
-  CAPA: { label: 'CAPA', icon: 'build', color: 'tw:text-teal-600' },
-  OTHER: { label: 'Other', icon: 'more_horiz', color: 'tw:text-gray-600' },
+  CAPA: { label: 'CAPA', icon: IconTool, color: 'tw:text-teal-600' },
+  OTHER: { label: 'Other', icon: IconDots, color: 'tw:text-gray-600' },
 }
 
 function getModuleMeta(moduleId) {
@@ -36,9 +38,9 @@ function getModuleMeta(moduleId) {
     >
       <!-- Module header -->
       <div class="tw:px-5 tw:py-4 tw:border-b tw:border-divider tw:flex tw:items-center tw:gap-3">
-        <WIcon
-          :name="getModuleMeta(group.id).icon"
-          size="22px"
+        <component
+          :is="getModuleMeta(group.id).icon"
+          :size="22"
           :class="getModuleMeta(group.id).color"
         />
         <div>

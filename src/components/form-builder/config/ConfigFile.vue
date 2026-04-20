@@ -7,11 +7,11 @@ const field = defineModel('field', {
 })
 
 const fileTypeOptions = [
-  { label: 'Asset', value: 'ASSET' },
-  { label: 'Company Logo', value: 'COMPANYLOGO' },
-  { label: 'User Avatar', value: 'USERAVATAR' },
-  { label: 'Editor Image', value: 'EDITORIMAGE' },
-  { label: 'Open', value: 'OPEN' },
+  { id: 'ASSET', name: 'Asset' },
+  { id: 'COMPANYLOGO', name: 'Company Logo' },
+  { id: 'USERAVATAR', name: 'User Avatar' },
+  { id: 'EDITORIMAGE', name: 'Editor Image' },
+  { id: 'OPEN', name: 'Open' },
 ]
 
 const formattedMaxSize = computed(() => {
@@ -45,36 +45,37 @@ const formattedMaxSize = computed(() => {
     </div>
 
     <div class="tw:flex tw:flex-col tw:gap-3">
-      <WSelect
-        v-model="field.fileType"
-        :options="fileTypeOptions"
-        label="File Type"
-        emitValue
-        mapOptions
-        optionLabel="label"
-        optionValue="value"
-        hint="Category for uploaded files"
-      />
-      <WInput
+      <div>
+        <p class="tw:text-sm tw:font-medium tw:text-secondary tw:mb-1">File Type</p>
+        <BaseSelectMenu v-model="field.fileType" :items="fileTypeOptions" :required="true">
+          <template #button>
+            <span class="tw:text-sm tw:font-medium">
+              {{ fileTypeOptions.find((i) => i.id === field.fileType)?.name || 'Select File Type' }}
+            </span>
+          </template>
+        </BaseSelectMenu>
+        <p class="tw:text-xs tw:text-secondary tw:mt-1">Category for uploaded files</p>
+      </div>
+      <BaseTextInput
         v-model="field.accept"
         label="Accept (MIME types)"
         placeholder="image/*,video/*,application/pdf,.docx,.doc"
-        hint="Comma-separated list of allowed file types"
+        instructions="Comma-separated list of allowed file types"
       />
       <div>
-        <WInput
+        <BaseTextInput
           v-model.number="field.maxSize"
           type="number"
           label="Max File Size (bytes)"
           placeholder="104857600"
-          :hint="
+          :instructions="
             formattedMaxSize
               ? `current: ${formattedMaxSize || 'No limit'}`
               : 'Default: 100 MB (104857600 bytes)'
           "
         />
       </div>
-      <QCheckbox v-model="field.multiple" label="Allow multiple files" dense />
+      <BaseCheckbox v-model="field.multiple">Allow multiple files</BaseCheckbox>
     </div>
   </div>
 </template>

@@ -1,4 +1,23 @@
 <script setup>
+import {
+  IconClipboardCheck,
+  IconAlertCircle,
+  IconCircleCheck,
+  IconClock,
+  IconDownload,
+  IconPlus,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconBuilding,
+  IconCalendar,
+  IconDotsVertical,
+  IconEye,
+  IconPencil,
+  IconHourglass,
+  IconFolderOpen,
+  IconSchool,
+  IconAlertTriangle,
+} from '@tabler/icons-vue'
 import { provideUsers } from '@/composables/useUsers.js'
 
 defineOptions({
@@ -8,22 +27,42 @@ defineOptions({
 const route = useRoute()
 const companyCode = computed(() => route.params.companyCode)
 
-// Onboarding dialog
 const showOnboarding = ref(route.query.onboarding === 'true')
 provideUsers()
 
-// Stats data
 const stats = ref([
-  { title: 'Total Audits', value: '124', trend: 12, icon: 'fact_check', color: 'primary' },
-  { title: 'Open Issues', value: '18', trend: -8, icon: 'error_outline', color: 'warning' },
-  { title: 'Completed', value: '98', trend: 15, icon: 'check_circle', color: 'positive' },
-  { title: 'Overdue', value: '6', trend: -3, icon: 'schedule', color: 'negative' },
+  {
+    title: 'Total Audits',
+    value: '124',
+    trend: 12,
+    icon: IconClipboardCheck,
+    colorClass: 'tw:bg-primary/10 tw:text-primary',
+  },
+  {
+    title: 'Open Issues',
+    value: '18',
+    trend: -8,
+    icon: IconAlertCircle,
+    colorClass: 'tw:bg-warn/10 tw:text-warn',
+  },
+  {
+    title: 'Completed',
+    value: '98',
+    trend: 15,
+    icon: IconCircleCheck,
+    colorClass: 'tw:bg-good/10 tw:text-good',
+  },
+  {
+    title: 'Overdue',
+    value: '6',
+    trend: -3,
+    icon: IconClock,
+    colorClass: 'tw:bg-bad/10 tw:text-bad',
+  },
 ])
 
-// Compliance score
 const complianceScore = ref(87)
 
-// Recent audits
 const recentAudits = ref([
   {
     id: 1,
@@ -55,15 +94,29 @@ const recentAudits = ref([
   },
 ])
 
-// Quick actions
 const quickActions = ref([
-  { label: 'Create New Audit', icon: 'add_circle', color: 'primary' },
-  { label: 'Report an Issue', icon: 'report_problem', color: 'warning' },
-  { label: 'View Documents', icon: 'folder', color: 'info' },
-  { label: 'Schedule Training', icon: 'school', color: 'positive' },
+  {
+    label: 'Create New Audit',
+    icon: IconPlus,
+    colorClass: 'tw:bg-primary tw:text-white tw:hover:bg-primary/90',
+  },
+  {
+    label: 'Report an Issue',
+    icon: IconAlertTriangle,
+    colorClass: 'tw:bg-warn tw:text-white tw:hover:bg-warn/90',
+  },
+  {
+    label: 'View Documents',
+    icon: IconFolderOpen,
+    colorClass: 'tw:bg-blue-500 tw:text-white tw:hover:bg-blue-600',
+  },
+  {
+    label: 'Schedule Training',
+    icon: IconSchool,
+    colorClass: 'tw:bg-good tw:text-white tw:hover:bg-good/90',
+  },
 ])
 
-// Pending tasks
 const pendingTasks = ref([
   {
     id: 1,
@@ -95,39 +148,36 @@ const pendingTasks = ref([
   },
 ])
 
-const taskColumns = [
-  { name: 'task', label: 'Task', field: 'task', align: 'left' },
-  { name: 'assignee', label: 'Assignee', field: 'assignee', align: 'left' },
-  { name: 'dueDate', label: 'Due Date', field: 'dueDate', align: 'left' },
-  { name: 'priority', label: 'Priority', field: 'priority', align: 'center' },
-  { name: 'actions', label: 'Actions', field: 'actions', align: 'center' },
-]
+function getStatusIcon(status) {
+  const icons = { Completed: IconCircleCheck, 'In Progress': IconHourglass, Pending: IconClock }
+  return icons[status] || IconAlertCircle
+}
 
 function getStatusColor(status) {
   const colors = {
-    Completed: 'positive',
-    'In Progress': 'info',
-    Pending: 'warning',
+    Completed: 'tw:bg-good/10 tw:text-good tw:border-good/20',
+    'In Progress': 'tw:bg-blue-100 tw:text-blue-600 tw:border-blue-200',
+    Pending: 'tw:bg-warn/10 tw:text-warn tw:border-warn/20',
   }
-  return colors[status] || 'grey'
+  return colors[status] || 'tw:bg-gray-100 tw:text-gray-600 tw:border-gray-200'
 }
 
-function getStatusIcon(status) {
-  const icons = {
-    Completed: 'check',
-    'In Progress': 'hourglass_empty',
-    Pending: 'schedule',
+function getStatusBgIcon(status) {
+  const colors = {
+    Completed: 'tw:bg-good/10 tw:text-good',
+    'In Progress': 'tw:bg-blue-100 tw:text-blue-600',
+    Pending: 'tw:bg-warn/10 tw:text-warn',
   }
-  return icons[status] || 'help'
+  return colors[status] || 'tw:bg-gray-100 tw:text-gray-600'
 }
 
 function getPriorityColor(priority) {
   const colors = {
-    High: 'negative',
-    Medium: 'warning',
-    Low: 'positive',
+    High: 'tw:bg-bad/10 tw:text-bad',
+    Medium: 'tw:bg-warn/10 tw:text-warn',
+    Low: 'tw:bg-good/10 tw:text-good',
   }
-  return colors[priority] || 'grey'
+  return colors[priority] || 'tw:bg-gray-100 tw:text-gray-600'
 }
 </script>
 
@@ -142,196 +192,270 @@ function getPriorityColor(priority) {
         </div>
       </div>
       <div class="tw:flex tw:gap-2">
-        <WBtn outline color="grey-7" icon="download" label="Export" noCaps />
-        <WBtn color="primary" icon="add" label="New Audit" unelevated noCaps />
+        <button
+          class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-secondary tw:bg-transparent tw:border tw:border-divider tw:rounded-lg tw:cursor-pointer tw:hover:bg-sidebar tw:transition-colors"
+        >
+          <IconDownload :size="16" />
+          Export
+        </button>
+        <button
+          class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0"
+        >
+          <IconPlus :size="16" />
+          New Audit
+        </button>
       </div>
     </div>
 
-    <WUploader />
-
     <!-- Stats Cards -->
-    <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:lg:grid-cols-4 tw:gap-4 tw:mb-5">
-      <div v-for="stat in stats" :key="stat.title">
-        <WCard class="stat-card" flat>
-          <QCardSection class="tw:p-4">
-            <div class="tw:flex tw:items-start tw:justify-between tw:mb-3">
-              <div class="stat-icon-wrapper" :class="`bg-${stat.color}-1`">
-                <WIcon :icon="stat.icon" :color="stat.color" size="24px" />
-              </div>
-              <QChip :color="stat.trend > 0 ? 'positive' : 'negative'" textColor="white" dense>
-                <WIcon
-                  :icon="stat.trend > 0 ? 'arrow_upward' : 'arrow_downward'"
-                  size="12px"
-                  class="tw:mr-1"
-                />
-                {{ Math.abs(stat.trend) }}%
-              </QChip>
-            </div>
-            <div class="tw:text-3xl tw:font-bold tw:mb-1 tw:text-on-main">{{ stat.value }}</div>
-            <div class="tw:text-sm tw:text-secondary">{{ stat.title }}</div>
-          </QCardSection>
-        </WCard>
+    <div class="tw:grid tw:grid-cols-1 sm:tw:grid-cols-2 lg:tw:grid-cols-4 tw:gap-4 tw:mb-5">
+      <div
+        v-for="stat in stats"
+        :key="stat.title"
+        class="tw:rounded-xl tw:border tw:border-divider tw:bg-sidebar tw:p-4 tw:transition-all tw:hover:-translate-y-0.5 tw:hover:shadow-md"
+      >
+        <div class="tw:flex tw:items-start tw:justify-between tw:mb-3">
+          <div
+            class="tw:size-12 tw:rounded-xl tw:flex tw:items-center tw:justify-center"
+            :class="stat.colorClass"
+          >
+            <component :is="stat.icon" :size="24" />
+          </div>
+          <span
+            class="tw:flex tw:items-center tw:gap-0.5 tw:text-xs tw:font-bold tw:px-2 tw:py-0.5 tw:rounded-full"
+            :class="stat.trend > 0 ? 'tw:bg-good/10 tw:text-good' : 'tw:bg-bad/10 tw:text-bad'"
+          >
+            <component :is="stat.trend > 0 ? IconTrendingUp : IconTrendingDown" :size="12" />
+            {{ Math.abs(stat.trend) }}%
+          </span>
+        </div>
+        <div class="tw:text-3xl tw:font-bold tw:mb-1 tw:text-on-main">{{ stat.value }}</div>
+        <div class="tw:text-sm tw:text-secondary">{{ stat.title }}</div>
       </div>
     </div>
 
     <!-- Main Content Grid -->
-    <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-3 tw:gap-4">
+    <div class="tw:grid tw:grid-cols-1 lg:tw:grid-cols-3 tw:gap-4">
       <!-- Recent Audits -->
-      <div class="tw:lg:col-span-2">
-        <WCard flat class="content-card">
-          <QCardSection class="tw:flex tw:items-center tw:pb-0">
+      <div class="lg:tw:col-span-2">
+        <div class="tw:rounded-xl tw:border tw:border-divider tw:bg-sidebar">
+          <div class="tw:flex tw:items-center tw:px-5 tw:py-4 tw:border-b tw:border-divider">
             <div class="tw:text-lg tw:font-medium tw:text-on-main">Recent Audits</div>
-            <QSpace />
-            <WBtn flat color="primary" label="View All" noCaps dense />
-          </QCardSection>
-          <QCardSection>
-            <QList class="audit-list" separator>
-              <QItem
-                v-for="audit in recentAudits"
-                :key="audit.id"
-                class="audit-item tw:p-4"
-                clickable
+            <div class="tw:flex-1" />
+            <button
+              class="tw:text-sm tw:font-medium tw:text-primary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:underline"
+            >
+              View All
+            </button>
+          </div>
+          <div class="tw:divide-y tw:divide-divider">
+            <div
+              v-for="audit in recentAudits"
+              :key="audit.id"
+              class="tw:flex tw:items-center tw:gap-3 tw:p-4 tw:cursor-pointer tw:hover:bg-main-hover tw:transition-colors"
+            >
+              <div
+                class="tw:size-12 tw:rounded-xl tw:flex tw:items-center tw:justify-center tw:shrink-0"
+                :class="getStatusBgIcon(audit.status)"
               >
-                <QItemSection avatar>
-                  <WAvatar :color="getStatusColor(audit.status)" textColor="white" size="48px">
-                    <WIcon :icon="getStatusIcon(audit.status)" size="24px" />
-                  </WAvatar>
-                </QItemSection>
-                <QItemSection>
-                  <QItemLabel class="tw:font-medium tw:text-on-main">
-                    {{ audit.title }}
-                  </QItemLabel>
-                  <QItemLabel caption class="tw:text-secondary">
-                    <WIcon icon="business" size="14px" class="tw:mr-1" />
-                    {{ audit.department }}
-                    <span class="tw:mx-2">•</span>
-                    <WIcon icon="event" size="14px" class="tw:mr-1" />
-                    {{ audit.date }}
-                  </QItemLabel>
-                </QItemSection>
-                <QItemSection side>
-                  <QChip :color="getStatusColor(audit.status)" textColor="white" outline>
-                    {{ audit.status }}
-                  </QChip>
-                </QItemSection>
-                <QItemSection side>
-                  <WBtn flat round icon="more_vert" color="grey-6" />
-                </QItemSection>
-              </QItem>
-            </QList>
-          </QCardSection>
-        </WCard>
+                <component :is="getStatusIcon(audit.status)" :size="24" />
+              </div>
+              <div class="tw:flex-1 tw:min-w-0">
+                <div class="tw:font-medium tw:text-on-main tw:truncate">{{ audit.title }}</div>
+                <div
+                  class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-secondary tw:mt-0.5"
+                >
+                  <IconBuilding :size="12" />
+                  {{ audit.department }}
+                  <span class="tw:mx-1">•</span>
+                  <IconCalendar :size="12" />
+                  {{ audit.date }}
+                </div>
+              </div>
+              <span
+                class="tw:text-xs tw:font-medium tw:px-2.5 tw:py-1 tw:rounded-full tw:border"
+                :class="getStatusColor(audit.status)"
+              >
+                {{ audit.status }}
+              </span>
+              <button
+                class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:text-secondary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-main-hover"
+              >
+                <IconDotsVertical :size="18" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Sidebar -->
       <div class="tw:flex tw:flex-col tw:gap-4">
         <!-- Compliance Score -->
-        <WCard flat class="content-card">
-          <QCardSection>
-            <div class="tw:text-lg tw:font-medium tw:text-on-main tw:mb-4">Compliance Score</div>
-            <div class="tw:flex tw:justify-center tw:py-2">
-              <QCircularProgress
-                showValue
-                :value="complianceScore"
-                size="160px"
-                :thickness="0.12"
-                color="positive"
-                trackColor="grey-3"
+        <div class="tw:rounded-xl tw:border tw:border-divider tw:bg-sidebar tw:p-5">
+          <div class="tw:text-lg tw:font-medium tw:text-on-main tw:mb-4">Compliance Score</div>
+          <div class="tw:flex tw:justify-center tw:py-2">
+            <div class="tw:relative tw:size-40">
+              <svg class="tw:size-full tw:-rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="44"
+                  fill="none"
+                  stroke="var(--divider)"
+                  stroke-width="8"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="44"
+                  fill="none"
+                  stroke="var(--good)"
+                  stroke-width="8"
+                  stroke-dasharray="276.46"
+                  :stroke-dashoffset="276.46 * (1 - complianceScore / 100)"
+                  stroke-linecap="round"
+                  class="tw:transition-all tw:duration-500"
+                />
+              </svg>
+              <div
+                class="tw:absolute tw:inset-0 tw:flex tw:flex-col tw:items-center tw:justify-center"
               >
-                <div class="tw:text-center">
-                  <div class="tw:text-4xl tw:font-bold tw:text-good">{{ complianceScore }}%</div>
-                  <div class="tw:text-xs tw:text-secondary">Excellent</div>
-                </div>
-              </QCircularProgress>
-            </div>
-            <div class="tw:grid tw:grid-cols-3 tw:gap-2 tw:mt-3">
-              <div class="tw:text-center">
-                <div class="tw:text-xl tw:font-bold tw:text-good">98</div>
-                <div class="tw:text-xs tw:text-secondary">Passed</div>
-              </div>
-              <div class="tw:text-center">
-                <div class="tw:text-xl tw:font-bold tw:text-warn">14</div>
-                <div class="tw:text-xs tw:text-secondary">Pending</div>
-              </div>
-              <div class="tw:text-center">
-                <div class="tw:text-xl tw:font-bold tw:text-bad">2</div>
-                <div class="tw:text-xs tw:text-secondary">Failed</div>
+                <div class="tw:text-4xl tw:font-bold tw:text-good">{{ complianceScore }}%</div>
+                <div class="tw:text-xs tw:text-secondary">Excellent</div>
               </div>
             </div>
-          </QCardSection>
-        </WCard>
+          </div>
+          <div class="tw:grid tw:grid-cols-3 tw:gap-2 tw:mt-3">
+            <div class="tw:text-center">
+              <div class="tw:text-xl tw:font-bold tw:text-good">98</div>
+              <div class="tw:text-xs tw:text-secondary">Passed</div>
+            </div>
+            <div class="tw:text-center">
+              <div class="tw:text-xl tw:font-bold tw:text-warn">14</div>
+              <div class="tw:text-xs tw:text-secondary">Pending</div>
+            </div>
+            <div class="tw:text-center">
+              <div class="tw:text-xl tw:font-bold tw:text-bad">2</div>
+              <div class="tw:text-xs tw:text-secondary">Failed</div>
+            </div>
+          </div>
+        </div>
 
         <!-- Quick Actions -->
-        <WCard flat class="content-card">
-          <QCardSection>
-            <div class="tw:text-lg tw:font-medium tw:text-on-main tw:mb-3">Quick Actions</div>
-            <div class="tw:flex tw:flex-col tw:gap-2">
-              <WBtn
-                v-for="action in quickActions"
-                :key="action.label"
-                class="tw:w-full action-btn"
-                :color="action.color"
-                :icon="action.icon"
-                :label="action.label"
-                align="left"
-                unelevated
-                noCaps
-              />
-            </div>
-          </QCardSection>
-        </WCard>
+        <div class="tw:rounded-xl tw:border tw:border-divider tw:bg-sidebar tw:p-5">
+          <div class="tw:text-lg tw:font-medium tw:text-on-main tw:mb-3">Quick Actions</div>
+          <div class="tw:flex tw:flex-col tw:gap-2">
+            <button
+              v-for="action in quickActions"
+              :key="action.label"
+              class="tw:flex tw:items-center tw:gap-3 tw:w-full tw:px-4 tw:py-3 tw:text-sm tw:font-medium tw:rounded-lg tw:cursor-pointer tw:transition-colors tw:border-0"
+              :class="action.colorClass"
+            >
+              <component :is="action.icon" :size="18" />
+              {{ action.label }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Pending Tasks Table -->
-    <WCard flat class="content-card tw:mt-4">
-      <QCardSection class="tw:flex tw:items-center tw:pb-0">
+    <div class="tw:rounded-xl tw:border tw:border-divider tw:bg-sidebar tw:mt-4">
+      <div class="tw:flex tw:items-center tw:px-5 tw:py-4 tw:border-b tw:border-divider">
         <div class="tw:text-lg tw:font-medium tw:text-on-main">Pending Tasks</div>
-        <QSpace />
-        <QChip color="warning" textColor="white"> {{ pendingTasks.length }} pending </QChip>
-      </QCardSection>
-      <QCardSection>
-        <QTable
-          :rows="pendingTasks"
-          :columns="taskColumns"
-          rowKey="id"
-          flat
-          hidePagination
-          :rowsPerPageOptions="[0]"
-          class="tasks-table"
+        <div class="tw:flex-1" />
+        <span
+          class="tw:text-xs tw:font-bold tw:px-3 tw:py-1 tw:rounded-full tw:bg-warn/10 tw:text-warn"
         >
-          <template #body-cell-task="props">
-            <QTd :props="props">
-              <div class="tw:font-medium tw:text-on-main">{{ props.row.task }}</div>
-            </QTd>
-          </template>
-          <template #body-cell-assignee="props">
-            <QTd :props="props">
-              <div class="tw:flex tw:items-center tw:gap-2">
-                <WAvatar size="28px" color="primary" textColor="white">
-                  {{ props.row.assignee.charAt(0) }}
-                </WAvatar>
-                {{ props.row.assignee }}
-              </div>
-            </QTd>
-          </template>
-          <template #body-cell-priority="props">
-            <QTd :props="props">
-              <QChip :color="getPriorityColor(props.row.priority)" textColor="white" dense>
-                {{ props.row.priority }}
-              </QChip>
-            </QTd>
-          </template>
-          <template #body-cell-actions="props">
-            <QTd :props="props">
-              <WBtn flat round icon="visibility" color="primary" tooltip="View Details" />
-              <WBtn flat round icon="edit" color="grey-7" tooltip="Edit Task" />
-              <WBtn flat round icon="check_circle" color="positive" tooltip="Mark Complete" />
-            </QTd>
-          </template>
-        </QTable>
-      </QCardSection>
-    </WCard>
+          {{ pendingTasks.length }} pending
+        </span>
+      </div>
+      <div class="tw:overflow-x-auto">
+        <table class="tw:w-full tw:text-sm">
+          <thead>
+            <tr class="tw:border-b tw:border-divider">
+              <th
+                class="tw:text-left tw:px-4 tw:py-3 tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase"
+              >
+                Task
+              </th>
+              <th
+                class="tw:text-left tw:px-4 tw:py-3 tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase"
+              >
+                Assignee
+              </th>
+              <th
+                class="tw:text-left tw:px-4 tw:py-3 tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase"
+              >
+                Due Date
+              </th>
+              <th
+                class="tw:text-center tw:px-4 tw:py-3 tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase"
+              >
+                Priority
+              </th>
+              <th
+                class="tw:text-center tw:px-4 tw:py-3 tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="tw:divide-y tw:divide-divider">
+            <tr
+              v-for="task in pendingTasks"
+              :key="task.id"
+              class="tw:hover:bg-main-hover tw:transition-colors"
+            >
+              <td class="tw:px-4 tw:py-4">
+                <div class="tw:font-medium tw:text-on-main">{{ task.task }}</div>
+              </td>
+              <td class="tw:px-4 tw:py-4">
+                <div class="tw:flex tw:items-center tw:gap-2">
+                  <div
+                    class="tw:size-7 tw:rounded-full tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center tw:text-xs tw:font-bold tw:shrink-0"
+                  >
+                    {{ task.assignee.charAt(0) }}
+                  </div>
+                  {{ task.assignee }}
+                </div>
+              </td>
+              <td class="tw:px-4 tw:py-4 tw:text-secondary">{{ task.dueDate }}</td>
+              <td class="tw:px-4 tw:py-4 tw:text-center">
+                <span
+                  class="tw:text-xs tw:font-bold tw:px-2.5 tw:py-1 tw:rounded-full"
+                  :class="getPriorityColor(task.priority)"
+                >
+                  {{ task.priority }}
+                </span>
+              </td>
+              <td class="tw:px-4 tw:py-4">
+                <div class="tw:flex tw:items-center tw:justify-center tw:gap-1">
+                  <button
+                    class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:text-primary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-primary/10"
+                    title="View Details"
+                  >
+                    <IconEye :size="16" />
+                  </button>
+                  <button
+                    class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:text-secondary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-sidebar"
+                    title="Edit Task"
+                  >
+                    <IconPencil :size="16" />
+                  </button>
+                  <button
+                    class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:text-good tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-good/10"
+                    title="Mark Complete"
+                  >
+                    <IconCircleCheck :size="16" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <iframe
       src="https://docs.google.com/document/d/1PSpwVmyuA8feXB8ZwCbPMH5yoxRhMK0m9Lt8sFJzkI4/edit?tab=t.0"
@@ -343,62 +467,3 @@ function getPriorityColor(priority) {
   <!-- Onboarding Dialog -->
   <OnboardingDialog v-model="showOnboarding" />
 </template>
-
-<style lang="scss" scoped>
-.stat-card {
-  border: 1px solid var(--divider);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  }
-}
-
-.stat-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.content-card {
-  border: 1px solid var(--divider);
-  border-radius: 12px;
-}
-
-.audit-list {
-  .audit-item {
-    border-radius: 8px;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: var(--main-hover);
-    }
-  }
-}
-
-.action-btn {
-  padding: 12px 16px;
-  border-radius: 8px;
-  justify-content: flex-start;
-
-  :deep(.q-btn__content) {
-    justify-content: flex-start;
-  }
-}
-
-.tasks-table {
-  :deep(th) {
-    font-weight: 600;
-    color: var(--secondary);
-  }
-
-  :deep(td) {
-    padding: 16px 12px;
-  }
-}
-</style>

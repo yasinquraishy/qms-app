@@ -1,4 +1,18 @@
 <script setup>
+import {
+  IconBold,
+  IconItalic,
+  IconStrikethrough,
+  IconList,
+  IconListNumbers,
+  IconBlockquote,
+  IconCode,
+  IconLink,
+  IconPhoto,
+  IconTable,
+  IconHighlight,
+} from '@tabler/icons-vue'
+
 const props = defineProps({
   editor: {
     type: Object,
@@ -13,22 +27,22 @@ const props = defineProps({
 const emit = defineEmits(['toggleLink', 'uploadImage'])
 
 const toolbarItems = [
-  { icon: 'format_bold', action: 'bold', label: 'Bold' },
-  { icon: 'format_italic', action: 'italic', label: 'Italic' },
-  { icon: 'format_strikethrough', action: 'strike', label: 'Strikethrough' },
+  { icon: IconBold, action: 'bold', label: 'Bold' },
+  { icon: IconItalic, action: 'italic', label: 'Italic' },
+  { icon: IconStrikethrough, action: 'strike', label: 'Strikethrough' },
   { divider: true },
-  { icon: 'format_list_bulleted', action: 'bulletList', label: 'Bullet List' },
-  { icon: 'format_list_numbered', action: 'orderedList', label: 'Numbered List' },
+  { icon: IconList, action: 'bulletList', label: 'Bullet List' },
+  { icon: IconListNumbers, action: 'orderedList', label: 'Numbered List' },
   { divider: true },
-  { icon: 'format_quote', action: 'blockquote', label: 'Blockquote' },
-  { icon: 'code', action: 'code', label: 'Code' },
-  { icon: 'link', action: 'link', label: 'Link', custom: true },
+  { icon: IconBlockquote, action: 'blockquote', label: 'Blockquote' },
+  { icon: IconCode, action: 'code', label: 'Code' },
+  { icon: IconLink, action: 'link', label: 'Link', custom: true },
   { divider: true },
-  { icon: 'image', action: 'image', label: 'Insert Image', custom: true },
+  { icon: IconPhoto, action: 'image', label: 'Insert Image', custom: true },
   { divider: true },
-  { icon: 'table_chart', action: 'table', label: 'Insert Table', custom: true },
+  { icon: IconTable, action: 'table', label: 'Insert Table', custom: true },
   { divider: true },
-  { icon: 'highlight', action: 'highlight', label: 'Highlight' },
+  { icon: IconHighlight, action: 'highlight', label: 'Highlight' },
 ]
 
 function executeCommand(item) {
@@ -90,31 +104,26 @@ function isActive(action) {
   >
     <template v-for="(item, index) in toolbarItems" :key="index">
       <div v-if="item.divider" class="tw:w-px tw:h-5 tw:bg-divider tw:mx-0.5" />
-      <WBtn
+      <button
         v-else
-        flat
-        dense
         :title="item.label"
-        :loading="item.action === 'image' && imageUploading"
-        :disable="item.action === 'image' && imageUploading"
-        class="tw:min-w-8! tw:min-h-8! tw:rounded! tw:transition-colors!"
+        :disabled="item.action === 'image' && imageUploading"
+        class="tw:min-w-8 tw:min-h-8 tw:rounded tw:transition-colors tw:border-0 tw:cursor-pointer tw:flex tw:items-center tw:justify-center tw:p-1"
         :class="
           isActive(item.action)
-            ? 'tw:bg-primary! tw:text-white!'
-            : 'tw:text-secondary! tw:hover:bg-background! tw:hover:text-on-background!'
+            ? 'tw:bg-primary tw:text-white'
+            : 'tw:text-secondary tw:bg-transparent tw:hover:bg-main-hover tw:hover:text-on-main'
         "
         @click="executeCommand(item)"
       >
-        <WIcon :icon="item.icon" size="18px" />
-      </WBtn>
+        <component
+          :is="item.icon"
+          v-if="item.action === 'image' && imageUploading"
+          :size="18"
+          class="tw:animate-spin"
+        />
+        <component :is="item.icon" v-else :size="18" />
+      </button>
     </template>
   </div>
 </template>
-
-<style lang="scss" scoped>
-/* Force active button styling */
-:deep(.q-btn.tw\:bg-primary\!) {
-  background-color: var(--q-primary) !important;
-  color: white !important;
-}
-</style>

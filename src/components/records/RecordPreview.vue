@@ -1,6 +1,4 @@
 <script setup>
-import { get } from '@/api'
-
 const props = defineProps({
   recordId: {
     type: String,
@@ -10,55 +8,37 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const loading = ref(true)
-const error = ref(null)
-const record = ref(null)
+const record = useLiveQueryWithDeps([() => props.recordId], async (db, [id]) =>
+  db.Record.findByPk(id),
+)
+
+const template = useLiveQueryWithDeps(
+  [() => record.value?.templateId],
+  async (db, [templateId]) => {
+    if (!templateId) return null
+    return db.FormTemplate.findByPk(templateId)
+  },
+)
+
+const loading = computed(() => record.value === undefined || template.value === undefined)
 
 const recordTitle = computed(() => {
   if (!record.value) return 'Record Preview'
-  return `${record.value.template?.title || 'Record'} - ${record.value.recordNumber}`
+  return `${template.value?.title || 'Record'} - ${record.value.recordNumber}`
 })
 
-const schema = computed(() => {
-  return record.value?.template?.schema || []
-})
+const schema = computed(() => template.value?.schema || [])
 
-const payload = computed(() => {
-  return record.value?.payload || {}
-})
-
-async function fetchRecord() {
-  error.value = null
-  const data = await get(`/v1/services/records/${props.recordId}`, {
-    loader: loading,
-  })
-  record.value = data.record
-}
+const payload = computed(() => record.value?.payload || {})
 
 function handleClose() {
   emit('close')
 }
-
-onMounted(() => {
-  if (props.recordId) {
-    fetchRecord()
-  }
-})
 </script>
 
 <template>
   <div class="tw:w-full tw:h-full tw:bg-sidebar">
-    <div
-      v-if="error"
-      class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:h-full tw:text-bad tw:p-6"
-    >
-      <WIcon name="error_outline" size="48px" class="tw:mb-4" />
-      <div class="tw:text-xl tw:font-bold">{{ error }}</div>
-      <WBtn flat label="Close" color="primary" class="tw:mt-4" @click="handleClose" />
-    </div>
-
     <FormTemplatePreview
-      v-else
       :schema="schema"
       :modelValue="payload"
       :title="recordTitle"

@@ -1,31 +1,33 @@
 <script setup>
 import DynamicForm from '@/components/form/DynamicForm.js'
-import { get } from '@/api'
-
-const props = defineProps({
-  createRecord: {
-    type: Function,
-    required: true,
-  },
-})
+import {
+  IconArrowLeft,
+  IconX,
+  IconSearch,
+  IconChevronRight,
+  IconCircleCheck,
+  IconFileText,
+} from '@tabler/icons-vue'
 
 const emit = defineEmits(['created', 'close'])
+const model = defineModel({ type: Boolean, default: false })
 const toast = useToast()
 
 // Dialog state
 const step = ref('select') // 'select' | 'form' | 'success'
 
 // Template selection
-const templates = ref([])
-const templatesLoading = ref(false)
 const templateSearch = ref('')
 const selectedTemplate = ref(null)
-const schemaLoading = ref(false)
 
 // Form state
 const formData = ref({})
 const submitting = ref(false)
 const createdRecord = ref(null)
+
+const templates = useLiveQuery(async (db) => db.FormTemplate.where('statusId', 'ACTIVE').exec(), {
+  initial: [],
+})
 
 const filteredTemplates = computed(() => {
   if (!templateSearch.value) return templates.value
@@ -35,37 +37,49 @@ const filteredTemplates = computed(() => {
   )
 })
 
-async function fetchTemplates() {
-  const data = await get('/v1/services/formTemplates', {
-    params: { stateId: 'ACTIVE' },
-    loader: templatesLoading,
-  })
-  templates.value = data.formTemplates || []
-}
-
-async function selectTemplate(template) {
+function selectTemplate(template) {
   selectedTemplate.value = template
-
-  const data = await get(`/v1/services/formTemplates/${template.id}`, {
-    loader: schemaLoading,
-  })
-  selectedTemplate.value = data.formTemplate
   formData.value = {}
   step.value = 'form'
 }
 
+const createRecord = useLiveMutation(async (db, { templateId, payload }) => {
+  const template = await db.FormTemplate.findByPk(templateId)
+  if (!template) throw new Error('Template not found')
+
+  const { documentTypeId, code } = template
+
+  // Get or create counter scoped to this documentTypeId
+  const allCounters = await db.RecordCounter.where().exec()
+  let counter = allCounters.find((c) => c.documentTypeId === documentTypeId)
+
+  if (!counter) {
+    counter = db.RecordCounter.create({ documentTypeId, currentValue: 1 })
+  } else {
+    counter.currentValue += 1
+  }
+
+  const recordNumber = `${code}-${documentTypeId}-${String(counter.currentValue).padStart(4, '0')}`
+
+  const record = db.Record.create({ templateId, documentTypeId, payload, recordNumber })
+  await record.save()
+  await counter.save()
+
+  return record
+})
+
 async function handleSubmit(data) {
   submitting.value = true
-  const result = await props.createRecord(selectedTemplate.value.id, data)
-
-  if (result.error) {
-    toast.error(result.error)
-  } else {
-    createdRecord.value = result.record
+  try {
+    const record = await createRecord({ templateId: selectedTemplate.value.id, payload: data })
+    createdRecord.value = record
     step.value = 'success'
-    emit('created', result.record)
+    emit('created', record)
+  } catch (err) {
+    toast.error(err.message || 'Failed to create record')
+  } finally {
+    submitting.value = false
   }
-  submitting.value = false
 }
 
 function goBackToSelect() {
@@ -75,6 +89,7 @@ function goBackToSelect() {
 }
 
 function handleClose() {
+  model.value = false
   emit('close')
 }
 
@@ -82,125 +97,152 @@ const templateSchema = computed(() => {
   if (!selectedTemplate.value?.schema) return []
   return Array.isArray(selectedTemplate.value.schema) ? selectedTemplate.value.schema : []
 })
-
-onMounted(() => {
-  fetchTemplates()
-})
 </script>
 
 <template>
-  <QCard class="tw:flex tw:flex-col tw:h-full tw:flex-nowrap">
-    <!-- Header -->
-    <QCardSection class="tw:flex tw:items-center tw:border-b tw:border-divider tw:py-3">
-      <div class="tw:flex tw:items-center tw:gap-2">
-        <WBtn v-if="step === 'form'" flat round dense icon="arrow_back" @click="goBackToSelect" />
-        <div class="tw:text-lg tw:font-medium tw:text-on-main">
-          <template v-if="step === 'select'">Select a Template</template>
-          <template v-else-if="step === 'form'">{{ selectedTemplate?.title }}</template>
-          <template v-else>Record Created</template>
-        </div>
-      </div>
-      <QSpace />
-      <WBtn flat round dense icon="close" @click="handleClose" />
-    </QCardSection>
+  <Teleport to="body">
+    <Transition
+      enterActiveClass="tw:transition-transform tw:duration-300 tw:ease-out"
+      enterFromClass="tw:translate-y-full"
+      enterToClass="tw:translate-y-0"
+      leaveActiveClass="tw:transition-transform tw:duration-200 tw:ease-in"
+      leaveFromClass="tw:translate-y-0"
+      leaveToClass="tw:translate-y-full"
+    >
+      <div v-if="model" class="tw:fixed tw:inset-0 tw:z-50 tw:flex tw:flex-col tw:bg-main">
+        <div class="tw:flex tw:flex-col tw:h-full tw:flex-nowrap">
+          <!-- Header -->
+          <div class="tw:flex tw:items-center tw:border-b tw:border-divider tw:py-3 tw:px-4">
+            <div class="tw:flex tw:items-center tw:gap-2">
+              <button
+                v-if="step === 'form'"
+                class="tw:p-1.5 tw:rounded-full tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-main-hover tw:text-secondary tw:transition-colors"
+                @click="goBackToSelect"
+              >
+                <IconArrowLeft :size="20" />
+              </button>
+              <div class="tw:text-lg tw:font-medium tw:text-on-main">
+                <template v-if="step === 'select'">Select a Template</template>
+                <template v-else-if="step === 'form'">{{ selectedTemplate?.title }}</template>
+                <template v-else>Record Created</template>
+              </div>
+            </div>
+            <div class="tw:flex-1" />
+            <button
+              class="tw:p-1.5 tw:rounded-full tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-main-hover tw:text-secondary tw:transition-colors"
+              @click="handleClose"
+            >
+              <IconX :size="20" />
+            </button>
+          </div>
 
-    <!-- Step 1: Template Selection -->
-    <QCardSection v-if="step === 'select'" class="tw:flex-1 tw:overflow-auto tw:bg-sidebar">
-      <div class="tw:max-w-175 tw:mx-auto tw:flex tw:flex-col tw:gap-4">
-        <!-- Search -->
-        <WInput
-          v-model="templateSearch"
-          placeholder="Search templates..."
-          dense
-          clearable
-          hideBottomSpace
-        >
-          <template #prepend>
-            <WIcon name="search" color="grey-6" />
-          </template>
-        </WInput>
-
-        <!-- Loading -->
-        <div v-if="templatesLoading" class="tw:flex tw:justify-center tw:py-12">
-          <QSpinner color="primary" size="48px" />
-        </div>
-
-        <!-- Empty -->
-        <WEmptyState
-          v-else-if="filteredTemplates.length === 0"
-          icon="description"
-          title="No templates found"
-          compact
-        />
-
-        <!-- Template List -->
-        <div v-else class="tw:flex tw:flex-col tw:gap-2">
+          <!-- Step 1: Template Selection -->
           <div
-            v-for="template in filteredTemplates"
-            :key="template.id"
-            class="tw:cursor-pointer tw:bg-sidebar tw:border tw:border-divider tw:rounded-lg tw:p-3 tw:transition-all tw:hover:shadow-md tw:hover:border-primary/30"
-            @click="selectTemplate(template)"
+            v-if="step === 'select'"
+            class="tw:flex-1 tw:overflow-auto tw:bg-sidebar tw:relative"
           >
-            <div class="tw:flex tw:items-center tw:gap-3">
-              <div class="tw:flex tw:flex-col tw:gap-0.5">
-                <div class="tw:font-bold tw:text-on-sidebar">{{ template.title }}</div>
-                <div class="tw:text-xs tw:text-secondary tw:font-mono tw:uppercase">
-                  {{ template.code }}
+            <div class="tw:max-w-175 tw:mx-auto tw:flex tw:flex-col tw:gap-4 tw:p-4">
+              <!-- Search -->
+              <div class="tw:relative">
+                <IconSearch
+                  :size="18"
+                  class="tw:absolute tw:left-3 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary tw:pointer-events-none"
+                />
+                <BaseTextInput
+                  v-model="templateSearch"
+                  placeholder="Search templates..."
+                  class="tw:pl-9"
+                />
+              </div>
+
+              <!-- Empty -->
+              <BaseEmptyState
+                v-if="filteredTemplates.length === 0"
+                :icon="IconFileText"
+                title="No templates found"
+                dense
+              />
+
+              <!-- Template List -->
+              <div v-else class="tw:flex tw:flex-col tw:gap-2">
+                <div
+                  v-for="template in filteredTemplates"
+                  :key="template.id"
+                  class="tw:cursor-pointer tw:bg-sidebar tw:border tw:border-divider tw:rounded-lg tw:p-3 tw:transition-all tw:hover:shadow-md tw:hover:border-primary/30"
+                  @click="selectTemplate(template)"
+                >
+                  <div class="tw:flex tw:items-center tw:gap-3">
+                    <div class="tw:flex tw:flex-col tw:gap-0.5">
+                      <div class="tw:font-bold tw:text-on-sidebar">{{ template.title }}</div>
+                      <div class="tw:text-xs tw:text-secondary tw:font-mono tw:uppercase">
+                        {{ template.code }}
+                      </div>
+                    </div>
+                    <div class="tw:flex-1" />
+                    <IconChevronRight :size="24" class="tw:text-secondary" />
+                  </div>
                 </div>
               </div>
-              <QSpace />
-              <WIcon icon="chevron_right" size="24px" class="tw:text-secondary" />
             </div>
+          </div>
+
+          <!-- Step 2: Form -->
+          <div v-else-if="step === 'form'" class="tw:flex-1 tw:p-0 tw:overflow-auto tw:bg-sidebar">
+            <div class="tw:p-5 tw:min-h-full">
+              <div
+                class="tw:bg-main tw:border tw:border-divider tw:rounded-lg tw:mx-auto"
+                style="max-width: 800px"
+              >
+                <div class="tw:p-4">
+                  <DynamicForm
+                    v-model="formData"
+                    :fields="templateSchema"
+                    :loading="submitting"
+                    @submit="handleSubmit"
+                  >
+                    <template #footer>
+                      <div class="tw:flex tw:justify-end tw:gap-2 tw:mt-4">
+                        <button
+                          class="tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-secondary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:text-on-main"
+                          @click="goBackToSelect"
+                        >
+                          Back
+                        </button>
+                        <button
+                          class="tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0 tw:disabled:opacity-50"
+                          :disabled="submitting"
+                          @click="handleSubmit(formData)"
+                        >
+                          <span
+                            v-if="submitting"
+                            class="tw:inline-block tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent tw:mr-2"
+                          ></span>
+                          Save Record
+                        </button>
+                      </div>
+                    </template>
+                  </DynamicForm>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Success -->
+          <div v-else class="tw:flex-1 tw:flex tw:flex-col tw:items-center tw:justify-center">
+            <IconCircleCheck :size="64" class="tw:text-green-500" />
+            <div class="tw:text-2xl tw:font-bold tw:mt-4 tw:text-green-600">Record Created!</div>
+            <p class="tw:text-secondary tw:mt-2">
+              Record number: <strong>{{ createdRecord?.recordNumber }}</strong>
+            </p>
+            <button
+              class="tw:mt-6 tw:px-6 tw:py-2 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0"
+              @click="handleClose"
+            >
+              Close
+            </button>
           </div>
         </div>
       </div>
-
-      <!-- Schema loading overlay -->
-      <QInnerLoading :showing="schemaLoading">
-        <QSpinner color="primary" size="48px" />
-      </QInnerLoading>
-    </QCardSection>
-
-    <!-- Step 2: Form -->
-    <QCardSection
-      v-else-if="step === 'form'"
-      class="tw:flex-1 tw:p-0 tw:overflow-auto tw:bg-sidebar"
-    >
-      <div class="tw:p-5 tw:min-h-full">
-        <QCard flat bordered class="tw:mx-auto" style="max-width: 800px">
-          <QCardSection>
-            <DynamicForm
-              v-model="formData"
-              :fields="templateSchema"
-              :loading="submitting"
-              @submit="handleSubmit"
-            >
-              <template #footer>
-                <div class="tw:flex tw:justify-end tw:gap-2 tw:mt-4">
-                  <WBtn flat label="Back" @click="goBackToSelect" />
-                  <WBtn
-                    type="submit"
-                    color="primary"
-                    label="Save Record"
-                    :loading="submitting"
-                    unelevated
-                  />
-                </div>
-              </template>
-            </DynamicForm>
-          </QCardSection>
-        </QCard>
-      </div>
-    </QCardSection>
-
-    <!-- Step 3: Success -->
-    <QCardSection v-else class="tw:flex-1 tw:flex tw:flex-col tw:items-center tw:justify-center">
-      <WIcon icon="check_circle" class="tw:text-good" size="64px" />
-      <div class="tw:text-2xl tw:font-bold tw:mt-4 tw:text-good">Record Created!</div>
-      <p class="tw:text-secondary tw:mt-2">
-        Record number: <strong>{{ createdRecord?.recordNumber }}</strong>
-      </p>
-      <WBtn color="primary" label="Close" class="tw:mt-6" unelevated @click="handleClose" />
-    </QCardSection>
-  </QCard>
+    </Transition>
+  </Teleport>
 </template>

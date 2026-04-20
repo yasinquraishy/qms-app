@@ -1,4 +1,5 @@
 <script setup>
+import { IconShield } from '@tabler/icons-vue'
 defineProps({
   roles: {
     type: Array,
@@ -14,12 +15,14 @@ defineProps({
 <template>
   <div class="tw:flex-1 tw:overflow-y-auto tw:space-y-4">
     <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:py-12">
-      <QSpinner color="primary" size="48px" />
+      <div
+        class="tw:size-12 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      ></div>
     </div>
 
-    <WEmptyState
+    <BaseEmptyState
       v-else-if="roles.length === 0"
-      icon="admin_panel_settings"
+      :icon="IconShield"
       title="No roles found"
       description="Create your first role to get started."
     />

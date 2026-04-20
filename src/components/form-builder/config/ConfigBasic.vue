@@ -29,19 +29,24 @@ const hasHint = computed(() => !NO_HINT_TYPES.has(field.value.type))
     </div>
 
     <div class="tw:flex tw:flex-col tw:gap-3">
-      <WInput
+      <BaseTextInput
         v-model="field.name"
         name="name"
         label="Field Name"
         placeholder="field_name"
-        hint="Unique identifier for the field"
+        instructions="Unique identifier for the field"
       />
 
-      <WInput v-if="hasLabel" v-model="field.label" label="Label" placeholder="Field Label" />
+      <BaseTextInput
+        v-if="hasLabel"
+        v-model="field.label"
+        label="Label"
+        placeholder="Field Label"
+      />
 
-      <WInput v-if="hasPlaceholder" v-model="field.placeholder" label="Placeholder" />
+      <BaseTextInput v-if="hasPlaceholder" v-model="field.placeholder" label="Placeholder" />
 
-      <WInput v-if="hasHint" v-model="field.hint" label="Hint Text" />
+      <BaseTextInput v-if="hasHint" v-model="field.hint" label="Hint Text" />
     </div>
   </div>
 </template>

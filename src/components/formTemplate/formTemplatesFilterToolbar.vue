@@ -1,4 +1,6 @@
 <script setup>
+import { IconSearch } from '@tabler/icons-vue'
+
 const filters = defineModel('filters', {
   type: Object,
   required: true,
@@ -8,15 +10,17 @@ const filters = defineModel('filters', {
 <template>
   <div class="tw:flex tw:items-center tw:gap-2 tw:p-2 tw:rounded-lg tw:bg-sidebar">
     <SafeTeleport to="#main-header-search">
-      <WInput
+      <BaseTextInput
         v-model="filters.search"
+        name="search"
         placeholder="Search templates by name or code..."
+        clearBtn
         class="tw:flex-1 tw:max-w-md"
       >
-        <template #prepend>
-          <WIcon icon="search" />
+        <template #icon>
+          <IconSearch :size="16" />
         </template>
-      </WInput>
+      </BaseTextInput>
     </SafeTeleport>
 
     <div class="tw:flex-1 tw:min-w-40">
@@ -24,10 +28,10 @@ const filters = defineModel('filters', {
     </div>
 
     <div class="tw:flex-1 tw:min-w-40">
-      <formTemplatesSiteSelect v-model:siteId="filters.siteId" multiple />
+      <SiteSelectMenu v-model="filters.siteId" :required="false" multiple />
     </div>
     <div class="tw:flex-1 tw:min-w-40">
-      <formTemplatesStatusSelect v-model:statusId="filters.statusId" />
+      <FormTemplateStatusSelectMenu v-model="filters.statusId" />
     </div>
 
     <!-- Actions Slot -->

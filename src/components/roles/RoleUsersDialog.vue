@@ -1,4 +1,5 @@
 <script setup>
+import { IconSearch, IconUserOff } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession'
 import { get, put } from '@/api'
 
@@ -110,33 +111,41 @@ watch(
 </script>
 
 <template>
-  <WDialog v-model="open" title="Assign Users to Role" minWidth="600px" persistent>
-    <div class="tw:flex tw:flex-col tw:gap-4">
+  <BaseDialog v-model="open" title="Assign Users to Role" :loading="loading" @close="open = false">
+    <div class="tw:flex tw:flex-col tw:gap-4 tw:p-4">
       <!-- Role Name -->
       <div class="tw:text-sm tw:text-secondary">
         {{ roleName }}
       </div>
 
       <!-- Search Bar -->
-      <WInput v-model="searchTerm" placeholder="Search users by name or email..." dense outlined>
-        <template #prepend>
-          <WIcon icon="search" size="18px" class="tw:text-secondary" />
-        </template>
-      </WInput>
+      <div class="tw:relative">
+        <IconSearch
+          :size="18"
+          class="tw:absolute tw:left-3 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary tw:pointer-events-none"
+        />
+        <BaseTextInput
+          v-model="searchTerm"
+          placeholder="Search users by name or email..."
+          class="tw:pl-9"
+        />
+      </div>
 
       <!-- User List -->
       <div
         class="tw:max-h-100 tw:overflow-y-auto custom-scrollbar tw:border tw:border-divider tw:rounded-lg"
       >
         <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:py-12">
-          <QSpinner color="primary" size="2em" />
+          <div
+            class="tw:size-8 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+          ></div>
         </div>
 
-        <WEmptyState
+        <BaseEmptyState
           v-else-if="filteredUsers.length === 0"
-          icon="person_off"
+          :icon="IconUserOff"
           title="No users found"
-          compact
+          dense
         />
 
         <div v-else class="tw:divide-y tw:divide-divider">
@@ -146,9 +155,8 @@ watch(
             class="tw:flex tw:items-center tw:px-4 tw:py-3 tw:hover:bg-sidebar/20 tw:transition-colors tw:cursor-pointer"
             @click="toggleUserSelection(user.id)"
           >
-            <QCheckbox
+            <BaseCheckbox
               :modelValue="isUserSelected(user.id)"
-              color="primary"
               class="tw:mr-3"
               @update:modelValue="toggleUserSelection(user.id)"
               @click.stop
@@ -181,15 +189,24 @@ watch(
     </div>
 
     <template #actions>
-      <WBtn flat label="Cancel" color="primary" @click="open = false" />
-      <WBtn
+      <button
+        class="tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-primary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-main-hover tw:rounded-lg tw:transition-colors"
+        @click="open = false"
+      >
+        Cancel
+      </button>
+      <button
         v-if="canUpdateRole"
-        label="Save Assignments"
-        color="primary"
-        unelevated
-        :loading="loading"
+        class="tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0 tw:disabled:opacity-50 tw:disabled:cursor-not-allowed"
+        :disabled="loading"
         @click="saveUserAssignments"
-      />
+      >
+        <span
+          v-if="loading"
+          class="tw:inline-block tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent tw:mr-2"
+        ></span>
+        Save Assignments
+      </button>
     </template>
-  </WDialog>
+  </BaseDialog>
 </template>

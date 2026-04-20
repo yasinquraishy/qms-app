@@ -1,34 +1,46 @@
 <script setup>
-import { useQuasar } from 'quasar'
-import { useRecords } from '@/composables/useRecords.js'
+import { IconFolderOpen, IconPlus } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 
-const { records, loading, filters, deleteRecord, fetchRecords, createRecord } = useRecords()
-const $q = useQuasar()
 const toast = useToast()
-
 const showAddDialog = ref(false)
+
+const filters = ref({ search: '' })
 
 const canCreateRecord = computed(() => isAllowed(['records:create']))
 
-onMounted(() => {
-  fetchRecords()
+const records = useLiveQueryWithDeps(
+  [() => filters.value.search],
+  async (db, [search]) => {
+    const all = await db.Record.where().exec()
+    if (!search) return all
+    const s = search.toLowerCase()
+    return all.filter((r) => r.recordNumber?.toLowerCase().includes(s))
+  },
+  { initial: [] },
+)
+
+const loading = computed(() => records.value === undefined)
+
+const deleteRecord = useLiveMutation(async (db, id) => {
+  const record = await db.Record.findByPk(id)
+  if (!record) throw new Error('Record not found')
+  await record.delete()
 })
 
 async function onDeleteRecord(row) {
-  $q.dialog({
-    title: 'Confirm Deletion',
-    message: `Are you sure you want to delete record "${row.recordNumber}"? This action cannot be undone.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const result = await deleteRecord(row.id)
-    if (result.error) {
-      toast.error(result.error)
-    } else {
-      toast.success('Record deleted successfully')
-    }
-  })
+  if (
+    !confirm(
+      `Are you sure you want to delete record "${row.recordNumber}"? This action cannot be undone.`,
+    )
+  )
+    return
+  try {
+    await deleteRecord(row.id)
+    toast.success('Record deleted successfully')
+  } catch (err) {
+    toast.error(err.message || 'Failed to delete record')
+  }
 }
 
 function onRecordCreated() {
@@ -41,7 +53,7 @@ function onRecordCreated() {
   <div class="tw:flex tw:flex-col tw:gap-3 tw:h-full tw:p-5">
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
-        <WIcon icon="folder_open" class="tw:text-primary" size="24px" />
+        <IconFolderOpen :size="24" class="tw:text-primary" />
         <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Records</h2>
       </div>
     </SafeTeleport>
@@ -52,14 +64,14 @@ function onRecordCreated() {
         <div class="tw:text-3xl tw:font-bold tw:text-on-sidebar">Records</div>
         <div class="tw:text-sm tw:text-secondary">View and manage submitted records.</div>
       </div>
-      <WBtn
+      <button
         v-if="canCreateRecord"
-        color="primary"
-        icon="add"
-        label="Add Record"
-        unelevated
+        class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:bg-primary tw:text-white tw:font-bold tw:rounded-lg tw:hover:bg-primary/90 tw:transition-colors tw:border-0 tw:cursor-pointer"
         @click="showAddDialog = true"
-      />
+      >
+        <IconPlus :size="18" />
+        Add Record
+      </button>
     </div>
 
     <RecordsFilterToolbar v-model:filters="filters" />
@@ -69,18 +81,7 @@ function onRecordCreated() {
     </div>
 
     <!-- Add Record Dialog -->
-    <QDialog
-      v-model="showAddDialog"
-      maximized
-      transitionShow="slide-up"
-      transitionHide="slide-down"
-    >
-      <AddRecordDialog
-        :createRecord="createRecord"
-        @created="onRecordCreated"
-        @close="showAddDialog = false"
-      />
-    </QDialog>
+    <AddRecordDialog v-model="showAddDialog" @created="onRecordCreated" />
   </div>
 </template>
 

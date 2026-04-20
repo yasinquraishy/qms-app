@@ -1,4 +1,5 @@
 <script setup>
+import { IconPhoto, IconDeviceFloppy, IconCloudUpload, IconTrash } from '@tabler/icons-vue'
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 
@@ -118,7 +119,7 @@ watch(model, (newVal) => {
 </script>
 
 <template>
-  <WDialog v-model="model" :title="title">
+  <BaseDialog v-model="model" :title="title">
     <div class="tw:space-y-6">
       <!-- Show Cropper when image is selected -->
       <div v-if="selectedImage" class="tw:space-y-4">
@@ -154,43 +155,49 @@ watch(model, (newVal) => {
         <div
           class="tw:size-32 tw:rounded-lg tw:bg-main tw:flex tw:items-center tw:justify-center tw:border tw:border-divider"
         >
-          <QIcon name="image" size="48px" class="tw:text-secondary" />
+          <IconPhoto :size="48" class="tw:text-secondary" />
         </div>
         <p class="tw:text-xs tw:text-secondary">No image selected</p>
       </div>
 
       <!-- Action Buttons -->
       <div class="tw:grid tw:grid-cols-1 tw:gap-3">
-        <WBtn
+        <button
           v-if="selectedImage"
-          label="Save"
-          icon="save"
-          color="primary"
-          unelevated
-          class="tw:w-full"
-          :loading="processing"
+          class="tw:flex tw:items-center tw:justify-center tw:gap-2 tw:w-full tw:px-4 tw:py-2.5 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0 disabled:tw:opacity-60"
+          :disabled="processing"
           @click="save"
-        />
-        <WBtn
+        >
+          <span
+            v-if="processing"
+            class="tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent"
+          />
+          <IconDeviceFloppy v-else :size="18" />
+          Save
+        </button>
+        <button
           v-else
-          label="Upload New Image"
-          icon="cloud_upload"
-          color="primary"
-          unelevated
-          class="tw:w-full"
+          class="tw:flex tw:items-center tw:justify-center tw:gap-2 tw:w-full tw:px-4 tw:py-2.5 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0"
           @click="selectImage"
-        />
-        <WBtn
+        >
+          <IconCloudUpload :size="18" />
+          Upload New Image
+        </button>
+        <button
           v-if="hasCurrentImage && !selectedImage"
-          label="Delete Image"
-          icon="delete"
-          color="negative"
-          outline
-          class="tw:w-full"
+          class="tw:flex tw:items-center tw:justify-center tw:gap-2 tw:w-full tw:px-4 tw:py-2.5 tw:text-sm tw:font-bold tw:text-red-600 tw:bg-transparent tw:rounded-lg tw:cursor-pointer tw:hover:bg-red-50 tw:transition-colors tw:border tw:border-red-300"
           @click="deleteImage"
-        />
-        <WBtn label="Cancel" flat color="secondary" class="tw:w-full" @click="cancel" />
+        >
+          <IconTrash :size="18" />
+          Delete Image
+        </button>
+        <button
+          class="tw:flex tw:items-center tw:justify-center tw:w-full tw:px-4 tw:py-2.5 tw:text-sm tw:font-medium tw:text-secondary tw:bg-transparent tw:rounded-lg tw:cursor-pointer tw:hover:bg-sidebar tw:transition-colors tw:border-0"
+          @click="cancel"
+        >
+          Cancel
+        </button>
       </div>
     </div>
-  </WDialog>
+  </BaseDialog>
 </template>

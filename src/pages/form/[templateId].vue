@@ -1,4 +1,5 @@
 <script setup>
+import { IconAlertCircle, IconCircleCheck } from '@tabler/icons-vue'
 import DynamicForm from '@/components/form/DynamicForm.js'
 import { get, post } from '@/api'
 
@@ -66,29 +67,31 @@ onMounted(() => {
       <div class="tw:w-full tw:max-w-200 tw:bg-sidebar tw:rounded-lg tw:shadow-lg tw:p-6 tw:m-4">
         <!-- Loading State -->
         <div v-if="loading" class="tw:text-center tw:py-16">
-          <QSpinner color="primary" size="3em" />
+          <div
+            class="tw:size-12 tw:animate-spin tw:rounded-full tw:border-4 tw:border-primary tw:border-t-transparent tw:mx-auto"
+          ></div>
           <div class="tw:text-secondary tw:mt-4">Loading form...</div>
         </div>
 
         <!-- Error State -->
         <div v-else-if="error" class="tw:text-center tw:py-16 tw:text-bad">
-          <WIcon icon="error_outline" size="4em" />
+          <IconAlertCircle :size="64" class="tw:mx-auto" />
           <div class="tw:text-xl tw:mt-4">{{ error }}</div>
         </div>
 
         <!-- Success State -->
         <div v-else-if="success" class="tw:text-center tw:py-16">
-          <WIcon icon="check_circle" class="tw:text-good" size="4em" />
+          <IconCircleCheck :size="64" class="tw:text-good tw:mx-auto" />
           <div class="tw:text-2xl tw:mt-4 tw:text-good">Submission Successful!</div>
           <p class="tw:text-secondary tw:mt-2">
             Your record has been created with number: <strong>{{ recordNumber }}</strong>
           </p>
-          <WBtn
-            color="primary"
-            label="Submit Another Response"
-            class="tw:mt-4"
+          <button
+            class="tw:mt-4 tw:py-2.5 tw:px-6 tw:rounded-lg tw:bg-primary tw:text-white tw:font-medium tw:text-sm tw:hover:opacity-90 tw:transition-opacity tw:cursor-pointer tw:border-0"
             @click="resetForm"
-          />
+          >
+            Submit Another Response
+          </button>
         </div>
 
         <!-- Form -->
@@ -104,15 +107,11 @@ onMounted(() => {
             :loading="submitting"
             @submit="onSubmit"
           >
-            <template #footer>
+            <template #footer="{ submit }">
               <div class="tw:flex tw:justify-end tw:mt-4">
-                <WBtn
-                  label="Submit"
-                  type="submit"
-                  color="primary"
-                  :loading="submitting"
-                  unelevated
-                />
+                <BaseButton variant="primary" :disabled="submitting" @click="submit">
+                  Submit
+                </BaseButton>
               </div>
             </template>
           </DynamicForm>

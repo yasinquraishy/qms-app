@@ -1,4 +1,5 @@
 <script setup>
+import { IconCopy, IconTrash, IconGripVertical, IconCirclePlus } from '@tabler/icons-vue'
 import { useSortable } from '@vueuse/integrations/useSortable'
 import { FIELD_TYPES } from '@/constants/formBuilderConfig'
 
@@ -31,7 +32,7 @@ const childrenDropzoneRef = ref(null)
 
 const LAYOUT_TYPES = new Set(['section', 'row', 'column', 'repeater'])
 
-const fieldIcon = computed(() => FIELD_TYPES[props.field.type]?.icon || 'help_outline')
+const fieldIcon = computed(() => FIELD_TYPES[props.field.type]?.icon || null)
 
 const isLayoutField = computed(() => LAYOUT_TYPES.has(props.field.type))
 
@@ -86,41 +87,6 @@ watch(
   { immediate: true },
 )
 
-const previewComponent = computed(() => {
-  switch (props.field.type) {
-    case 'input':
-    case 'password':
-    case 'number':
-    case 'textarea':
-      return 'WInput'
-    case 'select':
-      return 'WSelect'
-    case 'checkbox':
-      return 'WCheckbox'
-    case 'toggle':
-      return 'QToggle'
-    case 'slider':
-      return 'QSlider'
-    case 'rating':
-      return 'QRating'
-    case 'datetime':
-      return 'WDateTimeInput'
-    default:
-      return 'WInput'
-  }
-})
-
-const previewProps = computed(() => {
-  return {
-    label: props.field.label || props.field.name,
-    placeholder: props.field.placeholder,
-    mode: props.field.mode,
-    modelValue: null,
-    dense: true,
-    outlined: true,
-  }
-})
-
 function onSelect() {
   emit('select', props.path)
 }
@@ -150,29 +116,20 @@ function onDuplicate() {
       class="tw:absolute tw:top-2 tw:right-2 tw:flex tw:items-center tw:gap-1 tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity tw:z-10"
       :class="{ 'tw:opacity-100': isSelected }"
     >
-      <WBtn
-        flat
-        round
-        dense
-        size="xs"
-        icon="content_copy"
-        class="tw:bg-main tw:border tw:border-divider tw:shadow-sm"
+      <button
+        class="tw:p-1.5 tw:rounded-lg tw:bg-main tw:border tw:border-divider tw:shadow-sm tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
+        title="Duplicate Field"
         @click.stop="onDuplicate"
       >
-        <QTooltip shadow>Duplicate Field</QTooltip>
-      </WBtn>
-      <WBtn
-        flat
-        round
-        dense
-        size="xs"
-        icon="delete_outline"
-        color="negative"
-        class="tw:bg-main tw:border tw:border-divider tw:shadow-sm"
+        <IconCopy :size="14" />
+      </button>
+      <button
+        class="tw:p-1.5 tw:rounded-lg tw:bg-main tw:border tw:border-divider tw:shadow-sm tw:text-red-500 tw:hover:bg-red-50 tw:transition-colors"
+        title="Remove Field"
         @click.stop="onRemove"
       >
-        <QTooltip shadow>Remove Field</QTooltip>
-      </WBtn>
+        <IconTrash :size="14" />
+      </button>
     </div>
 
     <!-- Field Header -->
@@ -182,7 +139,7 @@ function onDuplicate() {
       <div
         class="tw:w-10 tw:h-10 tw:bg-main-hover tw:rounded-lg tw:flex tw:items-center tw:justify-center tw:shrink-0"
       >
-        <WIcon :icon="fieldIcon" size="20px" class="tw:text-primary" />
+        <component :is="fieldIcon" v-if="fieldIcon" :size="20" class="tw:text-primary" />
       </div>
       <div class="tw:flex tw:flex-col tw:overflow-hidden">
         <div class="tw:text-sm tw:font-bold tw:text-on-main tw:truncate">
@@ -192,17 +149,21 @@ function onDuplicate() {
           {{ field.type }}
         </div>
       </div>
-      <QSpace />
-      <WIcon
-        icon="drag_indicator"
-        size="20px"
+      <div class="tw:flex-1" />
+      <IconGripVertical
+        :size="20"
         class="tw:text-divider tw:cursor-grab tw:active:cursor-grabbing"
       />
     </div>
 
     <!-- Preview -->
-    <div v-if="!isLayoutField" class="tw:pointer-events-none tw:opacity-60">
-      <component :is="previewComponent" v-bind="previewProps" disabled />
+    <div v-if="!isLayoutField" class="tw:pointer-events-none tw:opacity-60 tw:mt-2">
+      <BaseTextInput
+        :label="field.label || field.name"
+        :placeholder="field.placeholder"
+        disabled
+        size="sm"
+      />
     </div>
 
     <!-- Children for layout fields -->
@@ -231,7 +192,7 @@ function onDuplicate() {
           v-if="children.length === 0"
           class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-4"
         >
-          <WIcon icon="add_circle_outline" size="24px" class="tw:text-secondary/20 tw:mb-1" />
+          <IconCirclePlus :size="24" class="tw:text-secondary/20 tw:mb-1" />
           <div class="ds-label-sm tw:text-secondary/40">Drop nested fields here</div>
         </div>
       </div>

@@ -1,8 +1,14 @@
 <script setup>
+import {
+  IconHistory,
+  IconAlertCircle,
+  IconArrowLeft,
+  IconSearch,
+  IconSquareCheck,
+} from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers'
 import { useRolePermissions } from '@/composables/useRolePermissions.js'
 import { useRoles } from '@/composables/useRoles.js'
-import { useQuasar } from 'quasar'
 import { isAllowed } from '@/utils/currentSession.js'
 
 const props = defineProps({
@@ -12,7 +18,6 @@ const props = defineProps({
   },
 })
 
-const $q = useQuasar()
 const toast = useToast()
 const router = useRouter()
 const role = ref(null)
@@ -96,38 +101,31 @@ function stopEditDescription() {
 
 const isInactive = computed(() => role.value?.statusId === 'INACTIVE')
 
-function handleDeactivate() {
-  $q.dialog({
-    title: 'Deactivate Role',
-    message: `Are you sure you want to deactivate the role "${role.value.name}"?\n\nDeactivating a role will set its status to Inactive. The role will no longer be assignable to new users, but existing user assignments will remain unaffected.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const success = await deactivateRole(props.id)
-    if (success) {
-      role.value = { ...role.value, statusId: 'INACTIVE' }
-      toast.success('Role deactivated successfully')
-    } else {
-      toast.error('Failed to deactivate role')
-    }
-  })
+async function handleDeactivate() {
+  if (
+    !confirm(
+      `Are you sure you want to deactivate the role "${role.value.name}"?\n\nDeactivating a role will set its status to Inactive.`,
+    )
+  )
+    return
+  const success = await deactivateRole(props.id)
+  if (success) {
+    role.value = { ...role.value, statusId: 'INACTIVE' }
+    toast.success('Role deactivated successfully')
+  } else {
+    toast.error('Failed to deactivate role')
+  }
 }
 
-function handleActivate() {
-  $q.dialog({
-    title: 'Activate Role',
-    message: `Are you sure you want to activate the role "${role.value.name}"?\n\nActivating the role will set its status back to Active and allow it to be assigned to new users.`,
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    const success = await activateRole(props.id)
-    if (success) {
-      role.value = { ...role.value, statusId: 'ACTIVE' }
-      toast.success('Role activated successfully')
-    } else {
-      toast.error('Failed to activate role')
-    }
-  })
+async function handleActivate() {
+  if (!confirm(`Are you sure you want to activate the role "${role.value.name}"?`)) return
+  const success = await activateRole(props.id)
+  if (success) {
+    role.value = { ...role.value, statusId: 'ACTIVE' }
+    toast.success('Role activated successfully')
+  } else {
+    toast.error('Failed to activate role')
+  }
 }
 
 // Fetch role details
@@ -220,7 +218,9 @@ watch(
   <div class="tw:flex tw:flex-col tw:h-full">
     <!-- Loading State -->
     <div v-if="loading && !role" class="tw:flex tw:items-center tw:justify-center tw:h-full">
-      <QSpinner color="primary" size="3em" />
+      <div
+        class="tw:size-12 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+      ></div>
     </div>
 
     <!-- Error State -->
@@ -228,50 +228,65 @@ watch(
       v-else-if="error && !role"
       class="tw:flex tw:items-center tw:justify-center tw:h-full tw:flex-col tw:gap-4"
     >
-      <WIcon icon="error" size="48px" class="tw:text-negative" />
+      <IconAlertCircle :size="48" class="tw:text-red-500" />
       <div class="tw:text-lg tw:text-on-sidebar">{{ error }}</div>
-      <WBtn label="Go Back" icon="arrow_back" outline color="primary" @click="goBack" />
+      <button
+        class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:border tw:border-primary tw:text-primary tw:rounded-lg tw:bg-transparent tw:cursor-pointer tw:hover:bg-primary/5 tw:transition-colors"
+        @click="goBack"
+      >
+        <IconArrowLeft :size="18" />
+        Go Back
+      </button>
     </div>
 
     <!-- Content -->
     <div v-else-if="role" class="tw:flex tw:flex-col tw:h-full tw:overflow-hidden">
       <!-- Header Actions -->
       <SafeTeleport to="#main-header-title">
-        <WBreadcrumbs :items="breadcrumbItems" />
+        <nav class="tw:flex tw:items-center tw:gap-1 tw:text-sm">
+          <RouterLink :to="breadcrumbItems[0].to" class="tw:text-secondary tw:hover:text-on-main">{{
+            breadcrumbItems[0].label
+          }}</RouterLink>
+          <span class="tw:text-secondary tw:mx-1">/</span>
+          <span class="tw:text-on-main tw:font-medium">{{ breadcrumbItems[1].label }}</span>
+        </nav>
       </SafeTeleport>
 
       <SafeTeleport to="#main-header-actions">
         <div class="tw:flex tw:items-center tw:gap-3">
           <template v-if="canUpdateRole">
-            <WBtn label="Cancel" color="grey-7" outline class="tw:font-bold" @click="goBack" />
-            <WBtn
-              label="Save Changes"
-              icon="save"
-              color="primary"
-              unelevated
-              class="tw:font-bold"
-              :loading="loading"
+            <button
+              class="tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-secondary tw:bg-transparent tw:border tw:border-divider tw:rounded-lg tw:cursor-pointer tw:hover:bg-main-hover tw:transition-colors"
+              @click="goBack"
+            >
+              Cancel
+            </button>
+            <button
+              class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-white tw:bg-primary tw:rounded-lg tw:cursor-pointer tw:hover:bg-primary/90 tw:transition-colors tw:border-0 tw:disabled:opacity-50"
+              :disabled="loading"
               @click="saveChanges"
-            />
+            >
+              <span
+                v-if="loading"
+                class="tw:inline-block tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent"
+              ></span>
+              Save Changes
+            </button>
           </template>
-          <WBtn
+          <button
             v-if="role && canUpdateRole && isInactive"
-            label="Activate"
-            icon="check_circle"
-            color="positive"
-            outline
-            class="tw:font-bold"
+            class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-green-700 tw:bg-transparent tw:border tw:border-green-600 tw:rounded-lg tw:cursor-pointer tw:hover:bg-green-50 tw:transition-colors"
             @click="handleActivate"
-          />
-          <WBtn
+          >
+            Activate
+          </button>
+          <button
             v-else-if="role && canUpdateRole && !isInactive"
-            label="Deactivate"
-            icon="block"
-            color="warning"
-            outline
-            class="tw:font-bold"
+            class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-sm tw:font-bold tw:text-amber-700 tw:bg-transparent tw:border tw:border-amber-600 tw:rounded-lg tw:cursor-pointer tw:hover:bg-amber-50 tw:transition-colors"
             @click="handleDeactivate"
-          />
+          >
+            Deactivate
+          </button>
         </div>
       </SafeTeleport>
 
@@ -283,11 +298,9 @@ watch(
             <div class="tw:space-y-1 tw:flex-1">
               <!-- Editable Name -->
               <div v-if="isEditingName" class="tw:flex tw:items-center tw:gap-2">
-                <WInput
+                <BaseTextInput
                   ref="nameInputRef"
                   v-model="editedName"
-                  dense
-                  outlined
                   class="tw:text-3xl"
                   @blur="stopEditName"
                   @keyup.enter="stopEditName"
@@ -309,12 +322,9 @@ watch(
 
               <!-- Editable Description -->
               <div v-if="isEditingDescription" class="tw:flex tw:items-start tw:gap-2">
-                <WInput
+                <BaseTextarea
                   ref="descriptionInputRef"
                   v-model="editedDescription"
-                  type="textarea"
-                  dense
-                  outlined
                   class="tw:flex-1"
                   rows="2"
                   @blur="stopEditDescription"
@@ -337,7 +347,7 @@ watch(
 
               <div class="tw:flex tw:items-center tw:gap-4 tw:pt-2">
                 <div class="tw:flex tw:items-center tw:gap-2">
-                  <WIcon icon="history" size="16px" class="tw:text-secondary" />
+                  <IconHistory :size="16" class="tw:text-secondary" />
                   <span class="tw:text-xs tw:text-secondary">
                     Last Modified: {{ role.updatedAt.formatDate('date') }}
                   </span>
@@ -355,13 +365,12 @@ watch(
                   {{ usersCount }}
                 </div>
               </div>
-              <WBtn
-                label="View All Users"
-                flat
-                color="primary"
-                class="tw:font-semibold"
+              <button
+                class="tw:text-sm tw:font-semibold tw:text-primary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:underline"
                 @click="openUsersDialog"
-              />
+              >
+                View All Users
+              </button>
             </div>
           </div>
         </section>
@@ -371,27 +380,24 @@ watch(
           <h3 class="tw:text-xl tw:font-bold tw:text-on-sidebar">Permissions</h3>
           <div class="tw:flex tw:items-center tw:gap-4">
             <div class="tw:relative">
-              <WInput
+              <IconSearch
+                :size="18"
+                class="tw:absolute tw:left-3 tw:top-1/2 tw:-translate-y-1/2 tw:text-secondary tw:pointer-events-none"
+              />
+              <BaseTextInput
                 v-model="searchTerm"
                 placeholder="Search permissions..."
-                dense
-                outlined
-                class="tw:w-64"
-              >
-                <template #prepend>
-                  <WIcon icon="search" size="18px" class="tw:text-secondary" />
-                </template>
-              </WInput>
+                class="tw:w-64 tw:pl-9"
+              />
             </div>
-            <WBtn
+            <button
               v-if="canUpdateRole"
-              label="Select All"
-              icon="select_all"
-              flat
-              color="primary"
-              class="tw:font-semibold"
+              class="tw:flex tw:items-center tw:gap-1.5 tw:text-sm tw:font-semibold tw:text-primary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:underline"
               @click="selectAll"
-            />
+            >
+              <IconSquareCheck :size="18" />
+              Select All
+            </button>
           </div>
         </div>
 

@@ -1,41 +1,49 @@
 <script setup>
-import { useNotifications } from '@/composables/useNotifications.js'
+import {
+  IconCircleCheck,
+  IconClock,
+  IconUserCheck,
+  IconClipboard,
+  IconMessage,
+  IconInfoCircle,
+  IconBell,
+  IconChevronRight,
+} from '@tabler/icons-vue'
+import { DateTime } from 'luxon'
 import { getCompanyPath } from '@/utils/routeHelpers'
 
 const props = defineProps({
   notification: { type: Object, required: true },
 })
 const emit = defineEmits(['close'])
-const { markAsRead } = useNotifications()
 const router = useRouter()
 
 const timeAgo = computed(() => {
   return props.notification.createdAt ? props.notification.createdAt.toRelative() : ''
 })
 
-const typeIcon = computed(() => {
-  const icons = {
-    DOCUMENT_APPROVED: 'task_alt',
-    WORKFLOW_ACTION_REQUIRED: 'pending_actions',
-    RECORD_ASSIGNED: 'assignment_ind',
-    TASK_ASSIGNED: 'assignment',
-    DOCUMENT_MESSAGE: 'forum',
-    SYSTEM: 'info',
-  }
-  return icons[props.notification.notificationTypeId] || 'notifications'
-})
+const TYPE_ICON_MAP = {
+  DOCUMENT_APPROVED: IconCircleCheck,
+  WORKFLOW_ACTION_REQUIRED: IconClock,
+  RECORD_ASSIGNED: IconUserCheck,
+  TASK_ASSIGNED: IconClipboard,
+  DOCUMENT_MESSAGE: IconMessage,
+  SYSTEM: IconInfoCircle,
+}
 
-const typeColor = computed(() => {
-  const colors = {
-    DOCUMENT_APPROVED: 'positive',
-    WORKFLOW_ACTION_REQUIRED: 'warning',
-    RECORD_ASSIGNED: 'info',
-    TASK_ASSIGNED: 'accent',
-    DOCUMENT_MESSAGE: 'info',
-    SYSTEM: 'grey',
-  }
-  return colors[props.notification.notificationTypeId] || 'grey'
-})
+const TYPE_COLOR_MAP = {
+  DOCUMENT_APPROVED: 'tw:text-green-600',
+  WORKFLOW_ACTION_REQUIRED: 'tw:text-amber-600',
+  RECORD_ASSIGNED: 'tw:text-blue-600',
+  TASK_ASSIGNED: 'tw:text-purple-600',
+  DOCUMENT_MESSAGE: 'tw:text-blue-600',
+  SYSTEM: 'tw:text-gray-600',
+}
+
+const typeIcon = computed(() => TYPE_ICON_MAP[props.notification.notificationTypeId] || IconBell)
+const typeColor = computed(
+  () => TYPE_COLOR_MAP[props.notification.notificationTypeId] || 'tw:text-gray-600',
+)
 
 const RESOURCE_ROUTES = {
   Document: (id) => getCompanyPath(`/documents/${id}`),
@@ -54,7 +62,9 @@ const resourcePath = computed(() => {
 
 async function handleClick() {
   if (!props.notification.isRead) {
-    await markAsRead(props.notification.id)
+    props.notification.isRead = true
+    props.notification.readAt = DateTime.now()
+    await props.notification.save()
   }
   emit('close')
   if (resourcePath.value) {
@@ -64,39 +74,39 @@ async function handleClick() {
 </script>
 
 <template>
-  <QItem
-    clickable
-    :class="['tw:transition-colors', !notification.isRead ? 'tw:bg-blue-50/50' : 'tw:bg-sidebar']"
+  <button
+    class="tw:w-full tw:text-left tw:flex tw:items-start tw:gap-3 tw:px-4 tw:py-3 tw:transition-colors tw:hover:bg-main-hover tw:border-0 tw:cursor-pointer"
+    :class="!notification.isRead ? 'tw:bg-blue-50/50' : 'tw:bg-sidebar'"
     @click="handleClick"
   >
-    <QItemSection avatar>
-      <QIcon :name="typeIcon" :color="typeColor" size="24px" />
-    </QItemSection>
+    <component :is="typeIcon" :size="24" :class="typeColor" class="tw:shrink-0 tw:mt-0.5" />
 
-    <QItemSection>
-      <QItemLabel
-        :class="[!notification.isRead ? 'tw:font-semibold' : 'tw:font-normal']"
-        class="tw:text-sm"
+    <div class="tw:flex-1 tw:min-w-0">
+      <p
+        class="tw:text-sm tw:text-on-main tw:truncate"
+        :class="!notification.isRead ? 'tw:font-semibold' : 'tw:font-normal'"
       >
         {{ notification.title }}
-      </QItemLabel>
-      <QItemLabel v-if="notification.message" caption lines="2" class="tw:text-xs tw:mt-0.5">
+      </p>
+      <p v-if="notification.message" class="tw:text-xs tw:text-secondary tw:mt-0.5 tw:line-clamp-2">
         {{ notification.message }}
-      </QItemLabel>
-      <QItemLabel caption class="tw:text-xs tw:mt-1 tw:text-gray-400">
+      </p>
+      <p class="tw:text-xs tw:text-gray-400 tw:mt-1">
         {{ timeAgo }}
         <span v-if="notification.creator">
           &middot; {{ notification.creator.firstName }} {{ notification.creator.lastName }}
         </span>
-      </QItemLabel>
-    </QItemSection>
+      </p>
+    </div>
 
-    <QItemSection v-if="!notification.isRead" side>
-      <div class="tw:w-2.5 tw:h-2.5 tw:rounded-full tw:bg-blue-500" />
-    </QItemSection>
-
-    <QItemSection v-else-if="resourcePath" side>
-      <QIcon name="chevron_right" color="grey-5" size="18px" />
-    </QItemSection>
-  </QItem>
+    <div
+      v-if="!notification.isRead"
+      class="tw:w-2.5 tw:h-2.5 tw:rounded-full tw:bg-blue-500 tw:shrink-0 tw:mt-1.5"
+    />
+    <IconChevronRight
+      v-else-if="resourcePath"
+      :size="18"
+      class="tw:text-gray-400 tw:shrink-0 tw:mt-0.5"
+    />
+  </button>
 </template>

@@ -1,31 +1,33 @@
 <script setup>
-import { useNotifications } from '@/composables/useNotifications.js'
+import { IconBell } from '@tabler/icons-vue'
 
-const { unreadCount } = useNotifications()
-const showPanel = ref(false)
+const notifications = useLiveQuery(
+  async (db) => db.Notification.where().orderBy('createdAt', 'desc').exec(),
+  { initial: [] },
+)
+
+const unreadCount = computed(() => notifications.value.filter((n) => !n.isRead).length)
 </script>
 
 <template>
-  <div class="tw:relative">
-    <QBtn flat round icon="notifications" color="primary">
-      <QBadge
-        v-if="unreadCount > 0"
-        color="red"
-        floating
-        rounded
-        :label="unreadCount > 99 ? '99+' : unreadCount"
-        @click.stop="showPanel = !showPanel"
-      />
-    </QBtn>
-
-    <QMenu
-      v-model="showPanel"
-      anchor="bottom right"
-      self="top right"
-      :offset="[0, 8]"
-      class="tw:w-96 tw:max-h-125"
-    >
-      <NotificationsPanel @close="showPanel = false" />
-    </QMenu>
-  </div>
+  <BasePopover placement="bottom-end" :offset="8">
+    <template #button>
+      <button
+        class="tw:relative tw:flex tw:items-center tw:justify-center tw:size-9 tw:rounded-full tw:hover:bg-main-hover tw:transition-colors"
+      >
+        <IconBell :size="20" class="tw:text-on-main" />
+        <span
+          v-if="unreadCount > 0"
+          class="tw:absolute tw:top-0.5 tw:right-0.5 tw:min-w-4 tw:h-4 tw:bg-red-500 tw:text-white tw:text-[10px] tw:font-bold tw:rounded-full tw:flex tw:items-center tw:justify-center tw:px-0.5"
+        >
+          {{ unreadCount > 99 ? '99+' : unreadCount }}
+        </span>
+      </button>
+    </template>
+    <template #content="{ close }">
+      <div class="tw:w-96 tw:max-h-125 tw:overflow-hidden tw:flex tw:flex-col">
+        <NotificationsPanel @close="close" />
+      </div>
+    </template>
+  </BasePopover>
 </template>

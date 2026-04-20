@@ -1,5 +1,5 @@
 <script setup>
-import { useRecords } from '@/composables/useRecords.js'
+import { IconCircleCheck, IconArrowBack } from '@tabler/icons-vue'
 
 defineProps({
   rows: {
@@ -12,12 +12,10 @@ defineProps({
   },
 })
 
-const { updateRecord } = useRecords()
-
 const previewDialog = ref(false)
 const selectedRecordId = ref(null)
 
-function openPreview(_, row) {
+function openPreview(row) {
   selectedRecordId.value = row.id
   previewDialog.value = true
 }
@@ -27,28 +25,16 @@ function closePreview() {
   selectedRecordId.value = null
 }
 
-async function handleUpdate(recordId, updates) {
-  const result = await updateRecord(recordId, updates)
-  if (result.error) {
-    console.error('Failed to update record:', result.error)
-  }
-}
+const updateRecord = useLiveMutation(async (db, { id, updates }) => {
+  const record = await db.Record.findByPk(id)
+  if (!record) throw new Error('Record not found')
+  Object.assign(record, updates)
+  await record.save()
+  return record
+})
 
 const columns = [
-  {
-    name: 'recordNumber',
-    label: 'RECORD #',
-    field: 'recordNumber',
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'template',
-    label: 'TEMPLATE',
-    field: (row) => row.template?.title,
-    align: 'left',
-    sortable: true,
-  },
+  { name: 'recordNumber', label: 'RECORD #', field: 'recordNumber', align: 'left', sortable: true },
   {
     name: 'documentTypeId',
     label: 'DOCUMENT TYPE',
@@ -57,106 +43,91 @@ const columns = [
     sortable: true,
   },
   { name: 'statusId', label: 'STATUS', field: 'statusId', align: 'left', sortable: true },
-  {
-    name: 'createdBy',
-    label: 'CREATED BY',
-    field: (row) => {
-      if (!row.user) return '—'
-      return `${row.user.firstName} ${row.user.lastName}`
-    },
-    align: 'left',
-    sortable: true,
-  },
+  { name: 'createdBy', label: 'CREATED BY', field: 'userId', align: 'left', sortable: false },
   { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
-  { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right' },
+  { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right', sortable: false },
 ]
 </script>
 
 <template>
-  <QCard class="tw:flex tw:flex-col tw:h-full" flat bordered>
-    <WTable
+  <div
+    class="tw:flex tw:flex-col tw:h-full tw:border tw:border-divider tw:rounded-lg tw:overflow-hidden"
+  >
+    <BaseTable
       :rows="rows"
       :columns="columns"
       :loading="loading"
-      class="tw:flex-1"
-      hideTop
-      noBorder
+      hidePagination
       @rowClick="openPreview"
     >
       <!-- Record Number Column -->
-      <template #body-cell-recordNumber="scope">
-        <QTd :props="scope">
-          <span class="tw:font-bold">{{ scope.row.recordNumber }}</span>
-        </QTd>
+      <template #body-cell-recordNumber="{ row }">
+        <span class="tw:font-bold">{{ row.recordNumber }}</span>
       </template>
 
       <!-- Document Type Column -->
-      <template #body-cell-documentTypeId="scope">
-        <QTd :props="scope">
-          <DocumentTypeBadgeById :documentTypeId="scope.row.documentTypeId" />
-        </QTd>
+      <template #body-cell-documentTypeId="{ row }">
+        <DocumentTypeBadgeById :documentTypeId="row.documentTypeId" />
       </template>
 
       <!-- Status Column -->
-      <template #body-cell-statusId="scope">
-        <QTd :props="scope">
-          <WStatusBadge :status="scope.row.statusId" variant="record" showIcon />
-        </QTd>
+      <template #body-cell-statusId="{ row }">
+        <RecordStatusBadgeById :statusId="row.statusId" />
+      </template>
+
+      <!-- Created By Column -->
+      <template #body-cell-createdBy="{ row }">
+        <UserBadgeById :userId="row.userId" />
       </template>
 
       <!-- Created At Column -->
-      <template #body-cell-createdAt="scope">
-        <QTd :props="scope">
-          <span class="tw:text-sm tw:text-secondary">{{
-            scope.row.createdAt.formatDate('date')
-          }}</span>
-        </QTd>
+      <template #body-cell-createdAt="{ row }">
+        <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
       </template>
 
       <!-- Actions Column -->
-      <template #body-cell-actions="scope">
-        <QTd :props="scope">
-          <div class="tw:flex tw:justify-end">
-            <QBtn icon="more_vert" flat dense round color="grey-7" @click.prevent.stop>
-              <QMenu>
-                <QList style="min-width: 150px">
-                  <QItem
-                    v-if="scope.row.statusId === 'DRAFT'"
-                    clickable
-                    @click="handleUpdate(scope.row.id, { statusId: 'APPROVED' })"
-                  >
-                    <QItemSection avatar>
-                      <QIcon name="check_circle" color="positive" />
-                    </QItemSection>
-                    <QItemSection>Approve</QItemSection>
-                  </QItem>
-
-                  <QItem
-                    v-if="scope.row.statusId === 'APPROVED'"
-                    clickable
-                    @click="handleUpdate(scope.row.id, { statusId: 'DRAFT' })"
-                  >
-                    <QItemSection avatar>
-                      <QIcon name="undo" color="warning" />
-                    </QItemSection>
-                    <QItemSection>Unapprove</QItemSection>
-                  </QItem>
-                </QList>
-              </QMenu>
-            </QBtn>
-          </div>
-        </QTd>
+      <template #body-cell-actions="{ row }">
+        <div class="tw:flex tw:justify-end" @click.prevent.stop>
+          <BaseMenu
+            :items="[
+              ...(row.statusId === 'DRAFT'
+                ? [
+                    {
+                      name: 'Approve',
+                      icon: IconCircleCheck,
+                      click: () => updateRecord({ id: row.id, updates: { statusId: 'APPROVED' } }),
+                    },
+                  ]
+                : []),
+              ...(row.statusId === 'APPROVED'
+                ? [
+                    {
+                      name: 'Unapprove',
+                      icon: IconArrowBack,
+                      click: () => updateRecord({ id: row.id, updates: { statusId: 'DRAFT' } }),
+                    },
+                  ]
+                : []),
+            ]"
+          />
+        </div>
       </template>
-    </WTable>
+    </BaseTable>
 
-    <!-- Preview Dialog -->
-    <QDialog
-      v-model="previewDialog"
-      maximized
-      transitionShow="slide-up"
-      transitionHide="slide-down"
-    >
-      <RecordPreview v-if="selectedRecordId" :recordId="selectedRecordId" @close="closePreview" />
-    </QDialog>
-  </QCard>
+    <!-- Preview Panel -->
+    <Teleport to="body">
+      <Transition
+        enterActiveClass="tw:transition-transform tw:duration-300 tw:ease-out"
+        enterFromClass="tw:translate-x-full"
+        enterToClass="tw:translate-x-0"
+        leaveActiveClass="tw:transition-transform tw:duration-200 tw:ease-in"
+        leaveFromClass="tw:translate-x-0"
+        leaveToClass="tw:translate-x-full"
+      >
+        <div v-if="previewDialog" class="tw:fixed tw:inset-0 tw:z-50 tw:bg-sidebar">
+          <RecordPreview :recordId="selectedRecordId" @close="closePreview" />
+        </div>
+      </Transition>
+    </Teleport>
+  </div>
 </template>

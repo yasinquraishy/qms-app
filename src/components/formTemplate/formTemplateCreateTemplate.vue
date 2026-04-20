@@ -1,8 +1,18 @@
 <script setup>
+import {
+  IconX,
+  IconCirclePlus,
+  IconFileDescription,
+  IconArrowLeft,
+  IconArrowRight,
+  IconBrush,
+  IconCheck,
+  IconCircleX,
+} from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
-import { useTemplateForm } from '@/composables/useTemplateForm'
-import { useSites } from '@/composables/useSites'
+import { useDebounceFn } from '@vueuse/core'
+import { put } from '@/api'
 import { QMS_TEMPLATES } from '@/constants/formTemplates'
 
 const emit = defineEmits(['next', 'cancel'])
@@ -12,12 +22,29 @@ const open = defineModel({
   default: false,
 })
 
-const {
-  templateForm,
-  loadingDocumentTypes,
-  createTemplate,
-  resetForm: resetTemplateForm,
-} = useTemplateForm()
+const sites = useLiveQuery((db) => db.Site.where().exec(), { initial: [] })
+
+const templateForm = reactive({
+  title: '',
+  code: '',
+  documentTypeId: null,
+  status: 'DRAFT',
+  trainingRequired: false,
+  retrainingOnRevision: false,
+  selectedSites: [],
+  schema: [],
+  isAvailable: null,
+  isChecking: false,
+  isSubmitting: false,
+  isValid: computed(() => {
+    const titleValid = templateForm.title.trim().length > 0
+    const codeValid = /^[a-z0-9-_]+$/i.test(templateForm.code.trim())
+    const documentTypeValid = templateForm.documentTypeId !== null
+    return titleValid && codeValid && documentTypeValid && templateForm.code.trim().length >= 2
+  }),
+})
+
+const isCodeChangeFromTitle = ref(false)
 
 const templateRules = computed(() => ({
   title: { required: helpers.withMessage('Required', required) },
@@ -27,14 +54,97 @@ const templateRules = computed(() => ({
 
 const templateValidator = useValidator(templateRules, templateForm)
 
-const { sites, fetchSites } = useSites()
-
-onMounted(() => {
-  fetchSites()
-})
-
 const step = ref(1)
 const selectedPreset = ref(null)
+
+async function checkTemplateCode(isNameCheck = false) {
+  const code = templateForm.code.trim()
+  const title = templateForm.title.trim()
+
+  if (isNameCheck && !title) {
+    templateForm.isAvailable = null
+    return
+  }
+
+  if (!isNameCheck && (!code || !/^[a-z0-9-_]+$/i.test(code))) {
+    templateForm.isAvailable = null
+    return
+  }
+
+  if (!isNameCheck && code.length < 2) {
+    templateForm.isAvailable = null
+    return
+  }
+
+  templateForm.isChecking = true
+  try {
+    const data = await put(
+      '/v1/services/formTemplates/checkcode',
+      { code, title, isNameCheck },
+      { showError: false },
+    )
+    if (isNameCheck) {
+      if (data.suggestedCode) {
+        isCodeChangeFromTitle.value = true
+        templateForm.code = data.suggestedCode
+        templateForm.isAvailable = data.isSuggestedCodeAvailable
+      }
+    } else {
+      templateForm.isAvailable = data.message === 'available'
+    }
+  } catch {
+    templateForm.isAvailable = null
+  } finally {
+    templateForm.isChecking = false
+  }
+}
+
+const checkCodeDebounced = useDebounceFn(
+  (isNameCheck = false) => checkTemplateCode(isNameCheck),
+  500,
+)
+
+watch(
+  () => templateForm.code,
+  (newValue) => {
+    if (newValue && !isCodeChangeFromTitle.value) {
+      checkCodeDebounced(false)
+    }
+    isCodeChangeFromTitle.value = false
+  },
+)
+
+watch(
+  () => templateForm.title,
+  (newValue) => {
+    if (newValue) {
+      checkCodeDebounced(true)
+    }
+  },
+)
+
+const createTemplate = useLiveMutation(async (db, formData) => {
+  const template = db.FormTemplate.create({
+    title: formData.title,
+    code: formData.code,
+    documentTypeId: formData.documentTypeId,
+    statusId: formData.status,
+    schema: formData.schema || [],
+    config: {
+      trainingRequired: formData.trainingRequired,
+      retrainingOnRevision: formData.retrainingOnRevision,
+    },
+  })
+  await template.save()
+
+  // Create site assignments
+  for (const siteId of formData.selectedSites) {
+    const sot = db.SiteOnTemplate.create({ siteId, templateId: template.id })
+    await sot.save()
+  }
+
+  return template
+})
 
 function applyTemplate(preset) {
   selectedPreset.value = preset.title
@@ -56,18 +166,29 @@ async function goToFormBuilder() {
   const valid = await templateValidator.value.$validate()
   if (!valid) return
 
-  const result = await createTemplate()
-  if (!result.error) {
-    emit('next', result.template)
+  templateForm.isSubmitting = true
+  try {
+    const template = await createTemplate(templateForm)
+    emit('next', template)
     open.value = false
-  } else {
-    // Handle error (e.g. show toast)
-    console.error('Failed to create template:', result.error)
+  } catch (err) {
+    console.error('Failed to create template:', err)
+  } finally {
+    templateForm.isSubmitting = false
   }
 }
 
 function resetForm() {
-  resetTemplateForm()
+  templateForm.title = ''
+  templateForm.code = ''
+  templateForm.documentTypeId = null
+  templateForm.status = 'DRAFT'
+  templateForm.trainingRequired = false
+  templateForm.retrainingOnRevision = false
+  templateForm.selectedSites = []
+  templateForm.schema = []
+  templateForm.isAvailable = null
+  templateForm.isChecking = false
   step.value = 1
   selectedPreset.value = null
 }
@@ -86,103 +207,115 @@ function prevStep() {
 </script>
 
 <template>
-  <WDialog v-model="open" minWidth="540px" maxWidth="800px" :close="false" persistent>
+  <BaseDialog v-model="open" maxWidth="2xl" persistent>
     <!-- Wizard Header -->
-    <template #title>
-      <div class="tw:flex tw:justify-between tw:items-center tw:w-full">
-        <div>
-          <div class="tw:text-xl tw:font-bold tw:text-on-main">Create New Template</div>
-          <div class="tw:text-xs tw:text-secondary">
-            Step {{ step }}: {{ step === 1 ? 'Define Metadata' : 'Choose Template' }}
-          </div>
+    <div class="tw:flex tw:justify-between tw:items-center tw:mb-4">
+      <div>
+        <div class="tw:text-xl tw:font-bold tw:text-on-main">Create New Template</div>
+        <div class="tw:text-xs tw:text-secondary">
+          Step {{ step }}: {{ step === 1 ? 'Define Metadata' : 'Choose Template' }}
         </div>
-        <WBtn icon="sym_o_close" flat round dense color="grey-6" @click="closeWizard" />
       </div>
-    </template>
+      <button
+        class="tw:p-1 tw:rounded tw:text-secondary tw:hover:bg-main-hover"
+        @click="closeWizard"
+      >
+        <IconX :size="20" />
+      </button>
+    </div>
 
     <!-- Wizard Body -->
     <div class="tw:flex tw:flex-col tw:gap-4">
       <!-- Step 1: Metadata -->
       <div v-if="step === 1" class="tw:flex tw:flex-col tw:gap-4">
         <!-- Template Name -->
-        <WInput
-          v-model="templateForm.title"
-          name="title"
-          label="Template Name"
-          placeholder="e.g. Internal Quality Audit Checklist"
-        >
-          <template #label> Template Name <span class="tw:text-bad">*</span> </template>
-        </WInput>
+        <div>
+          <label class="tw:text-sm tw:font-medium tw:text-on-main"
+            >Template Name <span class="tw:text-bad">*</span></label
+          >
+          <BaseTextInput
+            v-model="templateForm.title"
+            name="title"
+            placeholder="e.g. Internal Quality Audit Checklist"
+          />
+        </div>
 
-        <!-- Document Type & ID Prefix Row -->
+        <!-- Document Type & Code Row -->
         <div class="tw:grid tw:grid-cols-2 tw:gap-4">
-          <DocumentTypeSelectMenu
-            v-model="templateForm.documentTypeId"
-            name="documentTypeId"
-            label="Document Type"
-            placeholder="Select Type..."
-            :loading="loadingDocumentTypes"
-            required
-          >
-            <template #label> Document Type <span class="tw:text-bad">*</span> </template>
-          </DocumentTypeSelectMenu>
+          <div>
+            <label class="tw:text-sm tw:font-medium tw:text-on-main"
+              >Document Type <span class="tw:text-bad">*</span></label
+            >
+            <DocumentTypeSelectMenu v-model="templateForm.documentTypeId" required />
+          </div>
 
-          <WInput
-            v-model="templateForm.code"
-            name="code"
-            label="Code"
-            placeholder="e.g. QUA, AUD"
-            hint="Used for Record ID generation."
-            :loading="templateForm.isChecking"
-          >
-            <template #label> Code <span class="tw:text-bad">*</span> </template>
-            <template #append>
-              <WIcon
-                v-if="templateForm.isAvailable === true"
-                name="check_circle"
-                color="positive"
-                size="xs"
-              />
-              <WIcon
-                v-else-if="templateForm.isAvailable === false"
-                name="cancel"
-                color="negative"
-                size="xs"
-              />
-            </template>
-          </WInput>
+          <div>
+            <label class="tw:text-sm tw:font-medium tw:text-on-main"
+              >Code <span class="tw:text-bad">*</span></label
+            >
+            <div class="tw:relative">
+              <BaseTextInput v-model="templateForm.code" name="code" placeholder="e.g. QUA, AUD" />
+              <div class="tw:absolute tw:right-2 tw:top-1/2 tw:-translate-y-1/2">
+                <div
+                  v-if="templateForm.isChecking"
+                  class="tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent"
+                />
+                <IconCheck
+                  v-else-if="templateForm.isAvailable === true"
+                  :size="16"
+                  class="tw:text-green-600"
+                />
+                <IconCircleX
+                  v-else-if="templateForm.isAvailable === false"
+                  :size="16"
+                  class="tw:text-bad"
+                />
+              </div>
+            </div>
+            <div class="tw:text-xs tw:text-secondary tw:mt-1">Used for Record ID generation.</div>
+          </div>
         </div>
 
         <!-- Training Configuration -->
         <div class="tw:bg-main-hover tw:p-3 tw:rounded-lg">
-          <div class="ds-label-sm tw:text-secondary tw:mb-3">Training Configuration</div>
+          <div class="tw:text-xs tw:font-semibold tw:uppercase tw:text-secondary tw:mb-3">
+            Training Configuration
+          </div>
           <div class="tw:flex tw:flex-col tw:gap-3">
             <div class="tw:flex tw:justify-between tw:items-center">
               <span class="tw:text-sm tw:text-on-main">Training Required?</span>
-              <QToggle v-model="templateForm.trainingRequired" color="primary" dense />
+              <BaseSwitch v-model="templateForm.trainingRequired" />
             </div>
-            <div class="tw:text-xs tw:text-secondary tw:mt-[-8px]">
+            <div class="tw:text-xs tw:text-secondary tw:-mt-2">
               If enabled, users must link a training course when creating a record.
             </div>
 
             <div class="tw:flex tw:justify-between tw:items-center">
               <span class="tw:text-sm tw:text-on-main">Retraining Required on Revision?</span>
-              <QToggle v-model="templateForm.retrainingOnRevision" color="primary" dense />
+              <BaseSwitch v-model="templateForm.retrainingOnRevision" />
             </div>
           </div>
         </div>
 
         <!-- Site Availability -->
-        <div class="tw:bg-main-hover tw:p-3 tw:rounded-lg tw:overflow-auto tw:max-h-[200px]">
-          <div class="ds-label-sm tw:text-secondary tw:mb-3">Site Availability</div>
+        <div class="tw:bg-main-hover tw:p-3 tw:rounded-lg tw:overflow-auto tw:max-h-50">
+          <div class="tw:text-xs tw:font-semibold tw:uppercase tw:text-secondary tw:mb-3">
+            Site Availability
+          </div>
           <div v-if="sites.length > 0" class="tw:grid tw:grid-cols-2 tw:gap-2">
             <div v-for="site in sites" :key="site.id">
-              <QCheckbox
-                v-model="templateForm.selectedSites"
-                :val="site.id"
+              <BaseCheckbox
+                :modelValue="templateForm.selectedSites.includes(site.id)"
                 :label="site.name"
-                color="primary"
-                dense
+                @update:modelValue="
+                  (checked) => {
+                    if (checked) templateForm.selectedSites.push(site.id)
+                    else
+                      templateForm.selectedSites = templateForm.selectedSites.filter(
+                        (id) => id !== site.id,
+                      )
+                  }
+                "
               />
             </div>
           </div>
@@ -197,14 +330,14 @@ function prevStep() {
           step.
         </div>
 
-        <div class="tw:grid tw:grid-cols-2 tw:gap-4 tw:overflow-auto tw:max-h-[500px] tw:p-1">
+        <div class="tw:grid tw:grid-cols-2 tw:gap-4 tw:overflow-auto tw:max-h-125 tw:p-1">
           <!-- Blank Option -->
           <div
             class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:p-8 tw:border tw:border-divider tw:rounded-xl tw:cursor-pointer tw:transition-all tw:duration-200 tw:bg-main tw:hover:bg-main-hover tw:hover:border-primary"
             :class="{ 'tw:border-primary tw:bg-main-hover': selectedPreset === 'blank' }"
             @click="selectBlank"
           >
-            <WIcon name="add_circle_outline" color="grey-4" size="48px" />
+            <IconCirclePlus :size="48" class="tw:text-secondary/40" />
             <div class="tw:text-lg tw:font-bold tw:mt-4 tw:text-on-main">Blank Form</div>
             <div class="tw:text-xs tw:text-secondary tw:text-center">Start from a clean slate</div>
           </div>
@@ -219,11 +352,11 @@ function prevStep() {
           >
             <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
               <span class="tw:text-sm tw:font-bold tw:text-primary">{{ preset.title }}</span>
-              <WIcon name="description" color="primary" size="16px" />
+              <IconFileDescription :size="16" class="tw:text-primary" />
             </div>
             <!-- Mini Preview Area -->
             <div
-              class="tw:h-[180px] tw:overflow-hidden tw:relative tw:bg-main tw:border tw:border-divider tw:rounded-lg"
+              class="tw:h-45 tw:overflow-hidden tw:relative tw:bg-main tw:border tw:border-divider tw:rounded-lg"
             >
               <div
                 class="tw:w-[200%] tw:scale-[0.5] tw:origin-top-left tw:p-4 tw:pointer-events-none"
@@ -237,51 +370,30 @@ function prevStep() {
     </div>
 
     <!-- Footer Actions -->
-    <template #actions>
-      <div class="tw:flex tw:justify-between tw:items-center tw:w-full tw:px-6 tw:pb-6">
-        <WBtn
-          v-if="step === 2"
-          label="Back"
-          icon="arrow_back"
-          flat
-          color="grey-7"
-          @click="prevStep"
-        />
-        <div v-else />
+    <div class="tw:flex tw:justify-between tw:items-center tw:w-full tw:mt-6">
+      <BaseButton v-if="step === 2" variant="text" @click="prevStep">
+        <IconArrowLeft :size="16" class="tw:mr-1" />
+        Back
+      </BaseButton>
+      <div v-else />
 
-        <div class="tw:flex tw:gap-3">
-          <WBtn
-            label="Cancel"
-            outline
-            color="grey-7"
-            :disable="templateForm.isSubmitting"
-            @click="closeWizard"
-          />
-          <WBtn
-            v-if="step === 1"
-            label="Next: Select Template"
-            iconRight="arrow_forward"
-            color="primary"
-            unelevated
-            :disable="!templateForm.isValid"
-            @click="nextStep"
-          />
-          <WBtn
-            v-else
-            label="Design Form"
-            iconRight="sym_o_design_services"
-            color="primary"
-            unelevated
-            :loading="templateForm.isSubmitting"
-            :disable="selectedPreset === null"
-            @click="goToFormBuilder"
-          />
-        </div>
+      <div class="tw:flex tw:gap-3">
+        <BaseButton variant="outline" :disabled="templateForm.isSubmitting" @click="closeWizard">
+          Cancel
+        </BaseButton>
+        <BaseButton v-if="step === 1" :disabled="!templateForm.isValid" @click="nextStep">
+          Next: Select Template
+          <IconArrowRight :size="16" class="tw:ml-1" />
+        </BaseButton>
+        <BaseButton
+          v-else
+          :disabled="selectedPreset === null || templateForm.isSubmitting"
+          @click="goToFormBuilder"
+        >
+          <IconBrush :size="16" class="tw:mr-1" />
+          Design Form
+        </BaseButton>
       </div>
-    </template>
-  </WDialog>
+    </div>
+  </BaseDialog>
 </template>
-
-<style lang="scss" scoped>
-// Removed custom style as overflow and colors are handled by Tailwind
-</style>

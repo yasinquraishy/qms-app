@@ -1,4 +1,5 @@
 <script setup>
+import { IconAlertCircle, IconConfetti, IconLock } from '@tabler/icons-vue'
 import { useAuth } from '@/composables/useAuth.js'
 
 const router = useRouter()
@@ -89,31 +90,38 @@ function goToLogin() {
 </script>
 
 <template>
-  <WCard class="tw:w-full tw:max-w-sm tw:bg-main" flat>
+  <div class="tw:w-full tw:max-w-sm">
     <!-- Loading state -->
-    <QCardSection v-if="validating" class="tw:text-center tw:py-12">
-      <QSpinner size="40px" color="primary" />
+    <div v-if="validating" class="tw:text-center tw:py-12">
+      <div
+        class="tw:size-10 tw:animate-spin tw:rounded-full tw:border-2 tw:border-primary tw:border-t-transparent tw:mx-auto"
+      ></div>
       <div class="tw:text-secondary tw:mt-4">Validating invitation...</div>
-    </QCardSection>
+    </div>
 
     <!-- Invalid token state -->
-    <QCardSection v-else-if="!tokenValid" class="tw:text-center tw:py-8">
-      <WIcon name="error_outline" size="48px" color="negative" />
+    <div v-else-if="!tokenValid" class="tw:text-center tw:py-8">
+      <div class="tw:flex tw:justify-center tw:mb-4">
+        <IconAlertCircle :size="48" class="tw:text-red-500" />
+      </div>
       <div class="tw:text-xl tw:font-bold tw:text-on-main tw:mt-4">Invitation Expired</div>
       <div class="tw:text-sm tw:text-secondary tw:mt-2">
         This invitation link is invalid or has expired. Please contact your administrator to receive
         a new invitation.
       </div>
-      <WBtn unelevated noCaps color="primary" class="tw:w-full tw:mt-6" @click="goToLogin">
+      <button
+        class="tw:w-full tw:mt-6 tw:py-3 tw:px-4 tw:rounded-lg tw:bg-primary tw:text-white tw:font-medium tw:text-sm tw:hover:opacity-90 tw:transition-opacity tw:cursor-pointer tw:border-0"
+        @click="goToLogin"
+      >
         Go to Sign In
-      </WBtn>
-    </QCardSection>
+      </button>
+    </div>
 
     <!-- Valid invitation form -->
     <template v-else>
-      <QCardSection class="tw:pb-1">
-        <div class="tw:text-center tw:mb-2">
-          <WIcon name="celebration" size="40px" color="primary" />
+      <div class="tw:pb-1">
+        <div class="tw:text-center tw:mb-2 tw:flex tw:justify-center">
+          <IconConfetti :size="40" class="tw:text-primary" />
         </div>
         <div class="tw:text-2xl tw:font-bold tw:text-on-main tw:text-center">
           Welcome, {{ firstName }}!
@@ -121,71 +129,69 @@ function goToLogin() {
         <div class="tw:text-sm tw:text-secondary tw:mt-2 tw:text-center">
           Set your password to activate your account and get started.
         </div>
-      </QCardSection>
+      </div>
 
-      <QCardSection class="tw:pt-4">
+      <div class="tw:pt-4">
         <div class="tw:flex tw:flex-col tw:gap-4">
           <div class="tw:text-sm tw:text-secondary">
             <span class="tw:font-medium tw:text-on-main">Email:</span> {{ email }}
           </div>
 
-          <WInput
+          <BaseTextInput
             v-model="password"
             type="password"
             placeholder="Set new password"
-            outlined
-            dense
             autocomplete="new-password"
-            :disable="loading"
+            :disabled="loading"
             @keyup.enter="handleSubmit"
           >
-            <template #prepend>
-              <WIcon name="lock" />
+            <template #icon>
+              <IconLock :size="16" class="tw:text-secondary" />
             </template>
-          </WInput>
+          </BaseTextInput>
 
-          <WInput
+          <BaseTextInput
             v-model="confirmPassword"
             type="password"
             placeholder="Confirm new password"
-            outlined
-            dense
             autocomplete="new-password"
-            :disable="loading"
+            :disabled="loading"
             @keyup.enter="handleSubmit"
           >
-            <template #prepend>
-              <WIcon name="lock" />
+            <template #icon>
+              <IconLock :size="16" class="tw:text-secondary" />
             </template>
-          </WInput>
+          </BaseTextInput>
 
           <div class="tw:text-xs tw:text-secondary">
             Password must be at least 8 characters long
           </div>
 
-          <WBtn
-            unelevated
-            noCaps
-            color="primary"
-            class="tw:w-full"
-            :loading="loading"
-            :disable="loading || !password || !confirmPassword"
+          <button
+            class="tw:w-full tw:py-3 tw:px-4 tw:rounded-lg tw:bg-primary tw:text-white tw:font-medium tw:text-sm tw:hover:opacity-90 tw:transition-opacity tw:cursor-pointer tw:border-0 disabled:tw:opacity-50 disabled:tw:cursor-not-allowed"
+            :disabled="loading || !password || !confirmPassword"
             @click="handleSubmit"
           >
-            Accept Invitation
-          </WBtn>
+            <span v-if="loading" class="tw:inline-flex tw:items-center tw:justify-center tw:gap-2">
+              <span
+                class="tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-white tw:border-t-transparent tw:inline-block"
+              ></span>
+              Accepting...
+            </span>
+            <span v-else>Accept Invitation</span>
+          </button>
 
           <div class="tw:text-center">
             <a
               href="#"
-              class="tw:text-sm tw:text-primary tw:no-underline hover:tw:underline"
+              class="tw:text-sm tw:text-primary tw:no-underline"
               @click.prevent="goToLogin"
             >
               Already have an account? Sign in
             </a>
           </div>
         </div>
-      </QCardSection>
+      </div>
     </template>
-  </WCard>
+  </div>
 </template>

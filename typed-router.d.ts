@@ -107,13 +107,6 @@ declare module 'vue-router/auto-routes' {
       { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
       | never
     >,
-    '/[companyCode]/nc-records': RouteRecordInfo<
-      '/[companyCode]/nc-records',
-      '/:companyCode/nc-records',
-      { companyCode: ParamValue<true> },
-      { companyCode: ParamValue<false> },
-      | never
-    >,
     '/[companyCode]/notifications': RouteRecordInfo<
       '/[companyCode]/notifications',
       '/:companyCode/notifications',
@@ -343,12 +336,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/[companyCode]/groups/[[id]].vue': {
       routes:
         | '/[companyCode]/groups/[[id]]'
-      views:
-        | never
-    }
-    'src/pages/[companyCode]/nc-records.vue': {
-      routes:
-        | '/[companyCode]/nc-records'
       views:
         | never
     }

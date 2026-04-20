@@ -66,17 +66,10 @@ import { UserOnApprovalWorkflowInstanceStep } from './userOnApprovalWorkflowInst
 import { UserOnDocument } from './userOnDocument'
 import { UserOnTeam } from './userOnTeam'
 import { UserStatus } from './userStatus'
-import { NcAttachment } from './NcAttachment'
-import { NcEventType } from './NcEventType'
-import { NcHistory } from './NcHistory'
-import { NcRecord } from './NcRecord'
 import { NcSeverity } from './NcSeverity'
 import { NcSource } from './NcSource'
 import { NcType } from './NcType'
 import { NcStatus } from './NcStatus'
-import { NcStatusTransition } from './NcStatusTransition'
-import { RootCauseCategory } from './RootCauseCategory'
-import { NcCounter } from './NcCounter'
 
 export const db = {
   ApiKey,
@@ -147,15 +140,8 @@ export const db = {
   UserOnDocument,
   UserOnTeam,
   UserStatus,
-  NcAttachment,
-  NcEventType,
-  NcHistory,
-  NcRecord,
   NcSeverity,
   NcSource,
   NcType,
   NcStatus,
-  NcStatusTransition,
-  RootCauseCategory,
-  NcCounter,
 }

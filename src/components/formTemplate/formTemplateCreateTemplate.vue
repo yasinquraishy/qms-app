@@ -22,8 +22,6 @@ const open = defineModel({
   default: false,
 })
 
-const sites = useLiveQuery((db) => db.Site.where().exec(), { initial: [] })
-
 const templateForm = reactive({
   title: '',
   code: '',
@@ -298,28 +296,9 @@ function prevStep() {
         </div>
 
         <!-- Site Availability -->
-        <div class="tw:bg-main-hover tw:p-3 tw:rounded-lg tw:overflow-auto tw:max-h-50">
-          <div class="tw:text-xs tw:font-semibold tw:uppercase tw:text-secondary tw:mb-3">
-            Site Availability
-          </div>
-          <div v-if="sites.length > 0" class="tw:grid tw:grid-cols-2 tw:gap-2">
-            <div v-for="site in sites" :key="site.id">
-              <BaseCheckbox
-                :modelValue="templateForm.selectedSites.includes(site.id)"
-                :label="site.name"
-                @update:modelValue="
-                  (checked) => {
-                    if (checked) templateForm.selectedSites.push(site.id)
-                    else
-                      templateForm.selectedSites = templateForm.selectedSites.filter(
-                        (id) => id !== site.id,
-                      )
-                  }
-                "
-              />
-            </div>
-          </div>
-          <div v-else class="tw:text-xs tw:text-secondary">No sites available.</div>
+        <div>
+          <label class="tw:text-sm tw:font-medium tw:text-on-main">Site Availability</label>
+          <SiteSelectMenu v-model="templateForm.selectedSites" multiple />
         </div>
       </div>
 

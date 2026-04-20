@@ -26,12 +26,7 @@ function getArray() {
 </script>
 
 <template>
-  <BaseSelectMenu
-    v-model="modelValue"
-    :items="sites"
-    :required="required"
-    :multiple="multiple"
-  >
+  <BaseSelectMenu v-model="modelValue" :items="sites" :required="required" :multiple="multiple">
     <template #button="scope">
       <slot name="button" v-bind="scope">
         <!-- MULTIPLE MODE -->
@@ -45,9 +40,9 @@ function getArray() {
               @clear="() => scope.clear(siteId)"
             />
           </div>
-          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
+          <BaseBadge v-else class="tw:text-sm tw:font-medium tw:text-placeholder" selectable>
             Select Sites
-          </span>
+          </BaseBadge>
         </template>
 
         <!-- SINGLE MODE -->
@@ -59,9 +54,9 @@ function getArray() {
             selectable
             @clear="() => scope.clear(modelValue)"
           />
-          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
+          <BaseBadge v-else class="tw:text-sm tw:font-medium tw:text-placeholder" selectable>
             Select Site
-          </span>
+          </BaseBadge>
         </template>
       </slot>
     </template>

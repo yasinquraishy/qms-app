@@ -50,84 +50,80 @@ const columns = [
 </script>
 
 <template>
-  <div
-    class="tw:flex tw:flex-col tw:h-full tw:border tw:border-divider tw:rounded-lg tw:overflow-hidden"
+  <BaseTable
+    :rows="rows"
+    :columns="columns"
+    :loading="loading"
+    hidePagination
+    @rowClick="openPreview"
   >
-    <BaseTable
-      :rows="rows"
-      :columns="columns"
-      :loading="loading"
-      hidePagination
-      @rowClick="openPreview"
+    <!-- Record Number Column -->
+    <template #body-cell-recordNumber="{ row }">
+      <span class="tw:font-bold">{{ row.recordNumber }}</span>
+    </template>
+
+    <!-- Document Type Column -->
+    <template #body-cell-documentTypeId="{ row }">
+      <DocumentTypeBadgeById :documentTypeId="row.documentTypeId" :iconOnly="false" />
+    </template>
+
+    <!-- Status Column -->
+    <template #body-cell-statusId="{ row }">
+      <RecordStatusBadgeById :statusId="row.statusId" />
+    </template>
+
+    <!-- Created By Column -->
+    <template #body-cell-createdBy="{ row }">
+      <UserBadgeById :userId="row.userId" />
+    </template>
+
+    <!-- Created At Column -->
+    <template #body-cell-createdAt="{ row }">
+      <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
+    </template>
+
+    <!-- Actions Column -->
+    <template #body-cell-actions="{ row }">
+      <div class="tw:flex tw:justify-end" @click.prevent.stop>
+        <BaseMenu
+          :items="[
+            ...(row.statusId === 'DRAFT'
+              ? [
+                  {
+                    name: 'Approve',
+                    icon: IconCircleCheck,
+                    click: () => updateRecord({ id: row.id, updates: { statusId: 'APPROVED' } }),
+                  },
+                ]
+              : []),
+            ...(row.statusId === 'APPROVED'
+              ? [
+                  {
+                    name: 'Unapprove',
+                    icon: IconArrowBack,
+                    click: () => updateRecord({ id: row.id, updates: { statusId: 'DRAFT' } }),
+                  },
+                ]
+              : []),
+          ]"
+        />
+      </div>
+    </template>
+  </BaseTable>
+
+  <!-- Preview Panel -->
+  <Teleport to="body">
+    <Transition
+      enterActiveClass="tw:transition-transform tw:duration-300 tw:ease-out"
+      enterFromClass="tw:translate-x-full"
+      enterToClass="tw:translate-x-0"
+      leaveActiveClass="tw:transition-transform tw:duration-200 tw:ease-in"
+      leaveFromClass="tw:translate-x-0"
+      leaveToClass="tw:translate-x-full"
     >
-      <!-- Record Number Column -->
-      <template #body-cell-recordNumber="{ row }">
-        <span class="tw:font-bold">{{ row.recordNumber }}</span>
-      </template>
-
-      <!-- Document Type Column -->
-      <template #body-cell-documentTypeId="{ row }">
-        <DocumentTypeBadgeById :documentTypeId="row.documentTypeId" />
-      </template>
-
-      <!-- Status Column -->
-      <template #body-cell-statusId="{ row }">
-        <RecordStatusBadgeById :statusId="row.statusId" />
-      </template>
-
-      <!-- Created By Column -->
-      <template #body-cell-createdBy="{ row }">
-        <UserBadgeById :userId="row.userId" />
-      </template>
-
-      <!-- Created At Column -->
-      <template #body-cell-createdAt="{ row }">
-        <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
-      </template>
-
-      <!-- Actions Column -->
-      <template #body-cell-actions="{ row }">
-        <div class="tw:flex tw:justify-end" @click.prevent.stop>
-          <BaseMenu
-            :items="[
-              ...(row.statusId === 'DRAFT'
-                ? [
-                    {
-                      name: 'Approve',
-                      icon: IconCircleCheck,
-                      click: () => updateRecord({ id: row.id, updates: { statusId: 'APPROVED' } }),
-                    },
-                  ]
-                : []),
-              ...(row.statusId === 'APPROVED'
-                ? [
-                    {
-                      name: 'Unapprove',
-                      icon: IconArrowBack,
-                      click: () => updateRecord({ id: row.id, updates: { statusId: 'DRAFT' } }),
-                    },
-                  ]
-                : []),
-            ]"
-          />
-        </div>
-      </template>
-    </BaseTable>
-
-    <!-- Preview Panel -->
-    <Teleport to="body">
-      <Transition
-        enterActiveClass="tw:transition-transform tw:duration-300 tw:ease-out"
-        enterFromClass="tw:translate-x-full"
-        enterToClass="tw:translate-x-0"
-        leaveActiveClass="tw:transition-transform tw:duration-200 tw:ease-in"
-        leaveFromClass="tw:translate-x-0"
-        leaveToClass="tw:translate-x-full"
-      >
-        <div v-if="previewDialog" class="tw:fixed tw:inset-0 tw:z-50 tw:bg-sidebar">
-          <RecordPreview :recordId="selectedRecordId" @close="closePreview" />
-        </div>
-      </Transition>
-    </Teleport>
-  </div>
+      <div v-if="previewDialog" class="tw:fixed tw:inset-0 tw:z-50 tw:bg-sidebar">
+        <RecordPreview :recordId="selectedRecordId" @close="closePreview" />
+      </div>
+    </Transition>
+  </Teleport>
 </template>

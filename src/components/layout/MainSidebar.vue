@@ -127,12 +127,12 @@ const navItems = computed(() => {
       icon: IconPackage,
       to: getCompanyPath('/products'),
     },
-    {
-      label: 'NC Records',
-      // permissions: ['nc_records:read'],
-      icon: IconReport,
-      to: getCompanyPath('/nc-records'),
-    },
+    // {
+    //   label: 'NC Records',
+    //   // permissions: ['nc_records:read'],
+    //   icon: IconReport,
+    //   to: getCompanyPath('/nc-records'),
+    // },
     {
       label: 'NC Workflow Templates',
       permissions: ['ncWorkflow:read'],

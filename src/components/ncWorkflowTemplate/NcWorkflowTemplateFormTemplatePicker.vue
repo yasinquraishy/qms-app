@@ -15,9 +15,12 @@ const search = ref('')
 const previewTemplate = ref(null)
 const previewOpen = ref(false)
 
-const formTemplates = useLiveQuery((db) => db.FormTemplate.where().orderBy('name').exec(), {
-  initial: [],
-})
+const formTemplates = useLiveQuery(
+  (db) => db.FormTemplate.where('statusId', 'ACTIVE').orderBy('name').exec(),
+  {
+    initial: [],
+  },
+)
 
 const filteredTemplates = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -68,11 +71,9 @@ function selectTemplate(id) {
         <div class="tw:flex-1 tw:min-w-0">
           <div class="tw:text-sm tw:font-medium tw:text-on-main tw:truncate">{{ ft.name }}</div>
           <div class="tw:text-xs tw:text-secondary">
-            {{ ft.schema?.length ?? 0 }} field{{ (ft.schema?.length ?? 0) !== 1 ? 's' : '' }}
+            {{ ft.title }}
           </div>
         </div>
-
-        <FormTemplateStatusBadgeById v-if="ft.statusId" :statusId="ft.statusId" />
 
         <div class="tw:flex tw:items-center tw:gap-2 tw:shrink-0">
           <BaseButton variant="ghost" size="sm" @click="openPreview(ft)">Preview</BaseButton>

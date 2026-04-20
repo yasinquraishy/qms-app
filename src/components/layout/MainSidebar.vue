@@ -8,7 +8,6 @@ import {
   IconCheckbox,
   IconTruck,
   IconPackage,
-  IconReport,
   IconShieldCheck,
   IconSettings,
   IconAdjustments,

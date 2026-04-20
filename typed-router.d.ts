@@ -107,6 +107,13 @@ declare module 'vue-router/auto-routes' {
       { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
       | never
     >,
+    '/[companyCode]/nc-workflow-templates/[[id]]': RouteRecordInfo<
+      '/[companyCode]/nc-workflow-templates/[[id]]',
+      '/:companyCode/nc-workflow-templates/:id?',
+      { companyCode: ParamValue<true>, id?: ParamValueZeroOrOne<true> },
+      { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
+      | never
+    >,
     '/[companyCode]/notifications': RouteRecordInfo<
       '/[companyCode]/notifications',
       '/:companyCode/notifications',
@@ -336,6 +343,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/[companyCode]/groups/[[id]].vue': {
       routes:
         | '/[companyCode]/groups/[[id]]'
+      views:
+        | never
+    }
+    'src/pages/[companyCode]/nc-workflow-templates/[[id]].vue': {
+      routes:
+        | '/[companyCode]/nc-workflow-templates/[[id]]'
       views:
         | never
     }

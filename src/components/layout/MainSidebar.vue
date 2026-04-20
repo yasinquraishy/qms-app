@@ -26,6 +26,7 @@ import {
   IconChartBar,
   IconChevronDown,
   IconChevronRight,
+  IconRouteSquare2,
 } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany'
 import { logoutCurrentSession, currentSession, isAllowed, isAdmin } from '@/utils/currentSession'
@@ -131,6 +132,12 @@ const navItems = computed(() => {
       // permissions: ['nc_records:read'],
       icon: IconReport,
       to: getCompanyPath('/nc-records'),
+    },
+    {
+      label: 'NC Workflow Templates',
+      permissions: ['ncWorkflow:read'],
+      icon: IconRouteSquare2,
+      to: getCompanyPath('/nc-workflow-templates'),
     },
     {}, // Divider
     {

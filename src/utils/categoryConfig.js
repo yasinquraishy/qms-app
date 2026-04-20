@@ -94,6 +94,11 @@ export const CATEGORY_METADATA = {
     icon: IconReport,
     description: 'Manage access for Non-Conformance Records',
   },
+  ncWorkflow: {
+    label: 'NC Workflow Templates',
+    icon: IconSitemap,
+    description: 'Manage access for Non-Conformance Workflow Templates',
+  },
 }
 
 export const PERMISSION_SECTIONS = [
@@ -120,6 +125,7 @@ export const PERMISSION_SECTIONS = [
       'documents',
       'document-templates',
       'approvalWorkflows',
+      'ncWorkflow',
     ],
   },
 ]

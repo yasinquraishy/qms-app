@@ -70,6 +70,15 @@ import { NcSeverity } from './NcSeverity'
 import { NcSource } from './NcSource'
 import { NcType } from './NcType'
 import { NcStatus } from './NcStatus'
+import { NcWorkflowTemplate } from './ncWorkflowTemplate'
+import { NcWorkflowTemplateVersion } from './ncWorkflowTemplateVersion'
+import { NcWorkflowTemplateVersionStatus } from './ncWorkflowTemplateVersionStatus'
+import { NcWorkflowTemplateStatus } from './ncWorkflowTemplateStatus'
+import { NcWorkflowTemplateStage } from './ncWorkflowTemplateStage'
+import { NcWorkflowTemplateStageOutcome } from './ncWorkflowTemplateStageOutcome'
+import { NcWorkflowTemplateStageUser } from './ncWorkflowTemplateStageUser'
+import { NcWorkflowTemplateStageOnOutcome } from './ncWorkflowTemplateStageonOutcome'
+import { NcWorkflowTemplateStageSendBackTarget } from './ncWorkflowTemplateSendBackTarget'
 
 export const db = {
   ApiKey,
@@ -144,4 +153,13 @@ export const db = {
   NcSource,
   NcType,
   NcStatus,
+  NcWorkflowTemplate,
+  NcWorkflowTemplateVersion,
+  NcWorkflowTemplateVersionStatus,
+  NcWorkflowTemplateStatus,
+  NcWorkflowTemplateStage,
+  NcWorkflowTemplateStageOutcome,
+  NcWorkflowTemplateStageUser,
+  NcWorkflowTemplateStageOnOutcome,
+  NcWorkflowTemplateStageSendBackTarget,
 }

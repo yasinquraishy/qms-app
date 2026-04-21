@@ -10,7 +10,6 @@ import {
   IconList,
   IconTruck,
   IconPackage,
-  IconReport,
 } from '@tabler/icons-vue'
 
 /**

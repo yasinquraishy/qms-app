@@ -13,7 +13,7 @@ const instanceStep = useLiveQueryWithDeps(
 
 const step = useLiveQueryWithDeps([() => instanceStep.value?.stepId], async (db, [stepId]) => {
   if (!stepId) return null
-  return db.WorkflowStage.findByPk(stepId)
+  return db.WorkflowStep.findByPk(stepId)
 })
 </script>
 

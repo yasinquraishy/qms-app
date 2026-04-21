@@ -9,7 +9,7 @@ const props = defineProps({
 
 const step = useLiveQueryWithDeps([() => props.stepId], async (db, [stepId]) => {
   if (!stepId) return null
-  return await db.WorkflowStage.findByPk(stepId)
+  return await db.WorkflowStep.findByPk(stepId)
 })
 
 const debouncedStepSave = useDebounceFn(async () => {
@@ -31,7 +31,7 @@ const stepRoles = useLiveQueryWithDeps(
   [() => props.stepId],
   async (db, [stepId]) => {
     if (!stepId) return []
-    return await db.WorkflowStageRole.where('stepId', stepId).exec()
+    return await db.WorkflowStepRole.where('stepId', stepId).exec()
   },
   { initial: [] },
 )
@@ -40,7 +40,7 @@ const stepUsers = useLiveQueryWithDeps(
   [() => props.stepId],
   async (db, [stepId]) => {
     if (!stepId) return []
-    return await db.WorkflowStageUser.where('stepId', stepId).exec()
+    return await db.WorkflowStepUser.where('stepId', stepId).exec()
   },
   { initial: [] },
 )

@@ -19,7 +19,7 @@ const versions = useLiveQuery(async (db) => db.WorkflowVersion.where().exec(), {
   initial: [],
 })
 
-const steps = useLiveQuery(async (db) => db.WorkflowStage.where().exec(), { initial: [] })
+const steps = useLiveQuery(async (db) => db.WorkflowStep.where().exec(), { initial: [] })
 
 const activeWorkflows = computed(() => {
   return workflows.value

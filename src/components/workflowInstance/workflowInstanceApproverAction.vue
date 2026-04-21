@@ -26,7 +26,7 @@ const workflowStep = useLiveQueryWithDeps(
   [() => instanceStep.value?.stepId],
   async (db, [stepId]) => {
     if (!stepId) return null
-    return db.WorkflowStage.findByPk(stepId)
+    return db.WorkflowStep.findByPk(stepId)
   },
 )
 
@@ -265,9 +265,6 @@ function onConfirmFeedback() {
     </BaseDialog>
 
     <!-- E-Signature Identity Verification Dialog -->
-    <WorkflowInstanceEsignAuthDialog
-      v-model="showEsignDialog"
-      @verified="onEsignVerified"
-    />
+    <WorkflowInstanceEsignAuthDialog v-model="showEsignDialog" @verified="onEsignVerified" />
   </div>
 </template>

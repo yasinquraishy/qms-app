@@ -41,7 +41,7 @@ const roleCount = useLiveQueryWithDeps(
   [() => props.step?.id],
   async (db, [stepId]) => {
     if (!stepId) return 0
-    const all = await db.WorkflowStageRole.where().exec()
+    const all = await db.WorkflowStepRole.where().exec()
     return all.filter((sr) => sr.stepId === stepId).length
   },
   { initial: 0 },
@@ -51,7 +51,7 @@ const userCount = useLiveQueryWithDeps(
   [() => props.step?.id],
   async (db, [stepId]) => {
     if (!stepId) return 0
-    const all = await db.WorkflowStageUser.where().exec()
+    const all = await db.WorkflowStepUser.where().exec()
     return all.filter((su) => su.stepId === stepId).length
   },
   { initial: 0 },

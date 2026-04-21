@@ -6,9 +6,9 @@ import { WorkflowInstanceStep } from './workflowInstanceStep'
 import { WorkflowInstanceStepStatus } from './workflowInstanceStepStatus'
 import { WorkflowInstanceStepUserStatus } from './workflowInstanceStepUserStatus'
 import { WorkflowStatus } from './workflowStatus'
-import { WorkflowStage } from './workflowStage'
-import { WorkflowStageRole } from './workflowStageRole'
-import { WorkflowStageUser } from './workflowStageUser'
+import { WorkflowStep } from './WorkflowStep'
+import { WorkflowStepRole } from './WorkflowStepRole'
+import { WorkflowStepUser } from './WorkflowStepUser'
 import { WorkflowVersion } from './workflowVersion'
 import { WorkflowVersionStatus } from './workflowVersionStatus'
 import { Asset } from './asset'
@@ -76,9 +76,9 @@ export const db = {
   WorkflowInstanceStepStatus,
   WorkflowInstanceStepUserStatus,
   WorkflowStatus,
-  WorkflowStage,
-  WorkflowStageRole,
-  WorkflowStageUser,
+  WorkflowStep,
+  WorkflowStepRole,
+  WorkflowStepUser,
   WorkflowVersion,
   WorkflowVersionStatus,
   Asset,

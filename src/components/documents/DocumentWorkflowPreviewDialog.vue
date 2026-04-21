@@ -21,9 +21,7 @@ const allWorkflowSteps = useLiveQueryWithDeps(
   [() => document.value?.workflowVersionId],
   async (db, [workflowVersionId]) =>
     workflowVersionId
-      ? db.WorkflowStage.where('workflowVersionId', workflowVersionId)
-          .orderBy('stepOrder')
-          .exec()
+      ? db.WorkflowStep.where('workflowVersionId', workflowVersionId).orderBy('stepOrder').exec()
       : [],
   {
     initial: [],
@@ -34,7 +32,7 @@ const stepIds = computed(() => allWorkflowSteps.value.map((s) => s.id))
 
 const allStepUsers = useLiveQueryWithDeps(
   [stepIds],
-  async (db, [stepIds]) => db.WorkflowStageUser.where('stepId', stepIds).exec(),
+  async (db, [stepIds]) => db.WorkflowStepUser.where('stepId', stepIds).exec(),
   {
     initial: [],
   },
@@ -42,7 +40,7 @@ const allStepUsers = useLiveQueryWithDeps(
 
 const allStepRoles = useLiveQueryWithDeps(
   [stepIds],
-  async (db, [stepIds]) => db.WorkflowStageRole.where('stepId', stepIds).exec(),
+  async (db, [stepIds]) => db.WorkflowStepRole.where('stepId', stepIds).exec(),
   {
     initial: [],
   },

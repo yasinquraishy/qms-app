@@ -14,7 +14,7 @@ const stepUsers = useLiveQueryWithDeps(
   [() => props.stepId],
   async (db, [stepId]) => {
     if (!stepId) return []
-    return await db.WorkflowStageUser.where('stepId', stepId).exec()
+    return await db.WorkflowStepUser.where('stepId', stepId).exec()
   },
   { initial: [] },
 )
@@ -40,7 +40,7 @@ function getUserDisplayName(user) {
 }
 
 const createStepUser = useLiveMutation(async (db, { stepId, userId }) => {
-  const su = db.WorkflowStageUser.create({ stepId, userId })
+  const su = db.WorkflowStepUser.create({ stepId, userId })
   await su.save()
 })
 

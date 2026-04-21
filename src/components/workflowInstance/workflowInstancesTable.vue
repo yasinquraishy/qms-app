@@ -73,9 +73,7 @@ const activeStepNameMap = useLiveQueryWithDeps(
   async (db, [instanceIds]) => {
     if (!instanceIds.length) return {}
     const allSteps = await Promise.all(
-      instanceIds.map((id) =>
-        db.WorkflowInstanceStep.where('workflowInstanceId', id).exec(),
-      ),
+      instanceIds.map((id) => db.WorkflowInstanceStep.where('workflowInstanceId', id).exec()),
     )
     const activeByInstance = {}
     const stepIds = new Set()
@@ -86,7 +84,7 @@ const activeStepNameMap = useLiveQueryWithDeps(
         stepIds.add(active.stepId)
       }
     }
-    const steps = await Promise.all([...stepIds].map((id) => db.WorkflowStage.findByPk(id)))
+    const steps = await Promise.all([...stepIds].map((id) => db.WorkflowStep.findByPk(id)))
     const stepById = Object.fromEntries(steps.filter(Boolean).map((s) => [s.id, s]))
     const map = {}
     for (const [instanceId, stepId] of Object.entries(activeByInstance)) {

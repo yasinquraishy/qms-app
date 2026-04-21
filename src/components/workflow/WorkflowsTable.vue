@@ -48,7 +48,7 @@ const workflowMetaMap = useLiveQueryWithDeps(
   async (db, [ids]) => {
     if (!ids?.length) return {}
     const versions = await db.WorkflowVersion.where().exec()
-    const steps = await db.WorkflowStage.where().exec()
+    const steps = await db.WorkflowStep.where().exec()
     const map = {}
     for (const id of ids) {
       const workflowVersions = versions.filter((v) => v.workflowId === id)

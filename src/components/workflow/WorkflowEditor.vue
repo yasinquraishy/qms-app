@@ -39,7 +39,7 @@ const steps = useLiveQueryWithDeps(
   [() => selectedVersionId.value],
   async (db, [versionId]) => {
     if (!versionId) return []
-    return db.WorkflowStage.where('workflowVersionId', versionId).exec()
+    return db.WorkflowStep.where('workflowVersionId', versionId).exec()
   },
   { initial: [] },
 )
@@ -48,7 +48,7 @@ const stepUsers = useLiveQueryWithDeps(
   [() => steps.value.map((s) => s.id)],
   async (db, [stepIds]) => {
     if (!stepIds || stepIds.length === 0) return []
-    return db.WorkflowStageUser.where('stepId', stepIds).exec()
+    return db.WorkflowStepUser.where('stepId', stepIds).exec()
   },
 )
 
@@ -56,7 +56,7 @@ const stepRoles = useLiveQueryWithDeps(
   [() => steps.value.map((s) => s.id)],
   async (db, [stepIds]) => {
     if (!stepIds || stepIds.length === 0) return []
-    return db.WorkflowStageRole.where('stepId', stepIds).exec()
+    return db.WorkflowStepRole.where('stepId', stepIds).exec()
   },
 )
 
@@ -169,13 +169,10 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
   })
   await newVersion.save()
 
-  const sourceSteps = await db.WorkflowStage.where(
-    'workflowVersionId',
-    sourceVersion?.id,
-  ).exec()
+  const sourceSteps = await db.WorkflowStep.where('workflowVersionId', sourceVersion?.id).exec()
 
   for (const step of sourceSteps) {
-    const newStep = db.WorkflowStage.create({
+    const newStep = db.WorkflowStep.create({
       workflowVersionId: newVersion.id,
       name: step.name,
       description: step.description,
@@ -187,15 +184,15 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
     })
     await newStep.save()
 
-    const users = await db.WorkflowStageUser.where('stepId', step.id).exec()
+    const users = await db.WorkflowStepUser.where('stepId', step.id).exec()
     for (const su of users) {
-      const newSu = db.WorkflowStageUser.create({ stepId: newStep.id, userId: su.userId })
+      const newSu = db.WorkflowStepUser.create({ stepId: newStep.id, userId: su.userId })
       await newSu.save()
     }
 
-    const roles = await db.WorkflowStageRole.where('stepId', step.id).exec()
+    const roles = await db.WorkflowStepRole.where('stepId', step.id).exec()
     for (const sr of roles) {
-      const newSr = db.WorkflowStageRole.create({ stepId: newStep.id, roleId: sr.roleId })
+      const newSr = db.WorkflowStepRole.create({ stepId: newStep.id, roleId: sr.roleId })
       await newSr.save()
     }
   }
@@ -402,7 +399,7 @@ watch(steps, () => {
       <!-- Two-Pane Designer -->
       <div v-if="selectedVersion" class="tw:flex tw:flex-1 tw:overflow-hidden">
         <!-- Left Pane: Step List -->
-        <WorkflowStageList
+        <WorkflowStepList
           v-model:stepId="selectedStepId"
           :versionId="selectedVersionId"
           :canUpdate="canUpdate"
@@ -412,7 +409,7 @@ watch(steps, () => {
         <!-- Right Pane: Step Editor -->
         <div class="tw:flex-1 tw:overflow-y-auto tw:bg-main tw:p-8">
           <div v-if="selectedStepId" class="tw:max-w-4xl tw:mx-auto tw:space-y-10">
-            <WorkflowStageEditor :stepId="selectedStepId" :canUpdate="canUpdate" />
+            <WorkflowStepEditor :stepId="selectedStepId" :canUpdate="canUpdate" />
           </div>
 
           <div

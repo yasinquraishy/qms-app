@@ -1,16 +1,16 @@
 import { ApiKey } from './apiKey'
-import { WorkflowTemplate } from './workflowTemplate'
+import { Workflow } from './workflow'
 import { WorkflowInstance } from './workflowInstance'
 import { WorkflowInstanceStatus } from './workflowInstanceStatus'
 import { WorkflowInstanceStep } from './workflowInstanceStep'
 import { WorkflowInstanceStepStatus } from './workflowInstanceStepStatus'
 import { WorkflowInstanceStepUserStatus } from './workflowInstanceStepUserStatus'
-import { WorkflowTemplateStatus } from './workflowTemplateStatus'
-import { WorkflowTemplateStage } from './workflowTemplateStage'
-import { WorkflowTemplateStageRole } from './workflowTemplateStageRole'
-import { WorkflowTemplateStageUser } from './workflowTemplateStageUser'
-import { WorkflowTemplateVersion } from './workflowTemplateVersion'
-import { WorkflowTemplateVersionStatus } from './workflowTemplateVersionStatus'
+import { WorkflowStatus } from './workflowStatus'
+import { WorkflowStage } from './workflowStage'
+import { WorkflowStageRole } from './workflowStageRole'
+import { WorkflowStageUser } from './workflowStageUser'
+import { WorkflowVersion } from './workflowVersion'
+import { WorkflowVersionStatus } from './workflowVersionStatus'
 import { Asset } from './asset'
 import { AssetRequest } from './assetRequest'
 import { AssetRequestOnContact } from './assetRequestOnContact'
@@ -69,18 +69,18 @@ import { UserStatus } from './userStatus'
 
 export const db = {
   ApiKey,
-  WorkflowTemplate,
+  Workflow,
   WorkflowInstance,
   WorkflowInstanceStatus,
   WorkflowInstanceStep,
   WorkflowInstanceStepStatus,
   WorkflowInstanceStepUserStatus,
-  WorkflowTemplateStatus,
-  WorkflowTemplateStage,
-  WorkflowTemplateStageRole,
-  WorkflowTemplateStageUser,
-  WorkflowTemplateVersion,
-  WorkflowTemplateVersionStatus,
+  WorkflowStatus,
+  WorkflowStage,
+  WorkflowStageRole,
+  WorkflowStageUser,
+  WorkflowVersion,
+  WorkflowVersionStatus,
   Asset,
   AssetRequest,
   AssetRequestOnContact,

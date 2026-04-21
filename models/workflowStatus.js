@@ -1,8 +1,8 @@
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('workflowTemplateVersionStatuses', { primaryKey: 'id', syncField: 'updatedAt' })
-export class WorkflowTemplateVersionStatus extends BaseModel {
+@ClientModel('workflowStatuses', { primaryKey: 'id', syncField: 'updatedAt' })
+export class WorkflowStatus extends BaseModel {
   @Property({ type: String, required: true }) id = ''
   @Property({ type: String, required: true }) name = ''
   @Property({ type: String }) description = ''

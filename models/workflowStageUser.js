@@ -2,13 +2,22 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('workflowTemplates', { primaryKey: 'id', syncField: 'updatedAt' })
-export class WorkflowTemplate extends BaseModel {
+@ClientModel('workflowStageUsers', {
+  primaryKey: 'id',
+  syncField: 'updatedAt',
+  customIndex: 'stepId, userId',
+})
+export class WorkflowStageUser extends BaseModel {
+  static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
     super(...args)
-    // Auto-assign companyId from current session on creation
+    // Auto-assign companyId and userId from current session on creation
     if (!this.companyId) {
       this.companyId = currentSession.value?.companyId || ''
+    }
+
+    if (!this.userId) {
+      this.userId = currentSession.value?.userId || ''
     }
 
     if (!this.id) {
@@ -16,12 +25,9 @@ export class WorkflowTemplate extends BaseModel {
     }
   }
   @Property({ type: String, uuid: true, required: true }) id = ''
-  @Property({ type: String, required: true }) name = ''
-  @Property({ type: String }) description = ''
-  @Property({ type: String, required: true }) moduleId = ''
-  @Property({ type: String, required: true }) documentTypeId = ''
+  @Property({ type: String, required: true }) stepId = ''
+  @Property({ type: String, required: true }) userId = ''
   @Property({ type: String, required: true }) companyId = ''
-  @Property({ type: String }) statusId = 'ACTIVE'
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

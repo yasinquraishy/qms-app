@@ -2,36 +2,33 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('workflowTemplateVersions', {
+@ClientModel('workflowStages', {
   primaryKey: 'id',
   syncField: 'updatedAt',
-  customIndex: 'workflowId',
+  customIndex: 'workflowVersionId',
 })
-export class WorkflowTemplateVersion extends BaseModel {
+export class WorkflowStage extends BaseModel {
+  static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation
     if (!this.companyId) {
-      this.companyId = currentSession.value?.companyId
+      this.companyId = currentSession.value?.companyId || ''
     }
 
     if (!this.id) {
       this.id = crypto.randomUUID()
     }
-
-    if (!this.createdBy) {
-      this.createdBy = currentSession.value?.userId
-    }
   }
   @Property({ type: String, uuid: true, required: true }) id = ''
-  @Property({ type: String, required: true }) workflowId = ''
-  @Property({ type: Number, required: true }) versionMajor = 1
-  @Property({ type: Number, required: true }) versionMinor = 0
-  @Property({ type: String }) versionLabel = ''
-  @Property({ type: String }) changeSummary = ''
-  @Property({ type: String }) statusId = 'DRAFT'
-  @Property({ type: Boolean, required: true, default: false }) isCurrent = false
-  @Property({ type: String, required: true }) createdBy = ''
+  @Property({ type: String, required: true }) workflowVersionId = ''
+  @Property({ type: String, required: true }) name = ''
+  @Property({ type: String }) description = ''
+  @Property({ type: Number, required: true }) stepOrder = 0
+  @Property({ type: String, required: true }) approvalRule = 'ALL'
+  @Property({ type: Number }) slaDays = 10
+  @Property({ type: Boolean }) requireComments = false
+  @Property({ type: Boolean }) requireEsignature = false
   @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })

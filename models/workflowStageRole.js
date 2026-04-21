@@ -2,12 +2,12 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('workflowTemplateStageRoles', {
+@ClientModel('workflowStageRoles', {
   primaryKey: 'id',
   syncField: 'updatedAt',
   customIndex: 'stepId, roleId',
 })
-export class WorkflowTemplateStageRole extends BaseModel {
+export class WorkflowStageRole extends BaseModel {
   static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
     super(...args)

@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon'
 import { defineComponent, ref, computed, h } from 'vue'
 import { useVModels } from '@vueuse/core'
 import { getProp, injectMultipleProps, setProp } from '@shared/composables/object.js'
@@ -15,13 +16,15 @@ import BaseCheckbox from '@shared/components/BaseCheckbox.vue'
 import BaseSwitch from '@shared/components/BaseSwitch.vue'
 import BaseColorPicker from '@shared/components/BaseColorPicker.vue'
 import TextEditor from '@shared/components/Editor/TextEditor.vue'
-import WDateTimeInput from '@shared/components/input/WDateTimeInput.js'
+import BaseDatePicker from '@shared/components/BaseDatePicker.vue'
+import BaseTimePicker from '@shared/components/BaseTimePicker.vue'
+import BaseDateTimePicker from '@shared/components/BaseDateTimePicker.vue'
 import OptionSetSelect from '@/components/common/OptionSetSelect.vue'
 import OptionSetOptionGroup from '@/components/common/OptionSetOptionGroup.vue'
 import WChecklist from '@shared/components/input/WChecklist.js'
 import { useValidator } from '@shared/composables/validator.js'
 import WPhoto from '@shared/components/WPhoto.js'
-import WUploader from '@/components/common/WUploader.vue'
+import BaseUploader from '@/components/common/BaseUploader.vue'
 import { required } from '@vuelidate/validators'
 
 export default defineComponent({
@@ -233,8 +236,35 @@ export default defineComponent({
         case 'textEditor':
           return h(TextEditor, inputFieldProps)
 
-        case 'datetime':
-          return h(WDateTimeInput, { ...inputFieldProps, mode: field.mode })
+        case 'datetime': {
+          const isDisabled = props.disabled || field.disabled
+          const dtValue = scope.value ? DateTime.fromISO(scope.value) : null
+          const onUpdate = (dt) => {
+            scope.value = DateTime.isDateTime(dt) ? dt.toISO() : null
+          }
+          const mode = field.mode || 'datetime'
+          if (mode === 'date') {
+            return h(BaseDatePicker, {
+              modelValue: dtValue,
+              disabled: isDisabled,
+              'onUpdate:modelValue': onUpdate,
+            })
+          }
+          if (mode === 'time') {
+            return h(BaseTimePicker, {
+              timeInMins: scope.value ?? 0,
+              disabled: isDisabled,
+              'onUpdate:timeInMins': (val) => {
+                scope.value = val
+              },
+            })
+          }
+          return h(BaseDateTimePicker, {
+            modelValue: dtValue,
+            disabled: isDisabled,
+            'onUpdate:modelValue': onUpdate,
+          })
+        }
 
         case 'colorPicker':
           return h('div', { class: 'tw:flex tw:flex-col tw:gap-1' }, [
@@ -294,7 +324,7 @@ export default defineComponent({
           ])
 
         case 'file':
-          return h(WUploader, {
+          return h(BaseUploader, {
             ...fieldProps,
             fileType: field.fileType || 'ASSET',
             accept: field.accept || 'image/*,video/*,application/pdf,.docx,.doc',

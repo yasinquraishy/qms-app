@@ -92,7 +92,7 @@ const selectedVersion = computed(
 
 // --- Computed ---
 const breadcrumbItems = computed(() => [
-  { label: 'Approval Workflows', to: getCompanyPath('/workflow-templates') },
+  { label: 'Workflows', to: getCompanyPath('/workflow-templates') },
   { label: workflow.value?.name || 'Edit Workflow' },
 ])
 

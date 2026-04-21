@@ -29,7 +29,7 @@ function handleWorkflowCreated(workflow) {
     <SafeTeleport to="#main-header-title">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-sidebar">
         <IconSitemap class="tw:text-primary" :size="24" />
-        <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Approval Workflows</h2>
+        <h2 class="tw:text-lg tw:font-bold tw:tracking-tight tw:text-nowrap">Workflows</h2>
       </div>
     </SafeTeleport>
 
@@ -42,7 +42,7 @@ function handleWorkflowCreated(workflow) {
     <!-- Page Header -->
     <div class="tw:flex tw:items-center tw:justify-between">
       <div class="tw:flex tw:flex-col tw:gap-1">
-        <div class="tw:text-3xl tw:font-bold tw:text-on-sidebar">Approval Workflows</div>
+        <div class="tw:text-3xl tw:font-bold tw:text-on-sidebar">Workflows</div>
         <div class="tw:text-sm tw:text-secondary">
           Design and manage multi-step approval sequences for documents and records.
         </div>

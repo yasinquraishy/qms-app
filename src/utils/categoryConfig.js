@@ -74,9 +74,9 @@ export const CATEGORY_METADATA = {
     description: 'Manage access for Document Templates',
   },
   workflows: {
-    label: 'Approval Workflows',
+    label: 'Workflows',
     icon: IconSitemap,
-    description: 'Manage access for Approval Workflows',
+    description: 'Manage access for Workflows',
   },
   suppliers: {
     label: 'Suppliers',
@@ -107,13 +107,7 @@ export const PERMISSION_SECTIONS = [
   },
   {
     name: 'Configuration',
-    categories: [
-      'formTemplates',
-      'records',
-      'documents',
-      'document-templates',
-      'workflows',
-    ],
+    categories: ['formTemplates', 'records', 'documents', 'document-templates', 'workflows'],
   },
 ]
 

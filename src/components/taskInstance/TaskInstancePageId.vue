@@ -13,12 +13,12 @@ const taskInstance = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
   db.TaskInstance.findByPk(id),
 )
 
-// Resolve sourceId → ApprovalWorkflowInstanceStep (to get workflowInstanceId)
+// Resolve sourceId → WorkflowInstanceStep (to get workflowInstanceId)
 const instanceStep = useLiveQueryWithDeps(
   [() => taskInstance.value?.sourceId],
   async (db, [sourceId]) => {
     if (!sourceId) return null
-    return db.ApprovalWorkflowInstanceStep.findByPk(sourceId)
+    return db.WorkflowInstanceStep.findByPk(sourceId)
   },
 )
 
@@ -70,12 +70,12 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
     <template v-else-if="taskInstance">
       <SafeTeleport to="#main-header-actions">
         <div v-if="canActOnStep" class="tw:flex tw:items-center tw:gap-2">
-          <ApprovalWorkflowInstanceApproverAction
+          <WorkflowInstanceApproverAction
             action="APPROVE"
             :workflowInstanceId="instanceStep?.workflowInstanceId"
             :instanceStepId="instanceStep?.id"
           />
-          <ApprovalWorkflowInstanceApproverAction
+          <WorkflowInstanceApproverAction
             action="REJECT"
             :workflowInstanceId="instanceStep?.workflowInstanceId"
             :instanceStepId="instanceStep?.id"

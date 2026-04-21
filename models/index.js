@@ -1,16 +1,16 @@
 import { ApiKey } from './apiKey'
-import { ApprovalWorkflow } from './approvalWorkflow'
-import { ApprovalWorkflowInstance } from './approvalWorkflowInstance'
-import { ApprovalWorkflowInstanceStatus } from './approvalWorkflowInstanceStatus'
-import { ApprovalWorkflowInstanceStep } from './approvalWorkflowInstanceStep'
-import { ApprovalWorkflowInstanceStepStatus } from './approvalWorkflowInstanceStepStatus'
-import { ApprovalWorkflowInstanceStepUserStatus } from './approvalWorkflowInstanceStepUserStatus'
-import { ApprovalWorkflowStatus } from './approvalWorkflowStatus'
-import { ApprovalWorkflowStep } from './approvalWorkflowStep'
-import { ApprovalWorkflowStepRole } from './approvalWorkflowStepRole'
-import { ApprovalWorkflowStepUser } from './approvalWorkflowStepUser'
-import { ApprovalWorkflowVersion } from './approvalWorkflowVersion'
-import { ApprovalWorkflowVersionStatus } from './approvalWorkflowVersionStatus'
+import { WorkflowTemplate } from './workflowTemplate'
+import { WorkflowInstance } from './workflowInstance'
+import { WorkflowInstanceStatus } from './workflowInstanceStatus'
+import { WorkflowInstanceStep } from './workflowInstanceStep'
+import { WorkflowInstanceStepStatus } from './workflowInstanceStepStatus'
+import { WorkflowInstanceStepUserStatus } from './workflowInstanceStepUserStatus'
+import { WorkflowTemplateStatus } from './workflowTemplateStatus'
+import { WorkflowTemplateStage } from './workflowTemplateStage'
+import { WorkflowTemplateStageRole } from './workflowTemplateStageRole'
+import { WorkflowTemplateStageUser } from './workflowTemplateStageUser'
+import { WorkflowTemplateVersion } from './workflowTemplateVersion'
+import { WorkflowTemplateVersionStatus } from './workflowTemplateVersionStatus'
 import { Asset } from './asset'
 import { AssetRequest } from './assetRequest'
 import { AssetRequestOnContact } from './assetRequestOnContact'
@@ -62,38 +62,25 @@ import { TaskKind } from './taskKind'
 import { TaskPriority } from './taskPriority'
 import { Team } from './team'
 import { User } from './user'
-import { UserOnApprovalWorkflowInstanceStep } from './userOnApprovalWorkflowInstanceStep'
+import { UserOnWorkflowInstanceStep } from './userOnWorkflowInstanceStep'
 import { UserOnDocument } from './userOnDocument'
 import { UserOnTeam } from './userOnTeam'
 import { UserStatus } from './userStatus'
-import { NcSeverity } from './NcSeverity'
-import { NcSource } from './NcSource'
-import { NcType } from './NcType'
-import { NcStatus } from './NcStatus'
-import { NcWorkflowTemplate } from './ncWorkflowTemplate'
-import { NcWorkflowTemplateVersion } from './ncWorkflowTemplateVersion'
-import { NcWorkflowTemplateVersionStatus } from './ncWorkflowTemplateVersionStatus'
-import { NcWorkflowTemplateStatus } from './ncWorkflowTemplateStatus'
-import { NcWorkflowTemplateStage } from './ncWorkflowTemplateStage'
-import { NcWorkflowTemplateStageOutcome } from './ncWorkflowTemplateStageOutcome'
-import { NcWorkflowTemplateStageUser } from './ncWorkflowTemplateStageUser'
-import { NcWorkflowTemplateStageOnOutcome } from './ncWorkflowTemplateStageonOutcome'
-import { NcWorkflowTemplateStageSendBackTarget } from './ncWorkflowTemplateSendBackTarget'
 
 export const db = {
   ApiKey,
-  ApprovalWorkflow,
-  ApprovalWorkflowInstance,
-  ApprovalWorkflowInstanceStatus,
-  ApprovalWorkflowInstanceStep,
-  ApprovalWorkflowInstanceStepStatus,
-  ApprovalWorkflowInstanceStepUserStatus,
-  ApprovalWorkflowStatus,
-  ApprovalWorkflowStep,
-  ApprovalWorkflowStepRole,
-  ApprovalWorkflowStepUser,
-  ApprovalWorkflowVersion,
-  ApprovalWorkflowVersionStatus,
+  WorkflowTemplate,
+  WorkflowInstance,
+  WorkflowInstanceStatus,
+  WorkflowInstanceStep,
+  WorkflowInstanceStepStatus,
+  WorkflowInstanceStepUserStatus,
+  WorkflowTemplateStatus,
+  WorkflowTemplateStage,
+  WorkflowTemplateStageRole,
+  WorkflowTemplateStageUser,
+  WorkflowTemplateVersion,
+  WorkflowTemplateVersionStatus,
   Asset,
   AssetRequest,
   AssetRequestOnContact,
@@ -145,21 +132,8 @@ export const db = {
   TaskPriority,
   Team,
   User,
-  UserOnApprovalWorkflowInstanceStep,
+  UserOnWorkflowInstanceStep,
   UserOnDocument,
   UserOnTeam,
   UserStatus,
-  NcSeverity,
-  NcSource,
-  NcType,
-  NcStatus,
-  NcWorkflowTemplate,
-  NcWorkflowTemplateVersion,
-  NcWorkflowTemplateVersionStatus,
-  NcWorkflowTemplateStatus,
-  NcWorkflowTemplateStage,
-  NcWorkflowTemplateStageOutcome,
-  NcWorkflowTemplateStageUser,
-  NcWorkflowTemplateStageOnOutcome,
-  NcWorkflowTemplateStageSendBackTarget,
 }

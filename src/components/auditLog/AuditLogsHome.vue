@@ -10,7 +10,7 @@ const ENTITY_TYPES = [
   { label: 'Document Version', value: 'DocumentVersion' },
   { label: 'Document Section', value: 'DocumentVersionSection' },
   { label: 'Document Link', value: 'DocumentLink' },
-  { label: 'Approval Workflow', value: 'ApprovalWorkflowInstance' },
+  { label: 'Approval Workflow', value: 'WorkflowInstance' },
 ]
 
 const entityTypeItems = computed(() => ENTITY_TYPES.map((t) => ({ id: t.value, name: t.label })))

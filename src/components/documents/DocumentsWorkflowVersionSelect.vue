@@ -13,13 +13,13 @@ const selectedVersionId = defineModel({
   default: null,
 })
 
-const workflows = useLiveQuery(async (db) => db.ApprovalWorkflow.where().exec(), { initial: [] })
+const workflows = useLiveQuery(async (db) => db.WorkflowTemplate.where().exec(), { initial: [] })
 
-const versions = useLiveQuery(async (db) => db.ApprovalWorkflowVersion.where().exec(), {
+const versions = useLiveQuery(async (db) => db.WorkflowTemplateVersion.where().exec(), {
   initial: [],
 })
 
-const steps = useLiveQuery(async (db) => db.ApprovalWorkflowStep.where().exec(), { initial: [] })
+const steps = useLiveQuery(async (db) => db.WorkflowTemplateStage.where().exec(), { initial: [] })
 
 const activeWorkflows = computed(() => {
   return workflows.value

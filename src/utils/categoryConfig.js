@@ -74,7 +74,7 @@ export const CATEGORY_METADATA = {
     icon: IconFileText,
     description: 'Manage access for Document Templates',
   },
-  approvalWorkflows: {
+  workflowTemplates: {
     label: 'Approval Workflows',
     icon: IconSitemap,
     description: 'Manage access for Approval Workflows',
@@ -88,16 +88,6 @@ export const CATEGORY_METADATA = {
     label: 'Products',
     icon: IconPackage,
     description: 'Manage access for Products',
-  },
-  nc_records: {
-    label: 'NC Records',
-    icon: IconReport,
-    description: 'Manage access for Non-Conformance Records',
-  },
-  ncWorkflow: {
-    label: 'NC Workflow Templates',
-    icon: IconSitemap,
-    description: 'Manage access for Non-Conformance Workflow Templates',
   },
 }
 
@@ -114,7 +104,6 @@ export const PERMISSION_SECTIONS = [
       'optionSets',
       'suppliers',
       'products',
-      'nc_records',
     ],
   },
   {
@@ -124,8 +113,7 @@ export const PERMISSION_SECTIONS = [
       'records',
       'documents',
       'document-templates',
-      'approvalWorkflows',
-      'ncWorkflow',
+      'workflowTemplates',
     ],
   },
 ]

@@ -7,12 +7,12 @@ const props = defineProps({
 
 const status = useLiveQueryWithDeps([() => props.statusId], async (db, [statusId]) => {
   if (!statusId) return null
-  return db.ApprovalWorkflowInstanceStepStatus.findByPk(statusId)
+  return db.WorkflowInstanceStepStatus.findByPk(statusId)
 })
 </script>
 
 <template>
-  <ApprovalWorkflowInstanceStepStatusBadge
+  <WorkflowInstanceStepStatusBadge
     v-if="status"
     :status="status"
     :showDot="showDot"

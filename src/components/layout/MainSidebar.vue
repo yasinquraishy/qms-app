@@ -25,7 +25,6 @@ import {
   IconChartBar,
   IconChevronDown,
   IconChevronRight,
-  IconRouteSquare2,
 } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany'
 import { logoutCurrentSession, currentSession, isAllowed, isAdmin } from '@/utils/currentSession'
@@ -99,9 +98,9 @@ const navItems = computed(() => {
     },
     {
       label: 'Approval Workflows',
-      permissions: ['approvalWorkflows:read'],
+      permissions: ['workflowTemplates:read'],
       icon: IconArrowsShuffle,
-      to: getCompanyPath('/approval-workflows'),
+      to: getCompanyPath('/workflow-templates'),
     },
     {
       label: 'Workflow Instances',
@@ -125,18 +124,6 @@ const navItems = computed(() => {
       // permissions: ['products:read'],
       icon: IconPackage,
       to: getCompanyPath('/products'),
-    },
-    // {
-    //   label: 'NC Records',
-    //   // permissions: ['nc_records:read'],
-    //   icon: IconReport,
-    //   to: getCompanyPath('/nc-records'),
-    // },
-    {
-      label: 'NC Workflow Templates',
-      permissions: ['ncWorkflow:read'],
-      icon: IconRouteSquare2,
-      to: getCompanyPath('/nc-workflow-templates'),
     },
     {}, // Divider
     {

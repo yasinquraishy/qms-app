@@ -22,7 +22,7 @@ const filters = defineModel('filters', {
     </SafeTeleport>
 
     <div class="tw:flex-1 tw:min-w-40">
-      <WorkflowTemplatesStatusSelectMenu v-model="filters.statusId" />
+      <WorkflowsStatusSelectMenu v-model="filters.statusId" />
     </div>
 
     <!-- Actions Slot -->

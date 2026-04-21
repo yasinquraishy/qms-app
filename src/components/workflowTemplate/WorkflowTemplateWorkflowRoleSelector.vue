@@ -14,7 +14,7 @@ const stepRoles = useLiveQueryWithDeps(
   [() => props.stepId],
   async (db, [stepId]) => {
     if (!stepId) return []
-    return await db.WorkflowTemplateStageRole.where('stepId', stepId).exec()
+    return await db.WorkflowStageRole.where('stepId', stepId).exec()
   },
   { initial: [] },
 )
@@ -28,7 +28,7 @@ const filteredRoles = computed(() => {
 })
 
 const createStepRole = useLiveMutation(async (db, { stepId, roleId }) => {
-  const sr = db.WorkflowTemplateStageRole.create({ stepId, roleId })
+  const sr = db.WorkflowStageRole.create({ stepId, roleId })
   await sr.save()
 })
 

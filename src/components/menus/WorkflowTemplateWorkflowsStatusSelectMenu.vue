@@ -16,7 +16,7 @@ const modelValue = defineModel({
 })
 
 const statuses = useLiveQuery(
-  (db) => db.WorkflowTemplateStatus.where().orderBy('displayOrder').exec(),
+  (db) => db.WorkflowStatus.where().orderBy('displayOrder').exec(),
   { initial: [] },
 )
 

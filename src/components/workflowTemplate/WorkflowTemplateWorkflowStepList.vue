@@ -17,7 +17,7 @@ const steps = useLiveQueryWithDeps(
   [() => props.versionId],
   async (db, [vId]) => {
     if (!vId) return []
-    return db.WorkflowTemplateStage.where('workflowVersionId', vId).orderBy('stepOrder').exec()
+    return db.WorkflowStage.where('workflowVersionId', vId).orderBy('stepOrder').exec()
   },
   { initial: [] },
 )
@@ -36,15 +36,15 @@ function selectStep(step) {
 
 const createStep = useLiveMutation(async (db, { versionId, order, settings }) => {
   const s = settings || {}
-  const step = db.WorkflowTemplateStage.create({
+  const step = db.WorkflowStage.create({
     workflowVersionId: versionId,
     name: `Step ${order}`,
     description: '',
     stepOrder: order,
-    approvalRule: s.defaultWorkflowTemplateApprovalRule ?? 'ALL',
+    approvalRule: s.defaultWorkflowApprovalRule ?? 'ALL',
     slaDays: s.defaultSla ?? null,
-    requireComments: s.defaultWorkflowTemplateRequireComment ?? false,
-    requireEsignature: s.defaultWorkflowTemplateRequireSignature ?? false,
+    requireComments: s.defaultWorkflowRequireComment ?? false,
+    requireEsignature: s.defaultWorkflowRequireSignature ?? false,
   })
   await step.save()
   return step
@@ -114,7 +114,7 @@ defineExpose({ addStep })
 
     <!-- Step Cards -->
     <div class="tw:flex-1 tw:overflow-y-auto tw:p-4 tw:space-y-3">
-      <WorkflowTemplateStageCard
+      <WorkflowStageCard
         v-for="(step, index) in steps"
         :key="step.id ?? index"
         :step="step"

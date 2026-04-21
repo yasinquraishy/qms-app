@@ -8,6 +8,6 @@ const props = defineProps({
 </script>
 
 <template>
-  <WorkflowTemplateEditor v-if="props.id" :id="props.id" />
-  <WorkflowTemplatesHome v-else />
+  <WorkflowEditor v-if="props.id" :id="props.id" />
+  <WorkflowsHome v-else />
 </template>

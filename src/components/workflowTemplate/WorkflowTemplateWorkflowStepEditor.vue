@@ -9,7 +9,7 @@ const props = defineProps({
 
 const step = useLiveQueryWithDeps([() => props.stepId], async (db, [stepId]) => {
   if (!stepId) return null
-  return await db.WorkflowTemplateStage.findByPk(stepId)
+  return await db.WorkflowStage.findByPk(stepId)
 })
 
 const debouncedStepSave = useDebounceFn(async () => {
@@ -31,7 +31,7 @@ const stepRoles = useLiveQueryWithDeps(
   [() => props.stepId],
   async (db, [stepId]) => {
     if (!stepId) return []
-    return await db.WorkflowTemplateStageRole.where('stepId', stepId).exec()
+    return await db.WorkflowStageRole.where('stepId', stepId).exec()
   },
   { initial: [] },
 )
@@ -40,7 +40,7 @@ const stepUsers = useLiveQueryWithDeps(
   [() => props.stepId],
   async (db, [stepId]) => {
     if (!stepId) return []
-    return await db.WorkflowTemplateStageUser.where('stepId', stepId).exec()
+    return await db.WorkflowStageUser.where('stepId', stepId).exec()
   },
   { initial: [] },
 )
@@ -236,12 +236,12 @@ const approverTab = ref('roles')
         </div>
 
         <div class="tw:p-6">
-          <WorkflowTemplateRoleSelector
+          <WorkflowRoleSelector
             v-show="approverTab === 'roles'"
             :stepId="step.id"
             :canUpdate="canUpdate"
           />
-          <WorkflowTemplateUserSelector
+          <WorkflowUserSelector
             v-show="approverTab === 'users'"
             :stepId="step.id"
             :canUpdate="canUpdate"

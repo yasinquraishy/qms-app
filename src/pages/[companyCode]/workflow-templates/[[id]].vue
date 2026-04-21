@@ -6,5 +6,5 @@ pageInfo.value = {
 </script>
 
 <template>
-  <WorkflowTemplatesIndex :id="$route.params.id" />
+  <WorkflowsIndex :id="$route.params.id" />
 </template>

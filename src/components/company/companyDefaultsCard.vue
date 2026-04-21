@@ -34,7 +34,7 @@ const approvalRuleOptions = [
           <div class="tw:flex tw:flex-col tw:gap-1">
             <label class="tw:text-sm tw:font-medium tw:text-secondary">Default Approval Rule</label>
             <select
-              v-model="model.settings.defaultWorkflowTemplateApprovalRule"
+              v-model="model.settings.defaultWorkflowApprovalRule"
               class="tw:w-full tw:px-3 tw:py-2 tw:text-sm tw:rounded-lg tw:border tw:border-divider tw:bg-main tw:text-on-main tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary"
             >
               <option v-for="opt in approvalRuleOptions" :key="opt.value" :value="opt.value">
@@ -53,7 +53,7 @@ const approvalRuleOptions = [
               </div>
               <div class="tw:text-xs tw:text-secondary">Workflow steps require an e-signature</div>
             </div>
-            <BaseSwitch v-model="model.settings.defaultWorkflowTemplateRequireSignature" />
+            <BaseSwitch v-model="model.settings.defaultWorkflowRequireSignature" />
           </div>
           <div class="tw:flex tw:items-center tw:justify-between">
             <div>
@@ -62,7 +62,7 @@ const approvalRuleOptions = [
               </div>
               <div class="tw:text-xs tw:text-secondary">Workflow steps require a comment</div>
             </div>
-            <BaseSwitch v-model="model.settings.defaultWorkflowTemplateRequireComment" />
+            <BaseSwitch v-model="model.settings.defaultWorkflowRequireComment" />
           </div>
         </div>
       </div>

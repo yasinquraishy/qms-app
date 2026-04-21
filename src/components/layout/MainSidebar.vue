@@ -98,7 +98,7 @@ const navItems = computed(() => {
     },
     {
       label: 'Approval Workflows',
-      permissions: ['workflowTemplates:read'],
+      permissions: ['workflows:read'],
       icon: IconArrowsShuffle,
       to: getCompanyPath('/workflow-templates'),
     },

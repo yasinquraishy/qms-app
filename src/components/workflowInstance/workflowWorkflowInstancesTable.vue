@@ -47,7 +47,7 @@ const moduleIdMap = useLiveQueryWithDeps(
   async (db, [wfVersionIds]) => {
     const ids = [...new Set(wfVersionIds.filter(Boolean))]
     if (!ids.length) return {}
-    const wfVersions = await Promise.all(ids.map((id) => db.WorkflowTemplateVersion.findByPk(id)))
+    const wfVersions = await Promise.all(ids.map((id) => db.WorkflowVersion.findByPk(id)))
     const workflowIds = [
       ...new Set(
         wfVersions
@@ -56,7 +56,7 @@ const moduleIdMap = useLiveQueryWithDeps(
           .filter(Boolean),
       ),
     ]
-    const workflows = await Promise.all(workflowIds.map((id) => db.WorkflowTemplate.findByPk(id)))
+    const workflows = await Promise.all(workflowIds.map((id) => db.Workflow.findByPk(id)))
     const wfById = Object.fromEntries(workflows.filter(Boolean).map((w) => [w.id, w]))
     const map = {}
     for (const v of wfVersions.filter(Boolean)) {
@@ -86,7 +86,7 @@ const activeStepNameMap = useLiveQueryWithDeps(
         stepIds.add(active.stepId)
       }
     }
-    const steps = await Promise.all([...stepIds].map((id) => db.WorkflowTemplateStage.findByPk(id)))
+    const steps = await Promise.all([...stepIds].map((id) => db.WorkflowStage.findByPk(id)))
     const stepById = Object.fromEntries(steps.filter(Boolean).map((s) => [s.id, s]))
     const map = {}
     for (const [instanceId, stepId] of Object.entries(activeByInstance)) {

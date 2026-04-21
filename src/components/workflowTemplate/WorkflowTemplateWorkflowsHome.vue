@@ -11,7 +11,7 @@ const viewMode = useCompanyLocalStorage('workflow-templates-view-mode', 'table')
 
 const filters = ref({ search: '', statusId: null })
 
-const canCreateWorkflow = computed(() => isAllowed(['workflowTemplates:create']))
+const canCreateWorkflow = computed(() => isAllowed(['workflows:create']))
 
 const viewSwitches = [
   { icon: IconLayoutList, value: 'list', tooltip: 'List View' },
@@ -49,19 +49,19 @@ function handleWorkflowCreated(workflow) {
       </div>
     </div>
 
-    <WorkflowTemplatesFilterToolbar v-model:filters="filters">
+    <WorkflowsFilterToolbar v-model:filters="filters">
       <template #actions>
         <BaseSwitcher v-model="viewMode" :switches="viewSwitches" />
       </template>
-    </WorkflowTemplatesFilterToolbar>
+    </WorkflowsFilterToolbar>
 
     <!-- Content Views -->
-    <WorkflowTemplatesTable v-if="viewMode === 'table'" :filters="filters" />
+    <WorkflowsTable v-if="viewMode === 'table'" :filters="filters" />
     <div v-else class="tw:flex-1 tw:overflow-y-auto">
-      <WorkflowTemplatesList :filters="filters" />
+      <WorkflowsList :filters="filters" />
     </div>
   </div>
 
   <!-- Create Dialog -->
-  <WorkflowTemplateCreateDialog v-model="showCreateDialog" @created="handleWorkflowCreated" />
+  <WorkflowCreateDialog v-model="showCreateDialog" @created="handleWorkflowCreated" />
 </template>

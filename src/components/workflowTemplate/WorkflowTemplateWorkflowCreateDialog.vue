@@ -28,7 +28,7 @@ const isFormValid = computed(() => {
 
 const createWorkflowAndVersion = useLiveMutation(
   async (db, { name, description, moduleId, documentTypeId }) => {
-    const workflow = db.WorkflowTemplate.create({
+    const workflow = db.Workflow.create({
       name,
       description,
       moduleId,
@@ -36,7 +36,7 @@ const createWorkflowAndVersion = useLiveMutation(
       statusId: 'ACTIVE',
     })
     await workflow.save()
-    const version = db.WorkflowTemplateVersion.create({
+    const version = db.WorkflowVersion.create({
       workflowId: workflow.id,
       versionMajor: 1,
       versionMinor: 0,

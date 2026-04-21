@@ -73,7 +73,7 @@ export const CATEGORY_METADATA = {
     icon: IconFileText,
     description: 'Manage access for Document Templates',
   },
-  workflowTemplates: {
+  workflows: {
     label: 'Approval Workflows',
     icon: IconSitemap,
     description: 'Manage access for Approval Workflows',
@@ -112,7 +112,7 @@ export const PERMISSION_SECTIONS = [
       'records',
       'documents',
       'document-templates',
-      'workflowTemplates',
+      'workflows',
     ],
   },
 ]

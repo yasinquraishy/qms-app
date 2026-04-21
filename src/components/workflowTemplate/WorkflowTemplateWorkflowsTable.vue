@@ -12,7 +12,7 @@ const props = defineProps({
 
 const router = useRouter()
 
-const canDeleteWorkflow = computed(() => isAllowed(['workflowTemplates:delete']))
+const canDeleteWorkflow = computed(() => isAllowed(['workflows:delete']))
 
 const confirmDelete = ref({ open: false, workflow: null })
 
@@ -28,7 +28,7 @@ const columns = [
 const rows = useLiveQueryWithDeps(
   [() => props.filters?.search, () => props.filters?.statusId],
   async (db, [search, statusId]) => {
-    let results = await db.WorkflowTemplate.where().exec()
+    let results = await db.Workflow.where().exec()
     if (statusId) results = results.filter((r) => r.statusId === statusId)
     if (search) {
       const q = search.toLowerCase()
@@ -47,8 +47,8 @@ const workflowMetaMap = useLiveQueryWithDeps(
   [() => rows.value.map((r) => r.id)],
   async (db, [ids]) => {
     if (!ids?.length) return {}
-    const versions = await db.WorkflowTemplateVersion.where().exec()
-    const steps = await db.WorkflowTemplateStage.where().exec()
+    const versions = await db.WorkflowVersion.where().exec()
+    const steps = await db.WorkflowStage.where().exec()
     const map = {}
     for (const id of ids) {
       const workflowVersions = versions.filter((v) => v.workflowId === id)
@@ -117,7 +117,7 @@ function rowMenuItems(workflow) {
     </template>
 
     <template #body-cell-statusId="{ row }">
-      <WorkflowTemplateVersionStatusBadgeById
+      <WorkflowVersionStatusBadgeById
         :statusId="workflowMetaMap[row.id]?.version?.statusId"
         showDot
       />

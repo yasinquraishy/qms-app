@@ -56,7 +56,7 @@ const workflowVersion = useLiveQueryWithDeps(
   [() => instance.value?.workflowVersionId],
   async (db, [wvId]) => {
     if (!wvId) return null
-    return db.WorkflowTemplateVersion.findByPk(wvId)
+    return db.WorkflowVersion.findByPk(wvId)
   },
 )
 

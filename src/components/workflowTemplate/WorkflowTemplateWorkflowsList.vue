@@ -9,7 +9,7 @@ const router = useRouter()
 
 const workflows = useLiveQuery(
   async (db) => {
-    const all = await db.WorkflowTemplate.where().exec()
+    const all = await db.Workflow.where().exec()
     return all
   },
   { initial: [] },
@@ -51,7 +51,7 @@ function navigateToWorkflow(workflow) {
     />
 
     <!-- Workflow Cards -->
-    <WorkflowTemplateCard
+    <WorkflowCard
       v-for="workflow in filteredWorkflows"
       :key="workflow.id"
       :workflow="workflow"

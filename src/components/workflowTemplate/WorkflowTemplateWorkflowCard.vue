@@ -23,7 +23,7 @@ defineProps({
           <div class="tw:font-bold tw:text-on-main">{{ workflow.name }}</div>
         </div>
       </div>
-      <WorkflowTemplateVersionStatusBadgeById :statusId="workflow.statusId" />
+      <WorkflowVersionStatusBadgeById :statusId="workflow.statusId" />
     </div>
 
     <div v-if="workflow.description" class="tw:text-sm tw:text-secondary tw:mb-3 tw:line-clamp-2">

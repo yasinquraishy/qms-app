@@ -17,14 +17,14 @@ const publishing = ref(false)
 
 // --- Live data ---
 const workflow = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
-  db.WorkflowTemplate.findByPk(id),
+  db.Workflow.findByPk(id),
 )
 
 const versions = useLiveQueryWithDeps(
   [() => props.id],
   async (db, [id]) => {
     if (!id) return []
-    const vs = await db.WorkflowTemplateVersion.where('workflowId', id).exec()
+    const vs = await db.WorkflowVersion.where('workflowId', id).exec()
     return vs.sort((a, b) => {
       if (a.versionMajor !== b.versionMajor) {
         return b.versionMajor - a.versionMajor
@@ -39,7 +39,7 @@ const steps = useLiveQueryWithDeps(
   [() => selectedVersionId.value],
   async (db, [versionId]) => {
     if (!versionId) return []
-    return db.WorkflowTemplateStage.where('workflowVersionId', versionId).exec()
+    return db.WorkflowStage.where('workflowVersionId', versionId).exec()
   },
   { initial: [] },
 )
@@ -48,7 +48,7 @@ const stepUsers = useLiveQueryWithDeps(
   [() => steps.value.map((s) => s.id)],
   async (db, [stepIds]) => {
     if (!stepIds || stepIds.length === 0) return []
-    return db.WorkflowTemplateStageUser.where('stepId', stepIds).exec()
+    return db.WorkflowStageUser.where('stepId', stepIds).exec()
   },
 )
 
@@ -56,7 +56,7 @@ const stepRoles = useLiveQueryWithDeps(
   [() => steps.value.map((s) => s.id)],
   async (db, [stepIds]) => {
     if (!stepIds || stepIds.length === 0) return []
-    return db.WorkflowTemplateStageRole.where('stepId', stepIds).exec()
+    return db.WorkflowStageRole.where('stepId', stepIds).exec()
   },
 )
 
@@ -110,12 +110,12 @@ const isDraftVersion = computed(() => selectedVersion.value?.statusId === 'DRAFT
 
 const canUpdate = computed(() => {
   if (!workflow.value || !selectedVersion.value) return false
-  return isDraftVersion.value && isAllowed(['workflowTemplates:update'])
+  return isDraftVersion.value && isAllowed(['workflows:update'])
 })
 
 const canCreateDraft = computed(() => {
   const haveDraftVersion = versions.value.some((v) => v.statusId === 'DRAFT')
-  return isAllowed(['workflowTemplates:update']) && !haveDraftVersion
+  return isAllowed(['workflows:update']) && !haveDraftVersion
 })
 
 // --- Handlers ---
@@ -145,7 +145,7 @@ const handlePublish = useLiveMutation(async () => {
 const creatingDraft = ref(false)
 
 const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }) => {
-  const sourceVersions = await db.WorkflowTemplateVersion.where('workflowId', workflowId, {
+  const sourceVersions = await db.WorkflowVersion.where('workflowId', workflowId, {
     force: true,
   }).exec()
   const sortedVersions = sourceVersions.sort((a, b) => {
@@ -161,7 +161,7 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
   const newMajor = majorBump ? currentVersionMajor + 1 : currentVersionMajor
   const newMinor = majorBump ? 0 : currentVersionMinor + 1
 
-  const newVersion = db.WorkflowTemplateVersion.create({
+  const newVersion = db.WorkflowVersion.create({
     workflowId,
     versionMajor: newMajor,
     versionMinor: newMinor,
@@ -169,13 +169,13 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
   })
   await newVersion.save()
 
-  const sourceSteps = await db.WorkflowTemplateStage.where(
+  const sourceSteps = await db.WorkflowStage.where(
     'workflowVersionId',
     sourceVersion?.id,
   ).exec()
 
   for (const step of sourceSteps) {
-    const newStep = db.WorkflowTemplateStage.create({
+    const newStep = db.WorkflowStage.create({
       workflowVersionId: newVersion.id,
       name: step.name,
       description: step.description,
@@ -187,15 +187,15 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
     })
     await newStep.save()
 
-    const users = await db.WorkflowTemplateStageUser.where('stepId', step.id).exec()
+    const users = await db.WorkflowStageUser.where('stepId', step.id).exec()
     for (const su of users) {
-      const newSu = db.WorkflowTemplateStageUser.create({ stepId: newStep.id, userId: su.userId })
+      const newSu = db.WorkflowStageUser.create({ stepId: newStep.id, userId: su.userId })
       await newSu.save()
     }
 
-    const roles = await db.WorkflowTemplateStageRole.where('stepId', step.id).exec()
+    const roles = await db.WorkflowStageRole.where('stepId', step.id).exec()
     for (const sr of roles) {
-      const newSr = db.WorkflowTemplateStageRole.create({ stepId: newStep.id, roleId: sr.roleId })
+      const newSr = db.WorkflowStageRole.create({ stepId: newStep.id, roleId: sr.roleId })
       await newSr.save()
     }
   }
@@ -277,14 +277,14 @@ watch(steps, () => {
           <!-- Version Selector -->
           <BasePopover placement="bottom-end">
             <template #button>
-              <WorkflowTemplateVersionStatusBadgeById
+              <WorkflowVersionStatusBadgeById
                 v-if="selectedVersion?.statusId"
                 :statusId="selectedVersion.statusId"
                 class="tw:ml-2"
                 selectable
               >
                 <template #icon> v{{ versionLabel }} </template>
-              </WorkflowTemplateVersionStatusBadgeById>
+              </WorkflowVersionStatusBadgeById>
             </template>
             <template #content="{ close }">
               <div class="tw:w-64 tw:py-2">
@@ -306,7 +306,7 @@ watch(steps, () => {
                         version.versionLabel || `${version.versionMajor}.${version.versionMinor}`
                       }}
                     </span>
-                    <WorkflowTemplateVersionStatusBadgeById
+                    <WorkflowVersionStatusBadgeById
                       v-if="version.statusId"
                       :statusId="version.statusId"
                       class="tw:ml-1"
@@ -402,7 +402,7 @@ watch(steps, () => {
       <!-- Two-Pane Designer -->
       <div v-if="selectedVersion" class="tw:flex tw:flex-1 tw:overflow-hidden">
         <!-- Left Pane: Step List -->
-        <WorkflowTemplateStageList
+        <WorkflowStageList
           v-model:stepId="selectedStepId"
           :versionId="selectedVersionId"
           :canUpdate="canUpdate"
@@ -412,7 +412,7 @@ watch(steps, () => {
         <!-- Right Pane: Step Editor -->
         <div class="tw:flex-1 tw:overflow-y-auto tw:bg-main tw:p-8">
           <div v-if="selectedStepId" class="tw:max-w-4xl tw:mx-auto tw:space-y-10">
-            <WorkflowTemplateStageEditor :stepId="selectedStepId" :canUpdate="canUpdate" />
+            <WorkflowStageEditor :stepId="selectedStepId" :canUpdate="canUpdate" />
           </div>
 
           <div

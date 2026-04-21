@@ -21,9 +21,9 @@ import BaseTimePicker from '@shared/components/BaseTimePicker.vue'
 import BaseDateTimePicker from '@shared/components/BaseDateTimePicker.vue'
 import OptionSetSelect from '@/components/common/OptionSetSelect.vue'
 import OptionSetOptionGroup from '@/components/common/OptionSetOptionGroup.vue'
-import WChecklist from '@shared/components/input/WChecklist.js'
+import BaseChecklist from '@shared/components/BaseChecklist.vue'
 import { useValidator } from '@shared/composables/validator.js'
-import WPhoto from '@shared/components/WPhoto.js'
+import BasePhoto from '@shared/components/BasePhoto.vue'
 import BaseUploader from '@/components/common/BaseUploader.vue'
 import { required } from '@vuelidate/validators'
 
@@ -370,7 +370,7 @@ export default defineComponent({
         }
 
         case 'checklist':
-          return h(WChecklist, {
+          return h(BaseChecklist, {
             ...fieldProps,
             rows: field.rows || [],
             columns: field.columns || [],
@@ -386,7 +386,7 @@ export default defineComponent({
           })
 
         case 'photo':
-          return h(WPhoto, {
+          return h(BasePhoto, {
             ...fieldProps,
             mode: field.mode,
             accept: field.accept,

@@ -239,11 +239,6 @@ async function createNewVersion() {
               <IconSend :size="20" class="tw:mr-1" />
               Submit For Review
             </BaseButton>
-            <DocumentWorkflowPreviewDialog
-              v-model="showPreviewDialog"
-              :documentId="props.id"
-              :versionId="selectedVersion?.id"
-            />
 
             <BaseButton v-if="canCancelReview" variant="danger" @click="handleCancelReview">
               <IconX :size="20" class="tw:mr-1" />
@@ -368,6 +363,12 @@ async function createNewVersion() {
 
       <!-- Messages Drawer -->
       <DocumentsMessages v-model="showMessages" :documentId="props.id" />
+
+      <DocumentWorkflowPreviewDialog
+        v-model="showPreviewDialog"
+        :documentId="props.id"
+        :versionId="selectedVersion?.id"
+      />
     </div>
   </div>
 </template>

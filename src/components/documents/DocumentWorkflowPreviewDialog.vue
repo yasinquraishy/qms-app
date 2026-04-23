@@ -1,6 +1,4 @@
 <script setup>
-import { useDocuments } from '@/composables/useDocuments.js'
-
 const props = defineProps({
   documentId: { type: String, required: true },
   versionId: { type: String, required: true },
@@ -9,7 +7,6 @@ const emit = defineEmits(['confirm'])
 
 const show = defineModel({ type: Boolean, default: false })
 
-const { submitForReview } = useDocuments()
 const toast = useToast()
 
 // ── Local data from IDB ───────────────────────────────────────────────────
@@ -91,17 +88,16 @@ const loading = computed(() => document.value === undefined)
 
 // ── Actions ────────────────────────────────────────────────────────────────
 async function confirm() {
-  try {
-    const result = await submitForReview(props.versionId)
-    if (result.error) {
-      toast.error(result.error)
-      return
-    }
+  const mutate = useLiveMutation(async (db) => {
+    const version = await db.DocumentVersion.findByPk(props.versionId)
+    version.statusId = 'IN_REVIEW'
+    await version.save()
     toast.success('Document submitted for review')
     emit('confirm')
-  } finally {
     show.value = false
-  }
+  })
+
+  mutate()
 }
 </script>
 

@@ -14,6 +14,7 @@ const props = defineProps({
   canUpdate: { type: Boolean, default: false },
   showAllowedOutcomes: { type: Boolean, default: false },
   showSendBackTargets: { type: Boolean, default: false },
+  showFormSchema: { type: Boolean, default: false },
 })
 
 const step = useLiveQueryWithDeps([() => props.stepId], async (db, [stepId]) => {
@@ -402,5 +403,8 @@ const toggleSendBackTarget = useLiveMutation(async (db, targetStepId) => {
         <span class="ds-label-sm"> At least one approver must be selected for this step </span>
       </div>
     </div>
+
+    <!-- Form Schema -->
+    <WorkflowStepFormSchema v-if="showFormSchema" :stepId="stepId" :canUpdate="canUpdate" />
   </div>
 </template>

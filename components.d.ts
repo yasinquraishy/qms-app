@@ -384,6 +384,8 @@ declare module 'vue' {
     WorkflowStatusBadge: typeof import('./src/components/badges/WorkflowStatusBadge.vue')['default']
     WorkflowStepCard: typeof import('./src/components/workflow/WorkflowStepCard.vue')['default']
     WorkflowStepEditor: typeof import('./src/components/workflow/WorkflowStepEditor.vue')['default']
+    WorkflowStepFormBuilderPanel: typeof import('./src/components/workflow/WorkflowStepFormBuilderPanel.vue')['default']
+    WorkflowStepFormSchema: typeof import('./src/components/workflow/WorkflowStepFormSchema.vue')['default']
     WorkflowStepList: typeof import('./src/components/workflow/WorkflowStepList.vue')['default']
     WorkflowUserSelector: typeof import('./src/components/workflow/WorkflowUserSelector.vue')['default']
     WorkflowVersionStatusBadgeById: typeof import('./src/components/badges/WorkflowVersionStatusBadgeById.vue')['default']

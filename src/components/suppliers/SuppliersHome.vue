@@ -86,7 +86,7 @@ function onDeleteSupplier(row) {
 
     <!-- Stats Card -->
     <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-4 tw:gap-4">
-      <div class="tw:bg-white tw:rounded-lg tw:border tw:border-border tw:p-4">
+      <div class="tw:bg-white tw:rounded-lg tw:border tw:border-divider tw:p-4">
         <div class="tw:flex tw:items-center tw:gap-4">
           <div
             class="tw:w-12 tw:h-12 tw:rounded-lg tw:bg-blue-50 tw:text-blue-600 tw:flex tw:items-center tw:justify-center"

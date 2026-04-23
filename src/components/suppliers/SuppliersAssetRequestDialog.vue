@@ -183,7 +183,7 @@ async function onSave() {
           Supplier Contacts <span class="tw:text-red-500">*</span>
         </label>
         <div
-          class="tw:space-y-1 tw:max-h-40 tw:overflow-y-auto tw:rounded-md tw:border tw:border-border tw:p-2"
+          class="tw:space-y-1 tw:max-h-40 tw:overflow-y-auto tw:rounded-md tw:border tw:border-divider tw:p-2"
         >
           <label
             v-for="contact in contacts"

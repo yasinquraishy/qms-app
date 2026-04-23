@@ -69,6 +69,13 @@ import { UserOnWorkflowInstanceStep } from './userOnWorkflowInstanceStep'
 import { UserOnDocument } from './userOnDocument'
 import { UserOnTeam } from './userOnTeam'
 import { UserStatus } from './userStatus'
+import { Nonconformance } from './nonconformance'
+import { NcStatus } from './ncStatus'
+import { NcType } from './ncType'
+import { NcSeverity } from './ncSeverity'
+import { NcSource } from './ncSource'
+import { NcDispositionType } from './ncDispositionType'
+import { NcRootCauseCategory } from './ncRootCauseCategory'
 
 export const db = {
   ApiKey,
@@ -142,4 +149,11 @@ export const db = {
   UserOnDocument,
   UserOnTeam,
   UserStatus,
+  Nonconformance,
+  NcStatus,
+  NcType,
+  NcSeverity,
+  NcSource,
+  NcDispositionType,
+  NcRootCauseCategory,
 }

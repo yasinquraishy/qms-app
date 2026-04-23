@@ -88,6 +88,11 @@ export const CATEGORY_METADATA = {
     icon: IconPackage,
     description: 'Manage access for Products',
   },
+  nonconformances: {
+    label: 'Nonconformances',
+    icon: IconShield,
+    description: 'Manage access for Nonconformances',
+  },
 }
 
 export const PERMISSION_SECTIONS = [
@@ -103,6 +108,7 @@ export const PERMISSION_SECTIONS = [
       'optionSets',
       'suppliers',
       'products',
+      'nonconformances',
     ],
   },
   {

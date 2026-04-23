@@ -25,6 +25,7 @@ import {
   IconChartBar,
   IconChevronDown,
   IconChevronRight,
+  IconAlertCircle,
 } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany'
 import { logoutCurrentSession, currentSession, isAllowed, isAdmin } from '@/utils/currentSession'
@@ -124,6 +125,11 @@ const navItems = computed(() => {
       // permissions: ['products:read'],
       icon: IconPackage,
       to: getCompanyPath('/products'),
+    },
+    {
+      label: 'Nonconformances',
+      icon: IconAlertCircle,
+      to: getCompanyPath('/nonconformances'),
     },
     {}, // Divider
     {

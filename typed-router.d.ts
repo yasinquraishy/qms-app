@@ -100,6 +100,13 @@ declare module 'vue-router/auto-routes' {
       { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
       | never
     >,
+    '/[companyCode]/nonconformances/[[id]]': RouteRecordInfo<
+      '/[companyCode]/nonconformances/[[id]]',
+      '/:companyCode/nonconformances/:id?',
+      { companyCode: ParamValue<true>, id?: ParamValueZeroOrOne<true> },
+      { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
+      | never
+    >,
     '/[companyCode]/notifications': RouteRecordInfo<
       '/[companyCode]/notifications',
       '/:companyCode/notifications',
@@ -330,6 +337,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/[companyCode]/groups/[[id]].vue': {
       routes:
         | '/[companyCode]/groups/[[id]]'
+      views:
+        | never
+    }
+    'src/pages/[companyCode]/nonconformances/[[id]].vue': {
+      routes:
+        | '/[companyCode]/nonconformances/[[id]]'
       views:
         | never
     }

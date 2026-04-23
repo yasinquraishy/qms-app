@@ -23,6 +23,17 @@ const showAllowedOutcomes = computed(() => workflow.value?.moduleId === 'NON_CON
 const showSendBackTargets = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
 const showFormSchema = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
 const showChildSteps = computed(() => workflow.value?.moduleId === 'CAPA')
+const stepApproversTab = computed(() => {
+  if (workflow.value?.moduleId === 'NON_CONFORMANCE') return 'roles'
+  if (workflow.value?.moduleId === 'CAPA') return 'roles'
+  return 'both'
+})
+const selectedApprovalRule = computed(() => {
+  if (!workflow.value) return null
+  if (workflow.value.moduleId === 'NON_CONFORMANCE') return 'ANY'
+  if (workflow.value.moduleId === 'CAPA') return 'ALL'
+  return null
+})
 
 const versions = useLiveQueryWithDeps(
   [() => props.id],
@@ -302,6 +313,8 @@ watch(steps, () => {
 
       <SafeTeleport to="#main-header-actions">
         <div class="tw:flex tw:items-center tw:gap-3">
+          <ModuleBadgeById :moduleId="workflow.moduleId" />
+
           <!-- Version Selector -->
           <BasePopover placement="bottom-end">
             <template #button>
@@ -389,28 +402,16 @@ watch(steps, () => {
 
       <!-- Global Settings -->
       <div class="tw:flex tw:flex-col tw:bg-main tw:border-b tw:border-divider tw:px-6 tw:py-4">
-        <div class="tw:grid tw:grid-cols-3 tw:gap-4">
-          <div class="tw:col-span-2">
-            <label
-              class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5"
-            >
-              Workflow Name
-            </label>
-            <BaseTextInput
-              v-model="workflow.name"
-              name="name"
-              placeholder="e.g. Global SOP Multi-Stage Approval"
-              :disabled="!canUpdate"
-            />
-          </div>
-          <div class="tw:flex-1">
-            <label
-              class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5"
-            >
-              Module
-            </label>
-            <ModuleSelectMenu v-model="workflow.moduleId" required :disabled="!canUpdate" />
-          </div>
+        <div>
+          <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5">
+            Workflow Name
+          </label>
+          <BaseTextInput
+            v-model="workflow.name"
+            name="name"
+            placeholder="e.g. Global SOP Multi-Stage Approval"
+            :disabled="!canUpdate"
+          />
         </div>
 
         <BaseTextarea
@@ -443,6 +444,8 @@ watch(steps, () => {
               :showAllowedOutcomes="showAllowedOutcomes"
               :showSendBackTargets="showSendBackTargets"
               :showFormSchema="showFormSchema"
+              :stepApproversTab="stepApproversTab"
+              :selectedApprovalRule="selectedApprovalRule"
             />
           </div>
 

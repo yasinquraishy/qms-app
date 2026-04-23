@@ -15,6 +15,16 @@ const props = defineProps({
   showAllowedOutcomes: { type: Boolean, default: false },
   showSendBackTargets: { type: Boolean, default: false },
   showFormSchema: { type: Boolean, default: false },
+  stepApproversTab: {
+    type: String,
+    default: 'both',
+    validator: (v) => ['roles', 'users', 'both'].includes(v),
+  },
+  selectedApprovalRule: {
+    type: [String, null],
+    default: null,
+    validator: (v) => ['ALL', 'ANY', null].includes(v),
+  },
 })
 
 const step = useLiveQueryWithDeps([() => props.stepId], async (db, [stepId]) => {
@@ -58,7 +68,18 @@ const stepUsers = useLiveQueryWithDeps(
 const roleIds = computed(() => stepRoles.value.map((sr) => sr.roleId))
 const reviewerIds = computed(() => stepUsers.value.map((su) => su.userId))
 
-const approverTab = ref('roles')
+const approverTab = ref(props.stepApproversTab === 'users' ? 'users' : 'roles')
+
+const showRoleSelector = computed(
+  () =>
+    props.stepApproversTab !== 'users' &&
+    (props.stepApproversTab !== 'both' || approverTab.value === 'roles'),
+)
+const showUserSelector = computed(
+  () =>
+    props.stepApproversTab !== 'roles' &&
+    (props.stepApproversTab !== 'both' || approverTab.value === 'users'),
+)
 
 // ─── Allowed Outcomes ─────────────────────────────────────────────────────────
 
@@ -121,6 +142,15 @@ const toggleSendBackTarget = useLiveMutation(async (db, targetStepId) => {
     await record.save()
   }
 })
+
+watch(
+  () => props.selectedApprovalRule,
+  (newRule) => {
+    if (!step.value || !props.canUpdate || !newRule) return
+    step.value.approvalRule = newRule
+    step.value.save()
+  },
+)
 </script>
 
 <template>
@@ -161,7 +191,7 @@ const toggleSendBackTarget = useLiveMutation(async (db, targetStepId) => {
         <!-- Right Column -->
         <div class="tw:space-y-6">
           <!-- Approval Rule -->
-          <div>
+          <div v-if="selectedApprovalRule === null">
             <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-3">
               Approval Rule
             </label>
@@ -353,9 +383,12 @@ const toggleSendBackTarget = useLiveMutation(async (db, targetStepId) => {
         </div>
       </div>
 
-      <!-- Tabs -->
+      <!-- Tabs (only when both are enabled) -->
       <div class="tw:border tw:border-divider tw:rounded-xl tw:overflow-hidden">
-        <div class="tw:flex tw:border-b tw:border-divider tw:bg-main-hover">
+        <div
+          v-if="stepApproversTab === 'both'"
+          class="tw:flex tw:border-b tw:border-divider tw:bg-main-hover"
+        >
           <button
             class="tw:px-6 tw:py-3 tw:text-xs tw:font-bold tw:transition-colors"
             :class="
@@ -382,12 +415,12 @@ const toggleSendBackTarget = useLiveMutation(async (db, targetStepId) => {
 
         <div class="tw:p-6">
           <WorkflowRoleSelector
-            v-show="approverTab === 'roles'"
+            v-show="showRoleSelector"
             :stepId="step.id"
             :canUpdate="canUpdate"
           />
           <WorkflowUserSelector
-            v-show="approverTab === 'users'"
+            v-show="showUserSelector"
             :stepId="step.id"
             :canUpdate="canUpdate"
           />

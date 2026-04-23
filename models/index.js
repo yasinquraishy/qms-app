@@ -7,8 +7,11 @@ import { WorkflowInstanceStepStatus } from './workflowInstanceStepStatus'
 import { WorkflowInstanceStepUserStatus } from './workflowInstanceStepUserStatus'
 import { WorkflowStatus } from './workflowStatus'
 import { WorkflowStep } from './workflowStep'
+import { WorkflowStepOutcome } from './workflowStepOutcome'
 import { WorkflowStepRole } from './workflowStepRole'
 import { WorkflowStepUser } from './workflowStepUser'
+import { AllowedOutcomeOnStep } from './allowedOutcomeOnStep'
+import { StepSendBackTarget } from './stepSendBackTarget'
 import { WorkflowVersion } from './workflowVersion'
 import { WorkflowVersionStatus } from './workflowVersionStatus'
 import { Asset } from './asset'
@@ -77,8 +80,11 @@ export const db = {
   WorkflowInstanceStepUserStatus,
   WorkflowStatus,
   WorkflowStep,
+  WorkflowStepOutcome,
   WorkflowStepRole,
   WorkflowStepUser,
+  AllowedOutcomeOnStep,
+  StepSendBackTarget,
   WorkflowVersion,
   WorkflowVersionStatus,
   Asset,

@@ -197,7 +197,7 @@ defineExpose({
     :is="computedAs"
     ref="buttonRef"
     as="button"
-    :disable="props.disabled || props.isLoading"
+    :disabled="props.disabled || props.isLoading"
     :class="classes"
     :type="type"
   >

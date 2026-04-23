@@ -1,10 +1,19 @@
 <script setup>
 import { useDebounceFn } from '@vueuse/core'
-import { IconNote, IconUsers, IconInfoCircle, IconAlertCircle } from '@tabler/icons-vue'
+import {
+  IconNote,
+  IconUsers,
+  IconInfoCircle,
+  IconAlertCircle,
+  IconListCheck,
+  IconCornerLeftUp,
+} from '@tabler/icons-vue'
 
 const props = defineProps({
   stepId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
+  showAllowedOutcomes: { type: Boolean, default: false },
+  showSendBackTargets: { type: Boolean, default: false },
 })
 
 const step = useLiveQueryWithDeps([() => props.stepId], async (db, [stepId]) => {
@@ -49,6 +58,68 @@ const roleIds = computed(() => stepRoles.value.map((sr) => sr.roleId))
 const reviewerIds = computed(() => stepUsers.value.map((su) => su.userId))
 
 const approverTab = ref('roles')
+
+// ─── Allowed Outcomes ─────────────────────────────────────────────────────────
+
+const allOutcomes = useLiveQuery(
+  async (db) => db.WorkflowStepOutcome.where().orderBy('displayOrder', 'asc').exec(),
+  { initial: [] },
+)
+
+const allowedOutcomes = useLiveQueryWithDeps(
+  [() => props.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return await db.AllowedOutcomeOnStep.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+const allowedOutcomeIds = computed(() => new Set(allowedOutcomes.value.map((o) => o.outcomeId)))
+const isSendBackActive = computed(() => allowedOutcomeIds.value.has('SEND_BACK'))
+
+const toggleOutcome = useLiveMutation(async (db, outcomeId) => {
+  const existing = allowedOutcomes.value.find((o) => o.outcomeId === outcomeId)
+  if (existing) {
+    await existing.delete()
+  } else {
+    const record = db.AllowedOutcomeOnStep.create({ stepId: props.stepId, outcomeId })
+    await record.save()
+  }
+})
+
+// ─── Send-Back Targets ────────────────────────────────────────────────────────
+
+const siblingSteps = useLiveQueryWithDeps(
+  [() => step.value?.workflowVersionId, () => step.value?.stepOrder],
+  async (db, [versionId, stepOrder]) => {
+    if (!versionId) return []
+    const all = await db.WorkflowStep.where('workflowVersionId', versionId).exec()
+    return all.filter((s) => s.stepOrder < stepOrder).sort((a, b) => a.stepOrder - b.stepOrder)
+  },
+  { initial: [] },
+)
+
+const sendBackTargets = useLiveQueryWithDeps(
+  [() => props.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return await db.StepSendBackTarget.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+const sendBackTargetIds = computed(() => new Set(sendBackTargets.value.map((t) => t.targetStepId)))
+
+const toggleSendBackTarget = useLiveMutation(async (db, targetStepId) => {
+  const existing = sendBackTargets.value.find((t) => t.targetStepId === targetStepId)
+  if (existing) {
+    await existing.delete()
+  } else {
+    const record = db.StepSendBackTarget.create({ stepId: props.stepId, targetStepId })
+    await record.save()
+  }
+})
 </script>
 
 <template>
@@ -182,6 +253,79 @@ const approverTab = ref('roles')
         <BaseCheckbox v-model="step.requireEsignature" :disabled="!canUpdate" />
         <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require E-signature</span>
       </label>
+    </div>
+
+    <!-- Allowed Outcomes -->
+    <div v-if="showAllowedOutcomes" class="tw:space-y-4">
+      <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
+        <IconListCheck :size="22" />
+        <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Allowed Outcomes</h2>
+      </div>
+      <p class="tw:text-xs tw:text-secondary">
+        Actions the assignee can take to complete this step. Each outcome triggers a different path
+        in the workflow.
+      </p>
+      <div class="tw:flex tw:flex-wrap tw:gap-2 tw:mt-2">
+        <BaseButton
+          v-for="o in allOutcomes"
+          :key="o.id"
+          :variant="allowedOutcomeIds.has(o.id) ? 'outline' : 'secondary'"
+          size="md"
+          :disabled="!canUpdate"
+          @click="toggleOutcome(o.id)"
+        >
+          <template #icon>
+            <component
+              :is="
+                o.id === 'APPROVE'
+                  ? IconCheck
+                  : o.id === 'REJECT'
+                    ? IconX
+                    : o.id === 'SEND_BACK'
+                      ? IconCornerLeftUp
+                      : IconListCheck
+              "
+              :size="14"
+            />
+          </template>
+          {{ o.name }}
+        </BaseButton>
+      </div>
+    </div>
+
+    <!-- Send-Back Targets -->
+    <div v-if="showSendBackTargets && isSendBackActive" class="tw:space-y-4">
+      <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
+        <IconCornerLeftUp :size="22" />
+        <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Send-Back Targets</h2>
+      </div>
+      <p class="tw:text-xs tw:text-secondary">
+        Which earlier steps this one can send back to. A send-back creates a new instance of the
+        target step.
+      </p>
+      <div v-if="siblingSteps.length === 0" class="tw:text-xs tw:text-secondary tw:italic tw:px-1">
+        First step — nothing to send back to.
+      </div>
+      <div v-else class="tw:space-y-2">
+        <label
+          v-for="s in siblingSteps"
+          :key="s.id"
+          class="tw:flex tw:items-center tw:gap-3"
+          :class="canUpdate ? 'tw:cursor-pointer' : 'tw:cursor-default tw:opacity-60'"
+        >
+          <BaseCheckbox
+            :modelValue="sendBackTargetIds.has(s.id)"
+            :disabled="!canUpdate"
+            @update:modelValue="canUpdate && toggleSendBackTarget(s.id)"
+          />
+          <span
+            class="tw:inline-flex tw:items-center tw:justify-center tw:w-5 tw:h-5 tw:text-[10px] tw:font-bold tw:bg-main-hover tw:border tw:border-divider tw:rounded tw:text-secondary"
+          >
+            {{ s.stepOrder }}
+          </span>
+          <span class="tw:text-xs tw:font-medium tw:text-on-main">{{ s.name }}</span>
+        </label>
+      </div>
     </div>
 
     <!-- Step Approvers -->

@@ -2,6 +2,7 @@
 import { IconChevronRight } from '@tabler/icons-vue'
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
+import { DateTime } from 'luxon'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -85,7 +86,7 @@ async function handleRecordDisposition() {
     nc.value.capaRequired = dispositionForm.value.capaRequired
     nc.value.dispositionNotes = dispositionForm.value.dispositionNotes
     nc.value.statusId = 'CLOSED'
-    nc.value.closedAt = new Date().toISOString()
+    nc.value.closedAt = DateTime.now()
     nc.value.updatedBy = currentSession.value?.userId || ''
     await nc.value.save()
     router.push(getCompanyPath('/nonconformances'))
@@ -179,15 +180,17 @@ const isOverdue = computed(() => {
                 </div>
                 <div class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Type</div>
-                  <span class="tw:text-sm tw:font-medium">{{ nc.typeId || '—' }}</span>
+                  <NcTypeBadgeById :typeId="nc.typeId" />
                 </div>
                 <div class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Source</div>
-                  <span class="tw:text-sm tw:font-medium">{{ nc.sourceId || '—' }}</span>
+                  <NcSourceBadgeById :sourceId="nc.sourceId" />
                 </div>
                 <div class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Detected</div>
-                  <span class="tw:text-sm tw:font-medium">{{ nc.detectedAt || '—' }}</span>
+                  <span class="tw:text-sm tw:font-medium">{{
+                    nc.detectedAt.formatDate('date') || '—'
+                  }}</span>
                 </div>
                 <div v-if="nc.productId" class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Product</div>
@@ -308,36 +311,38 @@ const isOverdue = computed(() => {
                 Overview
               </div>
               <div class="tw:flex tw:flex-col tw:divide-y tw:divide-border">
-                <div class="tw:flex tw:justify-between tw:items-center tw:py-2">
+                <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">NC number</span>
                   <span class="tw:text-xs tw:font-mono tw:font-medium">{{
                     nc.ncNumber || '—'
                   }}</span>
                 </div>
-                <div class="tw:flex tw:justify-between tw:items-center tw:py-2">
+                <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Status</span>
                   <NcStatusBadgeById :statusId="nc.statusId" />
                 </div>
-                <div class="tw:flex tw:justify-between tw:items-center tw:py-2">
+                <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Severity</span>
                   <NcSeverityBadgeById :severityId="nc.severityId" />
                 </div>
-                <div class="tw:flex tw:justify-between tw:items-center tw:py-2">
+                <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Owner</span>
                   <UserBadgeById v-if="nc.ownerId" :userId="nc.ownerId" />
                   <span v-else class="tw:text-sm tw:text-secondary">—</span>
                 </div>
-                <div class="tw:flex tw:justify-between tw:items-center tw:py-2">
+                <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Detected</span>
-                  <span class="tw:text-sm tw:font-medium">{{ nc.detectedAt || '—' }}</span>
+                  <span class="tw:text-sm tw:font-medium">{{
+                    nc.detectedAt ? nc.detectedAt.formatDate('date') : '—'
+                  }}</span>
                 </div>
-                <div class="tw:flex tw:justify-between tw:items-center tw:py-2">
+                <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Due date</span>
                   <span
                     class="tw:text-sm tw:font-medium"
                     :class="isOverdue ? 'tw:text-red-600' : ''"
                   >
-                    {{ nc.dueDate || '—' }}
+                    {{ nc.dueDate ? nc.dueDate.formatDate('date') : '—' }}
                     <span v-if="isOverdue"> ⚠</span>
                   </span>
                 </div>

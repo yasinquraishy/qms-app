@@ -33,9 +33,9 @@ export class Nonconformance extends BaseModel {
   @Property({ type: String, required: true }) siteId = ''
   @Property({ type: String, required: true }) departmentId = ''
   @Property({ type: String, required: true }) ownerId = ''
-  @Property({ type: String }) workflowVersionId = ''
-  @Property({ type: String }) detectedAt = null
-  @Property({ type: String }) dueDate = null
+  @Property({ type: String }) workflowVersionId = /** @type {String} */ (null)
+  @Property({ type: DateTime }) detectedAt = /** @type {DateTime} */ (null)
+  @Property({ type: DateTime }) dueDate = /** @type {DateTime} */ (null)
   @Property({ type: String }) productId = null
   @Property({ type: String }) supplierId = null
   @Property({ type: Number }) qtyAffected = null
@@ -45,7 +45,7 @@ export class Nonconformance extends BaseModel {
   @Property({ type: String }) dispositionTypeId = null
   @Property({ type: Boolean }) capaRequired = null
   @Property({ type: String }) dispositionNotes = ''
-  @Property({ type: String }) closedAt = null
+  @Property({ type: DateTime }) closedAt = /** @type {DateTime} */ (null)
   @Property({ type: String, required: true }) createdBy = ''
   @Property({ type: String, required: true }) updatedBy = ''
   @Property({ type: DateTime, required: true, timestamp: true })

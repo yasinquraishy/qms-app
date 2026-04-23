@@ -1,11 +1,10 @@
 <script setup>
-import { IconAlertCircle } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const router = useRouter()
+const toast = useToast()
 const saving = ref(false)
-const error = ref(null)
 
 const form = ref({
   title: '',
@@ -36,37 +35,36 @@ const createNc = useLiveMutation(async (db, data) => {
 })
 
 async function handleSubmit() {
-  error.value = null
   if (!form.value.title) {
-    error.value = 'Title is required'
+    toast.notify({ type: 'negative', message: 'Title is required' })
     return
   }
   if (!form.value.severityId) {
-    error.value = 'Severity is required'
+    toast.notify({ type: 'negative', message: 'Severity is required' })
     return
   }
   if (!form.value.typeId) {
-    error.value = 'NC Type is required'
+    toast.notify({ type: 'negative', message: 'NC Type is required' })
     return
   }
   if (!form.value.sourceId) {
-    error.value = 'Detection source is required'
+    toast.notify({ type: 'negative', message: 'Detection source is required' })
     return
   }
   if (!form.value.siteId) {
-    error.value = 'Site is required'
+    toast.notify({ type: 'negative', message: 'Site is required' })
     return
   }
   if (!form.value.departmentId) {
-    error.value = 'Department is required'
+    toast.notify({ type: 'negative', message: 'Department is required' })
     return
   }
   if (!form.value.ownerId) {
-    error.value = 'Owner is required'
+    toast.notify({ type: 'negative', message: 'Owner is required' })
     return
   }
   if (!form.value.detectedAt) {
-    error.value = 'Detected date is required'
+    toast.notify({ type: 'negative', message: 'Detected date is required' })
     return
   }
 
@@ -75,7 +73,7 @@ async function handleSubmit() {
     const nc = await createNc(form.value)
     router.push(getCompanyPath(`/nonconformances/${nc.id}`))
   } catch (e) {
-    error.value = e.message || 'Failed to create NC'
+    toast.notify({ type: 'negative', message: e.message || 'Failed to create NC' })
   } finally {
     saving.value = false
   }
@@ -99,15 +97,6 @@ async function handleSubmit() {
 
     <div class="tw:overflow-y-auto tw:flex-1">
       <div class="tw:max-w-3xl tw:mx-auto tw:p-6 tw:flex tw:flex-col tw:gap-4">
-        <!-- Error -->
-        <div
-          v-if="error"
-          class="tw:flex tw:items-center tw:gap-2 tw:bg-red-50 tw:border tw:border-red-200 tw:text-red-700 tw:rounded-lg tw:p-3 tw:text-sm"
-        >
-          <IconAlertCircle :size="16" />
-          {{ error }}
-        </div>
-
         <!-- Basic information -->
         <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
           <div
@@ -215,7 +204,7 @@ async function handleSubmit() {
             </div>
             <div class="tw:flex tw:flex-col tw:gap-1">
               <label class="tw:text-sm tw:font-medium tw:text-secondary">Qty affected</label>
-              <BaseTextInput v-model="form.qtyAffected" type="number" placeholder="0" />
+              <BaseTextInput v-model.number="form.qtyAffected" type="number" placeholder="0" />
             </div>
             <div class="tw:flex tw:flex-col tw:gap-1">
               <label class="tw:text-sm tw:font-medium tw:text-secondary">Unit of measure</label>

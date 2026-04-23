@@ -20,7 +20,10 @@ const taskInstances = useLiveQueryWithDeps(
 )
 
 const documentMap = useLiveQueryWithDeps(
-  [() => taskInstances.value.map((i) => i.entityId)],
+  [
+    () =>
+      taskInstances.value.filter((i) => i.entityType === 'DocumentVersion').map((i) => i.entityId),
+  ],
   async (db, [entityIds]) => {
     const versionIds = [...new Set(entityIds.filter(Boolean))]
     if (!versionIds.length) return {}
@@ -44,10 +47,29 @@ const documentMap = useLiveQueryWithDeps(
   { initial: {} },
 )
 
+const ncMap = useLiveQueryWithDeps(
+  [
+    () =>
+      taskInstances.value.filter((i) => i.entityType === 'Nonconformance').map((i) => i.entityId),
+  ],
+  async (db, [ncIds]) => {
+    const ids = [...new Set(ncIds.filter(Boolean))]
+    if (!ids.length) return {}
+    const ncs = await Promise.all(ids.map((id) => db.Nonconformance.findByPk(id)))
+    return Object.fromEntries(ncs.filter(Boolean).map((nc) => [nc.id, nc]))
+  },
+  { initial: {} },
+)
+
 const filteredInstances = computed(() => {
   if (!props.search) return taskInstances.value
   const q = props.search.toLowerCase()
   return taskInstances.value.filter((instance) => {
+    if (instance.entityType === 'Nonconformance') {
+      const nc = ncMap.value[instance.entityId]
+      if (!nc) return false
+      return nc.title?.toLowerCase().includes(q) || nc.ncNumber?.toLowerCase().includes(q)
+    }
     const doc = documentMap.value[instance.entityId]
     if (!doc) return false
     return doc.title?.toLowerCase().includes(q) || doc.docNumber?.toLowerCase().includes(q)
@@ -55,7 +77,7 @@ const filteredInstances = computed(() => {
 })
 
 const columns = [
-  { name: 'title', label: 'DOCUMENT', field: 'title', align: 'left' },
+  { name: 'title', label: 'ITEM', field: 'title', align: 'left' },
   { name: 'type', label: 'TYPE', field: 'type', align: 'left' },
   { name: 'dueDate', label: 'DUE DATE', field: 'dueDate', align: 'left', sortable: true },
   { name: 'status', label: 'STATUS', field: 'status', align: 'left' },
@@ -63,6 +85,10 @@ const columns = [
 
 function getDocument(instance) {
   return documentMap.value[instance.entityId] || null
+}
+
+function getNc(instance) {
+  return ncMap.value[instance.entityId] || null
 }
 
 function isDuePast(dueDate) {
@@ -73,25 +99,39 @@ function isDuePast(dueDate) {
 
 <template>
   <BaseTable :rows="filteredInstances" :columns="columns" rowKey="id">
-    <!-- Document Title -->
+    <!-- Item Title -->
     <template #body-cell-title="{ row }">
       <RouterLink
         class="tw:flex tw:flex-col tw:group"
         :to="getCompanyPath(`task-instances/${row.id}`)"
       >
-        <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
-          {{ getDocument(row)?.title || '—' }}
-        </span>
-        <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
-          {{ getDocument(row)?.docNumber || '—' }}
-        </span>
+        <template v-if="row.entityType === 'Nonconformance'">
+          <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
+            {{ getNc(row)?.title || '—' }}
+          </span>
+          <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
+            {{ getNc(row)?.ncNumber || '—' }}
+          </span>
+        </template>
+        <template v-else>
+          <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
+            {{ getDocument(row)?.title || '—' }}
+          </span>
+          <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
+            {{ getDocument(row)?.docNumber || '—' }}
+          </span>
+        </template>
       </RouterLink>
     </template>
 
     <!-- Type -->
     <template #body-cell-type="{ row }">
+      <NcTypeBadgeById
+        v-if="row.entityType === 'Nonconformance' && getNc(row)?.typeId"
+        :typeId="getNc(row).typeId"
+      />
       <DocumentTypeBadgeById
-        v-if="getDocument(row)?.documentTypeId"
+        v-else-if="getDocument(row)?.documentTypeId"
         :documentTypeId="getDocument(row).documentTypeId"
         :iconOnly="false"
       />

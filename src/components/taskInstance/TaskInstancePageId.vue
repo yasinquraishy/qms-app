@@ -24,10 +24,10 @@ const instanceStep = useLiveQueryWithDeps(
 
 // Resolve the specific DocumentVersion locked for this workflow instance
 const documentVersion = useLiveQueryWithDeps(
-  [() => taskInstance.value?.entityId],
-  async (db, [documentVersionId]) => {
-    if (!documentVersionId) return null
-    return await db.DocumentVersion.findByPk(documentVersionId)
+  [() => taskInstance.value?.entityType, () => taskInstance.value?.entityId],
+  async (db, [entityType, entityId]) => {
+    if (!entityId || entityType !== 'DocumentVersion') return null
+    return db.DocumentVersion.findByPk(entityId)
   },
 )
 
@@ -39,13 +39,32 @@ const document = useLiveQueryWithDeps(
   },
 )
 
+const nc = useLiveQueryWithDeps(
+  [() => taskInstance.value?.entityType, () => taskInstance.value?.entityId],
+  async (db, [entityType, entityId]) => {
+    if (!entityId || entityType !== 'Nonconformance') return null
+    return db.Nonconformance.findByPk(entityId)
+  },
+)
+
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const loading = computed(() => taskInstance.value === undefined)
 
-const breadcrumbs = computed(() => [
-  { label: 'My Tasks', to: getCompanyPath('/task-instances') },
-  { label: document.value?.title || 'Document' },
-])
+const breadcrumbs = computed(() => {
+  if (taskInstance.value?.entityType === 'Nonconformance') {
+    return [
+      { label: 'My Tasks', to: getCompanyPath('/task-instances') },
+      {
+        label: nc.value?.ncNumber || nc.value?.title || 'Nonconformance',
+        to: nc.value?.id ? getCompanyPath(`/nonconformances/${nc.value.id}`) : undefined,
+      },
+    ]
+  }
+  return [
+    { label: 'My Tasks', to: getCompanyPath('/task-instances') },
+    { label: document.value?.title || 'Document' },
+  ]
+})
 
 const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
 </script>
@@ -90,6 +109,8 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
         :versionId="documentVersion?.id"
         :reviewMode="canActOnStep"
       />
+
+      <TaskInstanceNcContent v-else-if="nc" :nc="nc" :reviewMode="canActOnStep" />
     </template>
 
     <!-- Not Found -->

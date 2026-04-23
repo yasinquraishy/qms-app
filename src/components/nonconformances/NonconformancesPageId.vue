@@ -1,6 +1,6 @@
 <script setup>
-import { IconChevronRight } from '@tabler/icons-vue'
-import { isAllowed, currentSession } from '@/utils/currentSession.js'
+import { IconChevronRight, IconAlertTriangle } from '@tabler/icons-vue'
+import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { DateTime } from 'luxon'
 
@@ -9,7 +9,6 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const _canUpdate = computed(() => isAllowed(['nonconformances:update']))
 
 const nc = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
   db.Nonconformance.findByPk(id),
@@ -347,11 +346,11 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Due date</span>
                   <span
-                    class="tw:text-sm tw:font-medium"
+                    class="tw:text-sm tw:font-medium tw:flex tw:items-center tw:gap-1 tw:flex-nowrap"
                     :class="isOverdue ? 'tw:text-red-600' : ''"
                   >
-                    {{ nc.dueDate ? nc.dueDate.formatDate('date') : '—' }}
-                    <span v-if="isOverdue"> ⚠</span>
+                    <span>{{ nc.dueDate ? nc.dueDate.formatDate('date') : '—' }}</span>
+                    <IconAlertTriangle v-if="isOverdue" :size="16" class="tw:text-red-600" />
                   </span>
                 </div>
                 <div

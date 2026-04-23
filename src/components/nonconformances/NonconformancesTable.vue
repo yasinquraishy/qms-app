@@ -76,7 +76,7 @@ function rowMenuItems(row) {
     </template>
 
     <template #body-cell-type="{ row }">
-      <span class="tw:text-sm tw:text-secondary">{{ row.typeId || '—' }}</span>
+      <NcTypeBadgeById :typeId="row.typeId" />
     </template>
 
     <template #body-cell-dueDate="{ row }">

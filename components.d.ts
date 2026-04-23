@@ -314,6 +314,7 @@ declare module 'vue' {
     Tag: typeof import('./resource/js/shared/components/Editor/extensions/tag/index.js')['default']
     TagList: typeof import('./resource/js/shared/components/Editor/extensions/tag/TagList.vue')['default']
     TaskInstanceIndex: typeof import('./src/components/taskInstance/taskInstanceIndex.vue')['default']
+    TaskInstanceNcContent: typeof import('./src/components/taskInstance/TaskInstanceNcContent.vue')['default']
     TaskInstancePageId: typeof import('./src/components/taskInstance/TaskInstancePageId.vue')['default']
     TaskInstancesFilterToolbar: typeof import('./src/components/taskInstance/taskInstancesFilterToolbar.vue')['default']
     TaskInstancesHome: typeof import('./src/components/taskInstance/taskInstancesHome.vue')['default']

@@ -1,5 +1,5 @@
 import { currentSession } from '@/utils/currentSession'
-import { BaseModel, ClientModel, Property } from '@syncEngine/index'
+import { BaseModel, ClientModel, Property, ValidationError } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
 @ClientModel('workflowInstanceSteps', {
@@ -27,9 +27,21 @@ export class WorkflowInstanceStep extends BaseModel {
   @Property({ type: DateTime }) completedAt = null
   @Property({ type: String, required: true }) statusId = 'PENDING'
   @Property({ type: String, required: true }) companyId = ''
+  @Property({ type: String }) sentBackToStepId = /**@type {string|null} */ (null)
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)
   @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true })
   updatedAt = /** @type {DateTime} */ (null)
+
+  async save() {
+    // If the step is being marked as SENT_BACK, ensure sentBackToStepId is set
+    if (this.statusId === 'SENT_BACK' && !this.sentBackToStepId) {
+      throw new ValidationError([
+        { field: 'sentBackToStepId', message: 'must be set when statusId is SENT_BACK' },
+      ])
+    }
+
+    await super.save()
+  }
 }

@@ -20,6 +20,7 @@ const form = ref({
   supplierId: null,
   qtyAffected: null,
   unitOfMeasure: '',
+  workflowVersionId: null,
 })
 
 const createNc = useLiveMutation(async (db, data) => {
@@ -244,6 +245,17 @@ async function handleSubmit() {
             placeholder="Describe actions taken at the time of detection…"
             :rows="3"
           />
+        </div>
+
+        <!-- Workflow -->
+        <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
+          <div
+            class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+          >
+            Workflow
+            <span class="tw:normal-case tw:font-normal tw:text-secondary tw:ml-1">(optional)</span>
+          </div>
+          <WorkflowVersionSelect v-model="form.workflowVersionId" />
         </div>
       </div>
     </div>

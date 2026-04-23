@@ -176,7 +176,7 @@ watch(
       </div>
 
       <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5">
-        <DocumentsWorkflowVersionSelect v-model="document.workflowVersionId" dense />
+        <WorkflowVersionSelect v-model="document.workflowVersionId" dense />
       </div>
 
       <!-- Table of Contents Card -->

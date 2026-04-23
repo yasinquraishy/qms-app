@@ -199,7 +199,7 @@ async function onSubmit() {
       <!-- Approval Workflow -->
       <section class="tw:space-y-4">
         <h3 class="ds-label tw:text-secondary">Approval Workflow</h3>
-        <DocumentsWorkflowVersionSelect v-model="editForm.workflowVersionId" />
+        <WorkflowVersionSelect v-model="editForm.workflowVersionId" />
       </section>
     </div>
 

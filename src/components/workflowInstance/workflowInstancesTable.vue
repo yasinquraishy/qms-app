@@ -4,6 +4,7 @@ import { getCompanyPath } from '@/utils/routeHelpers'
 const props = defineProps({
   search: { type: String, default: '' },
   statusId: { type: String, default: null },
+  moduleId: { type: String, default: null },
 })
 
 const instances = useLiveQueryWithDeps(
@@ -17,7 +18,10 @@ const instances = useLiveQueryWithDeps(
 )
 
 const documentMap = useLiveQueryWithDeps(
-  [() => instances.value.map((i) => i.resourceId)],
+  [
+    () =>
+      instances.value.filter((i) => i.resourceType === 'DocumentVersion').map((i) => i.resourceId),
+  ],
   async (db, [resourceIds]) => {
     const versionIds = [...new Set(resourceIds.filter(Boolean))]
     if (!versionIds.length) return {}
@@ -38,6 +42,20 @@ const documentMap = useLiveQueryWithDeps(
       map[v.id] = docById[v.documentId]
     }
     return map
+  },
+  { initial: {} },
+)
+
+const ncMap = useLiveQueryWithDeps(
+  [
+    () =>
+      instances.value.filter((i) => i.resourceType === 'Nonconformance').map((i) => i.resourceId),
+  ],
+  async (db, [ncIds]) => {
+    const ids = [...new Set(ncIds.filter(Boolean))]
+    if (!ids.length) return {}
+    const ncs = await Promise.all(ids.map((id) => db.Nonconformance.findByPk(id)))
+    return Object.fromEntries(ncs.filter(Boolean).map((nc) => [nc.id, nc]))
   },
   { initial: {} },
 )
@@ -96,9 +114,20 @@ const activeStepNameMap = useLiveQueryWithDeps(
 )
 
 const filteredInstances = computed(() => {
-  if (!props.search) return instances.value
+  let results = instances.value
+  if (props.moduleId) {
+    results = results.filter(
+      (instance) => moduleIdMap.value[instance.workflowVersionId] === props.moduleId,
+    )
+  }
+  if (!props.search) return results
   const q = props.search.toLowerCase()
-  return instances.value.filter((instance) => {
+  return results.filter((instance) => {
+    if (instance.resourceType === 'Nonconformance') {
+      const nc = ncMap.value[instance.resourceId]
+      if (!nc) return false
+      return nc.title?.toLowerCase().includes(q) || nc.ncNumber?.toLowerCase().includes(q)
+    }
     const doc = documentMap.value[instance.resourceId]
     if (!doc) return false
     return doc.title?.toLowerCase().includes(q) || doc.docNumber?.toLowerCase().includes(q)
@@ -117,6 +146,10 @@ const columns = [
 function getDocument(instance) {
   return documentMap.value[instance.resourceId] || null
 }
+
+function getNc(instance) {
+  return ncMap.value[instance.resourceId] || null
+}
 </script>
 
 <template>
@@ -127,12 +160,22 @@ function getDocument(instance) {
         class="tw:flex tw:flex-col tw:group"
         :to="getCompanyPath(`workflow-instances/${row.id}`)"
       >
-        <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
-          {{ getDocument(row)?.title || '—' }}
-        </span>
-        <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
-          {{ getDocument(row)?.docNumber || row.id.slice(0, 8) }}
-        </span>
+        <template v-if="row.resourceType === 'Nonconformance'">
+          <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
+            {{ getNc(row)?.title || '—' }}
+          </span>
+          <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
+            {{ getNc(row)?.ncNumber || row.id.slice(0, 8) }}
+          </span>
+        </template>
+        <template v-else>
+          <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
+            {{ getDocument(row)?.title || '—' }}
+          </span>
+          <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
+            {{ getDocument(row)?.docNumber || row.id.slice(0, 8) }}
+          </span>
+        </template>
       </RouterLink>
     </template>
 

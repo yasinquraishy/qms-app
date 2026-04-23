@@ -114,6 +114,14 @@ const isOverdue = computed(() => {
   if (['CLOSED', 'VOID'].includes(nc.value.statusId)) return false
   return nc.value.dueDate < new Date().toISOString().slice(0, 10)
 })
+
+const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
+  const results = await db.WorkflowInstance.where('[resourceType+resourceId]', [
+    'Nonconformance',
+    id,
+  ]).exec()
+  return results.find((i) => i.statusId === 'IN_PROGRESS') || results[0] || null
+})
 </script>
 
 <template>
@@ -368,6 +376,34 @@ const isOverdue = computed(() => {
                     }}
                   </span>
                 </div>
+              </div>
+            </div>
+
+            <!-- Workflow panel -->
+            <div
+              v-if="nc.workflowVersionId || workflowInstance"
+              class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-4"
+            >
+              <div
+                class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-2 tw:border-b tw:border-divider tw:mb-3"
+              >
+                Approval workflow
+              </div>
+
+              <!-- Active workflow instance -->
+              <div v-if="workflowInstance">
+                <WorkflowInstanceStatusBadgeById :statusId="workflowInstance.statusId" showDot />
+                <RouterLink
+                  class="tw:mt-3 tw:flex tw:items-center tw:text-sm tw:text-primary tw:font-medium tw:hover:underline"
+                  :to="getCompanyPath(`/workflow-instances/${workflowInstance.id}`)"
+                >
+                  View approval details →
+                </RouterLink>
+              </div>
+
+              <!-- Not yet submitted -->
+              <div v-else-if="nc.workflowVersionId" class="tw:text-sm tw:text-secondary">
+                Approval workflow assigned but not yet submitted.
               </div>
             </div>
           </div>

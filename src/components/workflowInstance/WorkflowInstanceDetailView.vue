@@ -37,9 +37,9 @@ const auditLogs = useLiveQueryWithDeps(
 )
 
 const documentVersion = useLiveQueryWithDeps(
-  [() => instance.value?.resourceId],
-  async (db, [resourceId]) => {
-    if (!resourceId) return null
+  [() => instance.value?.resourceType, () => instance.value?.resourceId],
+  async (db, [resourceType, resourceId]) => {
+    if (!resourceId || resourceType !== 'DocumentVersion') return null
     return db.DocumentVersion.findByPk(resourceId)
   },
 )
@@ -49,6 +49,14 @@ const doc = useLiveQueryWithDeps(
   async (db, [documentId]) => {
     if (!documentId) return null
     return db.Document.findByPk(documentId)
+  },
+)
+
+const nc = useLiveQueryWithDeps(
+  [() => instance.value?.resourceType, () => instance.value?.resourceId],
+  async (db, [resourceType, resourceId]) => {
+    if (!resourceId || resourceType !== 'Nonconformance') return null
+    return db.Nonconformance.findByPk(resourceId)
   },
 )
 
@@ -99,14 +107,26 @@ const elapsedTime = computed(() => {
   return `${minutes}m`
 })
 
-const breadcrumbs = computed(() => [
-  { label: 'Approvals Inbox', to: getCompanyPath('/workflow-instances') },
-  {
-    label: doc.value?.title || 'Document',
-    to: doc.value?.id ? getCompanyPath(`/documents/${doc.value.id}`) : undefined,
-  },
-  { label: 'Approval' },
-])
+const breadcrumbs = computed(() => {
+  if (instance.value?.resourceType === 'Nonconformance') {
+    return [
+      { label: 'Approvals Inbox', to: getCompanyPath('/workflow-instances') },
+      {
+        label: nc.value?.ncNumber || nc.value?.title || 'Nonconformance',
+        to: nc.value?.id ? getCompanyPath(`/nonconformances/${nc.value.id}`) : undefined,
+      },
+      { label: 'Approval' },
+    ]
+  }
+  return [
+    { label: 'Approvals Inbox', to: getCompanyPath('/workflow-instances') },
+    {
+      label: doc.value?.title || 'Document',
+      to: doc.value?.id ? getCompanyPath(`/documents/${doc.value.id}`) : undefined,
+    },
+    { label: 'Approval' },
+  ]
+})
 </script>
 
 <template>
@@ -128,11 +148,21 @@ const breadcrumbs = computed(() => [
         <!-- ─── Main Column ─────────────────────────────────────────────── -->
         <div class="tw:lg:col-span-8 tw:space-y-6">
           <WorkflowInstanceDocumentSummary
+            v-if="instance.resourceType === 'DocumentVersion'"
             :doc="doc"
             :workflowVersion="workflowVersion"
             :statusLabel="statusLabel"
             :statusColor="statusColor"
             @viewDocument="router.push(getCompanyPath(`/documents/${doc?.id}`))"
+          />
+
+          <WorkflowInstanceNcSummary
+            v-else-if="instance.resourceType === 'Nonconformance'"
+            :nc="nc"
+            :workflowVersion="workflowVersion"
+            :statusLabel="statusLabel"
+            :statusColor="statusColor"
+            @viewNc="router.push(getCompanyPath(`/nonconformances/${nc?.id}`))"
           />
 
           <WorkflowInstanceTimeline :workflowInstanceId="props.instanceId" />

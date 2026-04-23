@@ -376,6 +376,7 @@ declare module 'vue' {
     WorkflowInstanceEsignAuthDialog: typeof import('./src/components/workflowInstance/workflowInstanceEsignAuthDialog.vue')['default']
     WorkflowInstanceHealthCard: typeof import('./src/components/workflowInstance/workflowInstanceHealthCard.vue')['default']
     WorkflowInstanceIndex: typeof import('./src/components/workflowInstance/workflowInstanceIndex.vue')['default']
+    WorkflowInstanceNcSummary: typeof import('./src/components/workflowInstance/WorkflowInstanceNcSummary.vue')['default']
     WorkflowInstancePageId: typeof import('./src/components/workflowInstance/WorkflowInstancePageId.vue')['default']
     WorkflowInstanceRequestChangesDialog: typeof import('./src/components/workflowInstance/workflowInstanceRequestChangesDialog.vue')['default']
     WorkflowInstancesFilterToolbar: typeof import('./src/components/workflowInstance/workflowInstancesFilterToolbar.vue')['default']

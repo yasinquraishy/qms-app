@@ -9,7 +9,6 @@ const props = defineProps({
 })
 
 const toast = useToast()
-const router = useRouter()
 
 const selectedVersionId = ref(null)
 const selectedStepId = ref(null)
@@ -217,10 +216,6 @@ async function handleCreateDraft(majorBump = false) {
   }
 }
 
-function goBack() {
-  router.push(getCompanyPath('/workflow-templates'))
-}
-
 function selectVersion(version) {
   if (version.id === selectedVersionId.value) return
   selectedVersionId.value = version.id
@@ -340,7 +335,6 @@ watch(steps, () => {
 
           <div class="tw:h-6 tw:w-px tw:bg-divider"></div>
 
-          <BaseButton variant="outline" @click="goBack">Cancel</BaseButton>
           <template v-if="canUpdate">
             <BaseButton :isLoading="publishing" @click="handlePublish"> Publish </BaseButton>
           </template>

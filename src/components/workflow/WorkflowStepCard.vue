@@ -33,6 +33,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isChild: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['select', 'remove', 'moveUp', 'moveDown'])
@@ -79,19 +83,23 @@ const menuItems = computed(() => {
 
 <template>
   <div
-    class="tw:group tw:relative tw:bg-main tw:p-4 tw:rounded-xl tw:border-2 tw:shadow-sm tw:transition-all tw:cursor-pointer"
-    :class="
+    class="tw:group tw:relative tw:bg-main tw:transition-all tw:cursor-pointer"
+    :class="[
+      isChild ? 'tw:p-3 tw:rounded-lg tw:border' : 'tw:p-4 tw:rounded-xl tw:border-2 tw:shadow-sm',
       isSelected
         ? 'tw:border-primary tw:ring-4 tw:ring-primary/5'
-        : 'tw:border-divider tw:hover:border-secondary'
-    "
+        : 'tw:border-divider tw:hover:border-secondary',
+    ]"
     @click="emit('select')"
   >
     <div class="tw:flex tw:items-start tw:gap-3">
       <!-- Step Number -->
       <div
-        class="tw:mt-0.5 tw:w-6 tw:h-6 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:text-xs tw:font-bold tw:shrink-0"
-        :class="isSelected ? 'tw:bg-primary tw:text-white' : 'tw:bg-main-hover tw:text-secondary'"
+        class="tw:mt-0.5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:font-bold tw:shrink-0"
+        :class="[
+          isChild ? 'tw:w-5 tw:h-5 tw:text-[10px]' : 'tw:w-6 tw:h-6 tw:text-xs',
+          isSelected ? 'tw:bg-primary tw:text-white' : 'tw:bg-main-hover tw:text-secondary',
+        ]"
       >
         {{ index + 1 }}
       </div>

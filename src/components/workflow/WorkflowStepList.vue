@@ -6,6 +6,7 @@ const props = defineProps({
   versionId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
   autoAddStep: { type: Boolean, default: false },
+  showChildSteps: { type: Boolean, default: false },
 })
 
 const stepId = defineModel('stepId', {
@@ -22,6 +23,21 @@ const steps = useLiveQueryWithDeps(
   { initial: [] },
 )
 
+// Tree helpers (used when showChildSteps = true)
+const rootSteps = computed(() =>
+  steps.value.filter((s) => !s.parentStepId).sort((a, b) => a.stepOrder - b.stepOrder),
+)
+
+const childrenByParentId = computed(() =>
+  steps.value.reduce((acc, s) => {
+    if (s.parentStepId) {
+      acc[s.parentStepId] ??= []
+      acc[s.parentStepId].push(s)
+    }
+    return acc
+  }, {}),
+)
+
 // Auto-add first step when autoAddStep is enabled and version has no steps
 watch(steps, async (newSteps) => {
   if (props.autoAddStep && props.canUpdate && newSteps?.length === 0 && props.versionId) {
@@ -34,7 +50,7 @@ function selectStep(step) {
   stepId.value = step.id
 }
 
-const createStep = useLiveMutation(async (db, { versionId, order, settings }) => {
+const createStep = useLiveMutation(async (db, { versionId, order, settings, parentStepId }) => {
   const s = settings || {}
   const step = db.WorkflowStep.create({
     workflowVersionId: versionId,
@@ -45,6 +61,7 @@ const createStep = useLiveMutation(async (db, { versionId, order, settings }) =>
     slaDays: s.defaultSla ?? null,
     requireComments: s.defaultWorkflowRequireComment ?? false,
     requireEsignature: s.defaultWorkflowRequireSignature ?? false,
+    ...(parentStepId ? { parentStepId } : {}),
   })
   await step.save()
   return step
@@ -52,18 +69,31 @@ const createStep = useLiveMutation(async (db, { versionId, order, settings }) =>
 
 async function addStep() {
   const s = currentCompany.value?.settings || {}
-  const order = steps.value.length + 1
+  const order = (props.showChildSteps ? rootSteps.value.length : steps.value.length) + 1
   const step = await createStep({ versionId: props.versionId, order, settings: s })
   if (step) stepId.value = step.id
 }
 
-async function removeStep(index) {
-  const step = steps.value[index]
-  if (!step) return
+async function addChildStep(parentId) {
+  const s = currentCompany.value?.settings || {}
+  const siblings = childrenByParentId.value[parentId] ?? []
+  const order = siblings.length + 1
+  const step = await createStep({
+    versionId: props.versionId,
+    order,
+    settings: s,
+    parentStepId: parentId,
+  })
+  if (step) stepId.value = step.id
+}
+
+// Generic helpers for scoped remove/swap
+async function removeFromSiblings(step, siblings) {
+  const index = siblings.findIndex((s) => s.id === step.id)
+  if (index === -1) return
   const wasSelected = stepId.value === step.id
   await step.delete()
-  // Reorder remaining
-  const remaining = steps.value.filter((_, i) => i !== index)
+  const remaining = siblings.filter((s) => s.id !== step.id)
   await Promise.all(
     remaining.map((s, i) => {
       s.stepOrder = i + 1
@@ -76,23 +106,57 @@ async function removeStep(index) {
   }
 }
 
-async function moveStepUp(index) {
-  if (index > 0) await swapSteps(index, index - 1)
-}
-
-async function moveStepDown(index) {
-  if (index < steps.value.length - 1) await swapSteps(index, index + 1)
-}
-
-async function swapSteps(fromIndex, toIndex) {
-  const a = steps.value[fromIndex]
-  const b = steps.value[toIndex]
+async function swapInList(list, fromIndex, toIndex) {
+  const a = list[fromIndex]
+  const b = list[toIndex]
   if (!a || !b) return
   const tmpOrder = a.stepOrder
   a.stepOrder = b.stepOrder
   b.stepOrder = tmpOrder
   await Promise.all([a.save(), b.save()])
   stepId.value = a.id
+}
+
+// Flat mode (showChildSteps = false)
+async function removeStep(index) {
+  await removeFromSiblings(steps.value[index], steps.value)
+}
+
+async function moveStepUp(index) {
+  if (index > 0) await swapInList(steps.value, index, index - 1)
+}
+
+async function moveStepDown(index) {
+  if (index < steps.value.length - 1) await swapInList(steps.value, index, index + 1)
+}
+
+// Nested mode — root step operations (showChildSteps = true)
+async function removeRootStep(index) {
+  await removeFromSiblings(rootSteps.value[index], rootSteps.value)
+}
+
+async function moveRootStepUp(index) {
+  if (index > 0) await swapInList(rootSteps.value, index, index - 1)
+}
+
+async function moveRootStepDown(index) {
+  if (index < rootSteps.value.length - 1) await swapInList(rootSteps.value, index, index + 1)
+}
+
+// Nested mode — child step operations
+async function removeChildStep(parentId, index) {
+  const siblings = childrenByParentId.value[parentId] ?? []
+  await removeFromSiblings(siblings[index], siblings)
+}
+
+async function moveChildStepUp(parentId, index) {
+  const siblings = childrenByParentId.value[parentId] ?? []
+  if (index > 0) await swapInList(siblings, index, index - 1)
+}
+
+async function moveChildStepDown(parentId, index) {
+  const siblings = childrenByParentId.value[parentId] ?? []
+  if (index < siblings.length - 1) await swapInList(siblings, index, index + 1)
 }
 
 defineExpose({ addStep })
@@ -114,20 +178,70 @@ defineExpose({ addStep })
 
     <!-- Step Cards -->
     <div class="tw:flex-1 tw:overflow-y-auto tw:p-4 tw:space-y-3">
-      <WorkflowStepCard
-        v-for="(step, index) in steps"
-        :key="step.id ?? index"
-        :step="step"
-        :index="index"
-        :isSelected="step.id === stepId"
-        :isFirst="index === 0"
-        :isLast="index === steps.length - 1"
-        :canUpdate="canUpdate"
-        @select="selectStep(step)"
-        @remove="removeStep(index)"
-        @moveUp="moveStepUp(index)"
-        @moveDown="moveStepDown(index)"
-      />
+      <!-- Nested mode -->
+      <template v-if="showChildSteps">
+        <div v-for="(step, index) in rootSteps" :key="step.id ?? index" class="tw:space-y-2">
+          <WorkflowStepCard
+            :step="step"
+            :index="index"
+            :isSelected="step.id === stepId"
+            :isFirst="index === 0"
+            :isLast="index === rootSteps.length - 1"
+            :canUpdate="canUpdate"
+            @select="selectStep(step)"
+            @remove="removeRootStep(index)"
+            @moveUp="moveRootStepUp(index)"
+            @moveDown="moveRootStepDown(index)"
+          />
+
+          <!-- Child steps -->
+          <div class="tw:pl-6 tw:space-y-2">
+            <WorkflowStepCard
+              v-for="(child, ci) in childrenByParentId[step.id] ?? []"
+              :key="child.id"
+              :step="child"
+              :index="ci"
+              :isChild="true"
+              :isSelected="child.id === stepId"
+              :isFirst="ci === 0"
+              :isLast="ci === (childrenByParentId[step.id] ?? []).length - 1"
+              :canUpdate="canUpdate"
+              @select="selectStep(child)"
+              @remove="removeChildStep(step.id, ci)"
+              @moveUp="moveChildStepUp(step.id, ci)"
+              @moveDown="moveChildStepDown(step.id, ci)"
+            />
+
+            <!-- Add Sub-step Button -->
+            <button
+              v-if="canUpdate"
+              class="tw:w-full tw:py-2 tw:border tw:border-dashed tw:border-divider tw:rounded-lg tw:flex tw:items-center tw:justify-center tw:gap-1.5 tw:text-secondary tw:hover:text-primary tw:hover:border-primary tw:hover:bg-primary/5 tw:transition-all"
+              @click="addChildStep(step.id)"
+            >
+              <IconPlus :size="14" />
+              <span class="tw:text-xs tw:font-bold">Add Sub-step</span>
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Flat mode -->
+      <template v-else>
+        <WorkflowStepCard
+          v-for="(step, index) in steps"
+          :key="step.id ?? index"
+          :step="step"
+          :index="index"
+          :isSelected="step.id === stepId"
+          :isFirst="index === 0"
+          :isLast="index === steps.length - 1"
+          :canUpdate="canUpdate"
+          @select="selectStep(step)"
+          @remove="removeStep(index)"
+          @moveUp="moveStepUp(index)"
+          @moveDown="moveStepDown(index)"
+        />
+      </template>
 
       <!-- Add Step Button -->
       <button

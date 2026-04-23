@@ -174,6 +174,10 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
 
   const sourceSteps = await db.WorkflowStep.where('workflowVersionId', sourceVersion?.id).exec()
 
+  // First pass: create all new steps and build old→new id map
+  const idMap = {}
+  const stepPairs = []
+
   for (const step of sourceSteps) {
     const newStep = db.WorkflowStep.create({
       workflowVersionId: newVersion.id,
@@ -186,6 +190,8 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
       requireEsignature: step.requireEsignature,
     })
     await newStep.save()
+    idMap[step.id] = newStep.id
+    stepPairs.push({ oldStep: step, newStep })
 
     const users = await db.WorkflowStepUser.where('stepId', step.id).exec()
     for (const su of users) {
@@ -197,6 +203,14 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
     for (const sr of roles) {
       const newSr = db.WorkflowStepRole.create({ stepId: newStep.id, roleId: sr.roleId })
       await newSr.save()
+    }
+  }
+
+  // Second pass: remap parentStepId to the new step IDs
+  for (const { oldStep, newStep } of stepPairs) {
+    if (oldStep.parentStepId && idMap[oldStep.parentStepId]) {
+      newStep.parentStepId = idMap[oldStep.parentStepId]
+      await newStep.save()
     }
   }
 

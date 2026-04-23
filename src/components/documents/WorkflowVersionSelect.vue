@@ -1,10 +1,14 @@
 <script setup>
 import { IconHierarchy, IconList } from '@tabler/icons-vue'
 
-defineProps({
+const props = defineProps({
   dense: {
     type: Boolean,
     default: false,
+  },
+  moduleId: {
+    type: String,
+    default: null,
   },
 })
 
@@ -13,7 +17,13 @@ const selectedVersionId = defineModel({
   default: null,
 })
 
-const workflows = useLiveQuery(async (db) => db.Workflow.where().exec(), { initial: [] })
+const workflows = useLiveQueryWithDeps(
+  [() => props.moduleId],
+  async (db, [moduleId]) => db.Workflow.where('moduleId', moduleId).exec(),
+  {
+    initial: [],
+  },
+)
 
 const versions = useLiveQuery(async (db) => db.WorkflowVersion.where().exec(), {
   initial: [],

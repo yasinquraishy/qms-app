@@ -255,7 +255,7 @@ async function handleSubmit() {
             Workflow
             <span class="tw:normal-case tw:font-normal tw:text-secondary tw:ml-1">(optional)</span>
           </div>
-          <WorkflowVersionSelect v-model="form.workflowVersionId" />
+          <WorkflowVersionSelect v-model="form.workflowVersionId" moduleId="NON_CONFORMANCE" />
         </div>
       </div>
     </div>

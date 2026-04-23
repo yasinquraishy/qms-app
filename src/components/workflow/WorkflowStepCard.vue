@@ -143,7 +143,6 @@ const menuItems = computed(() => {
           <template #trigger>
             <button
               class="tw:p-1 tw:rounded tw:hover:bg-main-hover tw:text-secondary tw:transition-colors"
-              @click.stop
             >
               <IconDots :size="18" />
             </button>

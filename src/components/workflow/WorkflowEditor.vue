@@ -22,6 +22,7 @@ const workflow = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
 const showAllowedOutcomes = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
 const showSendBackTargets = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
 const showFormSchema = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
+const showChildSteps = computed(() => workflow.value?.moduleId === 'CAPA')
 
 const versions = useLiveQueryWithDeps(
   [() => props.id],
@@ -430,6 +431,7 @@ watch(steps, () => {
           :versionId="selectedVersionId"
           :canUpdate="canUpdate"
           :autoAddStep="autoAddStep"
+          :showChildSteps="showChildSteps"
         />
 
         <!-- Right Pane: Step Editor -->

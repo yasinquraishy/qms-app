@@ -70,6 +70,7 @@ import { UserOnDocument } from './userOnDocument'
 import { UserOnTeam } from './userOnTeam'
 import { UserStatus } from './userStatus'
 import { Nonconformance } from './nonconformance'
+import { NcCounter } from './ncCounter'
 import { NcStatus } from './ncStatus'
 import { NcType } from './ncType'
 import { NcSeverity } from './ncSeverity'
@@ -150,6 +151,7 @@ export const db = {
   UserOnTeam,
   UserStatus,
   Nonconformance,
+  NcCounter,
   NcStatus,
   NcType,
   NcSeverity,

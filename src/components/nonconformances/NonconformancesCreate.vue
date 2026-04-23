@@ -24,13 +24,31 @@ const form = ref({
 
 const createNc = useLiveMutation(async (db, data) => {
   const userId = currentSession.value?.userId || ''
+
+  const site = await db.Site.findByPk(data.siteId)
+  if (!site) throw new Error(`Site not found: ${data.siteId}`)
+
+  const department = await db.Department.findByPk(data.departmentId)
+  if (!department) throw new Error(`Department not found: ${data.departmentId}`)
+
+  const resolvedPrefix = `NC-${site.code}-${department.code}`
+
+  let counter = await db.NcCounter.where('prefix', resolvedPrefix).first()
+  if (!counter) {
+    counter = db.NcCounter.create({ prefix: resolvedPrefix, currentValue: 1 })
+  } else {
+    counter.currentValue += 1
+  }
+
   const nc = db.Nonconformance.create({
     ...data,
+    ncNumber: `${resolvedPrefix}-${String(counter.currentValue).padStart(3, '0')}`,
     statusId: 'DRAFT',
     createdBy: userId,
     updatedBy: userId,
   })
   await nc.save()
+  await counter.save()
   return nc
 })
 

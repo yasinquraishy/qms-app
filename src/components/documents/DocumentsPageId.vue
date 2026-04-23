@@ -25,7 +25,7 @@ const props = defineProps({
 
 const toast = useToast()
 const router = useRouter()
-const { cancelReview, setEffective } = useDocuments()
+const { setEffective } = useDocuments()
 
 // State
 const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
@@ -137,12 +137,15 @@ function handleSubmitForReview() {
 }
 
 async function handleCancelReview() {
-  const result = await cancelReview(selectedVersion.value.workflowInstanceId)
-  if (result.error) {
-    toast.error(result.error)
-  } else {
+  const mutate = useLiveMutation(async (db) => {
+    const version = await db.DocumentVersion.findByPk(selectedVersion.value.id)
+    version.statusId = 'DRAFT'
+    version.lockedAt = null
+    await version.save()
     toast.success('Review cancelled successfully')
-  }
+  })
+
+  await mutate()
 }
 
 async function handleSetEffective() {

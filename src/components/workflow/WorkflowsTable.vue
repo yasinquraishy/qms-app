@@ -80,6 +80,7 @@ const deleteWorkflow = useLiveMutation(async (db, workflowId) => {
 })
 
 async function confirmDeleteWorkflow() {
+  // directly calling delete throws error from here so using useLiveMutation, even though we don't need the reactivity here
   await deleteWorkflow(confirmDelete.value.workflow.id)
   confirmDelete.value = { open: false, workflow: null }
 }

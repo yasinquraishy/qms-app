@@ -30,6 +30,7 @@ export class WorkflowStep extends BaseModel {
   @Property({ type: Boolean }) requireComments = false
   @Property({ type: Boolean }) requireEsignature = false
   @Property({ type: Array }) formSchema = /** @type {Array} */ ([])
+  @Property({ type: String }) parentStepId = /** @type {String} */ (null)
   @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })

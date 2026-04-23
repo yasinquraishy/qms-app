@@ -270,7 +270,7 @@ const toggleSendBackTarget = useLiveMutation(async (db, targetStepId) => {
         <BaseButton
           v-for="o in allOutcomes"
           :key="o.id"
-          :variant="allowedOutcomeIds.has(o.id) ? 'outline' : 'secondary'"
+          :variant="allowedOutcomeIds.has(o.id) ? 'primary' : 'outline'"
           size="md"
           :disabled="!canUpdate"
           @click="toggleOutcome(o.id)"

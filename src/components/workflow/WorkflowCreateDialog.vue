@@ -11,7 +11,6 @@ const form = ref({
   name: '',
   description: '',
   moduleId: null,
-  documentTypeId: null,
 })
 
 const rules = computed(() => ({
@@ -23,29 +22,26 @@ const validator = useValidator(rules, form)
 const loading = ref(false)
 
 const isFormValid = computed(() => {
-  return form.value.name.trim() && form.value.moduleId && form.value.documentTypeId
+  return form.value.name.trim() && form.value.moduleId
 })
 
-const createWorkflowAndVersion = useLiveMutation(
-  async (db, { name, description, moduleId, documentTypeId }) => {
-    const workflow = db.Workflow.create({
-      name,
-      description,
-      moduleId,
-      documentTypeId,
-      statusId: 'ACTIVE',
-    })
-    await workflow.save()
-    const version = db.WorkflowVersion.create({
-      workflowId: workflow.id,
-      versionMajor: 1,
-      versionMinor: 0,
-      statusId: 'DRAFT',
-    })
-    await version.save()
-    return workflow
-  },
-)
+const createWorkflowAndVersion = useLiveMutation(async (db, { name, description, moduleId }) => {
+  const workflow = db.Workflow.create({
+    name,
+    description,
+    moduleId,
+    statusId: 'ACTIVE',
+  })
+  await workflow.save()
+  const version = db.WorkflowVersion.create({
+    workflowId: workflow.id,
+    versionMajor: 1,
+    versionMinor: 0,
+    statusId: 'DRAFT',
+  })
+  await version.save()
+  return workflow
+})
 
 async function handleSubmit() {
   const valid = await validator.value.$validate()
@@ -57,7 +53,6 @@ async function handleSubmit() {
       name: form.value.name.trim(),
       description: form.value.description.trim() || '',
       moduleId: form.value.moduleId,
-      documentTypeId: form.value.documentTypeId,
     })
     if (workflow) {
       emit('created', workflow)
@@ -110,14 +105,6 @@ function resetForm() {
               Module <span class="tw:text-bad">*</span>
             </label>
             <ModuleSelectMenu v-model="form.moduleId" required />
-          </div>
-
-          <!-- Document Type -->
-          <div>
-            <label class="tw:block tw:text-xs tw:font-semibold tw:text-secondary tw:mb-1.5">
-              Document Type <span class="tw:text-bad">*</span>
-            </label>
-            <DocumentTypeSelectMenu v-model="form.documentTypeId" required />
           </div>
         </div>
 

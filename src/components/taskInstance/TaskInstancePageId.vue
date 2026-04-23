@@ -103,12 +103,13 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
         <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />
       </SafeTeleport>
 
-      <DocumentsMainContent
-        v-if="document"
-        :documentId="document.id"
-        :versionId="documentVersion?.id"
-        :reviewMode="canActOnStep"
-      />
+      <div v-if="document" class="tw:max-w-4xl tw:mx-auto tw:p-6 tw:lg:p-8">
+        <DocumentsMainContentLeft
+          :documentId="document.id"
+          :versionId="documentVersion?.id"
+          :reviewMode="canActOnStep"
+        />
+      </div>
 
       <TaskInstanceNcContent v-else-if="nc" :nc="nc" :reviewMode="canActOnStep" />
     </template>

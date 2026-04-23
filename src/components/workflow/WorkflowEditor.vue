@@ -20,6 +20,10 @@ const workflow = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
   db.Workflow.findByPk(id),
 )
 
+const showAllowedOutcomes = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
+const showSendBackTargets = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
+const showFormSchema = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
+
 const versions = useLiveQueryWithDeps(
   [() => props.id],
   async (db, [id]) => {
@@ -229,9 +233,14 @@ function handleVersionSelect(version, close) {
 
 const isFirstLoad = ref(true)
 
-const debouncedSave = useDebounceFn(() => {
+const debouncedSaveVersion = useDebounceFn(() => {
   if (!selectedVersion.value) return
   selectedVersion.value.save()
+}, 1000)
+
+const debounedSaveWorkflow = useDebounceFn(() => {
+  if (!workflow.value) return
+  workflow.value.save()
 }, 1000)
 
 watch(
@@ -241,7 +250,19 @@ watch(
       isFirstLoad.value = false
       return
     }
-    debouncedSave()
+    debouncedSaveVersion()
+  },
+  { deep: true },
+)
+
+watch(
+  workflow,
+  (oldValue) => {
+    // undefined on initial load, we only want to trigger save on subsequent changes
+    if (oldValue === undefined) {
+      return
+    }
+    debounedSaveWorkflow()
   },
   { deep: true },
 )
@@ -359,8 +380,8 @@ watch(steps, () => {
 
       <!-- Global Settings -->
       <div class="tw:flex tw:flex-col tw:bg-main tw:border-b tw:border-divider tw:px-6 tw:py-4">
-        <div class="tw:grid tw:grid-cols-2 tw:md:grid-cols-3 tw:gap-4">
-          <div class="tw:flex-1">
+        <div class="tw:grid tw:grid-cols-3 tw:gap-4">
+          <div class="tw:col-span-2">
             <label
               class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5"
             >
@@ -381,19 +402,16 @@ watch(steps, () => {
             </label>
             <ModuleSelectMenu v-model="workflow.moduleId" required :disabled="!canUpdate" />
           </div>
-          <div class="tw:flex-1">
-            <label
-              class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5"
-            >
-              Document Type
-            </label>
-            <DocumentTypeSelectMenu
-              v-model="workflow.documentTypeId"
-              required
-              :disable="!canUpdate"
-            />
-          </div>
         </div>
+
+        <BaseTextarea
+          v-model="workflow.description"
+          name="description"
+          label="Description"
+          placeholder="Describe the purpose of this workflow"
+          :disabled="!canUpdate"
+          class="tw:mt-4"
+        />
       </div>
 
       <!-- Two-Pane Designer -->
@@ -409,7 +427,13 @@ watch(steps, () => {
         <!-- Right Pane: Step Editor -->
         <div class="tw:flex-1 tw:overflow-y-auto tw:bg-main tw:p-8">
           <div v-if="selectedStepId" class="tw:max-w-4xl tw:mx-auto tw:space-y-10">
-            <WorkflowStepEditor :stepId="selectedStepId" :canUpdate="canUpdate" />
+            <WorkflowStepEditor
+              :stepId="selectedStepId"
+              :canUpdate="canUpdate"
+              :showAllowedOutcomes="showAllowedOutcomes"
+              :showSendBackTargets="showSendBackTargets"
+              :showFormSchema="showFormSchema"
+            />
           </div>
 
           <div

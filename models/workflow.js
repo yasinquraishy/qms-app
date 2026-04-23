@@ -4,6 +4,7 @@ import { DateTime } from 'luxon'
 
 @ClientModel('workflows', { primaryKey: 'id', syncField: 'updatedAt', customIndex: 'moduleId' })
 export class Workflow extends BaseModel {
+  static paranoid = true
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation

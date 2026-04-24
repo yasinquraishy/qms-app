@@ -195,9 +195,9 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 </div>
                 <div class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Detected</div>
-                  <span class="tw:text-sm tw:font-medium">{{
-                    nc.detectedAt.formatDate('date') || '—'
-                  }}</span>
+                  <span class="tw:text-sm tw:font-medium">
+                    {{ nc.detectedAt.formatDate('date') || '—' }}
+                  </span>
                 </div>
                 <div v-if="nc.productId" class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Product</div>
@@ -205,9 +205,9 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 </div>
                 <div v-if="nc.qtyAffected" class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Qty affected</div>
-                  <span class="tw:text-sm tw:font-medium"
-                    >{{ nc.qtyAffected }} {{ nc.unitOfMeasure }}</span
-                  >
+                  <span class="tw:text-sm tw:font-medium">
+                    {{ nc.qtyAffected }} {{ nc.unitOfMeasure }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -221,9 +221,9 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
               </div>
               <div v-if="nc.rootCauseCategoryId" class="tw:mb-3">
                 <div class="tw:text-xs tw:text-secondary tw:mb-1">Root cause category</div>
-                <BaseBadge class="tw:bg-amber-100 tw:text-amber-700">{{
-                  nc.rootCauseCategoryId
-                }}</BaseBadge>
+                <BaseBadge class="tw:bg-amber-100 tw:text-amber-700">
+                  {{ nc.rootCauseCategoryId }}
+                </BaseBadge>
               </div>
               <div v-if="nc.rootCause" class="tw:mb-3">
                 <div class="tw:text-xs tw:text-secondary tw:mb-1">Root cause</div>

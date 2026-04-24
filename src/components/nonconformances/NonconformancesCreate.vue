@@ -87,11 +87,17 @@ async function handleSubmit() {
     toast.notify({ type: 'negative', message: 'Detected date is required' })
     return
   }
+  if (!form.value.workflowVersionId) {
+    toast.notify({ type: 'negative', message: 'Workflow version is required' })
+    return
+  }
 
   saving.value = true
   try {
     const nc = await createNc(form.value)
     await ncWorkflowVersionSelectRef.value.submit()
+    nc.statusId = 'UNDER_REVIEW'
+    await nc.save()
     router.push(getCompanyPath(`/nonconformances/${nc.id}`))
   } catch (e) {
     toast.notify({ type: 'negative', message: e.message || 'Failed to create NC' })

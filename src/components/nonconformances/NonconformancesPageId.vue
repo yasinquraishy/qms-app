@@ -96,6 +96,18 @@ async function handleRecordDisposition() {
   }
 }
 
+async function handleSubmitForReview() {
+  if (!nc.value) return
+  saving.value = true
+  try {
+    nc.value.statusId = 'UNDER_REVIEW'
+    nc.value.updatedBy = currentSession.value?.userId || ''
+    await nc.value.save()
+  } finally {
+    saving.value = false
+  }
+}
+
 async function handleSendBack() {
   if (!nc.value) return
   saving.value = true
@@ -127,6 +139,16 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
   <div class="tw:flex tw:flex-col tw:h-full">
     <SafeTeleport to="#main-header-title">
       <BaseBreadcrumbs :items="breadcrumbs" />
+    </SafeTeleport>
+
+    <SafeTeleport to="#main-header-actions">
+      <BaseButton
+        v-if="nc?.statusId === 'DRAFT'"
+        variant="primary"
+        :disabled="saving"
+        @click="handleSubmitForReview"
+        >Submit for review</BaseButton
+      >
     </SafeTeleport>
 
     <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:h-full">

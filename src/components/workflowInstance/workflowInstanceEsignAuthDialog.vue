@@ -1,4 +1,5 @@
 <script setup>
+import { PublicClientApplication } from '@azure/msal-browser'
 import { IconCircleCheck, IconLock, IconAlertTriangle } from '@tabler/icons-vue'
 import { get } from '@/api'
 import { currentSession } from '@/utils/currentSession.js'
@@ -9,6 +10,7 @@ const show = defineModel({ type: Boolean, default: false })
 
 const loading = ref(false)
 const checking = ref(false)
+const oauthLoading = ref(false)
 const password = ref('')
 const hasPassword = ref(null)
 const errorMessage = ref('')
@@ -27,6 +29,7 @@ watch(show, async (val) => {
     password.value = ''
     errorMessage.value = ''
     hasPassword.value = null
+    oauthLoading.value = false
     await fetchIdentityMethods()
   }
 })
@@ -45,17 +48,68 @@ async function fetchIdentityMethods() {
   }
 }
 
+// ── Google GIS popup ───────────────────────────────────────────────────────────
+async function verifyWithGoogle() {
+  oauthLoading.value = true
+  errorMessage.value = ''
+  try {
+    await new Promise((resolve, reject) => {
+      window.google.accounts.id.initialize({
+        client_id: googleClientId.value,
+        callback(response) {
+          if (response.error) {
+            reject(new Error(response.error_description || response.error))
+            return
+          }
+          emit('verified', { method: 'OAUTH', provider: 'GOOGLE', token: response.credential })
+          show.value = false
+          resolve()
+        },
+        itp_support: true, // Enables FedCM for improved privacy/ITP support
+      })
+      window.google.accounts.id.prompt()
+    })
+  } catch (err) {
+    errorMessage.value = err.message || 'Google verification failed. Please try again.'
+  } finally {
+    oauthLoading.value = false
+  }
+}
+
+// ── Microsoft MSAL popup ───────────────────────────────────────────────────────
+async function verifyWithMicrosoft() {
+  oauthLoading.value = true
+  errorMessage.value = ''
+  try {
+    const msalInstance = new PublicClientApplication({
+      auth: {
+        clientId: microsoftClientId.value,
+        authority: 'https://login.microsoftonline.com/common',
+      },
+      cache: { cacheLocation: 'sessionStorage' },
+    })
+    await msalInstance.initialize()
+    const response = await msalInstance.loginPopup({
+      scopes: ['https://graph.microsoft.com/User.Read'],
+    })
+    emit('verified', { method: 'OAUTH', provider: 'MICROSOFT', token: response.accessToken })
+    show.value = false
+  } catch (err) {
+    if (err?.errorCode !== 'user_cancelled') {
+      errorMessage.value = err?.message || 'Microsoft verification failed. Please try again.'
+    }
+  } finally {
+    oauthLoading.value = false
+  }
+}
+
+// ── Password ───────────────────────────────────────────────────────────────────
 function verifyWithPassword() {
   if (!password.value) {
     errorMessage.value = 'Please enter your password'
     return
   }
-  emit('verified', { strategy: 'password', password: password.value })
-}
-
-function verifyWithOAuth(strategy) {
-  const returnUrl = window.location.pathname + window.location.search
-  window.location.href = `/api/v1/services/verify-identity/federated/${strategy}?returnUrl=${encodeURIComponent(returnUrl)}`
+  emit('verified', { method: 'PASSWORD', token: password.value })
 }
 </script>
 
@@ -101,8 +155,9 @@ function verifyWithOAuth(strategy) {
       <div class="tw:flex tw:flex-col tw:gap-3">
         <button
           v-if="googleClientId"
-          class="tw:flex tw:items-center tw:justify-center tw:w-full tw:gap-2 tw:px-5 tw:py-3 tw:rounded-lg tw:text-sm tw:font-medium tw:bg-slate-100 tw:text-slate-800 tw:border tw:border-slate-300 tw:hover:bg-slate-200 tw:transition-colors"
-          @click="verifyWithOAuth('google')"
+          :disabled="oauthLoading"
+          class="tw:flex tw:items-center tw:justify-center tw:w-full tw:gap-2 tw:px-5 tw:py-3 tw:rounded-lg tw:text-sm tw:font-medium tw:bg-slate-100 tw:text-slate-800 tw:border tw:border-slate-300 tw:hover:bg-slate-200 tw:transition-colors tw:disabled:opacity-50 tw:disabled:cursor-not-allowed"
+          @click="verifyWithGoogle"
         >
           <svg class="tw:w-5 tw:h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -127,8 +182,9 @@ function verifyWithOAuth(strategy) {
 
         <button
           v-if="microsoftClientId"
-          class="tw:flex tw:items-center tw:justify-center tw:w-full tw:gap-2 tw:px-5 tw:py-3 tw:rounded-lg tw:text-sm tw:font-medium tw:bg-slate-100 tw:text-slate-800 tw:border tw:border-slate-300 tw:hover:bg-slate-200 tw:transition-colors"
-          @click="verifyWithOAuth('microsoft')"
+          :disabled="oauthLoading"
+          class="tw:flex tw:items-center tw:justify-center tw:w-full tw:gap-2 tw:px-5 tw:py-3 tw:rounded-lg tw:text-sm tw:font-medium tw:bg-slate-100 tw:text-slate-800 tw:border tw:border-slate-300 tw:hover:bg-slate-200 tw:transition-colors tw:disabled:opacity-50 tw:disabled:cursor-not-allowed"
+          @click="verifyWithMicrosoft"
         >
           <svg class="tw:w-5 tw:h-5" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
             <rect x="1" y="1" width="10" height="10" fill="#f25022" />
@@ -171,7 +227,9 @@ function verifyWithOAuth(strategy) {
     </template>
 
     <template #footer>
-      <BaseButton variant="ghost" :disabled="loading" @click="show = false">Cancel</BaseButton>
+      <BaseButton variant="ghost" :disabled="loading || oauthLoading" @click="show = false">
+        Cancel
+      </BaseButton>
     </template>
   </BaseDialog>
 </template>

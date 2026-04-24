@@ -79,13 +79,13 @@ const canActOnStep = computed(() => myTask.value?.statusId === 'ASSIGNED')
         <div class="tw:grid tw:grid-cols-2 tw:gap-2">
           <WorkflowInstanceApproverAction
             action="APPROVE"
-            :workflowInstanceId="activeStep.workflowInstanceId"
+            :taskInstanceId="myTask?.id"
             :instanceStepId="activeStep.id"
             @done="emit('done')"
           />
           <WorkflowInstanceApproverAction
             action="REJECT"
-            :workflowInstanceId="activeStep.workflowInstanceId"
+            :taskInstanceId="myTask?.id"
             :instanceStepId="activeStep.id"
             @done="emit('done')"
           />

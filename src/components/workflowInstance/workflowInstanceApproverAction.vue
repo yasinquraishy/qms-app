@@ -8,7 +8,7 @@ const props = defineProps({
     required: true,
     validator: (value) => ['APPROVE', 'REJECT', 'REQUEST_CHANGES'].includes(value),
   },
-  workflowInstanceId: { type: String, required: true },
+  taskInstanceId: { type: String, required: true },
   instanceStepId: { type: String, default: null },
 })
 
@@ -16,41 +16,13 @@ const emit = defineEmits(['done'])
 
 const toast = useToast()
 
-// ── SyncEngine queries for step data ───────────────────────────────────────────
-const instanceStep = useLiveQueryWithDeps([() => props.instanceStepId], async (db, [stepId]) => {
-  if (!stepId) return null
-  return db.WorkflowInstanceStep.findByPk(stepId)
-})
-
-const workflowStep = useLiveQueryWithDeps(
-  [() => instanceStep.value?.stepId],
-  async (db, [stepId]) => {
-    if (!stepId) return null
-    return db.WorkflowStep.findByPk(stepId)
-  },
-)
-
-// ── Inline workflow action (server-side command — NOT SyncEngine) ──────────────
-const actionLoading = ref(false)
-
-async function updateWorkflowStep(instanceId, action, payload = {}) {
-  actionLoading.value = true
-  try {
-    const data = await post(`/v1/services/workflowInstances/${instanceId}/${action}`, payload)
-    return { workflowInstance: data.workflowInstance }
-  } finally {
-    actionLoading.value = false
-  }
-}
-
 // ── State ──────────────────────────────────────────────────────────────────────
 const showFeedbackDialog = ref(false)
 const showEsignDialog = ref(false)
 const feedbackAction = ref('') // 'REJECT' or 'REQUEST_CHANGES'
-const pendingAction = ref(null) // stores the action key to execute after e-sign
+const pendingAction = ref(null)
 const comment = ref('')
-
-const requireEsignature = computed(() => workflowStep.value?.requireEsignature)
+const actionLoading = ref(false)
 
 const dialogTitle = computed(() => {
   return feedbackAction.value === 'REJECT' ? 'Reject Step' : 'Request Changes'
@@ -62,123 +34,56 @@ const dialogMessage = computed(() => {
     : 'Are you sure you want to request changes? Your section comments will be shared with the document owner.'
 })
 
-// ── OAuth redirect callback handling ───────────────────────────────────────────
-onMounted(() => {
-  const url = new URL(window.location.href)
-  const esignCompleted = url.searchParams.get('esignCompleted')
-  const esignError = url.searchParams.get('esignError')
+// ── Action map ─────────────────────────────────────────────────────────────────
+const actionMap = {
+  approve: 'APPROVED',
+  reject: 'REJECTED',
+  requestChanges: 'CHANGES_REQUESTED',
+}
 
-  if (!esignCompleted && !esignError) return
-
-  // Clean up query params from URL
-  url.searchParams.delete('esignCompleted')
-  url.searchParams.delete('esignError')
-  window.history.replaceState({}, '', url.pathname + url.search)
-
-  if (esignError) {
-    const errorMessages = {
-      email_mismatch: 'The OAuth account does not match your signed-in account.',
-      oauth_cancelled: 'OAuth verification was cancelled.',
-      verification_failed: 'Identity verification failed.',
-      verification_timeout: 'Verification timed out. Please try again.',
-      invalid_state: 'Invalid verification state. Please try again.',
-      user_not_found: 'User not found.',
-      action_failed: 'Workflow action failed. Please try again.',
-      no_verification_pending: 'No verification was pending.',
-    }
-    toast.error(errorMessages[esignError] || 'E-sign verification failed.')
-    return
-  }
-
-  if (esignCompleted) {
-    const actionLabels = {
-      APPROVE: 'approved',
-      REJECT: 'rejected',
-      REQUEST_CHANGES: 'changes requested',
-    }
-    toast.success(`Step ${actionLabels[esignCompleted] || 'action completed'} successfully`)
-    emit('done')
-  }
-})
-
-// ── Actions ────────────────────────────────────────────────────────────────────
-async function triggerEsignOrExecute(actionKey) {
-  if (requireEsignature.value) {
-    pendingAction.value = actionKey
-
-    // Store context in server session (Redis) so the OAuth callback can execute the action
-    await post('/v1/services/verify-identity/esign-context', {
-      action: props.action,
-      actionKey,
-      feedbackAction: feedbackAction.value,
-      workflowInstanceId: props.workflowInstanceId,
-      comment: feedbackAction.value === 'REJECT' ? comment.value : undefined,
-    })
-
-    showEsignDialog.value = true
-  } else {
-    executeAction(actionKey, {})
-  }
+// ── Trigger: open identity dialog before any action ────────────────────────────
+function openIdentityDialog(actionKey) {
+  pendingAction.value = actionKey
+  showEsignDialog.value = true
 }
 
 function onEsignVerified(esign) {
   if (pendingAction.value) {
-    executeAction(pendingAction.value, esign)
+    submitWorkflowAction(pendingAction.value, esign)
   }
 }
 
-async function executeAction(actionKey, esign) {
-  if (actionKey === 'approve') {
-    await submitApprove(esign)
-  } else if (actionKey === 'feedback') {
-    await submitFeedback(esign)
-  }
-}
-
-async function submitApprove(esign) {
+async function submitWorkflowAction(actionKey, { method, provider, token }) {
+  actionLoading.value = true
   try {
-    const payload = {}
-    if (esign?.strategy) payload.esign = esign
-
-    await updateWorkflowStep(props.workflowInstanceId, 'approve', payload)
-
-    toast.success('Step approved successfully')
-    showEsignDialog.value = false
-    pendingAction.value = null
-    emit('done')
-  } catch {
-    // If e-sign failed, keep the dialog open so user doesn't lose their input
-  }
-}
-
-async function submitFeedback(esign) {
-  try {
-    const action = feedbackAction.value === 'REJECT' ? 'reject' : 'requestChanges'
-    const actionLabel = feedbackAction.value === 'REJECT' ? 'rejected' : 'changes requested'
-
-    const payload = {}
-    if (esign?.strategy) payload.esign = esign
-    if (feedbackAction.value === 'REJECT' && comment.value) payload.comment = comment.value
-
-    const result = await updateWorkflowStep(props.workflowInstanceId, action, payload)
-
-    if (result.error) {
-      toast.error(result.error || `Failed to ${action} step`)
-      return
+    const body = {
+      action: actionMap[actionKey],
+      method,
+      token,
     }
+    if (provider) body.provider = provider
+    if (comment.value) body.comment = comment.value
 
-    toast.success(`Step ${actionLabel} successfully`)
+    await post(`/v1/services/taskInstances/${props.taskInstanceId}/action`, body)
+
+    const labels = { approve: 'approved', reject: 'rejected', requestChanges: 'changes requested' }
+    toast.success(`Step ${labels[actionKey]} successfully`)
+
+    showEsignDialog.value = false
     showFeedbackDialog.value = false
     pendingAction.value = null
     comment.value = ''
     emit('done')
   } catch {
-    // If e-sign failed, keep the feedback dialog open so user doesn't lose their input
+    // Keep dialogs open so user doesn't lose their input
+  } finally {
+    actionLoading.value = false
   }
 }
 
+// ── Button handlers ────────────────────────────────────────────────────────────
 function onApprove() {
-  triggerEsignOrExecute('approve')
+  openIdentityDialog('approve')
 }
 
 function onReject() {
@@ -189,11 +94,13 @@ function onReject() {
 
 function onRequestChanges() {
   feedbackAction.value = 'REQUEST_CHANGES'
+  comment.value = ''
   showFeedbackDialog.value = true
 }
 
 function onConfirmFeedback() {
-  triggerEsignOrExecute('feedback')
+  showFeedbackDialog.value = false
+  openIdentityDialog(feedbackAction.value === 'REJECT' ? 'reject' : 'requestChanges')
 }
 </script>
 
@@ -244,7 +151,6 @@ function onConfirmFeedback() {
       </p>
 
       <BaseTextarea
-        v-if="feedbackAction === 'REJECT'"
         v-model="comment"
         label="Comment (optional)"
         :rows="3"
@@ -264,7 +170,7 @@ function onConfirmFeedback() {
       </template>
     </BaseDialog>
 
-    <!-- E-Signature Identity Verification Dialog -->
+    <!-- Identity Verification Dialog -->
     <WorkflowInstanceEsignAuthDialog v-model="showEsignDialog" @verified="onEsignVerified" />
   </div>
 </template>

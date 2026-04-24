@@ -138,12 +138,12 @@ const usersMap = useLiveQueryWithDeps(
         <div class="tw:flex tw:flex-wrap tw:gap-3">
           <WorkflowInstanceApproverAction
             action="APPROVE"
-            :workflowInstanceId="instanceStep?.workflowInstanceId"
+            :taskInstanceId="myTask?.id"
             :instanceStepId="instanceStepId"
           />
           <WorkflowInstanceApproverAction
             action="REJECT"
-            :workflowInstanceId="instanceStep?.workflowInstanceId"
+            :taskInstanceId="myTask?.id"
             :instanceStepId="instanceStepId"
           />
         </div>

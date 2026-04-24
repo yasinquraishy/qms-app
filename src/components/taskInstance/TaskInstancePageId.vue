@@ -91,12 +91,12 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
         <div v-if="canActOnStep" class="tw:flex tw:items-center tw:gap-2">
           <WorkflowInstanceApproverAction
             action="APPROVE"
-            :workflowInstanceId="instanceStep?.workflowInstanceId"
+            :taskInstanceId="taskInstance?.id"
             :instanceStepId="instanceStep?.id"
           />
           <WorkflowInstanceApproverAction
             action="REJECT"
-            :workflowInstanceId="instanceStep?.workflowInstanceId"
+            :taskInstanceId="taskInstance?.id"
             :instanceStepId="instanceStep?.id"
           />
         </div>

@@ -4,6 +4,7 @@ import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const router = useRouter()
 const toast = useToast()
+const ncWorkflowVersionSelectRef = ref(null)
 const saving = ref(false)
 
 const form = ref({
@@ -90,6 +91,7 @@ async function handleSubmit() {
   saving.value = true
   try {
     const nc = await createNc(form.value)
+    await ncWorkflowVersionSelectRef.value.submit()
     router.push(getCompanyPath(`/nonconformances/${nc.id}`))
   } catch (e) {
     toast.notify({ type: 'negative', message: e.message || 'Failed to create NC' })
@@ -255,7 +257,10 @@ async function handleSubmit() {
             Workflow
             <span class="tw:normal-case tw:font-normal tw:text-secondary tw:ml-1">(optional)</span>
           </div>
-          <WorkflowVersionSelect v-model="form.workflowVersionId" moduleId="NON_CONFORMANCE" />
+          <NCWorkflowVersionSelect
+            ref="ncWorkflowVersionSelectRef"
+            v-model="form.workflowVersionId"
+          />
         </div>
       </div>
     </div>

@@ -201,6 +201,8 @@ declare module 'vue' {
     NcTypeBadge: typeof import('./src/components/badges/NcTypeBadge.vue')['default']
     NcTypeBadgeById: typeof import('./src/components/badges/NcTypeBadgeById.vue')['default']
     NcTypeSelectMenu: typeof import('./src/components/menus/NcTypeSelectMenu.vue')['default']
+    NCWorkflowStepReviewerSelect: typeof import('./src/components/nonconformances/NCWorkflowStepReviewerSelect.vue')['default']
+    NCWorkflowVersionSelect: typeof import('./src/components/nonconformances/NCWorkflowVersionSelect.vue')['default']
     NonconformancesCreate: typeof import('./src/components/nonconformances/NonconformancesCreate.vue')['default']
     NonconformancesFilterToolbar: typeof import('./src/components/nonconformances/NonconformancesFilterToolbar.vue')['default']
     NonconformancesHome: typeof import('./src/components/nonconformances/NonconformancesHome.vue')['default']

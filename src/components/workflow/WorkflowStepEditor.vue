@@ -256,7 +256,7 @@ watch(
             </label>
             <div class="tw:flex tw:items-center tw:gap-2">
               <BaseTextInput
-                v-model="step.slaDays"
+                v-model.number="step.slaDays"
                 type="number"
                 placeholder="e.g. 5"
                 :disabled="!canUpdate"

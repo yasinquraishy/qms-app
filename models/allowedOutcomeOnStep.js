@@ -8,7 +8,6 @@ import { DateTime } from 'luxon'
   customIndex: 'stepId, outcomeId',
 })
 export class AllowedOutcomeOnStep extends BaseModel {
-  static paranoid = true // Enable soft deletes using deletedAt field
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation
@@ -24,7 +23,6 @@ export class AllowedOutcomeOnStep extends BaseModel {
   @Property({ type: String, required: true }) stepId = ''
   @Property({ type: String, required: true }) outcomeId = ''
   @Property({ type: String, required: true }) companyId = ''
-  @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)
   @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true })

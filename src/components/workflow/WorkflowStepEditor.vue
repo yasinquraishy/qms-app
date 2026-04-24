@@ -110,6 +110,27 @@ const toggleOutcome = useLiveMutation(async (db, outcomeId) => {
   }
 })
 
+const seedAllOutcomes = useLiveMutation(async (db) => {
+  for (const o of allOutcomes.value) {
+    const record = db.AllowedOutcomeOnStep.create({ stepId: props.stepId, outcomeId: o.id })
+    await record.save()
+  }
+})
+
+const outcomesSeeded = ref(false)
+watch(
+  [allOutcomes, allowedOutcomes],
+  ([outcomes, allowed]) => {
+    if (outcomesSeeded.value || !props.canUpdate || !props.stepId) return
+    if (outcomes.length === 0) return
+    outcomesSeeded.value = true
+    if (allowed.length === 0) {
+      seedAllOutcomes()
+    }
+  },
+  { immediate: true },
+)
+
 // ─── Send-Back Targets ────────────────────────────────────────────────────────
 
 const siblingSteps = useLiveQueryWithDeps(
@@ -287,7 +308,7 @@ watch(
     </div>
 
     <!-- Allowed Outcomes -->
-    <div v-if="showAllowedOutcomes" class="tw:space-y-4">
+    <div v-if="showAllowedOutcomes" v-show="false" class="tw:space-y-4">
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
         <IconListCheck :size="22" />
         <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Allowed Outcomes</h2>

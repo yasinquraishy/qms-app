@@ -104,7 +104,7 @@ watch(open, (val) => {
       </div>
     </div>
     <div class="tw:flex tw:justify-end tw:gap-2 tw:px-4 tw:pb-4">
-      <BaseButton variant="ghost" @click="open = false">Cancel</BaseButton>
+      <BaseButton variant="outline" @click="open = false">Cancel</BaseButton>
       <BaseButton :disabled="!selectedVersionId || saving" @click="handleShare">
         <div
           v-if="saving"

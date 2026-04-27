@@ -1,7 +1,68 @@
 <script setup>
-defineProps({
+import { IconDeviceFloppy, IconCircleCheck } from '@tabler/icons-vue'
+import { DateTime } from 'luxon'
+
+const props = defineProps({
   nc: { type: Object, default: null },
+  taskInstance: { type: Object, default: null },
+  instanceStep: { type: Object, default: null },
+  workflowStep: { type: Object, default: null },
+  canActOnStep: { type: Boolean, default: false },
   reviewMode: { type: Boolean, default: false },
+})
+
+const toast = useToast()
+
+const hasSchema = computed(
+  () => Array.isArray(props.workflowStep?.formSchema) && props.workflowStep.formSchema.length > 0,
+)
+
+// Own the ncRecord query — re-runs on sync events for NcRecord
+const ncRecord = useLiveQueryWithDeps(
+  [() => props.taskInstance?.id],
+  async (db, [taskInstanceId]) => {
+    if (!taskInstanceId) return null
+    return db.NcRecord.where('taskInstanceId', taskInstanceId).first()
+  },
+  { models: 'NcRecord' },
+)
+
+// Seed formData from existing ncRecord payload when it becomes available
+const formData = ref({})
+watch(
+  () => ncRecord.value?.payload,
+  (payload) => {
+    if (payload) {
+      formData.value = { ...payload }
+    }
+  },
+  { immediate: true },
+)
+
+const savingDraft = ref(false)
+
+const saveDraft = useLiveMutation(async (db) => {
+  if (!props.taskInstance || !props.instanceStep) return
+  savingDraft.value = true
+  try {
+    if (ncRecord.value) {
+      ncRecord.value.payload = { ...formData.value }
+      await ncRecord.value.save()
+    } else {
+      const record = db.NcRecord.create({
+        ncId: props.nc?.id,
+        workflowInstanceStepId: props.instanceStep.id,
+        taskInstanceId: props.taskInstance.id,
+        stepId: props.instanceStep.stepId,
+        payload: { ...formData.value },
+        submittedAt: DateTime.now(),
+      })
+      await record.save()
+    }
+    toast.success('Form saved')
+  } finally {
+    savingDraft.value = false
+  }
 })
 </script>
 
@@ -109,6 +170,41 @@ defineProps({
         <div v-if="nc.rootCause">
           <div class="tw:text-xs tw:text-secondary tw:mb-1">Root cause</div>
           <p class="tw:text-sm tw:text-on-main tw:leading-relaxed">{{ nc.rootCause }}</p>
+        </div>
+      </div>
+
+      <!-- Step Form card -->
+      <div v-if="hasSchema" class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:p-6">
+        <div
+          class="tw:flex tw:items-center tw:justify-between tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+        >
+          <div class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider">
+            Step Form
+          </div>
+          <div
+            v-if="ncRecord"
+            class="tw:flex tw:items-center tw:gap-1.5 tw:text-xs tw:text-green-600 tw:font-medium"
+          >
+            <IconCircleCheck :size="14" />
+            Saved
+          </div>
+        </div>
+
+        <DynamicForm
+          v-model="formData"
+          :fields="workflowStep.formSchema"
+          :readonly="!canActOnStep"
+        />
+
+        <div v-if="canActOnStep" class="tw:mt-4 tw:flex tw:justify-end">
+          <button
+            class="tw:inline-flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:text-sm tw:font-medium tw:bg-primary tw:text-white tw:hover:bg-primary/90 tw:disabled:opacity-50 tw:transition-colors"
+            :disabled="savingDraft"
+            @click="saveDraft"
+          >
+            <IconDeviceFloppy :size="16" />
+            {{ savingDraft ? 'Saving…' : 'Save draft' }}
+          </button>
         </div>
       </div>
     </div>

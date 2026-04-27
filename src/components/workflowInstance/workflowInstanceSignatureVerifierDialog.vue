@@ -95,7 +95,7 @@ const maskedEmail = computed(() => {
     </div>
 
     <template #footer>
-      <BaseButton variant="ghost" @click="show = false">Cancel</BaseButton>
+      <BaseButton variant="outline" @click="show = false">Cancel</BaseButton>
       <BaseButton :isLoading="props.actionLoading" :disabled="!isComplete" @click="confirm">
         Verify
       </BaseButton>

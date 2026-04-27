@@ -227,7 +227,7 @@ function verifyWithPassword() {
     </template>
 
     <template #footer>
-      <BaseButton variant="ghost" :disabled="loading || oauthLoading" @click="show = false">
+      <BaseButton variant="outline" :disabled="loading || oauthLoading" @click="show = false">
         Cancel
       </BaseButton>
     </template>

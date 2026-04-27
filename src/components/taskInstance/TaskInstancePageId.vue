@@ -22,6 +22,15 @@ const instanceStep = useLiveQueryWithDeps(
   },
 )
 
+// Resolve the WorkflowStep definition for the current step
+const workflowStep = useLiveQueryWithDeps(
+  [() => instanceStep.value?.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return null
+    return db.WorkflowStep.findByPk(stepId)
+  },
+)
+
 // Resolve the specific DocumentVersion locked for this workflow instance
 const documentVersion = useLiveQueryWithDeps(
   [() => taskInstance.value?.entityType, () => taskInstance.value?.entityId],
@@ -66,7 +75,10 @@ const breadcrumbs = computed(() => {
   ]
 })
 
-const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
+const isNcTask = computed(() => taskInstance.value?.entityType === 'Nonconformance')
+const canActOnStep = computed(() =>
+  ['ASSIGNED', 'FORM_SUBMITTED'].includes(taskInstance.value?.statusId),
+)
 </script>
 
 <template>
@@ -88,19 +100,31 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
     <!-- Main Content -->
     <template v-else-if="taskInstance">
       <SafeTeleport to="#main-header-actions">
-        <div v-if="canActOnStep" class="tw:flex tw:items-center tw:gap-2">
-          <WorkflowInstanceApproverAction
-            action="APPROVE"
-            :taskInstanceId="taskInstance?.id"
-            :instanceStepId="instanceStep?.id"
+        <template v-if="isNcTask">
+          <TaskInstanceNcActions
+            v-if="canActOnStep"
+            :taskInstanceId="taskInstance.id"
+            :instanceStep="instanceStep"
+            :workflowStep="workflowStep"
+            :canActOnStep="canActOnStep"
           />
-          <WorkflowInstanceApproverAction
-            action="REJECT"
-            :taskInstanceId="taskInstance?.id"
-            :instanceStepId="instanceStep?.id"
-          />
-        </div>
-        <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />
+          <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />
+        </template>
+        <template v-else>
+          <div v-if="canActOnStep" class="tw:flex tw:items-center tw:gap-2">
+            <WorkflowInstanceApproverAction
+              action="APPROVE"
+              :taskInstanceId="taskInstance?.id"
+              :instanceStepId="instanceStep?.id"
+            />
+            <WorkflowInstanceApproverAction
+              action="REJECT"
+              :taskInstanceId="taskInstance?.id"
+              :instanceStepId="instanceStep?.id"
+            />
+          </div>
+          <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />
+        </template>
       </SafeTeleport>
 
       <div v-if="document" class="tw:max-w-4xl tw:mx-auto tw:p-6 tw:lg:p-8">
@@ -111,7 +135,15 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
         />
       </div>
 
-      <TaskInstanceNcContent v-else-if="nc" :nc="nc" :reviewMode="canActOnStep" />
+      <TaskInstanceNcContent
+        v-else-if="nc"
+        :nc="nc"
+        :taskInstance="taskInstance"
+        :instanceStep="instanceStep"
+        :workflowStep="workflowStep"
+        :canActOnStep="canActOnStep"
+        :reviewMode="canActOnStep"
+      />
     </template>
 
     <!-- Not Found -->

@@ -77,6 +77,7 @@ import { NcSeverity } from './ncSeverity'
 import { NcSource } from './ncSource'
 import { NcDispositionType } from './ncDispositionType'
 import { NcRootCauseCategory } from './ncRootCauseCategory'
+import { NcRecord } from './ncRecord'
 
 export const db = {
   ApiKey,
@@ -158,4 +159,5 @@ export const db = {
   NcSource,
   NcDispositionType,
   NcRootCauseCategory,
+  NcRecord,
 }

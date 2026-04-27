@@ -1,6 +1,6 @@
 <script setup>
 const props = defineProps({
-  statusId: { type: String, required: true },
+  statusId: { type: String, default: undefined },
   showDot: { type: Boolean, default: false },
   hideLabel: { type: Boolean, default: false },
 })

@@ -64,6 +64,14 @@ const createStep = useLiveMutation(async (db, { versionId, order, settings, pare
     ...(parentStepId ? { parentStepId } : {}),
   })
   await step.save()
+
+  // Seed all allowed outcomes for the new step
+  const outcomes = await db.WorkflowStepOutcome.where().exec()
+  for (const o of outcomes) {
+    const record = db.AllowedOutcomeOnStep.create({ stepId: step.id, outcomeId: o.id })
+    await record.save()
+  }
+
   return step
 })
 

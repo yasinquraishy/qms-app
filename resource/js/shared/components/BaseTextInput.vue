@@ -89,7 +89,7 @@ const props = defineProps({
     validator(value) {
       return ['sm', 'md'].includes(value)
     },
-    default: 'md',
+    default: 'sm',
   },
   autofocus: {
     type: Boolean,

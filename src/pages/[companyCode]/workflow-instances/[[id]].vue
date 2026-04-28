@@ -6,5 +6,5 @@ pageInfo.value = {
 </script>
 
 <template>
-  <ApprovalWorkflowInstanceIndex :id="$route.params.id" />
+  <WorkflowInstanceIndex :id="$route.params.id" />
 </template>

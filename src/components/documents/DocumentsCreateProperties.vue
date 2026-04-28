@@ -166,7 +166,7 @@ function decrementReviewMonths() {
         <h2 class="tw:text-xl tw:font-bold tw:text-on-sidebar">Workflow Setup</h2>
       </div>
 
-      <DocumentsWorkflowVersionSelect v-model="form.workflowVersionId" />
+      <WorkflowVersionSelect v-model="form.workflowVersionId" moduleId="APPROVAL" />
     </section>
 
     <!-- Advanced Settings Section -->

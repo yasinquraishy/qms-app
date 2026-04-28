@@ -25,7 +25,7 @@ const props = defineProps({
 
 const toast = useToast()
 const router = useRouter()
-const { cancelReview, setEffective } = useDocuments()
+const { setEffective, cancelReview } = useDocuments()
 
 // State
 const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
@@ -137,8 +137,8 @@ function handleSubmitForReview() {
 }
 
 async function handleCancelReview() {
-  const result = await cancelReview(selectedVersion.value.workflowInstanceId)
-  if (result.error) {
+  const result = await cancelReview(props.id, selectedVersion.value.id)
+  if (result?.error) {
     toast.error(result.error)
   } else {
     toast.success('Review cancelled successfully')
@@ -239,11 +239,6 @@ async function createNewVersion() {
               <IconSend :size="20" class="tw:mr-1" />
               Submit For Review
             </BaseButton>
-            <DocumentWorkflowPreviewDialog
-              v-model="showPreviewDialog"
-              :documentId="props.id"
-              :versionId="selectedVersion?.id"
-            />
 
             <BaseButton v-if="canCancelReview" variant="danger" @click="handleCancelReview">
               <IconX :size="20" class="tw:mr-1" />
@@ -368,6 +363,12 @@ async function createNewVersion() {
 
       <!-- Messages Drawer -->
       <DocumentsMessages v-model="showMessages" :documentId="props.id" />
+
+      <DocumentWorkflowPreviewDialog
+        v-model="showPreviewDialog"
+        :documentId="props.id"
+        :versionId="selectedVersion?.id"
+      />
     </div>
   </div>
 </template>

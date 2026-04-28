@@ -15,9 +15,9 @@ function CompanySettingsState() {
     updatedAt: null,
     settings: {
       defaultSla: null,
-      defaultApprovalWorkflowApprovalRule: 'ALL',
-      defaultApprovalWorkflowRequireSignature: false,
-      defaultApprovalWorkflowRequireComment: false,
+      defaultWorkflowApprovalRule: 'ALL',
+      defaultWorkflowRequireSignature: false,
+      defaultWorkflowRequireComment: false,
       defaultDocumentTemplatePeriodicReviewMonths: 12,
       defaultDocumentTemplateReviewLimitDays: 14,
       defaultDocumentTemplateApprovalLimitDays: 7,
@@ -68,12 +68,12 @@ function CompanySettingsState() {
       updatedAt: company.updatedAt,
       settings: {
         defaultSla: company.settings?.defaultSla ?? null,
-        defaultApprovalWorkflowApprovalRule:
-          company.settings?.defaultApprovalWorkflowApprovalRule ?? 'ALL',
-        defaultApprovalWorkflowRequireSignature:
-          company.settings?.defaultApprovalWorkflowRequireSignature ?? false,
-        defaultApprovalWorkflowRequireComment:
-          company.settings?.defaultApprovalWorkflowRequireComment ?? false,
+        defaultWorkflowApprovalRule:
+          company.settings?.defaultWorkflowApprovalRule ?? 'ALL',
+        defaultWorkflowRequireSignature:
+          company.settings?.defaultWorkflowRequireSignature ?? false,
+        defaultWorkflowRequireComment:
+          company.settings?.defaultWorkflowRequireComment ?? false,
         defaultDocumentTemplatePeriodicReviewMonths:
           company.settings?.defaultDocumentTemplatePeriodicReviewMonths ?? 12,
         defaultDocumentTemplateReviewLimitDays:
@@ -138,12 +138,12 @@ function CompanySettingsState() {
       updatedAt: company.updatedAt,
       settings: {
         defaultSla: company.settings?.defaultSla ?? null,
-        defaultApprovalWorkflowApprovalRule:
-          company.settings?.defaultApprovalWorkflowApprovalRule ?? 'ALL',
-        defaultApprovalWorkflowRequireSignature:
-          company.settings?.defaultApprovalWorkflowRequireSignature ?? false,
-        defaultApprovalWorkflowRequireComment:
-          company.settings?.defaultApprovalWorkflowRequireComment ?? false,
+        defaultWorkflowApprovalRule:
+          company.settings?.defaultWorkflowApprovalRule ?? 'ALL',
+        defaultWorkflowRequireSignature:
+          company.settings?.defaultWorkflowRequireSignature ?? false,
+        defaultWorkflowRequireComment:
+          company.settings?.defaultWorkflowRequireComment ?? false,
         defaultDocumentTemplatePeriodicReviewMonths:
           company.settings?.defaultDocumentTemplatePeriodicReviewMonths ?? 12,
         defaultDocumentTemplateReviewLimitDays:

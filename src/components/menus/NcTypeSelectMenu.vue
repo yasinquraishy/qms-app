@@ -1,21 +1,14 @@
 <script setup>
 defineProps({
-  required: {
-    type: Boolean,
-    default: false,
-  },
-  multiple: {
-    type: Boolean,
-    default: false,
-  },
+  required: { type: Boolean, default: false },
+  multiple: { type: Boolean, default: false },
 })
 
-const modelValue = defineModel({
-  type: [String, Array, null],
-  default: null,
-})
+const modelValue = defineModel({ type: [String, Array, null], default: null })
 
-const types = useLiveQuery((db) => db.NcType.where().exec(), { initial: [] })
+const types = useLiveQuery((db) => db.NcType.where().orderBy('displayOrder').exec(), {
+  initial: [],
+})
 
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []
@@ -25,31 +18,30 @@ function getArray() {
 <template>
   <BaseSelectMenu v-model="modelValue" :items="types" :required="required" :multiple="multiple">
     <template #button="scope">
-      <!-- MULTIPLE MODE -->
-      <template v-if="multiple">
-        <div v-if="getArray().length" class="tw:flex tw:flex-wrap tw:gap-1">
+      <slot name="button" v-bind="scope">
+        <template v-if="multiple">
+          <div v-if="getArray().length" class="tw:flex tw:flex-wrap tw:gap-1">
+            <NcTypeBadgeById
+              v-for="id in getArray()"
+              :key="id"
+              :typeId="id"
+              :clearable="!required || getArray().length > 1"
+              @clear="() => scope.clear(id)"
+            />
+          </div>
+          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">Select NC Type</span>
+        </template>
+        <template v-else>
           <NcTypeBadgeById
-            v-for="typeId in getArray()"
-            :key="typeId"
-            :typeId="typeId"
-            :clearable="!required || getArray().length > 1"
-            @clear="() => scope.clear(typeId)"
+            v-if="modelValue"
+            :typeId="modelValue"
+            :clearable="!required"
+            selectable
+            @clear="() => scope.clear(modelValue)"
           />
-        </div>
-        <BaseBadge v-else selectable>Select Types</BaseBadge>
-      </template>
-
-      <!-- SINGLE MODE -->
-      <template v-else>
-        <NcTypeBadgeById
-          v-if="modelValue"
-          :typeId="modelValue"
-          :clearable="!required"
-          selectable
-          @clear="() => scope.clear(modelValue)"
-        />
-        <BaseBadge v-else selectable>Select Type</BaseBadge>
-      </template>
+          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">Select NC Type</span>
+        </template>
+      </slot>
     </template>
   </BaseSelectMenu>
 </template>

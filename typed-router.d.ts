@@ -51,13 +51,6 @@ declare module 'vue-router/auto-routes' {
       { companyCode: ParamValue<false> },
       | never
     >,
-    '/[companyCode]/approval-workflows/[[id]]': RouteRecordInfo<
-      '/[companyCode]/approval-workflows/[[id]]',
-      '/:companyCode/approval-workflows/:id?',
-      { companyCode: ParamValue<true>, id?: ParamValueZeroOrOne<true> },
-      { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
-      | never
-    >,
     '/[companyCode]/audit-logs': RouteRecordInfo<
       '/[companyCode]/audit-logs',
       '/:companyCode/audit-logs',
@@ -107,11 +100,11 @@ declare module 'vue-router/auto-routes' {
       { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
       | never
     >,
-    '/[companyCode]/nc-records': RouteRecordInfo<
-      '/[companyCode]/nc-records',
-      '/:companyCode/nc-records',
-      { companyCode: ParamValue<true> },
-      { companyCode: ParamValue<false> },
+    '/[companyCode]/nonconformances/[[id]]': RouteRecordInfo<
+      '/[companyCode]/nonconformances/[[id]]',
+      '/:companyCode/nonconformances/:id?',
+      { companyCode: ParamValue<true>, id?: ParamValueZeroOrOne<true> },
+      { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
       | never
     >,
     '/[companyCode]/notifications': RouteRecordInfo<
@@ -194,6 +187,13 @@ declare module 'vue-router/auto-routes' {
     '/[companyCode]/workflow-instances/[[id]]': RouteRecordInfo<
       '/[companyCode]/workflow-instances/[[id]]',
       '/:companyCode/workflow-instances/:id?',
+      { companyCode: ParamValue<true>, id?: ParamValueZeroOrOne<true> },
+      { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
+      | never
+    >,
+    '/[companyCode]/workflow-templates/[[id]]': RouteRecordInfo<
+      '/[companyCode]/workflow-templates/[[id]]',
+      '/:companyCode/workflow-templates/:id?',
       { companyCode: ParamValue<true>, id?: ParamValueZeroOrOne<true> },
       { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
       | never
@@ -298,12 +298,6 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'src/pages/[companyCode]/approval-workflows/[[id]].vue': {
-      routes:
-        | '/[companyCode]/approval-workflows/[[id]]'
-      views:
-        | never
-    }
     'src/pages/[companyCode]/audit-logs.vue': {
       routes:
         | '/[companyCode]/audit-logs'
@@ -346,9 +340,9 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'src/pages/[companyCode]/nc-records.vue': {
+    'src/pages/[companyCode]/nonconformances/[[id]].vue': {
       routes:
-        | '/[companyCode]/nc-records'
+        | '/[companyCode]/nonconformances/[[id]]'
       views:
         | never
     }
@@ -421,6 +415,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/[companyCode]/workflow-instances/[[id]].vue': {
       routes:
         | '/[companyCode]/workflow-instances/[[id]]'
+      views:
+        | never
+    }
+    'src/pages/[companyCode]/workflow-templates/[[id]].vue': {
+      routes:
+        | '/[companyCode]/workflow-templates/[[id]]'
       views:
         | never
     }

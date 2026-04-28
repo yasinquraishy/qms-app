@@ -1,16 +1,19 @@
 import { ApiKey } from './apiKey'
-import { ApprovalWorkflow } from './approvalWorkflow'
-import { ApprovalWorkflowInstance } from './approvalWorkflowInstance'
-import { ApprovalWorkflowInstanceStatus } from './approvalWorkflowInstanceStatus'
-import { ApprovalWorkflowInstanceStep } from './approvalWorkflowInstanceStep'
-import { ApprovalWorkflowInstanceStepStatus } from './approvalWorkflowInstanceStepStatus'
-import { ApprovalWorkflowInstanceStepUserStatus } from './approvalWorkflowInstanceStepUserStatus'
-import { ApprovalWorkflowStatus } from './approvalWorkflowStatus'
-import { ApprovalWorkflowStep } from './approvalWorkflowStep'
-import { ApprovalWorkflowStepRole } from './approvalWorkflowStepRole'
-import { ApprovalWorkflowStepUser } from './approvalWorkflowStepUser'
-import { ApprovalWorkflowVersion } from './approvalWorkflowVersion'
-import { ApprovalWorkflowVersionStatus } from './approvalWorkflowVersionStatus'
+import { Workflow } from './workflow'
+import { WorkflowInstance } from './workflowInstance'
+import { WorkflowInstanceStatus } from './workflowInstanceStatus'
+import { WorkflowInstanceStep } from './workflowInstanceStep'
+import { WorkflowInstanceStepStatus } from './workflowInstanceStepStatus'
+import { WorkflowInstanceStepUserStatus } from './workflowInstanceStepUserStatus'
+import { WorkflowStatus } from './workflowStatus'
+import { WorkflowStep } from './workflowStep'
+import { WorkflowStepOutcome } from './workflowStepOutcome'
+import { WorkflowStepRole } from './workflowStepRole'
+import { WorkflowStepUser } from './workflowStepUser'
+import { AllowedOutcomeOnStep } from './allowedOutcomeOnStep'
+import { StepSendBackTarget } from './stepSendBackTarget'
+import { WorkflowVersion } from './workflowVersion'
+import { WorkflowVersionStatus } from './workflowVersionStatus'
 import { Asset } from './asset'
 import { AssetRequest } from './assetRequest'
 import { AssetRequestOnContact } from './assetRequestOnContact'
@@ -62,36 +65,37 @@ import { TaskKind } from './taskKind'
 import { TaskPriority } from './taskPriority'
 import { Team } from './team'
 import { User } from './user'
-import { UserOnApprovalWorkflowInstanceStep } from './userOnApprovalWorkflowInstanceStep'
+import { UserOnWorkflowInstanceStep } from './userOnWorkflowInstanceStep'
 import { UserOnDocument } from './userOnDocument'
 import { UserOnTeam } from './userOnTeam'
 import { UserStatus } from './userStatus'
-import { NcAttachment } from './NcAttachment'
-import { NcEventType } from './NcEventType'
-import { NcHistory } from './NcHistory'
-import { NcRecord } from './NcRecord'
-import { NcSeverity } from './NcSeverity'
-import { NcSource } from './NcSource'
-import { NcType } from './NcType'
-import { NcStatus } from './NcStatus'
-import { NcStatusTransition } from './NcStatusTransition'
-import { RootCauseCategory } from './RootCauseCategory'
-import { NcCounter } from './NcCounter'
+import { Nonconformance } from './nonconformance'
+import { NcCounter } from './ncCounter'
+import { NcStatus } from './ncStatus'
+import { NcType } from './ncType'
+import { NcSeverity } from './ncSeverity'
+import { NcSource } from './ncSource'
+import { NcDispositionType } from './ncDispositionType'
+import { NcRootCauseCategory } from './ncRootCauseCategory'
+import { NcRecord } from './ncRecord'
 
 export const db = {
   ApiKey,
-  ApprovalWorkflow,
-  ApprovalWorkflowInstance,
-  ApprovalWorkflowInstanceStatus,
-  ApprovalWorkflowInstanceStep,
-  ApprovalWorkflowInstanceStepStatus,
-  ApprovalWorkflowInstanceStepUserStatus,
-  ApprovalWorkflowStatus,
-  ApprovalWorkflowStep,
-  ApprovalWorkflowStepRole,
-  ApprovalWorkflowStepUser,
-  ApprovalWorkflowVersion,
-  ApprovalWorkflowVersionStatus,
+  Workflow,
+  WorkflowInstance,
+  WorkflowInstanceStatus,
+  WorkflowInstanceStep,
+  WorkflowInstanceStepStatus,
+  WorkflowInstanceStepUserStatus,
+  WorkflowStatus,
+  WorkflowStep,
+  WorkflowStepOutcome,
+  WorkflowStepRole,
+  WorkflowStepUser,
+  AllowedOutcomeOnStep,
+  StepSendBackTarget,
+  WorkflowVersion,
+  WorkflowVersionStatus,
   Asset,
   AssetRequest,
   AssetRequestOnContact,
@@ -143,19 +147,17 @@ export const db = {
   TaskPriority,
   Team,
   User,
-  UserOnApprovalWorkflowInstanceStep,
+  UserOnWorkflowInstanceStep,
   UserOnDocument,
   UserOnTeam,
   UserStatus,
-  NcAttachment,
-  NcEventType,
-  NcHistory,
-  NcRecord,
+  Nonconformance,
+  NcCounter,
+  NcStatus,
+  NcType,
   NcSeverity,
   NcSource,
-  NcType,
-  NcStatus,
-  NcStatusTransition,
-  RootCauseCategory,
-  NcCounter,
+  NcDispositionType,
+  NcRootCauseCategory,
+  NcRecord,
 }

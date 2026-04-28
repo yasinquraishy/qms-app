@@ -1,0 +1,293 @@
+<script setup>
+import { currentSession } from '@/utils/currentSession.js'
+import { getCompanyPath } from '@/utils/routeHelpers.js'
+
+const router = useRouter()
+const toast = useToast()
+const ncWorkflowVersionSelectRef = ref(null)
+const saving = ref(false)
+
+const form = ref({
+  title: '',
+  description: '',
+  siteId: null,
+  departmentId: null,
+  typeId: null,
+  sourceId: null,
+  severityId: null,
+  detectedAt: '',
+  ownerId: null,
+  productId: null,
+  supplierId: null,
+  qtyAffected: null,
+  unitOfMeasure: '',
+  workflowVersionId: null,
+})
+
+const createNc = useLiveMutation(async (db, data) => {
+  const userId = currentSession.value?.userId || ''
+
+  const site = await db.Site.findByPk(data.siteId)
+  if (!site) throw new Error(`Site not found: ${data.siteId}`)
+
+  const department = await db.Department.findByPk(data.departmentId)
+  if (!department) throw new Error(`Department not found: ${data.departmentId}`)
+
+  const resolvedPrefix = `NC-${site.code}-${department.code}`
+
+  let counter = await db.NcCounter.where('prefix', resolvedPrefix).first()
+  if (!counter) {
+    counter = db.NcCounter.create({ prefix: resolvedPrefix, currentValue: 1 })
+  } else {
+    counter.currentValue += 1
+  }
+
+  const nc = db.Nonconformance.create({
+    ...data,
+    ncNumber: `${resolvedPrefix}-${String(counter.currentValue).padStart(3, '0')}`,
+    statusId: 'DRAFT',
+    createdBy: userId,
+    updatedBy: userId,
+  })
+  await nc.save()
+  await counter.save()
+  return nc
+})
+
+function handleSubmit() {
+  if (!form.value.title) {
+    toast.notify({ type: 'negative', message: 'Title is required' })
+    return
+  }
+  if (!form.value.severityId) {
+    toast.notify({ type: 'negative', message: 'Severity is required' })
+    return
+  }
+  if (!form.value.typeId) {
+    toast.notify({ type: 'negative', message: 'NC Type is required' })
+    return
+  }
+  if (!form.value.sourceId) {
+    toast.notify({ type: 'negative', message: 'Detection source is required' })
+    return
+  }
+  if (!form.value.siteId) {
+    toast.notify({ type: 'negative', message: 'Site is required' })
+    return
+  }
+  if (!form.value.departmentId) {
+    toast.notify({ type: 'negative', message: 'Department is required' })
+    return
+  }
+  if (!form.value.ownerId) {
+    toast.notify({ type: 'negative', message: 'Owner is required' })
+    return
+  }
+  if (!form.value.detectedAt) {
+    toast.notify({ type: 'negative', message: 'Detected date is required' })
+    return
+  }
+  if (!form.value.workflowVersionId) {
+    toast.notify({ type: 'negative', message: 'Workflow version is required' })
+    return
+  }
+
+  // Open reviewer dialog (fire-and-forget, actual NC creation happens on confirm)
+  ncWorkflowVersionSelectRef.value.submit()
+}
+
+const handleReviewersConfirmed = useLiveMutation(async (db, reviewers) => {
+  saving.value = true
+  try {
+    // Create NC first
+    const nc = await createNc(form.value)
+
+    // Create WorkflowStepUser records for selected reviewers
+    for (const [stepId, userIds] of Object.entries(reviewers)) {
+      // Hard-delete any existing step users for this step
+      const existing = await db.WorkflowStepUser.where('stepId', stepId).exec()
+      await Promise.all(existing.map((su) => su.hardDelete()))
+
+      // Create new step users
+      for (const userId of userIds) {
+        const stepUser = db.WorkflowStepUser.create({ stepId, userId })
+        await stepUser.save()
+      }
+    }
+
+    // Navigate to NC detail page
+    router.push(getCompanyPath(`/nonconformances/${nc.id}`))
+  } catch (e) {
+    toast.notify({ type: 'negative', message: e.message || 'Failed to create NC' })
+  } finally {
+    saving.value = false
+  }
+})
+</script>
+
+<template>
+  <div class="tw:flex tw:flex-col tw:h-full">
+    <SafeTeleport to="#main-header-title">
+      <BaseBreadcrumbs
+        :items="[
+          { label: 'Nonconformances', to: getCompanyPath('/nonconformances') },
+          { label: 'Raise NC' },
+        ]"
+      />
+    </SafeTeleport>
+
+    <SafeTeleport to="#main-header-actions">
+      <BaseButton variant="primary" :disabled="saving" @click="handleSubmit">Submit</BaseButton>
+    </SafeTeleport>
+
+    <div class="tw:overflow-y-auto tw:flex-1">
+      <div class="tw:max-w-3xl tw:mx-auto tw:p-6 tw:flex tw:flex-col tw:gap-4">
+        <!-- Basic information -->
+        <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
+          <div
+            class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+          >
+            Basic information
+          </div>
+          <div class="tw:flex tw:flex-col tw:gap-3">
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                Title <span class="tw:text-red-500">*</span>
+              </label>
+              <BaseTextInput v-model="form.title" placeholder="Describe the nonconformance…" />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">Description</label>
+              <BaseTextarea
+                v-model="form.description"
+                placeholder="Provide details about the nonconformance…"
+                :rows="4"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Classification -->
+        <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
+          <div
+            class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+          >
+            Classification
+          </div>
+          <div class="tw:grid tw:grid-cols-2 tw:gap-3">
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                Site <span class="tw:text-red-500">*</span>
+              </label>
+              <SiteSelectMenu v-model="form.siteId" required />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                Department <span class="tw:text-red-500">*</span>
+              </label>
+              <DepartmentSelectMenu v-model="form.departmentId" :siteId="form.siteId" required />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                NC Type <span class="tw:text-red-500">*</span>
+              </label>
+              <NcTypeSelectMenu v-model="form.typeId" required />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                Detection source <span class="tw:text-red-500">*</span>
+              </label>
+              <NcSourceSelectMenu v-model="form.sourceId" required />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                Severity <span class="tw:text-red-500">*</span>
+              </label>
+              <div class="tw:flex tw:gap-2">
+                <BaseButton
+                  v-for="sev in ['MINOR', 'MAJOR', 'CRITICAL']"
+                  :key="sev"
+                  class="tw:flex-1 tw:justify-center"
+                  :variant="form.severityId === sev ? 'primary' : 'outline'"
+                  @click="form.severityId = sev"
+                >
+                  {{ sev.charAt(0) + sev.slice(1).toLowerCase() }}
+                </BaseButton>
+              </div>
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                Detected date <span class="tw:text-red-500">*</span>
+              </label>
+              <BaseDatePicker v-model="form.detectedAt" />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1 tw:col-span-2 tw:md:col-span-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                Owner <span class="tw:text-red-500">*</span>
+              </label>
+              <UserSelectMenu v-model="form.ownerId" required />
+            </div>
+          </div>
+        </div>
+
+        <!-- Product & material -->
+        <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
+          <div
+            class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+          >
+            Product & material
+            <span class="tw:normal-case tw:font-normal tw:text-secondary tw:ml-1">(optional)</span>
+          </div>
+          <div class="tw:grid tw:grid-cols-2 tw:gap-3">
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">Product</label>
+              <ProductSelectMenu v-model="form.productId" :required="false" />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">Supplier</label>
+              <SupplierSelectMenu v-model="form.supplierId" :required="false" />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">Qty affected</label>
+              <BaseTextInput v-model.number="form.qtyAffected" type="number" placeholder="0" />
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-secondary">Unit of measure</label>
+              <BaseTextInput v-model="form.unitOfMeasure" placeholder="e.g. sheets, units…" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Immediate containment action -->
+        <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
+          <div
+            class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+          >
+            Immediate containment action
+            <span class="tw:normal-case tw:font-normal tw:text-secondary tw:ml-1">(optional)</span>
+          </div>
+          <BaseTextarea
+            v-model="form.immediateContainmentAction"
+            placeholder="Describe actions taken at the time of detection…"
+            :rows="3"
+          />
+        </div>
+
+        <!-- Workflow -->
+        <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
+          <div
+            class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+          >
+            Workflow
+            <span class="tw:normal-case tw:font-normal tw:text-secondary tw:ml-1">(optional)</span>
+          </div>
+          <NCWorkflowVersionSelect
+            ref="ncWorkflowVersionSelectRef"
+            v-model="form.workflowVersionId"
+            @submit="handleReviewersConfirmed"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

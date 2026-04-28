@@ -86,8 +86,6 @@ declare global {
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const provide: typeof import('vue').provide
   const provideApiKeys: typeof import('./src/composables/useApiKeys.js').provideApiKeys
-  const provideApprovalWorkflowInstances: typeof import('./src/composables/useApprovalWorkflowInstances.js').provideApprovalWorkflowInstances
-  const provideApprovalWorkflows: typeof import('./src/composables/useApprovalWorkflows.js').provideApprovalWorkflows
   const provideAuditLogs: typeof import('./src/composables/useAuditLogs.js').provideAuditLogs
   const provideAuth: typeof import('./src/composables/useAuth.js').provideAuth
   const provideComments: typeof import('./src/composables/useComments.js').provideComments
@@ -110,6 +108,8 @@ declare global {
   const provideSuppliers: typeof import('./src/composables/useSuppliers.js').provideSuppliers
   const provideTaskInstances: typeof import('./src/composables/useTaskInstances.js').provideTaskInstances
   const provideUsers: typeof import('./src/composables/useUsers.js').provideUsers
+  const provideWorkflowInstances: typeof import('./src/composables/useWorkflowInstances.js').provideWorkflowInstances
+  const provideWorkflowTemplates: typeof import('./src/composables/useWorkflowTemplates.js').provideWorkflowTemplates
   const reactify: typeof import('@vueuse/core').reactify
   const reactifyObject: typeof import('@vueuse/core').reactifyObject
   const reactive: typeof import('vue').reactive
@@ -155,8 +155,6 @@ declare global {
   const useActiveElement: typeof import('@vueuse/core').useActiveElement
   const useAnimate: typeof import('@vueuse/core').useAnimate
   const useApiKeys: typeof import('./src/composables/useApiKeys.js').useApiKeys
-  const useApprovalWorkflowInstances: typeof import('./src/composables/useApprovalWorkflowInstances.js').useApprovalWorkflowInstances
-  const useApprovalWorkflows: typeof import('./src/composables/useApprovalWorkflows.js').useApprovalWorkflows
   const useArrayDifference: typeof import('@vueuse/core').useArrayDifference
   const useArrayEvery: typeof import('@vueuse/core').useArrayEvery
   const useArrayFilter: typeof import('@vueuse/core').useArrayFilter
@@ -357,6 +355,8 @@ declare global {
   const useWindowFocus: typeof import('@vueuse/core').useWindowFocus
   const useWindowScroll: typeof import('@vueuse/core').useWindowScroll
   const useWindowSize: typeof import('@vueuse/core').useWindowSize
+  const useWorkflowInstances: typeof import('./src/composables/useWorkflowInstances.js').useWorkflowInstances
+  const useWorkflowTemplates: typeof import('./src/composables/useWorkflowTemplates.js').useWorkflowTemplates
   const watch: typeof import('vue').watch
   const watchArray: typeof import('@vueuse/core').watchArray
   const watchAtMost: typeof import('@vueuse/core').watchAtMost

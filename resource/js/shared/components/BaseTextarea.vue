@@ -136,7 +136,7 @@ defineExpose({
 
 <template>
   <div :class="{ 'tw:flex': inline, 'tw:flex-row-reverse': labelRight }">
-    <div v-if="label || slots.label || instructions" class="tw:mb-4">
+    <div v-if="label || slots.label || instructions" class="tw:mb-2">
       <label
         v-if="label || slots.label"
         class="tw:dark:text-white"

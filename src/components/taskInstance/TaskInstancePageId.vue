@@ -13,21 +13,30 @@ const taskInstance = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
   db.TaskInstance.findByPk(id),
 )
 
-// Resolve sourceId → ApprovalWorkflowInstanceStep (to get workflowInstanceId)
+// Resolve sourceId → WorkflowInstanceStep (to get workflowInstanceId)
 const instanceStep = useLiveQueryWithDeps(
   [() => taskInstance.value?.sourceId],
   async (db, [sourceId]) => {
     if (!sourceId) return null
-    return db.ApprovalWorkflowInstanceStep.findByPk(sourceId)
+    return db.WorkflowInstanceStep.findByPk(sourceId)
+  },
+)
+
+// Resolve the WorkflowStep definition for the current step
+const workflowStep = useLiveQueryWithDeps(
+  [() => instanceStep.value?.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return null
+    return db.WorkflowStep.findByPk(stepId)
   },
 )
 
 // Resolve the specific DocumentVersion locked for this workflow instance
 const documentVersion = useLiveQueryWithDeps(
-  [() => taskInstance.value?.entityId],
-  async (db, [documentVersionId]) => {
-    if (!documentVersionId) return null
-    return await db.DocumentVersion.findByPk(documentVersionId)
+  [() => taskInstance.value?.entityType, () => taskInstance.value?.entityId],
+  async (db, [entityType, entityId]) => {
+    if (!entityId || entityType !== 'DocumentVersion') return null
+    return db.DocumentVersion.findByPk(entityId)
   },
 )
 
@@ -39,15 +48,37 @@ const document = useLiveQueryWithDeps(
   },
 )
 
+const nc = useLiveQueryWithDeps(
+  [() => taskInstance.value?.entityType, () => taskInstance.value?.entityId],
+  async (db, [entityType, entityId]) => {
+    if (!entityId || entityType !== 'Nonconformance') return null
+    return db.Nonconformance.findByPk(entityId)
+  },
+)
+
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const loading = computed(() => taskInstance.value === undefined)
 
-const breadcrumbs = computed(() => [
-  { label: 'My Tasks', to: getCompanyPath('/task-instances') },
-  { label: document.value?.title || 'Document' },
-])
+const breadcrumbs = computed(() => {
+  if (taskInstance.value?.entityType === 'Nonconformance') {
+    return [
+      { label: 'My Tasks', to: getCompanyPath('/task-instances') },
+      {
+        label: nc.value?.ncNumber || nc.value?.title || 'Nonconformance',
+        to: nc.value?.id ? getCompanyPath(`/nonconformances/${nc.value.id}`) : undefined,
+      },
+    ]
+  }
+  return [
+    { label: 'My Tasks', to: getCompanyPath('/task-instances') },
+    { label: document.value?.title || 'Document' },
+  ]
+})
 
-const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
+const isNcTask = computed(() => taskInstance.value?.entityType === 'Nonconformance')
+const canActOnStep = computed(() =>
+  ['ASSIGNED', 'FORM_SUBMITTED'].includes(taskInstance.value?.statusId),
+)
 </script>
 
 <template>
@@ -69,25 +100,48 @@ const canActOnStep = computed(() => taskInstance.value?.statusId === 'ASSIGNED')
     <!-- Main Content -->
     <template v-else-if="taskInstance">
       <SafeTeleport to="#main-header-actions">
-        <div v-if="canActOnStep" class="tw:flex tw:items-center tw:gap-2">
-          <ApprovalWorkflowInstanceApproverAction
-            action="APPROVE"
-            :workflowInstanceId="instanceStep?.workflowInstanceId"
-            :instanceStepId="instanceStep?.id"
+        <template v-if="isNcTask">
+          <TaskInstanceNcActions
+            v-if="canActOnStep"
+            :taskInstanceId="taskInstance.id"
+            :instanceStep="instanceStep"
+            :workflowStep="workflowStep"
+            :canActOnStep="canActOnStep"
           />
-          <ApprovalWorkflowInstanceApproverAction
-            action="REJECT"
-            :workflowInstanceId="instanceStep?.workflowInstanceId"
-            :instanceStepId="instanceStep?.id"
-          />
-        </div>
-        <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />
+          <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />
+        </template>
+        <template v-else>
+          <div v-if="canActOnStep" class="tw:flex tw:items-center tw:gap-2">
+            <WorkflowInstanceApproverAction
+              action="APPROVE"
+              :taskInstanceId="taskInstance?.id"
+              :instanceStepId="instanceStep?.id"
+            />
+            <WorkflowInstanceApproverAction
+              action="REJECT"
+              :taskInstanceId="taskInstance?.id"
+              :instanceStepId="instanceStep?.id"
+            />
+          </div>
+          <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />
+        </template>
       </SafeTeleport>
 
-      <DocumentsMainContent
-        v-if="document"
-        :documentId="document.id"
-        :versionId="documentVersion?.id"
+      <div v-if="document" class="tw:max-w-4xl tw:mx-auto tw:p-6 tw:lg:p-8">
+        <DocumentsMainContentLeft
+          :documentId="document.id"
+          :versionId="documentVersion?.id"
+          :reviewMode="canActOnStep"
+        />
+      </div>
+
+      <TaskInstanceNcContent
+        v-else-if="nc"
+        :nc="nc"
+        :taskInstance="taskInstance"
+        :instanceStep="instanceStep"
+        :workflowStep="workflowStep"
+        :canActOnStep="canActOnStep"
         :reviewMode="canActOnStep"
       />
     </template>

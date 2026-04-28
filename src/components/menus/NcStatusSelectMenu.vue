@@ -1,21 +1,12 @@
 <script setup>
 defineProps({
-  required: {
-    type: Boolean,
-    default: false,
-  },
-  multiple: {
-    type: Boolean,
-    default: false,
-  },
+  required: { type: Boolean, default: false },
+  multiple: { type: Boolean, default: false },
 })
 
-const modelValue = defineModel({
-  type: [String, Array, null],
-  default: null,
-})
+const modelValue = defineModel({ type: [String, Array, null], default: null })
 
-const statuses = useLiveQuery((db) => db.NcStatus.where().orderBy('sortOrder', 'asc').exec(), {
+const statuses = useLiveQuery((db) => db.NcStatus.where().orderBy('displayOrder').exec(), {
   initial: [],
 })
 
@@ -27,31 +18,30 @@ function getArray() {
 <template>
   <BaseSelectMenu v-model="modelValue" :items="statuses" :required="required" :multiple="multiple">
     <template #button="scope">
-      <!-- MULTIPLE MODE -->
-      <template v-if="multiple">
-        <div v-if="getArray().length" class="tw:flex tw:flex-wrap tw:gap-1">
+      <slot name="button" v-bind="scope">
+        <template v-if="multiple">
+          <div v-if="getArray().length" class="tw:flex tw:flex-wrap tw:gap-1">
+            <NcStatusBadgeById
+              v-for="id in getArray()"
+              :key="id"
+              :statusId="id"
+              :clearable="!required || getArray().length > 1"
+              @clear="() => scope.clear(id)"
+            />
+          </div>
+          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">Select Status</span>
+        </template>
+        <template v-else>
           <NcStatusBadgeById
-            v-for="statusId in getArray()"
-            :key="statusId"
-            :statusId="statusId"
-            :clearable="!required || getArray().length > 1"
-            @clear="() => scope.clear(statusId)"
+            v-if="modelValue"
+            :statusId="modelValue"
+            :clearable="!required"
+            selectable
+            @clear="() => scope.clear(modelValue)"
           />
-        </div>
-        <BaseBadge v-else selectable>Select Statuses</BaseBadge>
-      </template>
-
-      <!-- SINGLE MODE -->
-      <template v-else>
-        <NcStatusBadgeById
-          v-if="modelValue"
-          :statusId="modelValue"
-          :clearable="!required"
-          selectable
-          @clear="() => scope.clear(modelValue)"
-        />
-        <BaseBadge v-else selectable>Select Status</BaseBadge>
-      </template>
+          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">Select Status</span>
+        </template>
+      </slot>
     </template>
   </BaseSelectMenu>
 </template>

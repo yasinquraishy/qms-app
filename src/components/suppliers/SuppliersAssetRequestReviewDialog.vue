@@ -178,7 +178,7 @@ async function onConfirm() {
     </div>
 
     <div class="tw:flex tw:justify-end tw:gap-2 tw:px-4 tw:pb-4">
-      <BaseButton variant="ghost" @click="show = false">Cancel</BaseButton>
+      <BaseButton variant="outline" @click="show = false">Cancel</BaseButton>
       <BaseButton v-if="action === 'accept'" :disabled="submitting" @click="onConfirm">
         <div
           v-if="submitting"

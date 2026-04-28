@@ -10,7 +10,6 @@ import {
   IconList,
   IconTruck,
   IconPackage,
-  IconReport,
 } from '@tabler/icons-vue'
 
 /**
@@ -74,10 +73,10 @@ export const CATEGORY_METADATA = {
     icon: IconFileText,
     description: 'Manage access for Document Templates',
   },
-  approvalWorkflows: {
-    label: 'Approval Workflows',
+  workflows: {
+    label: 'Workflows',
     icon: IconSitemap,
-    description: 'Manage access for Approval Workflows',
+    description: 'Manage access for Workflows',
   },
   suppliers: {
     label: 'Suppliers',
@@ -89,10 +88,10 @@ export const CATEGORY_METADATA = {
     icon: IconPackage,
     description: 'Manage access for Products',
   },
-  nc_records: {
-    label: 'NC Records',
-    icon: IconReport,
-    description: 'Manage access for Non-Conformance Records',
+  nonconformances: {
+    label: 'Nonconformances',
+    icon: IconShield,
+    description: 'Manage access for Nonconformances',
   },
 }
 
@@ -109,18 +108,12 @@ export const PERMISSION_SECTIONS = [
       'optionSets',
       'suppliers',
       'products',
-      'nc_records',
+      'nonconformances',
     ],
   },
   {
     name: 'Configuration',
-    categories: [
-      'formTemplates',
-      'records',
-      'documents',
-      'document-templates',
-      'approvalWorkflows',
-    ],
+    categories: ['formTemplates', 'records', 'documents', 'document-templates', 'workflows'],
   },
 ]
 

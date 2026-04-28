@@ -183,7 +183,7 @@ async function onSave() {
           Supplier Contacts <span class="tw:text-red-500">*</span>
         </label>
         <div
-          class="tw:space-y-1 tw:max-h-40 tw:overflow-y-auto tw:rounded-md tw:border tw:border-border tw:p-2"
+          class="tw:space-y-1 tw:max-h-40 tw:overflow-y-auto tw:rounded-md tw:border tw:border-divider tw:p-2"
         >
           <label
             v-for="contact in contacts"
@@ -232,7 +232,7 @@ async function onSave() {
     </div>
 
     <div class="tw:flex tw:justify-end tw:gap-2 tw:px-4 tw:pb-4">
-      <BaseButton variant="ghost" @click="show = false">Cancel</BaseButton>
+      <BaseButton variant="outline" @click="show = false">Cancel</BaseButton>
       <BaseButton
         :disabled="!form.title?.trim() || !form.contactIds?.length || saving"
         @click="onSave"

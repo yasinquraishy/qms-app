@@ -1,24 +1,22 @@
 <script setup>
 defineProps({
-  severity: {
+  status: {
     type: Object,
     required: true,
   },
 })
 
 const SCHEME_MAP = {
-  CRITICAL: 'tw:bg-red-100 tw:text-red-700',
-  MAJOR: 'tw:bg-orange-100 tw:text-orange-700',
-  MINOR: 'tw:bg-yellow-100 tw:text-yellow-700',
+  MINOR: { class: 'tw:bg-green-100 tw:text-green-700' },
+  MAJOR: { class: 'tw:bg-amber-100 tw:text-amber-700' },
+  CRITICAL: { class: 'tw:bg-red-100 tw:text-red-700' },
 }
 
-function scheme(id) {
-  return SCHEME_MAP[id] || 'tw:bg-gray-100 tw:text-gray-600'
-}
+const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-600' }
 </script>
 
 <template>
-  <BaseBadge v-bind="$attrs" :class="scheme(severity.id)">
-    {{ severity.name || severity.id }}
+  <BaseBadge v-bind="$attrs" :class="scheme(status.id).class">
+    {{ status.name || status.id || '—' }}
   </BaseBadge>
 </template>

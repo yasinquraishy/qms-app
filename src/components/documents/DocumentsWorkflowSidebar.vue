@@ -40,7 +40,7 @@ const show = defineModel({ type: Boolean, default: false })
 
             <!-- Content -->
             <div class="tw:flex-1 tw:overflow-y-auto tw:p-5">
-              <ApprovalWorkflowInstanceTimeline :workflowInstanceId="props.instanceId" />
+              <WorkflowInstanceTimeline :workflowInstanceId="props.instanceId" />
             </div>
           </aside>
         </Transition>

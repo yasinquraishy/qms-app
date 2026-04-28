@@ -1,6 +1,6 @@
 <script setup>
 import { isAllowed } from '@/utils/currentSession.js'
-import { IconSettings } from '@tabler/icons-vue'
+import { IconSettings, IconHierarchy } from '@tabler/icons-vue'
 
 const props = defineProps({
   documentId: {
@@ -27,6 +27,17 @@ const canEdit = computed(
 
 // State
 const activeSection = ref(null)
+const showWorkflowDialog = ref(false)
+
+const selectedWorkflowVersion = useLiveQueryWithDeps(
+  [() => document.value?.workflowVersionId],
+  async (db, [versionId]) => (versionId ? db.WorkflowVersion.findByPk(versionId) : null),
+)
+
+const selectedWorkflow = useLiveQueryWithDeps(
+  [() => selectedWorkflowVersion.value?.workflowId],
+  async (db, [workflowId]) => (workflowId ? db.Workflow.findByPk(workflowId) : null),
+)
 
 // Computed properties
 const documentSections = useLiveQueryWithDeps(
@@ -176,7 +187,59 @@ watch(
       </div>
 
       <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5">
-        <DocumentsWorkflowVersionSelect v-model="document.workflowVersionId" dense />
+        <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
+          <h4 class="ds-label tw:text-secondary">Workflow</h4>
+          <button
+            v-if="canEdit"
+            class="tw:text-xs tw:font-medium tw:text-primary tw:hover:text-primary/80 tw:transition-colors"
+            @click="showWorkflowDialog = true"
+          >
+            {{ document.workflowVersionId ? 'Change' : 'Select' }}
+          </button>
+        </div>
+
+        <!-- Selected workflow display -->
+        <div
+          v-if="selectedWorkflow && selectedWorkflowVersion"
+          class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:rounded-lg tw:bg-main tw:border tw:border-divider"
+        >
+          <div
+            class="tw:w-8 tw:h-8 tw:rounded-md tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center tw:shrink-0"
+          >
+            <IconHierarchy :size="16" />
+          </div>
+          <div class="tw:min-w-0">
+            <p class="tw:text-sm tw:font-semibold tw:text-on-sidebar tw:truncate">
+              {{ selectedWorkflow.name }}
+            </p>
+            <p class="tw:text-xs tw:text-secondary">
+              v{{
+                selectedWorkflowVersion.versionLabel ||
+                `${selectedWorkflowVersion.versionMajor}.${selectedWorkflowVersion.versionMinor}`
+              }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <button
+          v-else
+          class="tw:w-full tw:py-3 tw:border-2 tw:border-dashed tw:border-divider tw:rounded-lg tw:flex tw:items-center tw:justify-center tw:gap-2 tw:text-secondary tw:hover:text-primary tw:hover:border-primary tw:hover:bg-primary/5 tw:transition-all tw:text-sm"
+          :disabled="!canEdit"
+          @click="showWorkflowDialog = true"
+        >
+          <IconHierarchy :size="16" />
+          <span>Select a workflow</span>
+        </button>
+
+        <!-- Workflow Selection Dialog -->
+        <BaseDialog v-model="showWorkflowDialog" title="Select Workflow" maxWidth="lg">
+          <WorkflowVersionSelect
+            v-model="document.workflowVersionId"
+            moduleId="APPROVAL"
+            @update:modelValue="showWorkflowDialog = false"
+          />
+        </BaseDialog>
       </div>
 
       <!-- Table of Contents Card -->

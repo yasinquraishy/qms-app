@@ -172,6 +172,19 @@ const classes = computed(() => {
   return cls
 })
 
+const attr = useAttrs()
+const computedAs = computed(() => {
+  if (attr.to) {
+    return 'RouterLink'
+  }
+
+  if (attr.href) {
+    return 'a'
+  }
+
+  return props.as
+})
+
 const buttonRef = ref()
 
 defineExpose({
@@ -181,7 +194,7 @@ defineExpose({
 
 <template>
   <component
-    :is="props.as"
+    :is="computedAs"
     ref="buttonRef"
     as="button"
     :disabled="props.disabled || props.isLoading"

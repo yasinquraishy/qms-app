@@ -25,7 +25,7 @@ const selectedDate = defineModel('selectedDate', {
 </script>
 
 <template>
-  <BasePopover placement="bottom">
+  <BasePopover placement="bottom" flip>
     <template #button="{ open }">
       <slot name="button" :open="open" />
     </template>

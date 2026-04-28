@@ -171,6 +171,8 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async delete() {
+    const self = toRaw(this)
+
     const paranoid = this.constructor.paranoid
     if (paranoid) {
       const field = typeof paranoid === 'string' ? paranoid : 'deletedAt'
@@ -186,11 +188,11 @@ export class BaseModel {
         // Date or any other type — default to native Date
         this[field] = new Date()
       }
-      this.#action = OPERATION.UPDATE
+      self.#action = OPERATION.UPDATE
     } else {
-      this.#action = OPERATION.DELETE
+      self.#action = OPERATION.DELETE
     }
-    await this.save()
+    await self.save()
   }
 
   /**

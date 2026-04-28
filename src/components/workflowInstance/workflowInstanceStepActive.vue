@@ -16,6 +16,14 @@ const instanceStep = useLiveQueryWithDeps(
   },
 )
 
+const workflowInstance = useLiveQueryWithDeps(
+  [() => instanceStep.value?.workflowInstanceId],
+  async (db, [instanceId]) => {
+    if (!instanceId) return null
+    return db.WorkflowInstance.findByPk(instanceId)
+  },
+)
+
 const step = useLiveQueryWithDeps([() => instanceStep.value?.stepId], async (db, [stepId]) => {
   if (!stepId) return null
   return db.WorkflowStep.findByPk(stepId)
@@ -128,8 +136,11 @@ const usersMap = useLiveQueryWithDeps(
       </div>
     </div>
 
-    <!-- Action buttons (only for current user with ASSIGNED status) -->
-    <div v-if="myTask" class="tw:bg-primary/5 tw:rounded-xl tw:p-4 tw:border tw:border-primary/20">
+    <!-- Action buttons (only for current user with ASSIGNED status, and not for NC) -->
+    <div
+      v-if="myTask && workflowInstance?.resourceType !== 'Nonconformance'"
+      class="tw:bg-primary/5 tw:rounded-xl tw:p-4 tw:border tw:border-primary/20"
+    >
       <div class="tw:flex tw:flex-col tw:gap-4">
         <div class="tw:flex tw:items-center tw:gap-2 tw:mb-2">
           <IconSignature :size="20" class="tw:text-primary" />

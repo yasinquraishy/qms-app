@@ -75,7 +75,7 @@ const canActOnStep = computed(() => myTask.value?.statusId === 'ASSIGNED')
 
     <!-- Footer -->
     <div class="tw:p-2 tw:border-t tw:border-divider tw:bg-background">
-      <template v-if="canActOnStep">
+      <template v-if="canActOnStep && instance.resourceType !== 'Nonconformance'">
         <div class="tw:grid tw:grid-cols-2 tw:gap-2">
           <WorkflowInstanceApproverAction
             action="APPROVE"
@@ -92,7 +92,11 @@ const canActOnStep = computed(() => myTask.value?.statusId === 'ASSIGNED')
         </div>
       </template>
       <div v-else class="tw:text-center tw:text-sm tw:text-secondary tw:py-2">
-        No action required from you on this step.
+        {{
+          instance.resourceType === 'Nonconformance'
+            ? 'Approval actions not available for nonconformances.'
+            : 'No action required from you on this step.'
+        }}
       </div>
     </div>
   </div>

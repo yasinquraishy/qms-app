@@ -62,7 +62,7 @@ defineExpose({ submit })
   <BaseDialog v-model="submitDialogOpen" title="Assign Step Reviewers" maxWidth="lg" persistent>
     <div class="tw:space-y-3 tw:py-2">
       <p class="tw:text-sm tw:text-secondary">
-        Select a reviewer for each workflow step before submitting.
+        Assign task to user for each workflow step before submitting.
       </p>
       <NCWorkflowStepReviewerSelect
         v-for="(step, index) in steps"

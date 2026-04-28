@@ -141,6 +141,16 @@ const pendingConfig = computed(() =>
 
 const confirmTitle = computed(() => pendingConfig.value?.label ?? 'Confirm')
 
+// Check if a specific outcome should be disabled
+function isOutcomeDisabled(outcomeId) {
+  // Only COMPLETE_AND_ADVANCE requires the form to be saved first
+  if (outcomeId === 'COMPLETE_AND_ADVANCE' && formSaveRequired.value) {
+    return true
+  }
+  // All other outcomes can proceed regardless of form status
+  return false
+}
+
 // ── Trigger flow ─────────────────────────────────────────────────────────────
 function onOutcomeClick(outcomeId) {
   if (!props.canActOnStep) return
@@ -205,11 +215,15 @@ async function submitAction({ method, provider, token }) {
     <template v-for="allowed in allowedOutcomes" :key="allowed.id">
       <div
         v-if="OUTCOME_CONFIG[allowed.outcomeId]"
-        :title="formSaveRequired ? 'Save the form first before taking an action' : undefined"
+        :title="
+          allowed.outcomeId === 'COMPLETE_AND_ADVANCE' && formSaveRequired
+            ? 'Save the form first before approving'
+            : undefined
+        "
       >
         <BaseButton
           :variant="OUTCOME_CONFIG[allowed.outcomeId].variant"
-          :disabled="!canActOnStep || actionLoading || formSaveRequired"
+          :disabled="!canActOnStep || actionLoading || isOutcomeDisabled(allowed.outcomeId)"
           @click="onOutcomeClick(allowed.outcomeId)"
         >
           <template #icon>

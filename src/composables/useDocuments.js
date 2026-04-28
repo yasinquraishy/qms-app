@@ -9,5 +9,21 @@ export function useDocuments() {
     return { version: data.version }
   }
 
-  return { setEffective }
+  async function submitForReview(documentId, versionId) {
+    const data = await post(
+      `/v1/services/documents/${documentId}/versions/${versionId}/submitForReview`,
+      {},
+    )
+    return { version: data.version }
+  }
+
+  async function cancelReview(documentId, versionId) {
+    const data = await post(
+      `/v1/services/documents/${documentId}/versions/${versionId}/cancelReview`,
+      {},
+    )
+    return { version: data.version }
+  }
+
+  return { setEffective, submitForReview, cancelReview }
 }

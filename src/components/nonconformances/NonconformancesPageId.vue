@@ -3,6 +3,7 @@ import { IconChevronRight, IconAlertTriangle } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { DateTime } from 'luxon'
+import { post } from '@/api'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -100,9 +101,9 @@ async function handleSubmitForReview() {
   if (!nc.value) return
   saving.value = true
   try {
-    nc.value.statusId = 'UNDER_REVIEW'
-    nc.value.updatedBy = currentSession.value?.userId || ''
-    await nc.value.save()
+    await post(`/v1/services/nonconformances/${props.id}/submitForReview`, {})
+  } catch (e) {
+    saveError.value = e.message || 'Failed to submit for review'
   } finally {
     saving.value = false
   }

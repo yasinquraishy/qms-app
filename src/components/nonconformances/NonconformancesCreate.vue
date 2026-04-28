@@ -1,6 +1,7 @@
 <script setup>
 import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
+import { post } from '@/api'
 
 const router = useRouter()
 const toast = useToast()
@@ -96,8 +97,7 @@ async function handleSubmit() {
   try {
     const nc = await createNc(form.value)
     await ncWorkflowVersionSelectRef.value.submit()
-    nc.statusId = 'UNDER_REVIEW'
-    await nc.save()
+    await post(`/v1/services/nonconformances/${nc.id}/submitForReview`, {})
     router.push(getCompanyPath(`/nonconformances/${nc.id}`))
   } catch (e) {
     toast.notify({ type: 'negative', message: e.message || 'Failed to create NC' })

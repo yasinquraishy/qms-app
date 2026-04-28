@@ -1,4 +1,6 @@
 <script setup>
+import { useDocuments } from '@/composables/useDocuments.js'
+
 const props = defineProps({
   documentId: { type: String, required: true },
   versionId: { type: String, required: true },
@@ -8,6 +10,8 @@ const emit = defineEmits(['confirm'])
 const show = defineModel({ type: Boolean, default: false })
 
 const toast = useToast()
+const { submitForReview } = useDocuments()
+const submitting = ref(false)
 
 // ── Local data from IDB ───────────────────────────────────────────────────
 const document = useLiveQueryWithDeps([() => props.documentId], async (db, [documentId]) =>
@@ -88,16 +92,17 @@ const loading = computed(() => document.value === undefined)
 
 // ── Actions ────────────────────────────────────────────────────────────────
 async function confirm() {
-  const mutate = useLiveMutation(async (db) => {
-    const version = await db.DocumentVersion.findByPk(props.versionId)
-    version.statusId = 'IN_REVIEW'
-    await version.save()
+  submitting.value = true
+  try {
+    await submitForReview(props.documentId, props.versionId)
     toast.success('Document submitted for review')
     emit('confirm')
     show.value = false
-  })
-
-  mutate()
+  } catch (e) {
+    toast.error(e.message || 'Failed to submit for review')
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -168,8 +173,10 @@ async function confirm() {
     </div>
 
     <template #footer>
-      <BaseButton variant="outline" @click="show = false">Cancel</BaseButton>
-      <BaseButton @click="confirm">Submit</BaseButton>
+      <BaseButton variant="outline" :disabled="submitting" @click="show = false">Cancel</BaseButton>
+      <BaseButton :disabled="submitting" @click="confirm">
+        {{ submitting ? 'Submitting…' : 'Submit' }}
+      </BaseButton>
     </template>
   </BaseDialog>
 </template>

@@ -7,6 +7,7 @@ import {
   IconBan,
 } from '@tabler/icons-vue'
 import { post } from '@/api'
+import { currentSession } from '@/utils/currentSession.js'
 
 const props = defineProps({
   taskInstanceId: { type: String, required: true },
@@ -70,7 +71,8 @@ const OUTCOME_CONFIG = {
     label: 'Reassign',
     variant: 'outline',
     icon: IconUserCheck,
-    needsComment: false,
+    needsUser: true,
+    needsComment: true,
   },
   CANCEL: {
     label: 'Cancel',
@@ -86,6 +88,7 @@ const showEsignDialog = ref(false)
 const pendingOutcomeId = ref(null)
 const comment = ref('')
 const sendBackTargetStepId = ref(null)
+const reassignToUserId = ref(null)
 const actionLoading = ref(false)
 
 // Resolve send-back targets to WorkflowStep names
@@ -94,6 +97,37 @@ const sendBackSteps = useLiveQueryWithDeps([() => sendBackTargets.value], async 
   const steps = await Promise.all(targets.map((t) => db.WorkflowStep.findByPk(t.targetStepId)))
   return steps.filter(Boolean)
 })
+
+// Candidate users for reassignment (step roles → RoleOnUser → User, excluding current user)
+const stepRoles = useLiveQueryWithDeps(
+  [() => props.instanceStep?.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return db.WorkflowStepRole.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+const reassignCandidates = useLiveQueryWithDeps(
+  [() => stepRoles.value.map((r) => r.roleId).join(',')],
+  async (db, [roleIdsStr]) => {
+    if (!roleIdsStr) return []
+    const roleIds = roleIdsStr.split(',')
+    const rolesOnUsers = await Promise.all(
+      roleIds.map((id) => db.RoleOnUser.where('roleId', id).exec()),
+    )
+    const userIds = [...new Set(rolesOnUsers.flat().map((r) => r.userId))]
+    const users = await Promise.all(userIds.map((id) => db.User.findByPk(id)))
+    return users.filter(Boolean)
+  },
+  { initial: [] },
+)
+
+const currentUserId = computed(() => currentSession.value?.id)
+
+const filteredReassignCandidates = computed(() =>
+  reassignCandidates.value.filter((u) => u.id !== currentUserId.value),
+)
 
 // Whether the step has a form that must be saved first
 const formRequired = computed(
@@ -113,9 +147,10 @@ function onOutcomeClick(outcomeId) {
   pendingOutcomeId.value = outcomeId
   comment.value = ''
   sendBackTargetStepId.value = null
+  reassignToUserId.value = null
 
   const config = OUTCOME_CONFIG[outcomeId]
-  if (config?.needsComment || config?.needsTarget) {
+  if (config?.needsComment || config?.needsTarget || config?.needsUser) {
     showConfirmDialog.value = true
   } else {
     showEsignDialog.value = true
@@ -125,6 +160,10 @@ function onOutcomeClick(outcomeId) {
 function onConfirmDialog() {
   if (pendingConfig.value?.needsTarget && !sendBackTargetStepId.value) {
     toast.warning('Please select a target step to send back to')
+    return
+  }
+  if (pendingConfig.value?.needsUser && !reassignToUserId.value) {
+    toast.warning('Please select a user to reassign to')
     return
   }
   showConfirmDialog.value = false
@@ -147,6 +186,7 @@ async function submitAction({ method, provider, token }) {
     if (provider) body.provider = provider
     if (comment.value) body.comment = comment.value
     if (sendBackTargetStepId.value) body.sendBackTargetStepId = sendBackTargetStepId.value
+    if (reassignToUserId.value) body.reassignToUserId = reassignToUserId.value
 
     await post(`/v1/services/taskInstances/${props.taskInstanceId}/action`, body)
     toast.success(`${pendingConfig.value?.label ?? 'Action'} completed`)
@@ -182,6 +222,41 @@ async function submitAction({ method, provider, token }) {
 
     <!-- Confirm / comment dialog -->
     <BaseDialog v-model="showConfirmDialog" :title="confirmTitle" maxWidth="md" persistent>
+      <!-- Reassign user picker -->
+      <div v-if="pendingConfig?.needsUser" class="tw:mb-4">
+        <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-1">
+          Reassign to <span class="tw:text-red-500">*</span>
+        </label>
+        <div class="tw:flex tw:flex-col tw:gap-2">
+          <label
+            v-for="user in filteredReassignCandidates"
+            :key="user.id"
+            class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer tw:rounded-lg tw:px-3 tw:py-2 tw:border tw:transition-colors"
+            :class="
+              reassignToUserId === user.id
+                ? 'tw:border-primary tw:bg-primary/5'
+                : 'tw:border-divider tw:hover:bg-main-hover'
+            "
+          >
+            <input
+              v-model="reassignToUserId"
+              type="radio"
+              :value="user.id"
+              class="tw:accent-primary"
+            />
+            <div class="tw:flex-1 tw:min-w-0">
+              <div class="tw:text-sm tw:font-medium tw:text-on-main">
+                {{ [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email }}
+              </div>
+              <div class="tw:text-xs tw:text-secondary tw:truncate">{{ user.email }}</div>
+            </div>
+          </label>
+          <p v-if="!filteredReassignCandidates.length" class="tw:text-sm tw:text-secondary">
+            No eligible users available for reassignment.
+          </p>
+        </div>
+      </div>
+
       <!-- Send-back target picker -->
       <div v-if="pendingConfig?.needsTarget" class="tw:mb-4">
         <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-1">

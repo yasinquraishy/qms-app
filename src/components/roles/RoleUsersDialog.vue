@@ -188,7 +188,7 @@ watch(
       </div>
     </div>
 
-    <template #actions>
+    <template #footer>
       <button
         class="tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-primary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-main-hover tw:rounded-lg tw:transition-colors"
         @click="open = false"

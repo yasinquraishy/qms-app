@@ -7,17 +7,8 @@ const props = defineProps({
   required: { type: Boolean, default: false },
 })
 
-// Current selection — live from IDB
-const currentStepUser = useLiveQueryWithDeps(
-  [() => props.step.id],
-  async (db, [stepId]) => {
-    if (!stepId) return null
-    return db.WorkflowStepUser.where('stepId', stepId).first()
-  },
-  { initial: null },
-)
-
-const currentUserId = computed(() => currentStepUser.value?.userId ?? null)
+// v-model binding for selected userId (local state, not IDB)
+const modelValue = defineModel({ type: String, default: null })
 
 // Step roles for this step
 const stepRoles = useLiveQueryWithDeps(
@@ -45,20 +36,10 @@ const candidateUsers = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-// Mutation: hard-delete all existing step users, then create one for the selected user
-const selectUser = useLiveMutation(async (db, userId) => {
-  const existing = await db.WorkflowStepUser.where('stepId', props.step.id).exec()
-  await Promise.all(existing.map((su) => su.hardDelete()))
-  if (userId) {
-    const newSu = db.WorkflowStepUser.create({ stepId: props.step.id, userId })
-    await newSu.save()
-  }
-})
-
 // Auto-select the first available user when required and no selection exists
 let autoSelectDone = false
 watch(
-  [candidateUsers, currentUserId],
+  [candidateUsers, modelValue],
   ([users, currentId]) => {
     if (!props.required || autoSelectDone) return
     if (currentId != null) {
@@ -67,7 +48,7 @@ watch(
     }
     if (!users.length) return
     autoSelectDone = true
-    selectUser(users[0].id)
+    modelValue.value = users[0].id
   },
   { immediate: true },
 )
@@ -88,9 +69,7 @@ function getUserDisplayName(user) {
     <div class="tw:flex tw:items-center tw:gap-3">
       <div
         class="tw:w-6 tw:h-6 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:text-xs tw:font-bold tw:shrink-0"
-        :class="
-          currentUserId ? 'tw:bg-primary tw:text-white' : 'tw:bg-main-hover tw:text-secondary'
-        "
+        :class="modelValue ? 'tw:bg-primary tw:text-white' : 'tw:bg-main-hover tw:text-secondary'"
       >
         {{ stepIndex + 1 }}
       </div>
@@ -114,7 +93,7 @@ function getUserDisplayName(user) {
     </div>
 
     <!-- Radio group of candidate users -->
-    <RadioGroup v-else :modelValue="currentUserId" @update:modelValue="selectUser">
+    <RadioGroup v-else v-model="modelValue">
       <div class="tw:space-y-2">
         <RadioGroupOption
           v-for="user in candidateUsers"
@@ -165,7 +144,7 @@ function getUserDisplayName(user) {
 
     <!-- Validation message -->
     <div
-      v-if="required && !currentUserId && candidateUsers.length > 0"
+      v-if="required && !modelValue && candidateUsers.length > 0"
       class="tw:text-xs tw:text-red-500"
     >
       Please select a reviewer for this step.

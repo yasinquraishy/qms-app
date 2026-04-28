@@ -13,6 +13,7 @@ defineEmits(['viewNc'])
 
 <template>
   <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-6">
+    <!-- ─── Header row ──────────────────────────────────────────────────── -->
     <div class="tw:flex tw:flex-col tw:md:flex-row tw:md:items-start tw:justify-between tw:gap-4">
       <div class="tw:space-y-2">
         <div class="tw:flex tw:items-center tw:gap-2">
@@ -59,6 +60,46 @@ defineEmits(['viewNc'])
           <IconEye :size="14" class="tw:mr-1" />
           View Nonconformance
         </BaseButton>
+      </div>
+    </div>
+
+    <!-- ─── NC lifecycle strip + metadata ─────────────────────────────── -->
+    <div class="tw:mt-5 tw:pt-5 tw:border-t tw:border-divider tw:space-y-5">
+      <!-- Lifecycle strip: shows where this NC sits in its DRAFT → CLOSED journey -->
+      <NcLifecycleStrip :nc="nc" />
+
+      <!-- Metadata grid -->
+      <div class="tw:grid tw:grid-cols-2 tw:md:grid-cols-3 tw:gap-4">
+        <div class="tw:flex tw:flex-col tw:gap-1">
+          <span class="tw:text-xs tw:text-secondary">Severity</span>
+          <NcSeverityBadgeById v-if="nc?.severityId" :severityId="nc.severityId" />
+          <span v-else class="tw:text-sm tw:text-secondary">—</span>
+        </div>
+
+        <div class="tw:flex tw:flex-col tw:gap-1">
+          <span class="tw:text-xs tw:text-secondary">Type</span>
+          <NcTypeBadgeById v-if="nc?.typeId" :typeId="nc.typeId" />
+          <span v-else class="tw:text-sm tw:text-secondary">—</span>
+        </div>
+
+        <div class="tw:flex tw:flex-col tw:gap-1">
+          <span class="tw:text-xs tw:text-secondary">Source</span>
+          <NcSourceBadgeById v-if="nc?.sourceId" :sourceId="nc.sourceId" />
+          <span v-else class="tw:text-sm tw:text-secondary">—</span>
+        </div>
+
+        <div class="tw:flex tw:flex-col tw:gap-1">
+          <span class="tw:text-xs tw:text-secondary">Owner</span>
+          <UserBadgeById v-if="nc?.ownerId" :userId="nc.ownerId" />
+          <span v-else class="tw:text-sm tw:text-secondary">—</span>
+        </div>
+
+        <div class="tw:flex tw:flex-col tw:gap-1">
+          <span class="tw:text-xs tw:text-secondary">Detected</span>
+          <span class="tw:text-sm tw:font-medium tw:text-on-main">
+            {{ nc?.detectedAt?.formatDate('date') || '—' }}
+          </span>
+        </div>
       </div>
     </div>
   </div>

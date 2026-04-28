@@ -1,7 +1,6 @@
 <script setup>
 import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
-import { post } from '@/api'
 
 const router = useRouter()
 const toast = useToast()
@@ -55,7 +54,7 @@ const createNc = useLiveMutation(async (db, data) => {
   return nc
 })
 
-async function handleSubmit() {
+function handleSubmit() {
   if (!form.value.title) {
     toast.notify({ type: 'negative', message: 'Title is required' })
     return
@@ -93,18 +92,37 @@ async function handleSubmit() {
     return
   }
 
+  // Open reviewer dialog (fire-and-forget, actual NC creation happens on confirm)
+  ncWorkflowVersionSelectRef.value.submit()
+}
+
+const handleReviewersConfirmed = useLiveMutation(async (db, reviewers) => {
   saving.value = true
   try {
+    // Create NC first
     const nc = await createNc(form.value)
-    await ncWorkflowVersionSelectRef.value.submit()
-    await post(`/v1/services/nonconformances/${nc.id}/submitForReview`, {})
+
+    // Create WorkflowStepUser records for selected reviewers
+    for (const [stepId, userIds] of Object.entries(reviewers)) {
+      // Hard-delete any existing step users for this step
+      const existing = await db.WorkflowStepUser.where('stepId', stepId).exec()
+      await Promise.all(existing.map((su) => su.hardDelete()))
+
+      // Create new step users
+      for (const userId of userIds) {
+        const stepUser = db.WorkflowStepUser.create({ stepId, userId })
+        await stepUser.save()
+      }
+    }
+
+    // Navigate to NC detail page
     router.push(getCompanyPath(`/nonconformances/${nc.id}`))
   } catch (e) {
     toast.notify({ type: 'negative', message: e.message || 'Failed to create NC' })
   } finally {
     saving.value = false
   }
-}
+})
 </script>
 
 <template>
@@ -266,6 +284,7 @@ async function handleSubmit() {
           <NCWorkflowVersionSelect
             ref="ncWorkflowVersionSelectRef"
             v-model="form.workflowVersionId"
+            @submit="handleReviewersConfirmed"
           />
         </div>
       </div>

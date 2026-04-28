@@ -1,6 +1,6 @@
 <script setup>
+const emit = defineEmits(['submit'])
 const modelValue = defineModel({ type: String })
-
 const submitDialogOpen = ref(false)
 
 // Workflow steps for the selected version, ordered by stepOrder
@@ -13,38 +13,44 @@ const steps = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-// Whether the first step has a reviewer assigned (used to gate the Confirm button)
-const firstStepHasUser = useLiveQueryWithDeps(
-  [() => steps.value[0]?.id],
-  async (db, [firstStepId]) => {
-    if (!firstStepId) return false
-    const su = await db.WorkflowStepUser.where('stepId', firstStepId).first()
-    return !!su
-  },
-  { initial: false },
-)
+// Local state for reviewer selections: { [stepId]: userId }
+const selections = reactive({})
 
-let resolveSubmit = null
+// Whether the first step has a reviewer assigned (used to gate the Confirm button)
+const firstStepHasUser = computed(() => {
+  const firstStepId = steps.value[0]?.id
+  return !!firstStepId && !!selections[firstStepId]
+})
+
+// Reset selections when dialog opens
+watch(submitDialogOpen, (isOpen) => {
+  if (isOpen) {
+    Object.keys(selections).forEach((key) => delete selections[key])
+  }
+})
 
 function submit() {
-  if (!modelValue.value) return Promise.resolve()
-  return new Promise((resolve) => {
-    resolveSubmit = resolve
-    submitDialogOpen.value = true
-  })
+  if (!modelValue.value) return
+  submitDialogOpen.value = true
 }
 
 function handleConfirm() {
   if (!firstStepHasUser.value) return
+
+  // Build payload: { [stepId]: [userId] } — array-wrapped for future multi-select
+  const reviewers = {}
+  Object.entries(selections).forEach(([stepId, userId]) => {
+    if (userId) {
+      reviewers[stepId] = [userId]
+    }
+  })
+
   submitDialogOpen.value = false
-  resolveSubmit?.()
-  resolveSubmit = null
+  emit('submit', reviewers)
 }
 
 function handleCancel(close) {
   close()
-  resolveSubmit?.()
-  resolveSubmit = null
 }
 
 defineExpose({ submit })
@@ -61,6 +67,7 @@ defineExpose({ submit })
       <NCWorkflowStepReviewerSelect
         v-for="(step, index) in steps"
         :key="step.id"
+        v-model="selections[step.id]"
         :step="step"
         :stepIndex="index"
         :required="index === 0"

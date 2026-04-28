@@ -156,14 +156,16 @@ const breadcrumbs = computed(() => {
             @viewDocument="router.push(getCompanyPath(`/documents/${doc?.id}`))"
           />
 
-          <WorkflowInstanceNcSummary
-            v-else-if="instance.resourceType === 'Nonconformance'"
-            :nc="nc"
-            :workflowVersion="workflowVersion"
-            :statusLabel="statusLabel"
-            :statusColor="statusColor"
-            @viewNc="router.push(getCompanyPath(`/nonconformances/${nc?.id}`))"
-          />
+          <template v-else-if="instance.resourceType === 'Nonconformance'">
+            <WorkflowInstanceNcSummary
+              :nc="nc"
+              :workflowVersion="workflowVersion"
+              :statusLabel="statusLabel"
+              :statusColor="statusColor"
+              @viewNc="router.push(getCompanyPath(`/nonconformances/${nc?.id}`))"
+            />
+            <WorkflowInstanceNcOutcomeBanner :instanceStatusId="instance.statusId" />
+          </template>
 
           <WorkflowInstanceTimeline :workflowInstanceId="props.instanceId" />
         </div>

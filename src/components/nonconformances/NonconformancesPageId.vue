@@ -204,7 +204,7 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 </div>
                 <div v-if="nc.productId" class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Product</div>
-                  <span class="tw:text-sm tw:font-medium">{{ nc.productId }}</span>
+                  <ProductBadgeById :productId="nc.productId" />
                 </div>
                 <div v-if="nc.qtyAffected" class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Qty affected</div>

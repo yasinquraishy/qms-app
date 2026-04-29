@@ -1,8 +1,9 @@
 <script setup>
-defineProps({
+const props = defineProps({
   status: { type: Object, required: true },
   showDot: { type: Boolean, default: false },
   hideLabel: { type: Boolean, default: false },
+  module: { type: String, default: null },
 })
 
 const SCHEME_MAP = {
@@ -15,11 +16,21 @@ const SCHEME_MAP = {
   CANCELLED: { class: 'tw:bg-gray-100 tw:text-gray-600' },
 }
 
+const name = computed(() => {
+  if (!props.status) return '—'
+  if (props.module === 'Nonconformance') {
+    return props.status.name === 'Approved'
+      ? 'Completed'
+      : props.status.name || props.status.id || '—'
+  }
+  return props.status.name || props.status.id || '—'
+})
+
 const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-600' }
 </script>
 
 <template>
   <BaseBadge v-bind="$attrs" :class="scheme(status?.id).class" :showDot="showDot">
-    <template v-if="!hideLabel">{{ status?.name || status?.id || '—' }}</template>
+    <template v-if="!hideLabel">{{ name }}</template>
   </BaseBadge>
 </template>

@@ -310,36 +310,32 @@ function canReassignStep(step) {
                 </span>
                 <!-- View submission toggle -->
                 <button
-                  v-if="getSubmittedRecord(step.id, assignment.userId)"
+                  v-if="stepDefinitions[step.stepId]?.formSchema?.length"
                   class="tw:flex tw:items-center tw:gap-0.5 tw:text-[9px] tw:text-primary tw:hover:underline tw:cursor-pointer tw:ml-auto tw:shrink-0"
-                  @click="toggleRecordView(getSubmittedRecord(step.id, assignment.userId).id)"
+                  @click="toggleRecordView(`${step.id}-${assignment.userId}`)"
                 >
                   <component
                     :is="
-                      expandedRecords.has(getSubmittedRecord(step.id, assignment.userId).id)
+                      expandedRecords.has(`${step.id}-${assignment.userId}`)
                         ? IconChevronUp
                         : IconChevronDown
                     "
                     :size="10"
                   />
-                  {{
-                    expandedRecords.has(getSubmittedRecord(step.id, assignment.userId).id)
-                      ? 'Hide'
-                      : 'View'
-                  }}
+                  {{ expandedRecords.has(`${step.id}-${assignment.userId}`) ? 'Hide' : 'View' }}
                 </button>
               </div>
 
               <!-- Inline record details -->
               <div
                 v-if="
-                  getSubmittedRecord(step.id, assignment.userId) &&
-                  expandedRecords.has(getSubmittedRecord(step.id, assignment.userId).id)
+                  stepDefinitions[step.stepId]?.formSchema?.length &&
+                  expandedRecords.has(`${step.id}-${assignment.userId}`)
                 "
                 class="tw:ml-10 tw:mt-1 tw:mb-1 tw:p-2 tw:rounded tw:border tw:border-divider tw:bg-gray-50"
               >
                 <div
-                  v-if="getSubmittedRecord(step.id, assignment.userId).submittedAt"
+                  v-if="getSubmittedRecord(step.id, assignment.userId)?.submittedAt"
                   class="tw:text-[10px] tw:text-secondary tw:mb-2"
                 >
                   Submitted:
@@ -349,15 +345,14 @@ function canReassignStep(step) {
                     )
                   }}
                 </div>
+                <div v-else class="tw:text-[10px] tw:text-secondary tw:italic tw:mb-2">
+                  Not yet submitted
+                </div>
                 <DynamicForm
-                  v-if="stepDefinitions[step.stepId]?.formSchema?.length"
                   :fields="stepDefinitions[step.stepId].formSchema"
-                  :modelValue="getSubmittedRecord(step.id, assignment.userId).payload || {}"
+                  :modelValue="getSubmittedRecord(step.id, assignment.userId)?.payload || {}"
                   :readonly="true"
                 />
-                <div v-else class="tw:text-[10px] tw:text-secondary tw:italic">
-                  No form schema defined for this step.
-                </div>
               </div>
             </div>
           </div>

@@ -187,6 +187,8 @@ declare module 'vue' {
     ModuleBadge: typeof import('./src/components/badges/ModuleBadge.vue')['default']
     ModuleBadgeById: typeof import('./src/components/badges/ModuleBadgeById.vue')['default']
     ModuleSelectMenu: typeof import('./src/components/menus/ModuleSelectMenu.vue')['default']
+    NcDispositionTypeBadge: typeof import('./src/components/badges/NcDispositionTypeBadge.vue')['default']
+    NcDispositionTypeBadgeById: typeof import('./src/components/badges/NcDispositionTypeBadgeById.vue')['default']
     NcDispositionTypeSelectMenu: typeof import('./src/components/menus/NcDispositionTypeSelectMenu.vue')['default']
     NcLifecycleStrip: typeof import('./src/components/nonconformances/NcLifecycleStrip.vue')['default']
     NcRecordViewerDialog: typeof import('./src/components/nonconformances/NcRecordViewerDialog.vue')['default']

@@ -27,30 +27,26 @@ function getArray() {
       <slot name="button" v-bind="scope">
         <template v-if="multiple">
           <div v-if="getArray().length" class="tw:flex tw:flex-wrap tw:gap-1">
-            <BaseBadge
+            <NcDispositionTypeBadgeById
               v-for="id in getArray()"
               :key="id"
-              class="tw:bg-gray-100 tw:text-gray-700"
+              :dispositionTypeId="id"
               :clearable="!required || getArray().length > 1"
               @clear="() => scope.clear(id)"
-            >
-              {{ id }}
-            </BaseBadge>
+            />
           </div>
           <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder"
             >Select Disposition</span
           >
         </template>
         <template v-else>
-          <BaseBadge
+          <NcDispositionTypeBadgeById
             v-if="modelValue"
-            class="tw:bg-gray-100 tw:text-gray-700"
+            :dispositionTypeId="modelValue"
             :clearable="!required"
             selectable
             @clear="() => scope.clear(modelValue)"
-          >
-            {{ modelValue }}
-          </BaseBadge>
+          />
           <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder"
             >Select Disposition</span
           >

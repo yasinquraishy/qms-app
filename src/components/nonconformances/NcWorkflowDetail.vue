@@ -1,0 +1,396 @@
+<script setup>
+import { IconUserCheck, IconArrowBackUp, IconEye } from '@tabler/icons-vue'
+import { post } from '@/api'
+
+const props = defineProps({
+  ncId: { type: String, required: true },
+  workflowInstanceId: { type: String, default: null },
+  isOwner: { type: Boolean, default: false },
+})
+
+const toast = useToast()
+
+// ─── Workflow instance steps ──────────────────────────────────────────────────
+const workflowInstanceSteps = useLiveQueryWithDeps(
+  [() => props.workflowInstanceId],
+  async (db, [instanceId]) => {
+    if (!instanceId) return []
+    return db.WorkflowInstanceStep.where('workflowInstanceId', instanceId)
+      .orderBy('stepNumber', 'asc')
+      .exec()
+  },
+  { initial: [] },
+)
+
+// ─── Step definitions ─────────────────────────────────────────────────────────
+const stepDefinitions = useLiveQueryWithDeps(
+  [() => workflowInstanceSteps.value.map((s) => s.stepId).join(',')],
+  async (db, [stepIdsStr]) => {
+    if (!stepIdsStr) return {}
+    const stepIds = stepIdsStr.split(',')
+    const steps = await Promise.all(stepIds.map((id) => db.WorkflowStep.findByPk(id)))
+    const map = {}
+    for (const s of steps) {
+      if (s) map[s.id] = s
+    }
+    return map
+  },
+  { initial: {} },
+)
+
+// ─── Step assignments (all users per step) ────────────────────────────────────
+const stepAssignments = useLiveQueryWithDeps(
+  [() => workflowInstanceSteps.value.map((s) => s.id).join(',')],
+  async (db, [stepIdsStr]) => {
+    if (!stepIdsStr) return {}
+    const stepIds = stepIdsStr.split(',')
+    const map = {}
+    for (const stepId of stepIds) {
+      map[stepId] = await db.UserOnWorkflowInstanceStep.where(
+        'workflowInstanceStepId',
+        stepId,
+      ).exec()
+    }
+    return map
+  },
+  { initial: {} },
+)
+
+// ─── NC records per step ──────────────────────────────────────────────────────
+const ncRecords = useLiveQueryWithDeps(
+  [() => props.ncId],
+  async (db, [ncId]) => {
+    if (!ncId) return {}
+    const records = await db.NcRecord.where('ncId', ncId).exec()
+    const map = {}
+    for (const r of records) {
+      if (!map[r.workflowInstanceStepId]) map[r.workflowInstanceStepId] = []
+      map[r.workflowInstanceStepId].push(r)
+    }
+    return map
+  },
+  { initial: {}, models: 'NcRecord' },
+)
+
+// ─── Current IN_PROGRESS step ─────────────────────────────────────────────────
+const currentStep = computed(() =>
+  workflowInstanceSteps.value.find((s) => s.statusId === 'IN_PROGRESS'),
+)
+
+// ─── Send-back targets for current step ───────────────────────────────────────
+const sendBackTargets = useLiveQueryWithDeps(
+  [() => currentStep.value?.stepId],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return db.StepSendBackTarget.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+// ─── Record viewer ────────────────────────────────────────────────────────────
+const showRecordViewer = ref(false)
+const selectedRecordId = ref(null)
+
+function openRecordViewer(recordId) {
+  selectedRecordId.value = recordId
+  showRecordViewer.value = true
+}
+
+// ─── Reassign dialog ──────────────────────────────────────────────────────────
+const showReassignDialog = ref(false)
+const reassignStepId = ref(null)
+const reassignToUserId = ref(null)
+const reassigning = ref(false)
+
+const reassignStepDefinition = computed(() => {
+  if (!reassignStepId.value) return null
+  const instanceStep = workflowInstanceSteps.value.find((s) => s.id === reassignStepId.value)
+  return instanceStep ? stepDefinitions.value[instanceStep.stepId] : null
+})
+
+const reassignStepRoles = useLiveQueryWithDeps(
+  [() => reassignStepDefinition.value?.id],
+  async (db, [stepId]) => {
+    if (!stepId) return []
+    return db.WorkflowStepRole.where('stepId', stepId).exec()
+  },
+  { initial: [] },
+)
+
+const reassignCandidates = useLiveQueryWithDeps(
+  [() => reassignStepRoles.value.map((r) => r.roleId).join(',')],
+  async (db, [roleIdsStr]) => {
+    if (!roleIdsStr) return []
+    const roleIds = roleIdsStr.split(',')
+    const rolesOnUsers = await Promise.all(
+      roleIds.map((id) => db.RoleOnUser.where('roleId', id).exec()),
+    )
+    const userIds = [...new Set(rolesOnUsers.flat().map((r) => r.userId))]
+    const users = await Promise.all(userIds.map((id) => db.User.findByPk(id)))
+    return users.filter(Boolean)
+  },
+  { initial: [] },
+)
+
+const filteredReassignCandidates = computed(() => {
+  const currentAssignments = stepAssignments.value[reassignStepId.value] || []
+  const assignedUserIds = currentAssignments.map((a) => a.userId)
+  return reassignCandidates.value.filter((u) => !assignedUserIds.includes(u.id))
+})
+
+function openReassignDialog(stepId) {
+  reassignStepId.value = stepId
+  reassignToUserId.value = null
+  showReassignDialog.value = true
+}
+
+async function handleReassign() {
+  if (!reassignStepId.value || !reassignToUserId.value) return
+  reassigning.value = true
+  try {
+    await post(`/v1/services/nonconformances/${props.ncId}/reassignStepReviewer`, {
+      workflowInstanceStepId: reassignStepId.value,
+      toUserId: reassignToUserId.value,
+    })
+    showReassignDialog.value = false
+    toast.success('Reviewer reassigned successfully')
+  } catch (e) {
+    toast.error(e.message || 'Failed to reassign reviewer')
+  } finally {
+    reassigning.value = false
+  }
+}
+
+// ─── Send back dialog ─────────────────────────────────────────────────────────
+const showSendBackDialog = ref(false)
+const sendBackTargetStepId = ref(null)
+const sendingBack = ref(false)
+
+function openSendBackDialog() {
+  sendBackTargetStepId.value = null
+  showSendBackDialog.value = true
+}
+
+async function handleSendBack() {
+  if (!sendBackTargetStepId.value) return
+  sendingBack.value = true
+  try {
+    await post(`/v1/services/nonconformances/${props.ncId}/sendBack`, {
+      targetStepId: sendBackTargetStepId.value,
+    })
+    showSendBackDialog.value = false
+    toast.success('Step sent back successfully')
+  } catch (e) {
+    toast.error(e.message || 'Failed to send back step')
+  } finally {
+    sendingBack.value = false
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getStepStatusClass(statusId) {
+  return {
+    'tw:bg-blue-100 tw:text-blue-700': statusId === 'IN_PROGRESS',
+    'tw:bg-gray-100 tw:text-gray-600': statusId === 'PENDING',
+    'tw:bg-green-100 tw:text-green-700': statusId === 'APPROVED',
+    'tw:bg-red-100 tw:text-red-700': statusId === 'CANCELLED',
+    'tw:bg-orange-100 tw:text-orange-700': statusId === 'SENT_BACK',
+  }
+}
+
+function getUserStatusClass(statusId) {
+  return {
+    'tw:bg-gray-100 tw:text-gray-600': statusId === 'PENDING',
+    'tw:bg-blue-100 tw:text-blue-700': statusId === 'ASSIGNED',
+    'tw:bg-green-100 tw:text-green-700': statusId === 'APPROVED',
+    'tw:bg-red-100 tw:text-red-700': statusId === 'REJECTED',
+    'tw:bg-orange-100 tw:text-orange-700': statusId === 'REASSIGNED',
+    'tw:bg-yellow-100 tw:text-yellow-700': statusId === 'CANCELLED',
+  }
+}
+
+function getSubmittedRecord(instanceStepId, userId) {
+  const records = ncRecords.value[instanceStepId] || []
+  return records.find((r) => r.userId === userId && r.submittedAt)
+}
+
+function canReassignStep(step) {
+  return props.isOwner && (step.statusId === 'PENDING' || step.statusId === 'IN_PROGRESS')
+}
+</script>
+
+<template>
+  <div
+    v-if="workflowInstanceSteps.length"
+    class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-4"
+  >
+    <div
+      class="tw:flex tw:items-center tw:justify-between tw:pb-2 tw:border-b tw:border-divider tw:mb-3"
+    >
+      <span class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider">
+        Workflow steps
+      </span>
+      <button
+        v-if="isOwner && currentStep && sendBackTargets.length"
+        class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-amber-600 tw:hover:text-amber-700 tw:cursor-pointer tw:font-medium"
+        @click="openSendBackDialog"
+      >
+        <IconArrowBackUp :size="14" />
+        Send back
+      </button>
+    </div>
+
+    <div class="tw:flex tw:flex-col tw:gap-2">
+      <div
+        v-for="step in workflowInstanceSteps"
+        :key="step.id"
+        class="tw:flex tw:flex-col tw:gap-1.5 tw:p-2.5 tw:rounded-md tw:border tw:border-divider"
+      >
+        <!-- Step header -->
+        <div class="tw:flex tw:items-center tw:justify-between">
+          <span class="tw:text-xs tw:font-medium tw:text-on-main">
+            {{ step.stepNumber }}. {{ stepDefinitions[step.stepId]?.name || 'Step' }}
+          </span>
+          <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(step.statusId)">
+            {{ step.statusId }}
+          </BaseBadge>
+        </div>
+
+        <!-- Users on step -->
+        <div class="tw:flex tw:flex-col tw:gap-1">
+          <span class="tw:text-[10px] tw:text-secondary">Reviewers:</span>
+          <div v-if="stepAssignments[step.id]?.length" class="tw:flex tw:flex-col tw:gap-1">
+            <div
+              v-for="assignment in stepAssignments[step.id]"
+              :key="assignment.id"
+              class="tw:flex tw:items-center tw:gap-1.5"
+            >
+              <UserBadgeById :userId="assignment.userId" size="xs" />
+              <span
+                class="tw:text-[9px] tw:px-1 tw:py-0.5 tw:rounded tw:font-medium"
+                :class="getUserStatusClass(assignment.statusId)"
+              >
+                {{ assignment.statusId }}
+              </span>
+              <!-- View submission button -->
+              <button
+                v-if="getSubmittedRecord(step.id, assignment.userId)"
+                class="tw:flex tw:items-center tw:gap-0.5 tw:text-[9px] tw:text-primary tw:hover:underline tw:cursor-pointer tw:ml-auto"
+                @click="openRecordViewer(getSubmittedRecord(step.id, assignment.userId).id)"
+              >
+                <IconEye :size="10" />
+                View
+              </button>
+            </div>
+          </div>
+          <span v-else class="tw:text-[10px] tw:text-secondary tw:italic">—</span>
+        </div>
+
+        <!-- Reassign action -->
+        <div v-if="canReassignStep(step)" class="tw:flex tw:justify-end tw:mt-0.5">
+          <button
+            class="tw:flex tw:items-center tw:gap-1 tw:text-[10px] tw:text-primary tw:hover:underline tw:cursor-pointer"
+            @click="openReassignDialog(step.id)"
+          >
+            <IconUserCheck :size="12" />
+            Reassign
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reassign dialog -->
+  <BaseDialog v-model="showReassignDialog" title="Reassign Step Reviewer" maxWidth="md">
+    <div class="tw:mb-4">
+      <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-2">
+        Select new reviewer <span class="tw:text-red-500">*</span>
+      </label>
+      <div class="tw:flex tw:flex-col tw:gap-2">
+        <label
+          v-for="user in filteredReassignCandidates"
+          :key="user.id"
+          class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer tw:rounded-lg tw:px-3 tw:py-2 tw:border tw:transition-colors"
+          :class="
+            reassignToUserId === user.id
+              ? 'tw:border-primary tw:bg-primary/5'
+              : 'tw:border-divider tw:hover:bg-main-hover'
+          "
+        >
+          <input
+            v-model="reassignToUserId"
+            type="radio"
+            :value="user.id"
+            class="tw:accent-primary"
+          />
+          <div class="tw:flex-1 tw:min-w-0">
+            <div class="tw:text-sm tw:font-medium tw:text-on-main">
+              {{ [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email }}
+            </div>
+            <div class="tw:text-xs tw:text-secondary tw:truncate">{{ user.email }}</div>
+          </div>
+        </label>
+        <p v-if="!filteredReassignCandidates.length" class="tw:text-sm tw:text-secondary">
+          No eligible users available for reassignment.
+        </p>
+      </div>
+    </div>
+    <div class="tw:flex tw:justify-end tw:gap-2 tw:pt-3 tw:border-t tw:border-divider">
+      <BaseButton variant="outline" @click="showReassignDialog = false">Cancel</BaseButton>
+      <BaseButton
+        variant="primary"
+        :disabled="!reassignToUserId || reassigning"
+        @click="handleReassign"
+      >
+        {{ reassigning ? 'Reassigning…' : 'Reassign' }}
+      </BaseButton>
+    </div>
+  </BaseDialog>
+
+  <!-- Send back dialog -->
+  <BaseDialog v-model="showSendBackDialog" title="Send Back Step" maxWidth="md">
+    <div class="tw:mb-4">
+      <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-2">
+        Select target step to send back to <span class="tw:text-red-500">*</span>
+      </label>
+      <div class="tw:flex tw:flex-col tw:gap-2">
+        <label
+          v-for="target in sendBackTargets"
+          :key="target.id"
+          class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer tw:rounded-lg tw:px-3 tw:py-2 tw:border tw:transition-colors"
+          :class="
+            sendBackTargetStepId === target.targetStepId
+              ? 'tw:border-primary tw:bg-primary/5'
+              : 'tw:border-divider tw:hover:bg-main-hover'
+          "
+        >
+          <input
+            v-model="sendBackTargetStepId"
+            type="radio"
+            :value="target.targetStepId"
+            class="tw:accent-primary"
+          />
+          <span class="tw:text-sm tw:font-medium tw:text-on-main">
+            {{ stepDefinitions[target.targetStepId]?.name || target.targetStepId }}
+          </span>
+        </label>
+        <p v-if="!sendBackTargets.length" class="tw:text-sm tw:text-secondary">
+          No send-back targets configured for this step.
+        </p>
+      </div>
+    </div>
+    <div class="tw:flex tw:justify-end tw:gap-2 tw:pt-3 tw:border-t tw:border-divider">
+      <BaseButton variant="outline" @click="showSendBackDialog = false">Cancel</BaseButton>
+      <BaseButton
+        variant="primary"
+        :disabled="!sendBackTargetStepId || sendingBack"
+        @click="handleSendBack"
+      >
+        {{ sendingBack ? 'Sending…' : 'Send back' }}
+      </BaseButton>
+    </div>
+  </BaseDialog>
+
+  <!-- NC record viewer -->
+  <NcRecordViewerDialog v-model="showRecordViewer" :ncRecordId="selectedRecordId" />
+</template>

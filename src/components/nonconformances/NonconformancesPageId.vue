@@ -212,6 +212,25 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                     {{ nc.qtyAffected }} {{ nc.unitOfMeasure }}
                   </span>
                 </div>
+                <div v-if="nc.costOfNc" class="tw:flex tw:flex-col tw:gap-1">
+                  <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
+                  <span class="tw:text-sm tw:font-medium">
+                    {{
+                      nc.costOfNc.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+                    }}
+                  </span>
+                </div>
+                <div v-if="nc.creditFromSupplier" class="tw:flex tw:flex-col tw:gap-1">
+                  <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
+                  <span class="tw:text-sm tw:font-medium">
+                    {{
+                      nc.creditFromSupplier.toLocaleString('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                      })
+                    }}
+                  </span>
+                </div>
               </div>
             </div>
 

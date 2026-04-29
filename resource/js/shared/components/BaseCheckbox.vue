@@ -20,7 +20,7 @@ const checked = defineModel({
 
 <template>
   <label
-    class="tw:inline-flex tw:items-center tw:gap-2 tw:cursor-pointer tw:select-none"
+    class="tw:relative tw:inline-flex tw:items-center tw:gap-2 tw:cursor-pointer tw:select-none"
     :class="disabled ? 'tw:opacity-50 tw:cursor-not-allowed tw:pointer-events-none' : ''"
   >
     <input

@@ -17,7 +17,7 @@ const severityDotClass = {
 }
 
 function isOverdue(row) {
-  if (!row.dueDate || row.statusId === 'CLOSED' || row.statusId === 'VOID') return false
+  if (!row.dueDate || row.statusId === 'CLOSED') return false
   return new Date(row.dueDate) < new Date()
 }
 

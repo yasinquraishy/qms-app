@@ -1,5 +1,5 @@
 <script setup>
-import { IconChevronRight, IconAlertTriangle } from '@tabler/icons-vue'
+import { IconAlertTriangle } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { DateTime } from 'luxon'
@@ -21,24 +21,6 @@ const breadcrumbs = computed(() => [
   { label: 'Nonconformances', to: getCompanyPath('/nonconformances') },
   { label: nc.value?.ncNumber || nc.value?.title || 'Loading…' },
 ])
-
-// Status workflow progression for the strip
-const STATUS_ORDER = [
-  { id: 'DRAFT', label: 'Draft' },
-  { id: 'UNDER_REVIEW', label: 'Review' },
-  { id: 'UNDER_INVESTIGATION', label: 'Investigation' },
-  { id: 'PENDING_DISPOSITION', label: 'Pending disposition' },
-  { id: 'CLOSED', label: 'Closed' },
-]
-
-function stepState(stepId) {
-  if (!nc.value) return 'todo'
-  const currentIdx = STATUS_ORDER.findIndex((s) => s.id === nc.value.statusId)
-  const stepIdx = STATUS_ORDER.findIndex((s) => s.id === stepId)
-  if (stepIdx < currentIdx) return 'done'
-  if (stepIdx === currentIdx) return 'current'
-  return 'todo'
-}
 
 // Inline editing state
 const dispositionForm = ref({
@@ -109,21 +91,9 @@ async function handleSubmitForReview() {
   }
 }
 
-async function handleSendBack() {
-  if (!nc.value) return
-  saving.value = true
-  try {
-    nc.value.statusId = 'UNDER_INVESTIGATION'
-    nc.value.updatedBy = currentSession.value?.userId || ''
-    await nc.value.save()
-  } finally {
-    saving.value = false
-  }
-}
-
 const isOverdue = computed(() => {
   if (!nc.value?.dueDate) return false
-  if (['CLOSED', 'VOID'].includes(nc.value.statusId)) return false
+  if (nc.value.statusId === 'CLOSED') return false
   return nc.value.dueDate < new Date().toISOString().slice(0, 10)
 })
 
@@ -160,29 +130,6 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
 
     <div v-else-if="nc" class="tw:overflow-y-auto tw:flex-1">
       <div class="tw:p-5 tw:flex tw:flex-col tw:gap-4">
-        <!-- Workflow strip -->
-        <div
-          class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:px-5 tw:py-3 tw:flex tw:items-center tw:overflow-x-auto tw:gap-0"
-        >
-          <template v-for="(step, i) in STATUS_ORDER" :key="step.id">
-            <div
-              class="tw:px-3 tw:py-1.5 tw:rounded-md tw:text-xs tw:font-medium tw:whitespace-nowrap tw:shrink-0"
-              :class="{
-                'tw:bg-green-100 tw:text-green-700': stepState(step.id) === 'done',
-                'tw:bg-primary tw:text-white': stepState(step.id) === 'current',
-                'tw:bg-main-hover tw:text-secondary': stepState(step.id) === 'todo',
-              }"
-            >
-              {{ step.label }}
-            </div>
-            <IconChevronRight
-              v-if="i < STATUS_ORDER.length - 1"
-              :size="14"
-              class="tw:text-secondary tw:shrink-0 tw:mx-1"
-            />
-          </template>
-        </div>
-
         <!-- 2-column layout -->
         <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-[1fr_280px] tw:gap-4 tw:items-start">
           <!-- Left column -->
@@ -324,9 +271,6 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 >
                   Record disposition &amp; close NC →
                 </BaseButton>
-                <BaseButton :disabled="saving" @click="handleSendBack">
-                  Send back to investigation
-                </BaseButton>
               </div>
             </div>
           </div>
@@ -436,7 +380,8 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
     <BaseEmptyState
       v-else
       title="NC not found"
-      description="This nonconformance could not be found."
+      description="This nonconformance co
+      uld not be found."
     />
   </div>
 </template>

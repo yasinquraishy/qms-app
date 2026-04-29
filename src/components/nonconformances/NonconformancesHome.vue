@@ -12,8 +12,8 @@ const canDelete = computed(() => isAllowed(['nonconformances:delete']))
 const filters = ref({ search: '', statusId: null, severityId: null, typeId: null })
 const activeFilter = ref('all_open')
 
-const CLOSED_STATUSES = ['CLOSED', 'VOID']
-const OPEN_STATUSES = ['DRAFT', 'UNDER_REVIEW', 'UNDER_INVESTIGATION', 'PENDING_DISPOSITION']
+const CLOSED_STATUSES = ['CLOSED']
+const OPEN_STATUSES = ['DRAFT', 'UNDER_REVIEW']
 
 function applyFilters(results, search, statusId, severityId, typeId) {
   if (search) {
@@ -42,8 +42,6 @@ function applyActiveFilter(results, af) {
     return results.filter(
       (r) => r.dueDate && r.dueDate < today && OPEN_STATUSES.includes(r.statusId),
     )
-  if (af === 'pending_disposition')
-    return results.filter((r) => r.statusId === 'PENDING_DISPOSITION')
   if (af === 'closed') return results.filter((r) => CLOSED_STATUSES.includes(r.statusId))
   return results
 }

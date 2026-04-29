@@ -10,7 +10,6 @@ const filterPills = [
   { value: 'critical', label: 'Critical' },
   { value: 'major', label: 'Major' },
   { value: 'overdue', label: 'Overdue' },
-  { value: 'pending_disposition', label: 'Pending disposition' },
   { value: 'closed', label: 'Closed' },
 ]
 </script>

@@ -41,7 +41,7 @@ const approvalRuleOptions = [
                 {{ opt.label }}
               </option>
             </select>
-            <p class="tw:text-xs tw:text-secondary">ALL or ANY approvers required</p>
+            <p class="tw:text-xs tw:text-secondary">ALL or ANY tasks required</p>
           </div>
         </div>
 

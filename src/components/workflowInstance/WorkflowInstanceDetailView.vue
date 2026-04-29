@@ -110,21 +110,21 @@ const elapsedTime = computed(() => {
 const breadcrumbs = computed(() => {
   if (instance.value?.resourceType === 'Nonconformance') {
     return [
-      { label: 'Approvals Inbox', to: getCompanyPath('/workflow-instances') },
+      { label: 'Workflow Instances', to: getCompanyPath('/workflow-instances') },
       {
         label: nc.value?.ncNumber || nc.value?.title || 'Nonconformance',
         to: nc.value?.id ? getCompanyPath(`/nonconformances/${nc.value.id}`) : undefined,
       },
-      { label: 'Approval' },
+      { label: 'Workflow' },
     ]
   }
   return [
-    { label: 'Approvals Inbox', to: getCompanyPath('/workflow-instances') },
+    { label: 'Workflow Instances', to: getCompanyPath('/workflow-instances') },
     {
       label: doc.value?.title || 'Document',
       to: doc.value?.id ? getCompanyPath(`/documents/${doc.value.id}`) : undefined,
     },
-    { label: 'Approval' },
+    { label: 'Workflow' },
   ]
 })
 </script>
@@ -189,7 +189,7 @@ const breadcrumbs = computed(() => {
       v-else
       class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:min-h-[60vh] tw:text-center"
     >
-      <BaseEmptyState :icon="IconFileAlert" title="Approval instance not found" />
+      <BaseEmptyState :icon="IconFileAlert" title="Workflow instance not found" />
     </div>
   </div>
 </template>

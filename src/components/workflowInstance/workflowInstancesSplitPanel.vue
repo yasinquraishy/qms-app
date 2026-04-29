@@ -94,7 +94,7 @@ const canActOnStep = computed(() => myTask.value?.statusId === 'ASSIGNED')
       <div v-else class="tw:text-center tw:text-sm tw:text-secondary tw:py-2">
         {{
           instance.resourceType === 'Nonconformance'
-            ? 'Approval actions not available for nonconformances.'
+            ? 'Task actions not available for nonconformances.'
             : 'No action required from you on this step.'
         }}
       </div>

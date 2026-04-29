@@ -47,7 +47,7 @@ function navigateToWorkflow(workflow) {
       v-else-if="filteredWorkflows.length === 0"
       class="tw:col-span-3"
       title="No workflows found"
-      description="Create your first approval workflow to get started."
+      description="Create your first workflow to get started."
     />
 
     <!-- Workflow Cards -->

@@ -54,8 +54,8 @@ const usersMap = useLiveQueryWithDeps(
           Rule: {{ step?.approvalRule }} &bull;
           {{
             step?.approvalRule === 'ANY'
-              ? 'First approval completes step'
-              : 'All approvers must sign'
+              ? 'First task completes step'
+              : 'All tasks must be completed'
           }}
         </p>
       </div>

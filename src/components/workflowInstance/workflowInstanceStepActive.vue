@@ -76,9 +76,9 @@ const usersMap = useLiveQueryWithDeps(
           <WorkflowInstanceStepStatusBadgeById :statusId="instanceStep?.statusId" />
         </h3>
         <p class="tw:text-xs tw:text-secondary">
-          Rule: {{ step?.approvalRule }} approvers must sign &bull;
+          Rule: {{ step?.approvalRule }} tasks must be completed &bull;
           <span class="tw:text-primary tw:font-medium">
-            {{ approvedCount }} of {{ tasks.length }} approved
+            {{ approvedCount }} of {{ tasks.length }} completed
           </span>
         </p>
       </div>

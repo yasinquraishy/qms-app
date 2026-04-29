@@ -36,7 +36,7 @@ function stepState(step) {
 
 <template>
   <div class="tw:space-y-4">
-    <h2 class="tw:text-lg tw:font-bold tw:text-on-main tw:px-1">Approval Workflow</h2>
+    <h2 class="tw:text-lg tw:font-bold tw:text-on-main tw:px-1">Workflow</h2>
 
     <div v-if="loading" class="tw:flex tw:justify-center tw:py-12">
       <div

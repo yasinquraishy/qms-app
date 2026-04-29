@@ -190,10 +190,10 @@ watch(
 
         <!-- Right Column -->
         <div class="tw:space-y-6">
-          <!-- Approval Rule -->
+          <!-- Rule -->
           <div v-if="selectedApprovalRule === null">
             <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-3">
-              Approval Rule
+              Rule
             </label>
             <div class="tw:grid tw:grid-cols-2 tw:gap-3">
               <label
@@ -218,7 +218,7 @@ watch(
                   ALL
                 </span>
                 <span class="tw:text-[10px] tw:leading-tight tw:text-secondary">
-                  All assigned approvers must approve to advance.
+                  All assigned tasks must be completed to advance.
                 </span>
               </label>
               <label
@@ -243,7 +243,7 @@ watch(
                   ANY
                 </span>
                 <span class="tw:text-[10px] tw:leading-tight tw:text-secondary">
-                  Only one approver needs to sign to advance.
+                  Only one task needs to be completed to advance.
                 </span>
               </label>
             </div>
@@ -359,12 +359,12 @@ watch(
       </div>
     </div>
 
-    <!-- Step Approvers -->
+    <!-- Step Assignee -->
     <div class="tw:space-y-4">
       <div class="tw:flex tw:items-center tw:justify-between">
         <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
           <IconUsers :size="22" />
-          <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Step Approvers</h2>
+          <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Step Assignees</h2>
         </div>
       </div>
 

@@ -122,7 +122,7 @@ function removeCondition(index) {
 
     <!-- Empty State -->
     <div v-if="conditions.length === 0" class="tw:text-center tw:py-4 tw:text-sm tw:text-secondary">
-      No conditions defined. Add a rule to conditionally assign approvers.
+      No conditions defined. Add a rule to conditionally assign task.
     </div>
 
     <!-- Add Button -->

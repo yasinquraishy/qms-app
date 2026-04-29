@@ -67,7 +67,7 @@ const approverLabel = computed(() => {
   const parts = []
   if (roles > 0) parts.push(`${roles} Role${roles !== 1 ? 's' : ''}`)
   if (users > 0) parts.push(`${users} User${users !== 1 ? 's' : ''}`)
-  return parts.length > 0 ? parts.join(', ') : 'No approvers'
+  return parts.length > 0 ? parts.join(', ') : 'No tasks'
 })
 
 const menuItems = computed(() => {

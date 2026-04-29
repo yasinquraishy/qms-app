@@ -44,7 +44,7 @@ function handleWorkflowCreated(workflow) {
       <div class="tw:flex tw:flex-col tw:gap-1">
         <div class="tw:text-3xl tw:font-bold tw:text-on-sidebar">Workflows</div>
         <div class="tw:text-sm tw:text-secondary">
-          Design and manage multi-step approval sequences for documents and records.
+          Design and manage multi-step workflow sequences for Documents and NCs.
         </div>
       </div>
     </div>

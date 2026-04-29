@@ -8,7 +8,7 @@ const filters = ref({ search: '', statusId: null })
       <div>
         <div class="tw:text-xl tw:font-bold tw:text-on-main">My Tasks</div>
         <div class="tw:text-xs tw:text-secondary tw:hidden tw:sm:block">
-          Review and act on approval tasks assigned to you.
+          Review and act on tasks assigned to you.
         </div>
       </div>
     </SafeTeleport>

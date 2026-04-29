@@ -409,7 +409,7 @@ watch(steps, () => {
           <BaseTextInput
             v-model="workflow.name"
             name="name"
-            placeholder="e.g. Global SOP Multi-Stage Approval"
+            placeholder="e.g. Global SOP Multi-Stage Workflow"
             :disabled="!canUpdate"
           />
         </div>

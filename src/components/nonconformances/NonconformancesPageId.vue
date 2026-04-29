@@ -409,7 +409,7 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
               <div
                 class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-2 tw:border-b tw:border-divider tw:mb-3"
               >
-                Approval workflow
+                NC workflow
               </div>
 
               <!-- Active workflow instance -->
@@ -419,13 +419,13 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                   class="tw:mt-3 tw:flex tw:items-center tw:text-sm tw:text-primary tw:font-medium tw:hover:underline"
                   :to="getCompanyPath(`/workflow-instances/${workflowInstance.id}`)"
                 >
-                  View approval details →
+                  View workflow details →
                 </RouterLink>
               </div>
 
               <!-- Not yet submitted -->
               <div v-else-if="nc.workflowVersionId" class="tw:text-sm tw:text-secondary">
-                Approval workflow assigned but not yet submitted.
+                workflow assigned but not yet submitted.
               </div>
             </div>
           </div>

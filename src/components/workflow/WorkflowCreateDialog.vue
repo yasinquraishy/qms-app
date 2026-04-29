@@ -83,9 +83,7 @@ function resetForm() {
     </template>
 
     <div class="tw:flex tw:flex-col tw:gap-4">
-      <p class="tw:text-sm tw:text-secondary tw:leading-relaxed">
-        Define a new approval workflow to manage multi-step document approvals.
-      </p>
+      <p class="tw:text-sm tw:text-secondary tw:leading-relaxed">Define a new workflow.</p>
 
       <div class="tw:flex tw:flex-col tw:gap-4">
         <!-- Name -->
@@ -93,7 +91,7 @@ function resetForm() {
           v-model="form.name"
           name="name"
           label="Workflow Name"
-          placeholder="e.g. Global SOP Multi-Stage Approval"
+          placeholder="e.g. Global SOP Multi-Stage Workflow"
           autofocus
           required
         />

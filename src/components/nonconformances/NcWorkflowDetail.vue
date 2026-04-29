@@ -56,6 +56,34 @@ const stepAssignments = useLiveQueryWithDeps(
   { initial: {} },
 )
 
+// ─── User lookup for displaying names ─────────────────────────────────────────
+const assignedUsers = useLiveQueryWithDeps(
+  [
+    () =>
+      Object.values(stepAssignments.value)
+        .flat()
+        .map((a) => a.userId)
+        .join(','),
+  ],
+  async (db, [userIdsStr]) => {
+    if (!userIdsStr) return {}
+    const userIds = [...new Set(userIdsStr.split(','))]
+    const users = await Promise.all(userIds.map((id) => db.User.findByPk(id)))
+    const map = {}
+    for (const u of users) {
+      if (u) map[u.id] = u
+    }
+    return map
+  },
+  { initial: {} },
+)
+
+function getUserName(userId) {
+  const u = assignedUsers.value[userId]
+  if (!u) return '—'
+  return [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email
+}
+
 // ─── NC records per step ──────────────────────────────────────────────────────
 const ncRecords = useLiveQueryWithDeps(
   [() => props.ncId],
@@ -263,11 +291,14 @@ function canReassignStep(step) {
             <div
               v-for="assignment in stepAssignments[step.id]"
               :key="assignment.id"
-              class="tw:flex tw:items-center tw:gap-1.5"
+              class="tw:flex tw:items-center tw:gap-2"
             >
-              <UserBadgeById :userId="assignment.userId" size="xs" />
+              <UserAvatarById :userId="assignment.userId" class="tw:size-8" />
+              <span class="tw:text-xs tw:text-on-main tw:font-medium tw:truncate">
+                {{ getUserName(assignment.userId) }}
+              </span>
               <span
-                class="tw:text-[9px] tw:px-1 tw:py-0.5 tw:rounded tw:font-medium"
+                class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded tw:font-medium tw:shrink-0"
                 :class="getUserStatusClass(assignment.statusId)"
               >
                 {{ assignment.statusId }}
@@ -275,7 +306,7 @@ function canReassignStep(step) {
               <!-- View submission button -->
               <button
                 v-if="getSubmittedRecord(step.id, assignment.userId)"
-                class="tw:flex tw:items-center tw:gap-0.5 tw:text-[9px] tw:text-primary tw:hover:underline tw:cursor-pointer tw:ml-auto"
+                class="tw:flex tw:items-center tw:gap-0.5 tw:text-[9px] tw:text-primary tw:hover:underline tw:cursor-pointer tw:ml-auto tw:shrink-0"
                 @click="openRecordViewer(getSubmittedRecord(step.id, assignment.userId).id)"
               >
                 <IconEye :size="10" />

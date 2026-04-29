@@ -1,5 +1,5 @@
 <script setup>
-import { IconUserCheck, IconArrowBackUp, IconChevronDown, IconChevronUp } from '@tabler/icons-vue'
+import { IconUserCheck, IconArrowBackUp, IconEye, IconX } from '@tabler/icons-vue'
 import { post } from '@/api'
 import DynamicForm from '@/components/form/DynamicForm.js'
 
@@ -116,15 +116,26 @@ const sendBackTargets = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-// ─── Inline record viewer ─────────────────────────────────────────────────────
-const expandedRecords = ref(new Set())
+// ─── Record viewer panel ──────────────────────────────────────────────────────
+const recordPanelOpen = ref(false)
+const recordPanelStepId = ref(null)
+const recordPanelUserId = ref(null)
 
-function toggleRecordView(recordId) {
-  if (expandedRecords.value.has(recordId)) {
-    expandedRecords.value.delete(recordId)
-  } else {
-    expandedRecords.value.add(recordId)
-  }
+const recordPanelStep = computed(() => {
+  if (!recordPanelStepId.value) return null
+  const instanceStep = workflowInstanceSteps.value.find((s) => s.id === recordPanelStepId.value)
+  return instanceStep ? stepDefinitions.value[instanceStep.stepId] : null
+})
+
+const recordPanelRecord = computed(() => {
+  if (!recordPanelStepId.value || !recordPanelUserId.value) return null
+  return getSubmittedRecord(recordPanelStepId.value, recordPanelUserId.value)
+})
+
+function openRecordPanel(instanceStepId, userId) {
+  recordPanelStepId.value = instanceStepId
+  recordPanelUserId.value = userId
+  recordPanelOpen.value = true
 }
 
 // ─── Reassign dialog ──────────────────────────────────────────────────────────
@@ -308,51 +319,15 @@ function canReassignStep(step) {
                 >
                   {{ getStatusLabel(assignment.statusId) }}
                 </span>
-                <!-- View submission toggle -->
+                <!-- View submission button -->
                 <button
                   v-if="stepDefinitions[step.stepId]?.formSchema?.length"
                   class="tw:flex tw:items-center tw:gap-0.5 tw:text-[9px] tw:text-primary tw:hover:underline tw:cursor-pointer tw:ml-auto tw:shrink-0"
-                  @click="toggleRecordView(`${step.id}-${assignment.userId}`)"
+                  @click="openRecordPanel(step.id, assignment.userId)"
                 >
-                  <component
-                    :is="
-                      expandedRecords.has(`${step.id}-${assignment.userId}`)
-                        ? IconChevronUp
-                        : IconChevronDown
-                    "
-                    :size="10"
-                  />
-                  {{ expandedRecords.has(`${step.id}-${assignment.userId}`) ? 'Hide' : 'View' }}
+                  <IconEye :size="10" />
+                  View
                 </button>
-              </div>
-
-              <!-- Inline record details -->
-              <div
-                v-if="
-                  stepDefinitions[step.stepId]?.formSchema?.length &&
-                  expandedRecords.has(`${step.id}-${assignment.userId}`)
-                "
-                class="tw:ml-10 tw:mt-1 tw:mb-1 tw:p-2 tw:rounded tw:border tw:border-divider tw:bg-gray-50"
-              >
-                <div
-                  v-if="getSubmittedRecord(step.id, assignment.userId)?.submittedAt"
-                  class="tw:text-[10px] tw:text-secondary tw:mb-2"
-                >
-                  Submitted:
-                  {{
-                    getSubmittedRecord(step.id, assignment.userId).submittedAt.formatDate(
-                      'dateTime',
-                    )
-                  }}
-                </div>
-                <div v-else class="tw:text-[10px] tw:text-secondary tw:italic tw:mb-2">
-                  Not yet submitted
-                </div>
-                <DynamicForm
-                  :fields="stepDefinitions[step.stepId].formSchema"
-                  :modelValue="getSubmittedRecord(step.id, assignment.userId)?.payload || {}"
-                  :readonly="true"
-                />
               </div>
             </div>
           </div>
@@ -463,4 +438,65 @@ function canReassignStep(step) {
       </BaseButton>
     </div>
   </BaseDialog>
+
+  <!-- Record viewer panel -->
+  <Teleport to="body">
+    <Transition
+      enterActiveClass="tw:transition-transform tw:duration-300 tw:ease-out"
+      enterFromClass="tw:translate-y-full"
+      enterToClass="tw:translate-y-0"
+      leaveActiveClass="tw:transition-transform tw:duration-200 tw:ease-in"
+      leaveFromClass="tw:translate-y-0"
+      leaveToClass="tw:translate-y-full"
+    >
+      <div
+        v-if="recordPanelOpen"
+        class="tw:fixed tw:inset-0 tw:z-50 tw:flex tw:flex-col tw:bg-main"
+      >
+        <div class="tw:flex tw:flex-col tw:h-full tw:flex-nowrap">
+          <!-- Header -->
+          <div
+            class="tw:flex tw:items-center tw:border-b tw:border-divider tw:py-3 tw:px-4 tw:shrink-0"
+          >
+            <div class="tw:flex tw:items-center tw:gap-3">
+              <div class="tw:text-lg tw:font-medium tw:text-on-main">
+                {{ recordPanelStep?.name || 'Step' }} — Record
+              </div>
+              <span v-if="recordPanelUserId" class="tw:text-sm tw:text-secondary">
+                by {{ getUserName(recordPanelUserId) }}
+              </span>
+            </div>
+            <div class="tw:flex-1" />
+            <div v-if="recordPanelRecord?.submittedAt" class="tw:text-xs tw:text-secondary tw:mr-4">
+              Submitted: {{ recordPanelRecord.submittedAt.formatDate('dateTime') }}
+            </div>
+            <div v-else class="tw:text-xs tw:text-secondary tw:italic tw:mr-4">
+              Not yet submitted
+            </div>
+            <button
+              class="tw:p-1.5 tw:rounded-full tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-main-hover tw:text-secondary tw:transition-colors"
+              @click="recordPanelOpen = false"
+            >
+              <IconX :size="20" />
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="tw:flex-1 tw:overflow-auto tw:bg-sidebar">
+            <div class="tw:max-w-175 tw:mx-auto tw:p-6">
+              <DynamicForm
+                v-if="recordPanelStep?.formSchema?.length"
+                :fields="recordPanelStep.formSchema"
+                :modelValue="recordPanelRecord?.payload || {}"
+                :readonly="true"
+              />
+              <div v-else class="tw:text-sm tw:text-secondary tw:italic">
+                No form schema defined for this step.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>

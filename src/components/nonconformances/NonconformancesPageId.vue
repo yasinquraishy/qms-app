@@ -215,30 +215,12 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
               </div>
             </div>
 
-            <!-- Investigation card -->
-            <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
-              <div
-                class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
-              >
-                Investigation findings
-              </div>
-              <div v-if="nc.rootCauseCategoryId" class="tw:mb-3">
-                <div class="tw:text-xs tw:text-secondary tw:mb-1">Root cause category</div>
-                <BaseBadge class="tw:bg-amber-100 tw:text-amber-700">
-                  {{ nc.rootCauseCategoryId }}
-                </BaseBadge>
-              </div>
-              <div v-if="nc.rootCause" class="tw:mb-3">
-                <div class="tw:text-xs tw:text-secondary tw:mb-1">Root cause</div>
-                <p class="tw:text-sm tw:text-on-main tw:leading-relaxed">{{ nc.rootCause }}</p>
-              </div>
-              <div
-                v-if="!nc.rootCauseCategoryId && !nc.rootCause"
-                class="tw:text-sm tw:text-secondary tw:italic"
-              >
-                No investigation findings recorded yet.
-              </div>
-            </div>
+            <NcWorkflowDetail
+              v-if="workflowInstance?.statusId === 'IN_PROGRESS'"
+              :ncId="id"
+              :workflowInstanceId="workflowInstance?.id"
+              :isOwner="isOwner"
+            />
 
             <!-- Disposition card -->
             <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
@@ -407,12 +389,6 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
             </div>
 
             <!-- Workflow detail component (steps, reassign, send-back, record viewer) -->
-            <NcWorkflowDetail
-              v-if="workflowInstance?.statusId === 'IN_PROGRESS'"
-              :ncId="id"
-              :workflowInstanceId="workflowInstance?.id"
-              :isOwner="isOwner"
-            />
           </div>
         </div>
       </div>

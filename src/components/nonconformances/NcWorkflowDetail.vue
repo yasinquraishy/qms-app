@@ -1,6 +1,7 @@
 <script setup>
-import { IconUserCheck, IconArrowBackUp, IconEye } from '@tabler/icons-vue'
+import { IconUserCheck, IconArrowBackUp, IconChevronDown, IconChevronUp } from '@tabler/icons-vue'
 import { post } from '@/api'
+import DynamicForm from '@/components/form/DynamicForm.js'
 
 const props = defineProps({
   ncId: { type: String, required: true },
@@ -115,13 +116,15 @@ const sendBackTargets = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-// ─── Record viewer ────────────────────────────────────────────────────────────
-const showRecordViewer = ref(false)
-const selectedRecordId = ref(null)
+// ─── Inline record viewer ─────────────────────────────────────────────────────
+const expandedRecords = ref(new Set())
 
-function openRecordViewer(recordId) {
-  selectedRecordId.value = recordId
-  showRecordViewer.value = true
+function toggleRecordView(recordId) {
+  if (expandedRecords.value.has(recordId)) {
+    expandedRecords.value.delete(recordId)
+  } else {
+    expandedRecords.value.add(recordId)
+  }
 }
 
 // ─── Reassign dialog ──────────────────────────────────────────────────────────
@@ -242,6 +245,11 @@ function getSubmittedRecord(instanceStepId, userId) {
   return records.find((r) => r.userId === userId && r.submittedAt)
 }
 
+function getStatusLabel(statusId) {
+  if (statusId === 'APPROVED') return 'Completed'
+  return statusId.replace('_', ' ')
+}
+
 function canReassignStep(step) {
   return props.isOwner && (step.statusId === 'PENDING' || step.statusId === 'IN_PROGRESS')
 }
@@ -280,7 +288,7 @@ function canReassignStep(step) {
             {{ step.stepNumber }}. {{ stepDefinitions[step.stepId]?.name || 'Step' }}
           </span>
           <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(step.statusId)">
-            {{ step.statusId }}
+            {{ getStatusLabel(step.statusId) }}
           </BaseBadge>
         </div>
 
@@ -288,30 +296,69 @@ function canReassignStep(step) {
         <div class="tw:flex tw:flex-col tw:gap-1">
           <span class="tw:text-[10px] tw:text-secondary">Reviewers:</span>
           <div v-if="stepAssignments[step.id]?.length" class="tw:flex tw:flex-col tw:gap-1">
-            <div
-              v-for="assignment in stepAssignments[step.id]"
-              :key="assignment.id"
-              class="tw:flex tw:items-center tw:gap-2"
-            >
-              <UserAvatarById :userId="assignment.userId" class="tw:size-8" />
-              <span class="tw:text-xs tw:text-on-main tw:font-medium tw:truncate">
-                {{ getUserName(assignment.userId) }}
-              </span>
-              <span
-                class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded tw:font-medium tw:shrink-0"
-                :class="getUserStatusClass(assignment.statusId)"
+            <div v-for="assignment in stepAssignments[step.id]" :key="assignment.id">
+              <div class="tw:flex tw:items-center tw:gap-2">
+                <UserAvatarById :userId="assignment.userId" class="tw:size-8" />
+                <span class="tw:text-xs tw:text-on-main tw:font-medium tw:truncate">
+                  {{ getUserName(assignment.userId) }}
+                </span>
+                <span
+                  class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded tw:font-medium tw:shrink-0"
+                  :class="getUserStatusClass(assignment.statusId)"
+                >
+                  {{ getStatusLabel(assignment.statusId) }}
+                </span>
+                <!-- View submission toggle -->
+                <button
+                  v-if="getSubmittedRecord(step.id, assignment.userId)"
+                  class="tw:flex tw:items-center tw:gap-0.5 tw:text-[9px] tw:text-primary tw:hover:underline tw:cursor-pointer tw:ml-auto tw:shrink-0"
+                  @click="toggleRecordView(getSubmittedRecord(step.id, assignment.userId).id)"
+                >
+                  <component
+                    :is="
+                      expandedRecords.has(getSubmittedRecord(step.id, assignment.userId).id)
+                        ? IconChevronUp
+                        : IconChevronDown
+                    "
+                    :size="10"
+                  />
+                  {{
+                    expandedRecords.has(getSubmittedRecord(step.id, assignment.userId).id)
+                      ? 'Hide'
+                      : 'View'
+                  }}
+                </button>
+              </div>
+
+              <!-- Inline record details -->
+              <div
+                v-if="
+                  getSubmittedRecord(step.id, assignment.userId) &&
+                  expandedRecords.has(getSubmittedRecord(step.id, assignment.userId).id)
+                "
+                class="tw:ml-10 tw:mt-1 tw:mb-1 tw:p-2 tw:rounded tw:border tw:border-divider tw:bg-gray-50"
               >
-                {{ assignment.statusId }}
-              </span>
-              <!-- View submission button -->
-              <button
-                v-if="getSubmittedRecord(step.id, assignment.userId)"
-                class="tw:flex tw:items-center tw:gap-0.5 tw:text-[9px] tw:text-primary tw:hover:underline tw:cursor-pointer tw:ml-auto tw:shrink-0"
-                @click="openRecordViewer(getSubmittedRecord(step.id, assignment.userId).id)"
-              >
-                <IconEye :size="10" />
-                View
-              </button>
+                <div
+                  v-if="getSubmittedRecord(step.id, assignment.userId).submittedAt"
+                  class="tw:text-[10px] tw:text-secondary tw:mb-2"
+                >
+                  Submitted:
+                  {{
+                    getSubmittedRecord(step.id, assignment.userId).submittedAt.formatDate(
+                      'dateTime',
+                    )
+                  }}
+                </div>
+                <DynamicForm
+                  v-if="stepDefinitions[step.stepId]?.formSchema?.length"
+                  :fields="stepDefinitions[step.stepId].formSchema"
+                  :modelValue="getSubmittedRecord(step.id, assignment.userId).payload || {}"
+                  :readonly="true"
+                />
+                <div v-else class="tw:text-[10px] tw:text-secondary tw:italic">
+                  No form schema defined for this step.
+                </div>
+              </div>
             </div>
           </div>
           <span v-else class="tw:text-[10px] tw:text-secondary tw:italic">—</span>
@@ -421,7 +468,4 @@ function canReassignStep(step) {
       </BaseButton>
     </div>
   </BaseDialog>
-
-  <!-- NC record viewer -->
-  <NcRecordViewerDialog v-model="showRecordViewer" :ncRecordId="selectedRecordId" />
 </template>

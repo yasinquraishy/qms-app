@@ -142,6 +142,7 @@ declare module 'vue' {
     FormCanvasField: typeof import('./src/components/form-builder/FormCanvasField.vue')['default']
     FormFieldConfig: typeof import('./src/components/form-builder/FormFieldConfig.vue')['default']
     FormFieldPalette: typeof import('./src/components/form-builder/FormFieldPalette.vue')['default']
+    FormSchemaReadonlyView: typeof import('./src/components/form/FormSchemaReadonlyView.vue')['default']
     FormTemplateCreateTemplate: typeof import('./src/components/formTemplate/formTemplateCreateTemplate.vue')['default']
     FormTemplateListingRow: typeof import('./src/components/formTemplate/FormTemplateListingRow.vue')['default']
     FormTemplatePageId: typeof import('./src/components/formTemplate/formTemplatePageId.vue')['default']

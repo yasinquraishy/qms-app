@@ -2,6 +2,7 @@
 import { IconUserCheck, IconArrowBackUp, IconEye, IconX } from '@tabler/icons-vue'
 import { post } from '@/api'
 import DynamicForm from '@/components/form/DynamicForm.js'
+import FormSchemaReadonlyView from '@/components/form/FormSchemaReadonlyView.vue'
 
 const props = defineProps({
   ncId: { type: String, required: true },
@@ -264,89 +265,110 @@ function getStatusLabel(statusId) {
 function canReassignStep(step) {
   return props.isOwner && (step.statusId === 'PENDING' || step.statusId === 'IN_PROGRESS')
 }
+
+function getStepRecords(instanceStepId) {
+  return ncRecords.value[instanceStepId] || []
+}
+
+function getSubmittedRecords(instanceStepId) {
+  return getStepRecords(instanceStepId).filter((r) => r.submittedAt)
+}
 </script>
 
 <template>
-  <div
-    v-if="workflowInstanceSteps.length"
-    class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-4"
-  >
+  <template v-if="workflowInstanceSteps.length">
     <div
-      class="tw:flex tw:items-center tw:justify-between tw:pb-2 tw:border-b tw:border-divider tw:mb-3"
+      v-for="step in workflowInstanceSteps"
+      :key="step.id"
+      class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5"
     >
-      <span class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider">
-        Workflow steps
-      </span>
-      <button
-        v-if="isOwner && currentStep && sendBackTargets.length"
-        class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-amber-600 tw:hover:text-amber-700 tw:cursor-pointer tw:font-medium"
-        @click="openSendBackDialog"
-      >
-        <IconArrowBackUp :size="14" />
-        Send back
-      </button>
-    </div>
-
-    <div class="tw:flex tw:flex-col tw:gap-2">
+      <!-- Step header -->
       <div
-        v-for="step in workflowInstanceSteps"
-        :key="step.id"
-        class="tw:flex tw:flex-col tw:gap-1.5 tw:p-2.5 tw:rounded-md tw:border tw:border-divider"
+        class="tw:flex tw:items-center tw:justify-between tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
       >
-        <!-- Step header -->
-        <div class="tw:flex tw:items-center tw:justify-between">
-          <span class="tw:text-xs tw:font-medium tw:text-on-main">
+        <div class="tw:flex tw:items-center tw:gap-2">
+          <span
+            class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider"
+          >
             {{ step.stepNumber }}. {{ stepDefinitions[step.stepId]?.name || 'Step' }}
           </span>
           <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(step.statusId)">
             {{ getStatusLabel(step.statusId) }}
           </BaseBadge>
         </div>
-
-        <!-- Users on step -->
-        <div class="tw:flex tw:flex-col tw:gap-1">
-          <span class="tw:text-[10px] tw:text-secondary">Reviewers:</span>
-          <div v-if="stepAssignments[step.id]?.length" class="tw:flex tw:flex-col tw:gap-1">
-            <div v-for="assignment in stepAssignments[step.id]" :key="assignment.id">
-              <div class="tw:flex tw:items-center tw:gap-2">
-                <UserAvatarById :userId="assignment.userId" class="tw:size-8" />
-                <span class="tw:text-xs tw:text-on-main tw:font-medium tw:truncate">
-                  {{ getUserName(assignment.userId) }}
-                </span>
-                <span
-                  class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded tw:font-medium tw:shrink-0"
-                  :class="getUserStatusClass(assignment.statusId)"
-                >
-                  {{ getStatusLabel(assignment.statusId) }}
-                </span>
-                <!-- View submission button -->
-                <button
-                  v-if="stepDefinitions[step.stepId]?.formSchema?.length"
-                  class="tw:flex tw:items-center tw:gap-0.5 tw:text-[9px] tw:text-primary tw:hover:underline tw:cursor-pointer tw:ml-auto tw:shrink-0"
-                  @click="openRecordPanel(step.id, assignment.userId)"
-                >
-                  <IconEye :size="10" />
-                  View
-                </button>
-              </div>
-            </div>
-          </div>
-          <span v-else class="tw:text-[10px] tw:text-secondary tw:italic">—</span>
-        </div>
-
-        <!-- Reassign action -->
-        <div v-if="canReassignStep(step)" class="tw:flex tw:justify-end tw:mt-0.5">
+        <div class="tw:flex tw:items-center tw:gap-2">
           <button
-            class="tw:flex tw:items-center tw:gap-1 tw:text-[10px] tw:text-primary tw:hover:underline tw:cursor-pointer"
+            v-if="isOwner && step.statusId === 'IN_PROGRESS' && sendBackTargets.length"
+            class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-amber-600 tw:hover:text-amber-700 tw:cursor-pointer tw:font-medium"
+            @click="openSendBackDialog"
+          >
+            <IconArrowBackUp :size="14" />
+            Send back
+          </button>
+          <button
+            v-if="canReassignStep(step)"
+            class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-primary tw:hover:underline tw:cursor-pointer tw:font-medium"
             @click="openReassignDialog(step.id)"
           >
-            <IconUserCheck :size="12" />
+            <IconUserCheck :size="14" />
             Reassign
+          </button>
+          <div class="tw:border-l tw:border-divider tw:h-4" />
+          <button
+            v-if="stepDefinitions[step.stepId]?.formSchema?.length"
+            class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-primary tw:hover:underline tw:cursor-pointer tw:font-medium"
+            @click="openRecordPanel(step.id, getSubmittedRecords(step.id)[0]?.userId)"
+          >
+            <IconEye :size="14" />
+            View
           </button>
         </div>
       </div>
+
+      <!-- Assignees -->
+      <div class="tw:mb-4">
+        <div class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2">Assignees</div>
+        <div v-if="stepAssignments[step.id]?.length" class="tw:flex tw:flex-wrap tw:gap-2">
+          <div
+            v-for="assignment in stepAssignments[step.id]"
+            :key="assignment.id"
+            class="tw:flex tw:items-center tw:gap-2"
+          >
+            <UserAvatarById :userId="assignment.userId" class="tw:size-6" />
+            <span class="tw:text-xs tw:text-on-main tw:font-medium">
+              {{ getUserName(assignment.userId) }}
+            </span>
+            <span
+              class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded tw:font-medium tw:shrink-0"
+              :class="getUserStatusClass(assignment.statusId)"
+            >
+              {{ getStatusLabel(assignment.statusId) }}
+            </span>
+          </div>
+        </div>
+        <span v-else class="tw:text-sm tw:text-secondary">—</span>
+      </div>
+
+      <!-- Submitted record data (inline) -->
+      <template v-if="stepDefinitions[step.stepId]?.formSchema?.length">
+        <template v-if="getSubmittedRecords(step.id).length">
+          <div v-for="record in getSubmittedRecords(step.id)" :key="record.id">
+            <div
+              v-if="getSubmittedRecords(step.id).length > 1"
+              class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2 tw:mt-2"
+            >
+              {{ getUserName(record.userId) }}
+            </div>
+            <FormSchemaReadonlyView
+              :fields="stepDefinitions[step.stepId].formSchema"
+              :values="record.payload || {}"
+            />
+          </div>
+        </template>
+        <div v-else class="tw:text-sm tw:text-secondary tw:italic">No submission yet</div>
+      </template>
     </div>
-  </div>
+  </template>
 
   <!-- Reassign dialog -->
   <BaseDialog v-model="showReassignDialog" title="Reassign Step Reviewer" maxWidth="md">

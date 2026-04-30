@@ -21,8 +21,6 @@ const form = ref({
   supplierId: null,
   qtyAffected: null,
   unitOfMeasure: '',
-  costOfNc: null,
-  creditFromSupplier: null,
   workflowVersionId: null,
 })
 
@@ -256,20 +254,6 @@ const handleReviewersConfirmed = useLiveMutation(async (db, reviewers) => {
             <div class="tw:flex tw:flex-col tw:gap-1">
               <label class="tw:text-sm tw:font-medium tw:text-secondary">Unit of measure</label>
               <BaseTextInput v-model="form.unitOfMeasure" placeholder="e.g. sheets, units…" />
-            </div>
-            <div class="tw:flex tw:flex-col tw:gap-1">
-              <label class="tw:text-sm tw:font-medium tw:text-secondary">Cost of NC</label>
-              <BaseTextInput v-model.number="form.costOfNc" type="number" placeholder="0.00" />
-            </div>
-            <div class="tw:flex tw:flex-col tw:gap-1">
-              <label class="tw:text-sm tw:font-medium tw:text-secondary"
-                >Credit from Supplier</label
-              >
-              <BaseTextInput
-                v-model.number="form.creditFromSupplier"
-                type="number"
-                placeholder="0.00"
-              />
             </div>
           </div>
         </div>

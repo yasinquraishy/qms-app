@@ -7,9 +7,9 @@ import { broadcastMessage } from './broadcaster.js'
 import { MSG } from '../../shared/messageTypes.js'
 
 let pollTimer = null
-let pollInterval = 3000
-let backoffMs = 3000
-const MAX_BACKOFF = 60000
+let pollInterval = 500
+let backoffMs = 500
+const MAX_BACKOFF = 1000
 let maxAttempt = 3
 
 let _metaMap = null
@@ -21,6 +21,7 @@ export function startPolling(metaMap, config) {
   _config = config
   pollInterval ??= config.pollIntervalMs
   backoffMs = pollInterval
+  console.log('Starting mutation poller with interval', pollInterval)
   scheduleNext()
 }
 

@@ -5,6 +5,7 @@ import { DateTime } from 'luxon'
 @ClientModel('usersOnWorkflowInstanceSteps', {
   primaryKey: 'id',
   syncField: 'updatedAt',
+  customIndex: 'workflowInstanceStepId',
 })
 export class UserOnWorkflowInstanceStep extends BaseModel {
   constructor(...args) {

@@ -150,7 +150,7 @@ function isDuePast(dueDate) {
 
     <!-- Status -->
     <template #body-cell-status="{ row }">
-      <TaskInstanceStatusBadgeById :statusId="row.statusId" />
+      <TaskInstanceStatusBadgeById :statusId="row.statusId" :module="row.entityType" />
     </template>
   </BaseTable>
 </template>

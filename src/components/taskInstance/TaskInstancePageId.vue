@@ -108,7 +108,12 @@ const canActOnStep = computed(() =>
             :workflowStep="workflowStep"
             :canActOnStep="canActOnStep"
           />
-          <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />
+
+          <TaskInstanceStatusBadgeById
+            v-else
+            :statusId="taskInstance.statusId"
+            :module="taskInstance.entityType"
+          />
         </template>
         <template v-else>
           <div v-if="canActOnStep" class="tw:flex tw:items-center tw:gap-2">

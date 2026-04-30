@@ -2,7 +2,6 @@
 import { IconAlertTriangle } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
-import { DateTime } from 'luxon'
 import { post } from '@/api'
 
 const props = defineProps({
@@ -64,18 +63,41 @@ async function handleRecordDisposition() {
   saving.value = true
   saveError.value = null
   try {
-    nc.value.dispositionTypeId = dispositionForm.value.dispositionTypeId
-    nc.value.capaRequired = dispositionForm.value.capaRequired
-    nc.value.dispositionNotes = dispositionForm.value.dispositionNotes
-    nc.value.statusId = 'CLOSED'
-    nc.value.closedAt = DateTime.now()
-    nc.value.updatedBy = currentSession.value?.userId || ''
-    await nc.value.save()
+    await post(`/v1/services/nonconformances/${props.id}/close`, {
+      dispositionTypeId: dispositionForm.value.dispositionTypeId,
+      capaRequired: dispositionForm.value.capaRequired,
+      dispositionNotes: dispositionForm.value.dispositionNotes,
+    })
     router.push(getCompanyPath('/nonconformances'))
   } catch (e) {
     saveError.value = e.message || 'Failed to record disposition'
   } finally {
     saving.value = false
+  }
+}
+
+// ─── Close NC (owner, skip disposition) ───────────────────────────────────────
+const showCloseDialog = ref(false)
+const closing = ref(false)
+
+const isOwner = computed(
+  () => nc.value?.ownerId && nc.value.ownerId === currentSession.value?.userId,
+)
+
+async function handleCloseNc() {
+  closing.value = true
+  try {
+    await post(`/v1/services/nonconformances/${props.id}/close`, {
+      dispositionTypeId: dispositionForm.value.dispositionTypeId || undefined,
+      capaRequired: dispositionForm.value.capaRequired ?? undefined,
+      dispositionNotes: dispositionForm.value.dispositionNotes || undefined,
+    })
+    showCloseDialog.value = false
+    router.push(getCompanyPath('/nonconformances'))
+  } catch (e) {
+    saveError.value = e.message || 'Failed to close NC'
+  } finally {
+    closing.value = false
   }
 }
 
@@ -104,6 +126,8 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
   ]).exec()
   return results.find((i) => i.statusId === 'IN_PROGRESS') || results[0] || null
 })
+
+// ─── Workflow steps are handled by NcWorkflowDetail component ────────────────
 </script>
 
 <template>
@@ -113,13 +137,22 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <BaseButton
-        v-if="nc?.statusId === 'DRAFT'"
-        variant="primary"
-        :disabled="saving"
-        @click="handleSubmitForReview"
-        >Submit for review</BaseButton
-      >
+      <div class="tw:flex tw:items-center tw:gap-2">
+        <BaseButton
+          v-if="nc?.statusId === 'DRAFT'"
+          variant="primary"
+          :disabled="saving"
+          @click="handleSubmitForReview"
+          >Submit for review</BaseButton
+        >
+        <BaseButton
+          v-if="isOwner && nc?.statusId !== 'CLOSED'"
+          variant="danger"
+          :disabled="closing"
+          @click="showCloseDialog = true"
+          >Close NC</BaseButton
+        >
+      </div>
     </SafeTeleport>
 
     <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:h-full">
@@ -171,7 +204,7 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 </div>
                 <div v-if="nc.productId" class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Product</div>
-                  <span class="tw:text-sm tw:font-medium">{{ nc.productId }}</span>
+                  <ProductBadgeById :productId="nc.productId" />
                 </div>
                 <div v-if="nc.qtyAffected" class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Qty affected</div>
@@ -179,33 +212,34 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                     {{ nc.qtyAffected }} {{ nc.unitOfMeasure }}
                   </span>
                 </div>
+                <div v-if="nc.costOfNc" class="tw:flex tw:flex-col tw:gap-1">
+                  <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
+                  <span class="tw:text-sm tw:font-medium">
+                    {{
+                      nc.costOfNc.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+                    }}
+                  </span>
+                </div>
+                <div v-if="nc.creditFromSupplier" class="tw:flex tw:flex-col tw:gap-1">
+                  <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
+                  <span class="tw:text-sm tw:font-medium">
+                    {{
+                      nc.creditFromSupplier.toLocaleString('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                      })
+                    }}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <!-- Investigation card -->
-            <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
-              <div
-                class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
-              >
-                Investigation findings
-              </div>
-              <div v-if="nc.rootCauseCategoryId" class="tw:mb-3">
-                <div class="tw:text-xs tw:text-secondary tw:mb-1">Root cause category</div>
-                <BaseBadge class="tw:bg-amber-100 tw:text-amber-700">
-                  {{ nc.rootCauseCategoryId }}
-                </BaseBadge>
-              </div>
-              <div v-if="nc.rootCause" class="tw:mb-3">
-                <div class="tw:text-xs tw:text-secondary tw:mb-1">Root cause</div>
-                <p class="tw:text-sm tw:text-on-main tw:leading-relaxed">{{ nc.rootCause }}</p>
-              </div>
-              <div
-                v-if="!nc.rootCauseCategoryId && !nc.rootCause"
-                class="tw:text-sm tw:text-secondary tw:italic"
-              >
-                No investigation findings recorded yet.
-              </div>
-            </div>
+            <NcWorkflowDetail
+              v-if="workflowInstance?.statusId === 'IN_PROGRESS'"
+              :ncId="id"
+              :workflowInstanceId="workflowInstance?.id"
+              :isOwner="isOwner"
+            />
 
             <!-- Disposition card -->
             <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
@@ -372,6 +406,8 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 workflow assigned but not yet submitted.
               </div>
             </div>
+
+            <!-- Workflow detail component (steps, reassign, send-back, record viewer) -->
           </div>
         </div>
       </div>
@@ -380,8 +416,32 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
     <BaseEmptyState
       v-else
       title="NC not found"
-      description="This nonconformance co
-      uld not be found."
+      description="This nonconformance could not be found."
     />
+
+    <!-- Close NC confirmation dialog -->
+    <BaseDialog v-model="showCloseDialog" title="Close Nonconformance" maxWidth="md">
+      <p class="tw:text-sm tw:text-secondary tw:mb-4">
+        Are you sure you want to close this nonconformance?
+      </p>
+      <p
+        v-if="workflowInstance?.statusId === 'IN_PROGRESS'"
+        class="tw:text-sm tw:text-amber-700 tw:bg-amber-50 tw:border tw:border-amber-200 tw:rounded-md tw:p-3 tw:mb-4"
+      >
+        This NC has an in-progress workflow. Closing will cancel the workflow and all pending tasks.
+      </p>
+      <div
+        v-if="saveError"
+        class="tw:bg-red-50 tw:border tw:border-red-200 tw:text-red-700 tw:rounded-md tw:p-2 tw:text-sm tw:mb-3"
+      >
+        {{ saveError }}
+      </div>
+      <div class="tw:flex tw:justify-end tw:gap-2 tw:pt-3 tw:border-t tw:border-divider">
+        <BaseButton variant="outline" @click="showCloseDialog = false">Cancel</BaseButton>
+        <BaseButton variant="danger" :disabled="closing" @click="handleCloseNc">
+          {{ closing ? 'Closing…' : 'Close NC' }}
+        </BaseButton>
+      </div>
+    </BaseDialog>
   </div>
 </template>

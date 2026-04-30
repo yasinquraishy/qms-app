@@ -160,7 +160,12 @@ watch(
         </div>
 
         <!-- Items -->
-        <slot name="items" :close="close">
+        <slot
+          name="items"
+          :close="close"
+          :isSelected="isSelected"
+          :toggleSelection="toggleSelection"
+        >
           <div class="tw:max-h-64 tw:overflow-y-auto tw:p-1">
             <!-- Nullable "All" item -->
             <button

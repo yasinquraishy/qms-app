@@ -10,6 +10,7 @@ const props = defineProps({
   },
   taskInstanceId: { type: String, required: true },
   instanceStepId: { type: String, default: null },
+  requireEsignature: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['done'])
@@ -44,7 +45,11 @@ const actionMap = {
 // ── Trigger: open identity dialog before any action ────────────────────────────
 function openIdentityDialog(actionKey) {
   pendingAction.value = actionKey
-  showEsignDialog.value = true
+  if (props.requireEsignature) {
+    showEsignDialog.value = true
+  } else {
+    submitWorkflowAction(actionKey, {})
+  }
 }
 
 function onEsignVerified(esign) {
@@ -53,14 +58,14 @@ function onEsignVerified(esign) {
   }
 }
 
-async function submitWorkflowAction(actionKey, { method, provider, token }) {
+async function submitWorkflowAction(actionKey, { method, provider, token } = {}) {
   actionLoading.value = true
   try {
     const body = {
       action: actionMap[actionKey],
-      method,
-      token,
     }
+    if (method) body.method = method
+    if (token) body.token = token
     if (provider) body.provider = provider
     if (comment.value) body.comment = comment.value
 

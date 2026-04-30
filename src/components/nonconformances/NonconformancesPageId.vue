@@ -3,6 +3,7 @@ import { IconAlertTriangle } from '@tabler/icons-vue'
 import { currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { post } from '@/api'
+import { DateTime } from 'luxon'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -21,62 +22,33 @@ const breadcrumbs = computed(() => [
   { label: nc.value?.ncNumber || nc.value?.title || 'Loading…' },
 ])
 
-// Inline editing state
-const dispositionForm = ref({
-  dispositionTypeId: null,
-  capaRequired: null,
-  dispositionNotes: '',
-})
+// ─── Inline disposition auto-save ─────────────────────────────────────────────
+const isFirstLoad = ref(true)
+const isEditable = computed(
+  () => nc.value && nc.value.statusId !== 'CLOSED' && nc.value.statusId !== 'VOID',
+)
+
+const debouncedSave = useDebounceFn(async () => {
+  if (!nc.value) return
+  await nc.value.save()
+}, 500)
 
 watch(
   nc,
-  (val) => {
-    if (val) {
-      dispositionForm.value = {
-        dispositionTypeId: val.dispositionTypeId,
-        capaRequired: val.capaRequired,
-        dispositionNotes: val.dispositionNotes || '',
-      }
+  () => {
+    if (isFirstLoad.value) {
+      isFirstLoad.value = false
+      return
     }
+    if (nc.value) debouncedSave()
   },
-  { immediate: true },
+  { deep: true },
 )
 
 const saving = ref(false)
 const saveError = ref(null)
 
-async function handleRecordDisposition() {
-  if (!nc.value) return
-  if (!dispositionForm.value.dispositionTypeId) {
-    saveError.value = 'Disposition is required'
-    return
-  }
-  if (dispositionForm.value.capaRequired === null) {
-    saveError.value = 'CAPA decision is required'
-    return
-  }
-  if (!dispositionForm.value.dispositionNotes) {
-    saveError.value = 'Disposition notes are required'
-    return
-  }
-
-  saving.value = true
-  saveError.value = null
-  try {
-    await post(`/v1/services/nonconformances/${props.id}/close`, {
-      dispositionTypeId: dispositionForm.value.dispositionTypeId,
-      capaRequired: dispositionForm.value.capaRequired,
-      dispositionNotes: dispositionForm.value.dispositionNotes,
-    })
-    router.push(getCompanyPath('/nonconformances'))
-  } catch (e) {
-    saveError.value = e.message || 'Failed to record disposition'
-  } finally {
-    saving.value = false
-  }
-}
-
-// ─── Close NC (owner, skip disposition) ───────────────────────────────────────
+// ─── Close NC (owner only) ────────────────────────────────────────────────────
 const showCloseDialog = ref(false)
 const closing = ref(false)
 
@@ -85,13 +57,11 @@ const isOwner = computed(
 )
 
 async function handleCloseNc() {
+  if (!nc.value) return
   closing.value = true
+  saveError.value = null
   try {
-    await post(`/v1/services/nonconformances/${props.id}/close`, {
-      dispositionTypeId: dispositionForm.value.dispositionTypeId || undefined,
-      capaRequired: dispositionForm.value.capaRequired ?? undefined,
-      dispositionNotes: dispositionForm.value.dispositionNotes || undefined,
-    })
+    await post(`/v1/services/nonconformances/${props.id}/close`, {})
     showCloseDialog.value = false
     router.push(getCompanyPath('/nonconformances'))
   } catch (e) {
@@ -115,8 +85,8 @@ async function handleSubmitForReview() {
 
 const isOverdue = computed(() => {
   if (!nc.value?.dueDate) return false
-  if (nc.value.statusId === 'CLOSED') return false
-  return nc.value.dueDate < new Date().toISOString().slice(0, 10)
+  if (nc.value.statusId === 'CLOSED' || nc.value.statusId === 'VOID') return false
+  return nc.value.dueDate < DateTime.now()
 })
 
 const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
@@ -126,6 +96,15 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
   ]).exec()
   return results.find((i) => i.statusId === 'IN_PROGRESS') || results[0] || null
 })
+
+// ─── Inline-edit for cost fields ──────────────────────────────────────────────
+const editingCost = ref(false)
+const editingCredit = ref(false)
+
+// ─── Inline-edit for overview fields ──────────────────────────────────────────
+const editingSeverity = ref(false)
+const editingDetected = ref(false)
+const editingDueDate = ref(false)
 
 // ─── Workflow steps are handled by NcWorkflowDetail component ────────────────
 </script>
@@ -212,25 +191,6 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                     {{ nc.qtyAffected }} {{ nc.unitOfMeasure }}
                   </span>
                 </div>
-                <div v-if="nc.costOfNc" class="tw:flex tw:flex-col tw:gap-1">
-                  <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
-                  <span class="tw:text-sm tw:font-medium">
-                    {{
-                      nc.costOfNc.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-                    }}
-                  </span>
-                </div>
-                <div v-if="nc.creditFromSupplier" class="tw:flex tw:flex-col tw:gap-1">
-                  <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
-                  <span class="tw:text-sm tw:font-medium">
-                    {{
-                      nc.creditFromSupplier.toLocaleString('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                      })
-                    }}
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -246,66 +206,150 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
               <div
                 class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
               >
-                Disposition decision
+                Disposition
               </div>
 
-              <div
-                v-if="saveError"
-                class="tw:bg-red-50 tw:border tw:border-red-200 tw:text-red-700 tw:rounded-md tw:p-2 tw:text-sm tw:mb-3"
-              >
-                {{ saveError }}
-              </div>
-
-              <div class="tw:grid tw:grid-cols-2 tw:gap-3 tw:mb-4">
-                <div class="tw:flex tw:flex-col tw:gap-1">
-                  <label class="tw:text-sm tw:font-medium tw:text-secondary">
-                    Disposition <span class="tw:text-red-500">*</span>
-                  </label>
-                  <NcDispositionTypeSelectMenu
-                    v-model="dispositionForm.dispositionTypeId"
-                    :required="false"
-                  />
-                </div>
-                <div class="tw:flex tw:flex-col tw:gap-1">
-                  <label class="tw:text-sm tw:font-medium tw:text-secondary">
-                    CAPA required? <span class="tw:text-red-500">*</span>
-                  </label>
-                  <div class="tw:flex tw:gap-2">
-                    <BaseButton
-                      class="tw:flex-1 tw:justify-center"
-                      :variant="dispositionForm.capaRequired === true ? 'primary' : 'outline'"
-                      @click="dispositionForm.capaRequired = true"
-                      >Yes</BaseButton
+              <template v-if="isEditable">
+                <div class="tw:grid tw:grid-cols-2 tw:gap-3">
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <label class="tw:text-sm tw:font-medium tw:text-secondary"> Disposition </label>
+                    <NcDispositionTypeSelectMenu v-model="nc.dispositionTypeId" :required="false" />
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                      CAPA required?
+                    </label>
+                    <div class="tw:flex tw:gap-2">
+                      <BaseButton
+                        class="tw:flex-1 tw:justify-center"
+                        :variant="nc.capaRequired === true ? 'primary' : 'outline'"
+                        @click="nc.capaRequired = true"
+                        >Yes</BaseButton
+                      >
+                      <BaseButton
+                        class="tw:flex-1 tw:justify-center"
+                        :variant="nc.capaRequired === false ? 'primary' : 'outline'"
+                        @click="nc.capaRequired = false"
+                        >No</BaseButton
+                      >
+                    </div>
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
+                    <BaseTextInput
+                      v-if="editingCost"
+                      v-model="nc.costOfNc"
+                      type="number"
+                      placeholder="0.00"
+                      autofocus
+                      @blur="editingCost = false"
+                    />
+                    <span
+                      v-else
+                      class="tw:text-sm tw:font-medium tw:cursor-pointer tw:hover:text-primary"
+                      @click="editingCost = true"
                     >
-                    <BaseButton
-                      class="tw:flex-1 tw:justify-center"
-                      :variant="dispositionForm.capaRequired === false ? 'primary' : 'outline'"
-                      @click="dispositionForm.capaRequired = false"
-                      >No</BaseButton
+                      {{
+                        nc.costOfNc != null
+                          ? nc.costOfNc.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            })
+                          : '—'
+                      }}
+                    </span>
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
+                    <BaseTextInput
+                      v-if="editingCredit"
+                      v-model="nc.creditFromSupplier"
+                      type="number"
+                      placeholder="0.00"
+                      autofocus
+                      @blur="editingCredit = false"
+                    />
+                    <span
+                      v-else
+                      class="tw:text-sm tw:font-medium tw:cursor-pointer tw:hover:text-primary"
+                      @click="editingCredit = true"
                     >
+                      {{
+                        nc.creditFromSupplier != null
+                          ? nc.creditFromSupplier.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            })
+                          : '—'
+                      }}
+                    </span>
                   </div>
                 </div>
+
                 <div class="tw:flex tw:flex-col tw:gap-1 tw:col-span-2">
                   <label class="tw:text-sm tw:font-medium tw:text-secondary">
-                    Disposition notes <span class="tw:text-red-500">*</span>
+                    Disposition notes
                   </label>
                   <BaseTextarea
-                    v-model="dispositionForm.dispositionNotes"
+                    v-model="nc.dispositionNotes"
                     placeholder="Justify your disposition decision and CAPA choice…"
                     :rows="3"
                   />
                 </div>
-              </div>
+              </template>
 
-              <div class="tw:flex tw:gap-2 tw:pt-3 tw:border-t tw:border-divider">
-                <BaseButton
-                  variant="primary"
-                  :disabled="saving || nc.statusId === 'CLOSED'"
-                  @click="handleRecordDisposition"
-                >
-                  Record disposition &amp; close NC →
-                </BaseButton>
-              </div>
+              <template v-else>
+                <div class="tw:grid tw:grid-cols-2 tw:gap-3">
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Disposition</div>
+                    <NcDispositionTypeBadgeById
+                      v-if="nc.dispositionTypeId"
+                      :dispositionTypeId="nc.dispositionTypeId"
+                    />
+                    <span v-else class="tw:text-sm tw:text-secondary">—</span>
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">CAPA required?</div>
+                    <span class="tw:text-sm tw:font-medium">
+                      {{
+                        nc.capaRequired === true ? 'Yes' : nc.capaRequired === false ? 'No' : '—'
+                      }}
+                    </span>
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
+                    <span class="tw:text-sm tw:font-medium">
+                      {{
+                        nc.costOfNc != null
+                          ? nc.costOfNc.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            })
+                          : '—'
+                      }}
+                    </span>
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
+                    <span class="tw:text-sm tw:font-medium">
+                      {{
+                        nc.creditFromSupplier != null
+                          ? nc.creditFromSupplier.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            })
+                          : '—'
+                      }}
+                    </span>
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1 tw:col-span-2">
+                    <div class="tw:text-xs tw:text-secondary">Disposition notes</div>
+                    <p class="tw:text-sm tw:text-on-main tw:leading-relaxed">
+                      {{ nc.dispositionNotes || '—' }}
+                    </p>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -331,7 +375,21 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 </div>
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Severity</span>
-                  <NcSeverityBadgeById :severityId="nc.severityId" />
+                  <NcSeveritySelectMenu
+                    v-if="editingSeverity && isEditable"
+                    v-model="nc.severityId"
+                    :required="true"
+                    class="tw:w-32"
+                    @blur="editingSeverity = false"
+                  />
+                  <span
+                    v-else
+                    class="tw:cursor-pointer tw:hover:opacity-70"
+                    :class="isEditable ? '' : 'tw:pointer-events-none'"
+                    @click="editingSeverity = true"
+                  >
+                    <NcSeverityBadgeById :severityId="nc.severityId" />
+                  </span>
                 </div>
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Owner</span>
@@ -340,15 +398,37 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                 </div>
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Detected</span>
-                  <span class="tw:text-sm tw:font-medium">{{
-                    nc.detectedAt ? nc.detectedAt.formatDate('date') : '—'
-                  }}</span>
+                  <BaseDatePicker
+                    v-if="editingDetected && isEditable"
+                    v-model="nc.detectedAt"
+                    class="tw:w-36"
+                    @blur="editingDetected = false"
+                  />
+                  <span
+                    v-else
+                    class="tw:text-sm tw:font-medium"
+                    :class="isEditable ? 'tw:cursor-pointer tw:hover:text-primary' : ''"
+                    @click="isEditable && (editingDetected = true)"
+                  >
+                    {{ nc.detectedAt ? nc.detectedAt.formatDate('date') : '—' }}
+                  </span>
                 </div>
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Due date</span>
+                  <BaseDatePicker
+                    v-if="editingDueDate && isEditable"
+                    v-model="nc.dueDate"
+                    class="tw:w-36"
+                    @blur="editingDueDate = false"
+                  />
                   <span
+                    v-else
                     class="tw:text-sm tw:font-medium tw:flex tw:items-center tw:gap-1 tw:flex-nowrap"
-                    :class="isOverdue ? 'tw:text-red-600' : ''"
+                    :class="[
+                      isOverdue ? 'tw:text-red-600' : '',
+                      isEditable ? 'tw:cursor-pointer tw:hover:text-primary' : '',
+                    ]"
+                    @click="isEditable && (editingDueDate = true)"
                   >
                     <span>{{ nc.dueDate ? nc.dueDate.formatDate('date') : '—' }}</span>
                     <IconAlertTriangle v-if="isOverdue" :size="16" class="tw:text-red-600" />

@@ -146,17 +146,6 @@ function isRenderableField(field) {
   )
 }
 
-function isFullWidthField(field) {
-  return (
-    isSectionField(field) ||
-    isRepeaterField(field) ||
-    isHtmlField(field) ||
-    isFileField(field) ||
-    isRatingField(field) ||
-    field.type === 'textarea'
-  )
-}
-
 function getVisibleFields(fields) {
   const result = []
   for (const field of fields) {
@@ -220,9 +209,9 @@ function getVisibleFields(fields) {
         <div class="tw:text-[11px] tw:text-secondary tw:font-medium">{{ field.label }}</div>
         <div class="tw:flex tw:gap-0.5">
           <component
+            :is="i <= (getFieldValue(field) || 0) ? IconStarFilled : IconStar"
             v-for="i in field.max || 5"
             :key="i"
-            :is="i <= (getFieldValue(field) || 0) ? IconStarFilled : IconStar"
             :size="16"
             :class="i <= (getFieldValue(field) || 0) ? 'tw:text-amber-400' : 'tw:text-gray-300'"
           />

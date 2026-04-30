@@ -102,6 +102,7 @@ const editingCost = ref(false)
 const editingCredit = ref(false)
 
 // ─── Inline-edit for overview fields ──────────────────────────────────────────
+const editingTitle = ref(false)
 const editingSeverity = ref(false)
 const editingDetected = ref(false)
 const editingDueDate = ref(false)
@@ -153,7 +154,20 @@ const editingDueDate = ref(false)
               >
                 NC Details
               </div>
-              <div class="tw:text-base tw:font-semibold tw:text-on-main tw:mb-2">
+              <BaseTextInput
+                v-if="editingTitle && isEditable"
+                v-model="nc.title"
+                placeholder="NC title"
+                autofocus
+                class="tw:mb-2"
+                @blur="editingTitle = false"
+              />
+              <div
+                v-else
+                class="tw:text-base tw:font-semibold tw:text-on-main tw:mb-2"
+                :class="isEditable ? 'tw:cursor-pointer tw:hover:text-primary' : ''"
+                @click="isEditable && (editingTitle = true)"
+              >
                 {{ nc.title }}
               </div>
               <p

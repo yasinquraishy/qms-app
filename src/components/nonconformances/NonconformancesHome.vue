@@ -2,6 +2,7 @@
 import { IconAlertCircle, IconAlertTriangle, IconClock, IconCircleCheck } from '@tabler/icons-vue'
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
+import { DateTime } from 'luxon'
 
 const router = useRouter()
 
@@ -29,7 +30,7 @@ function applyFilters(results, search, statusId, severityId, typeId) {
 }
 
 function applyActiveFilter(results, af) {
-  const today = new Date().toISOString().slice(0, 10)
+  const now = DateTime.now()
   const userId = currentSession.value?.userId
   if (af === 'all_open') return results.filter((r) => OPEN_STATUSES.includes(r.statusId))
   if (af === 'mine')
@@ -39,10 +40,8 @@ function applyActiveFilter(results, af) {
   if (af === 'major')
     return results.filter((r) => r.severityId === 'MAJOR' && OPEN_STATUSES.includes(r.statusId))
   if (af === 'overdue')
-    return results.filter(
-      (r) => r.dueDate && r.dueDate < today && OPEN_STATUSES.includes(r.statusId),
-    )
-  if (af === 'closed') return results.filter((r) => CLOSED_STATUSES.includes(r.statusId))
+    return results.filter((r) => r.dueDate && r.dueDate < now && OPEN_STATUSES.includes(r.statusId))
+  if (af === 'closed') return results.filter((r) => r.statusId === 'CLOSED')
   return results
 }
 
@@ -69,12 +68,11 @@ const ncs = useLiveQueryWithDeps(
 
 const stats = computed(() => {
   const all = allNcs.value
-  const today = new Date().toISOString().slice(0, 10)
+  const now = DateTime.now()
+  const startOfMonth = now.startOf('month')
   const openNcs = all.filter((r) => OPEN_STATUSES.includes(r.statusId))
-  const overdue = openNcs.filter((r) => r.dueDate && r.dueDate < today)
+  const overdue = openNcs.filter((r) => r.dueDate && r.dueDate < now)
   const criticalOpen = openNcs.filter((r) => r.severityId === 'CRITICAL')
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
   const closedThisMonth = all.filter(
     (r) => CLOSED_STATUSES.includes(r.statusId) && r.closedAt && r.closedAt >= startOfMonth,
   )

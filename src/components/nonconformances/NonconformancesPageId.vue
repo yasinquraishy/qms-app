@@ -61,10 +61,7 @@ async function handleCloseNc() {
   closing.value = true
   saveError.value = null
   try {
-    nc.value.statusId = 'CLOSED'
-    nc.value.closedAt = DateTime.now()
-    nc.value.updatedBy = currentSession.value?.userId || null
-    await nc.value.save()
+    await post(`/v1/services/nonconformances/${props.id}/close`, {})
     showCloseDialog.value = false
     router.push(getCompanyPath('/nonconformances'))
   } catch (e) {
@@ -88,8 +85,8 @@ async function handleSubmitForReview() {
 
 const isOverdue = computed(() => {
   if (!nc.value?.dueDate) return false
-  if (nc.value.statusId === 'CLOSED') return false
-  return nc.value.dueDate < new Date().toISOString().slice(0, 10)
+  if (nc.value.statusId === 'CLOSED' || nc.value.statusId === 'VOID') return false
+  return nc.value.dueDate < DateTime.now()
 })
 
 const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {

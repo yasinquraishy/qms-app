@@ -1,6 +1,7 @@
 <script setup>
 import { IconEdit, IconTrash } from '@tabler/icons-vue'
 import { getCompanyPath } from '@/utils/routeHelpers'
+import { DateTime } from 'luxon'
 
 const props = defineProps({
   rows: { type: Array, default: () => [] },
@@ -17,8 +18,8 @@ const severityDotClass = {
 }
 
 function isOverdue(row) {
-  if (!row.dueDate || row.statusId === 'CLOSED') return false
-  return new Date(row.dueDate) < new Date()
+  if (!row.dueDate || row.statusId === 'CLOSED' || row.statusId === 'VOID') return false
+  return row.dueDate < DateTime.now()
 }
 
 const columns = [

@@ -80,12 +80,6 @@ const logoUrl = computed(() => {
 const navItems = computed(() => {
   return [
     {
-      label: 'Templates',
-      permissions: ['formTemplates:read'],
-      icon: IconForms,
-      to: getCompanyPath('/templates'),
-    },
-    {
       label: 'Records',
       permissions: ['records:read'],
       icon: IconTable,
@@ -98,33 +92,9 @@ const navItems = computed(() => {
       to: getCompanyPath('/documents'),
     },
     {
-      label: 'Workflows',
-      permissions: ['workflows:read'],
-      icon: IconArrowsShuffle,
-      to: getCompanyPath('/workflow-templates'),
-    },
-    {
-      label: 'Workflow Instances',
-      permissions: ['documents:read'],
-      icon: IconInbox,
-      to: getCompanyPath('/workflow-instances'),
-    },
-    {
       label: 'My Tasks',
       icon: IconCheckbox,
       to: getCompanyPath('/task-instances'),
-    },
-    {
-      label: 'Suppliers',
-      permissions: ['suppliers:read'],
-      icon: IconTruck,
-      to: getCompanyPath('/suppliers'),
-    },
-    {
-      label: 'Products',
-      // permissions: ['products:read'],
-      icon: IconPackage,
-      to: getCompanyPath('/products'),
     },
     {
       label: 'Nonconformances',
@@ -147,10 +117,40 @@ const navItems = computed(() => {
           to: getCompanyPath('/settings'),
         },
         {
+          label: 'Form Templates',
+          permissions: ['formTemplates:read'],
+          icon: IconForms,
+          to: getCompanyPath('/templates'),
+        },
+        {
+          label: 'Workflow Templates',
+          permissions: ['workflows:read'],
+          icon: IconArrowsShuffle,
+          to: getCompanyPath('/workflow-templates'),
+        },
+        {
+          label: 'Workflow Instances',
+          permissions: ['documents:read'],
+          icon: IconInbox,
+          to: getCompanyPath('/workflow-instances'),
+        },
+        {
           label: 'Document Templates',
           permissions: ['document-templates:read'],
           icon: IconArticle,
           to: getCompanyPath('/document-templates'),
+        },
+        {
+          label: 'Products',
+          // permissions: ['products:read'],
+          icon: IconPackage,
+          to: getCompanyPath('/products'),
+        },
+        {
+          label: 'Suppliers',
+          permissions: ['suppliers:read'],
+          icon: IconTruck,
+          to: getCompanyPath('/suppliers'),
         },
         {
           label: 'Option Sets',

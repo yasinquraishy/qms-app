@@ -1,6 +1,7 @@
 import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
+import { post } from '@/api'
 
 @ClientModel('nonconformances', {
   primaryKey: 'id',
@@ -55,4 +56,15 @@ export class Nonconformance extends BaseModel {
   @Property({ type: DateTime, required: true, timestamp: true, autoUpdate: true })
   updatedAt = /** @type {DateTime} */ (null)
   @Property({ type: DateTime }) deletedAt = /** @type {DateTime} */ (null)
+
+  async save() {
+    await super.save()
+
+    try {
+      await post(`/v1/services/nonconformances/${this.id}/submitForReview`, {})
+    } catch (error) {
+      console.error('Error submitting nonconformance for review:', error)
+      throw error
+    }
+  }
 }

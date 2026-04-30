@@ -86,6 +86,11 @@ function getUserName(userId) {
   return [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email
 }
 
+function getUserEmail(userId) {
+  const u = assignedUsers.value[userId]
+  return u ? u.email : '—'
+}
+
 // ─── NC records per step ──────────────────────────────────────────────────────
 const ncRecords = useLiveQueryWithDeps(
   [() => props.ncId],
@@ -328,22 +333,32 @@ function getSubmittedRecords(instanceStepId) {
       <!-- Assignees -->
       <div class="tw:mb-4">
         <div class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2">Assignees</div>
-        <div v-if="stepAssignments[step.id]?.length" class="tw:flex tw:flex-wrap tw:gap-2">
+        <div
+          v-if="stepAssignments[step.id]?.length"
+          class="tw:flex tw:flex-col tw:flex-wrap tw:gap-2"
+        >
           <div
             v-for="assignment in stepAssignments[step.id]"
             :key="assignment.id"
             class="tw:flex tw:items-center tw:gap-2"
           >
-            <UserAvatarById :userId="assignment.userId" class="tw:size-6" />
-            <span class="tw:text-xs tw:text-on-main tw:font-medium">
-              {{ getUserName(assignment.userId) }}
-            </span>
-            <span
-              class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded tw:font-medium tw:shrink-0"
-              :class="getUserStatusClass(assignment.statusId)"
-            >
-              {{ getStatusLabel(assignment.statusId) }}
-            </span>
+            <UserAvatarById :userId="assignment.userId" class="tw:size-8" />
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <div>
+                <span class="tw:text-xs tw:text-on-main tw:font-medium">
+                  {{ getUserName(assignment.userId) }}
+                </span>
+                <span
+                  class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded tw:font-medium tw:shrink-0"
+                  :class="getUserStatusClass(assignment.statusId)"
+                >
+                  {{ getStatusLabel(assignment.statusId) }}
+                </span>
+              </div>
+              <span class="tw:text-xs tw:text-secondary">{{
+                getUserEmail(assignment.userId)
+              }}</span>
+            </div>
           </div>
         </div>
         <span v-else class="tw:text-sm tw:text-secondary">—</span>

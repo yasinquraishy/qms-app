@@ -145,5 +145,8 @@ const IDLE_CHECK_INTERVAL = 5 * 60 * 1000 // 5 minutes
 
 setInterval(async () => {
   const clients = await self.clients.matchAll({ type: 'window' })
-  if (clients.length === 0) teardown()
+  if (clients.length === 0) {
+    console.debug('No clients detected — terminating service worker to save resources')
+    teardown()
+  }
 }, IDLE_CHECK_INTERVAL)

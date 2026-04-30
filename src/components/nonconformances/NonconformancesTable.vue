@@ -85,7 +85,7 @@ function rowMenuItems(row) {
         v-if="row.dueDate"
         :class="isOverdue(row) ? 'tw:text-red-600 tw:font-semibold' : 'tw:text-secondary'"
       >
-        {{ row.dueDate }}
+        {{ row.dueDate.formatDate('date') }}
         <span v-if="isOverdue(row)">↑</span>
       </span>
       <span v-else class="tw:text-secondary">—</span>

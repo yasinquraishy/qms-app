@@ -217,11 +217,11 @@ function tdAlignClass(align) {
       v-if="!hidePagination"
       class="tw:px-4 tw:py-3 tw:border-t tw:border-divider tw:bg-main tw:flex tw:items-center tw:justify-between sm:tw:justify-end tw:gap-6 tw:text-xs tw:text-secondary"
     >
-      <div class="sm:tw:flex tw:items-center tw:gap-2">
+      <div class="tw:flex tw:items-center tw:gap-2">
         <span>Rows per page:</span>
         <select
           :value="pagination.rowsPerPage"
-          class="tw:bg-main tw:border-none tw:cursor-pointer tw:font-medium tw:text-on-main focus:tw:ring-0"
+          class="tw:py-2! tw:px-2! tw:bg-main tw:border-none tw:cursor-pointer tw:font-medium tw:text-on-main focus:tw:ring-0"
           @change="updatePagination({ rowsPerPage: parseInt($event.target.value), page: 1 })"
         >
           <option v-for="n in [5, 10, 25, 50]" :key="n" :value="n">{{ n }}</option>

@@ -121,11 +121,13 @@ const canActOnStep = computed(() =>
               action="APPROVE"
               :taskInstanceId="taskInstance?.id"
               :instanceStepId="instanceStep?.id"
+              :requireEsignature="workflowStep?.requireEsignature"
             />
             <WorkflowInstanceApproverAction
               action="REJECT"
               :taskInstanceId="taskInstance?.id"
               :instanceStepId="instanceStep?.id"
+              :requireEsignature="workflowStep?.requireEsignature"
             />
           </div>
           <TaskInstanceStatusBadgeById v-else :statusId="taskInstance.statusId" />

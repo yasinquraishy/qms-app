@@ -162,8 +162,10 @@ function onOutcomeClick(outcomeId) {
   const config = OUTCOME_CONFIG[outcomeId]
   if (config?.needsComment || config?.needsTarget || config?.needsUser) {
     showConfirmDialog.value = true
-  } else {
+  } else if (props.workflowStep?.requireEsignature) {
     showEsignDialog.value = true
+  } else {
+    submitAction({})
   }
 }
 
@@ -177,22 +179,26 @@ function onConfirmDialog() {
     return
   }
   showConfirmDialog.value = false
-  showEsignDialog.value = true
+  if (props.workflowStep?.requireEsignature) {
+    showEsignDialog.value = true
+  } else {
+    submitAction({})
+  }
 }
 
 function onEsignVerified({ method, provider, token }) {
   submitAction({ method, provider, token })
 }
 
-async function submitAction({ method, provider, token }) {
+async function submitAction({ method, provider, token } = {}) {
   actionLoading.value = true
   try {
     const body = {
       action: pendingOutcomeId.value,
       outcomeId: pendingOutcomeId.value,
-      method,
-      token,
     }
+    if (method) body.method = method
+    if (token) body.token = token
     if (provider) body.provider = provider
     if (comment.value) body.comment = comment.value
     if (sendBackTargetStepId.value) body.sendBackTargetStepId = sendBackTargetStepId.value

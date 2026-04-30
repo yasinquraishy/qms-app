@@ -81,12 +81,14 @@ const canActOnStep = computed(() => myTask.value?.statusId === 'ASSIGNED')
             action="APPROVE"
             :taskInstanceId="myTask?.id"
             :instanceStepId="activeStep.id"
+            :requireEsignature="activeStep?.step?.requireEsignature"
             @done="emit('done')"
           />
           <WorkflowInstanceApproverAction
             action="REJECT"
             :taskInstanceId="myTask?.id"
             :instanceStepId="activeStep.id"
+            :requireEsignature="activeStep?.step?.requireEsignature"
             @done="emit('done')"
           />
         </div>

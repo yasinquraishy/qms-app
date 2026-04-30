@@ -151,11 +151,13 @@ const usersMap = useLiveQueryWithDeps(
             action="APPROVE"
             :taskInstanceId="myTask?.id"
             :instanceStepId="instanceStepId"
+            :requireEsignature="step?.requireEsignature"
           />
           <WorkflowInstanceApproverAction
             action="REJECT"
             :taskInstanceId="myTask?.id"
             :instanceStepId="instanceStepId"
+            :requireEsignature="step?.requireEsignature"
           />
         </div>
       </div>

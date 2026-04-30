@@ -249,7 +249,7 @@ const handleReviewersConfirmed = useLiveMutation(async (db, reviewers) => {
             </div>
             <div class="tw:flex tw:flex-col tw:gap-1">
               <label class="tw:text-sm tw:font-medium tw:text-secondary">Qty affected</label>
-              <BaseTextInput v-model.number="form.qtyAffected" type="number" placeholder="0" />
+              <BaseTextInput v-model="form.qtyAffected" type="number" placeholder="0" />
             </div>
             <div class="tw:flex tw:flex-col tw:gap-1">
               <label class="tw:text-sm tw:font-medium tw:text-secondary">Unit of measure</label>

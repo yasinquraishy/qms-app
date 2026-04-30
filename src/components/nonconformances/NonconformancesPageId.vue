@@ -100,6 +100,10 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
   return results.find((i) => i.statusId === 'IN_PROGRESS') || results[0] || null
 })
 
+// ─── Inline-edit for cost fields ──────────────────────────────────────────────
+const editingCost = ref(false)
+const editingCredit = ref(false)
+
 // ─── Workflow steps are handled by NcWorkflowDetail component ────────────────
 </script>
 
@@ -185,25 +189,6 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                     {{ nc.qtyAffected }} {{ nc.unitOfMeasure }}
                   </span>
                 </div>
-                <div v-if="nc.costOfNc" class="tw:flex tw:flex-col tw:gap-1">
-                  <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
-                  <span class="tw:text-sm tw:font-medium">
-                    {{
-                      nc.costOfNc.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-                    }}
-                  </span>
-                </div>
-                <div v-if="nc.creditFromSupplier" class="tw:flex tw:flex-col tw:gap-1">
-                  <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
-                  <span class="tw:text-sm tw:font-medium">
-                    {{
-                      nc.creditFromSupplier.toLocaleString('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                      })
-                    }}
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -247,16 +232,67 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                       >
                     </div>
                   </div>
-                  <div class="tw:flex tw:flex-col tw:gap-1 tw:col-span-2">
-                    <label class="tw:text-sm tw:font-medium tw:text-secondary">
-                      Disposition notes
-                    </label>
-                    <BaseTextarea
-                      v-model="nc.dispositionNotes"
-                      placeholder="Justify your disposition decision and CAPA choice…"
-                      :rows="3"
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
+                    <BaseTextInput
+                      v-if="editingCost"
+                      v-model="nc.costOfNc"
+                      type="number"
+                      placeholder="0.00"
+                      autofocus
+                      @blur="editingCost = false"
                     />
+                    <span
+                      v-else
+                      class="tw:text-sm tw:font-medium tw:cursor-pointer tw:hover:text-primary"
+                      @click="editingCost = true"
+                    >
+                      {{
+                        nc.costOfNc != null
+                          ? nc.costOfNc.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            })
+                          : '—'
+                      }}
+                    </span>
                   </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
+                    <BaseTextInput
+                      v-if="editingCredit"
+                      v-model="nc.creditFromSupplier"
+                      type="number"
+                      placeholder="0.00"
+                      autofocus
+                      @blur="editingCredit = false"
+                    />
+                    <span
+                      v-else
+                      class="tw:text-sm tw:font-medium tw:cursor-pointer tw:hover:text-primary"
+                      @click="editingCredit = true"
+                    >
+                      {{
+                        nc.creditFromSupplier != null
+                          ? nc.creditFromSupplier.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            })
+                          : '—'
+                      }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="tw:flex tw:flex-col tw:gap-1 tw:col-span-2">
+                  <label class="tw:text-sm tw:font-medium tw:text-secondary">
+                    Disposition notes
+                  </label>
+                  <BaseTextarea
+                    v-model="nc.dispositionNotes"
+                    placeholder="Justify your disposition decision and CAPA choice…"
+                    :rows="3"
+                  />
                 </div>
               </template>
 
@@ -275,6 +311,32 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
                     <span class="tw:text-sm tw:font-medium">
                       {{
                         nc.capaRequired === true ? 'Yes' : nc.capaRequired === false ? 'No' : '—'
+                      }}
+                    </span>
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
+                    <span class="tw:text-sm tw:font-medium">
+                      {{
+                        nc.costOfNc != null
+                          ? nc.costOfNc.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            })
+                          : '—'
+                      }}
+                    </span>
+                  </div>
+                  <div class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
+                    <span class="tw:text-sm tw:font-medium">
+                      {{
+                        nc.creditFromSupplier != null
+                          ? nc.creditFromSupplier.toLocaleString('en-US', {
+                              style: 'currency',
+                              currency: 'USD',
+                            })
+                          : '—'
                       }}
                     </span>
                   </div>

@@ -272,6 +272,12 @@ export class BaseModel {
       return // early exit if no changes to save (but still allow create/delete actions)
     }
 
+    // Validate BEFORE applying autoUpdate timestamps — setting timestamps
+    // mutates the reactive instance which re-triggers deep watchers.  If
+    // validation fails we must not have touched the instance at all,
+    // otherwise the watcher fires debouncedSave again → infinite loop.
+    ModelValidator.validate(this, this.constructor.name)
+
     // Apply autoUpdate timestamps before saving
     const schema = ModelRegistry.getSchema(this.constructor.name)
     if (schema?.properties) {
@@ -281,8 +287,6 @@ export class BaseModel {
         }
       }
     }
-
-    ModelValidator.validate(this, this.constructor.name)
 
     if (BaseModel._saveStrategy) {
       await BaseModel._saveStrategy(this)

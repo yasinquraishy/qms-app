@@ -38,10 +38,10 @@ export class Nonconformance extends BaseModel {
   @Property({ type: DateTime }) dueDate = /** @type {DateTime} */ (null)
   @Property({ type: String }) productId = null
   @Property({ type: String }) supplierId = null
-  @Property({ type: Number }) qtyAffected = null
+  @Property({ type: String }) qtyAffected = null
   @Property({ type: String }) unitOfMeasure = ''
-  @Property({ type: Number }) costOfNc = null
-  @Property({ type: Number }) creditFromSupplier = null
+  @Property({ type: String }) costOfNc = null
+  @Property({ type: String }) creditFromSupplier = null
   @Property({ type: String }) rootCauseCategoryId = null
   @Property({ type: String }) rootCause = ''
   @Property({ type: String }) dispositionTypeId = null

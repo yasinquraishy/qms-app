@@ -252,7 +252,7 @@ const editingDueDate = ref(false)
                     <div class="tw:text-xs tw:text-secondary">Cost of NC</div>
                     <BaseTextInput
                       v-if="editingCost"
-                      v-model.number="nc.costOfNc"
+                      v-model="nc.costOfNc"
                       type="number"
                       placeholder="0.00"
                       autofocus
@@ -277,7 +277,7 @@ const editingDueDate = ref(false)
                     <div class="tw:text-xs tw:text-secondary">Credit from Supplier</div>
                     <BaseTextInput
                       v-if="editingCredit"
-                      v-model.number="nc.creditFromSupplier"
+                      v-model="nc.creditFromSupplier"
                       type="number"
                       placeholder="0.00"
                       autofocus

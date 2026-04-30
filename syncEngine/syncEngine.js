@@ -53,7 +53,7 @@ export class SyncEngine {
     dbName = DB_NAME,
     socketUrl,
     graphqlUrl,
-    graphQLWorkerIntervalMs = 500,
+    graphQLWorkerIntervalMs = 100,
     graphqlClientOptions = {},
     serviceWorkerUrl,
   } = {}) {

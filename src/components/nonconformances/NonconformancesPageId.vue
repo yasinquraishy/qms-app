@@ -104,6 +104,11 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
 const editingCost = ref(false)
 const editingCredit = ref(false)
 
+// ─── Inline-edit for overview fields ──────────────────────────────────────────
+const editingSeverity = ref(false)
+const editingDetected = ref(false)
+const editingDueDate = ref(false)
+
 // ─── Workflow steps are handled by NcWorkflowDetail component ────────────────
 </script>
 
@@ -373,7 +378,21 @@ const editingCredit = ref(false)
                 </div>
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Severity</span>
-                  <NcSeverityBadgeById :severityId="nc.severityId" />
+                  <NcSeveritySelectMenu
+                    v-if="editingSeverity && isEditable"
+                    v-model="nc.severityId"
+                    :required="true"
+                    class="tw:w-32"
+                    @blur="editingSeverity = false"
+                  />
+                  <span
+                    v-else
+                    class="tw:cursor-pointer tw:hover:opacity-70"
+                    :class="isEditable ? '' : 'tw:pointer-events-none'"
+                    @click="editingSeverity = true"
+                  >
+                    <NcSeverityBadgeById :severityId="nc.severityId" />
+                  </span>
                 </div>
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Owner</span>
@@ -382,15 +401,37 @@ const editingCredit = ref(false)
                 </div>
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Detected</span>
-                  <span class="tw:text-sm tw:font-medium">{{
-                    nc.detectedAt ? nc.detectedAt.formatDate('date') : '—'
-                  }}</span>
+                  <BaseDatePicker
+                    v-if="editingDetected && isEditable"
+                    v-model="nc.detectedAt"
+                    class="tw:w-36"
+                    @blur="editingDetected = false"
+                  />
+                  <span
+                    v-else
+                    class="tw:text-sm tw:font-medium"
+                    :class="isEditable ? 'tw:cursor-pointer tw:hover:text-primary' : ''"
+                    @click="isEditable && (editingDetected = true)"
+                  >
+                    {{ nc.detectedAt ? nc.detectedAt.formatDate('date') : '—' }}
+                  </span>
                 </div>
                 <div class="tw:flex tw:justify-between tw:items-center tw:py-2 tw:border-divider">
                   <span class="tw:text-xs tw:text-secondary">Due date</span>
+                  <BaseDatePicker
+                    v-if="editingDueDate && isEditable"
+                    v-model="nc.dueDate"
+                    class="tw:w-36"
+                    @blur="editingDueDate = false"
+                  />
                   <span
+                    v-else
                     class="tw:text-sm tw:font-medium tw:flex tw:items-center tw:gap-1 tw:flex-nowrap"
-                    :class="isOverdue ? 'tw:text-red-600' : ''"
+                    :class="[
+                      isOverdue ? 'tw:text-red-600' : '',
+                      isEditable ? 'tw:cursor-pointer tw:hover:text-primary' : '',
+                    ]"
+                    @click="isEditable && (editingDueDate = true)"
                   >
                     <span>{{ nc.dueDate ? nc.dueDate.formatDate('date') : '—' }}</span>
                     <IconAlertTriangle v-if="isOverdue" :size="16" class="tw:text-red-600" />

@@ -17,9 +17,19 @@ const workflowInstanceSteps = useLiveQueryWithDeps(
   [() => props.workflowInstanceId],
   async (db, [instanceId]) => {
     if (!instanceId) return []
-    return db.WorkflowInstanceStep.where('workflowInstanceId', instanceId)
+    const all = await db.WorkflowInstanceStep.where('workflowInstanceId', instanceId)
       .orderBy('stepNumber', 'asc')
       .exec()
+    // After a send-back the same stepId can have multiple instances.
+    // Keep only the most recently created one per stepId, then re-sort by stepNumber.
+    const latestByStepId = new Map()
+    for (const step of all) {
+      const existing = latestByStepId.get(step.stepId)
+      if (!existing || step.createdAt > existing.createdAt) {
+        latestByStepId.set(step.stepId, step)
+      }
+    }
+    return [...latestByStepId.values()].sort((a, b) => a.stepNumber - b.stepNumber)
   },
   { initial: [] },
 )

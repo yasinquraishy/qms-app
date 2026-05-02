@@ -3,11 +3,16 @@ import { initSession, currentSession } from '@/utils/currentSession'
 import { initCurrentCompany, companies } from '@/utils/currentCompany'
 import { isPublicRoute as isPublicRouteFn, isAuthRoute } from '@/constants/authRoutes'
 import { initSync } from '@/utils/initSyncEngine.js'
+import { syncBus } from '@syncEngine/index.js'
+import { useToast } from '@shared/composables/useToast.js'
 
 const pageInfo = ref({
   showHeader: true,
 })
 providePageInfo(pageInfo)
+
+const { notify } = useToast()
+
 const route = useRoute()
 const openRoutes = ['/form']
 const loading = ref(true)
@@ -67,6 +72,24 @@ onMounted(async () => {
   }
 
   loading.value = false
+})
+
+let unsubscribeRollback = null
+onMounted(() => {
+  unsubscribeRollback = syncBus.on('*', (event) => {
+    if (event.type === 'rollback') {
+      notify({
+        type: 'warning',
+        message: `Sync rollback: ${event.modelName || 'record'} could not be saved and was reverted.`,
+        position: 'top',
+        timeout: 5000,
+      })
+    }
+  })
+})
+
+onUnmounted(() => {
+  unsubscribeRollback?.()
 })
 </script>
 

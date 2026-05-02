@@ -1,5 +1,5 @@
 <script setup>
-import { currentSession } from '@/utils/currentSession.js'
+import { post } from '@/api'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
 
 const router = useRouter()
@@ -22,36 +22,6 @@ const form = ref({
   qtyAffected: null,
   unitOfMeasure: '',
   workflowVersionId: null,
-})
-
-const createNc = useLiveMutation(async (db, data) => {
-  const userId = currentSession.value?.userId || ''
-
-  const site = await db.Site.findByPk(data.siteId)
-  if (!site) throw new Error(`Site not found: ${data.siteId}`)
-
-  const department = await db.Department.findByPk(data.departmentId)
-  if (!department) throw new Error(`Department not found: ${data.departmentId}`)
-
-  const resolvedPrefix = `NC-${site.code}-${department.code}`
-
-  let counter = await db.NcCounter.where('prefix', resolvedPrefix).first()
-  if (!counter) {
-    counter = db.NcCounter.create({ prefix: resolvedPrefix, currentValue: 1 })
-  } else {
-    counter.currentValue += 1
-  }
-
-  const nc = db.Nonconformance.create({
-    ...data,
-    ncNumber: `${resolvedPrefix}-${String(counter.currentValue).padStart(3, '0')}`,
-    statusId: 'DRAFT',
-    createdBy: userId,
-    updatedBy: userId,
-  })
-  await nc.save()
-  await counter.save()
-  return nc
 })
 
 function handleSubmit() {
@@ -96,33 +66,17 @@ function handleSubmit() {
   ncWorkflowVersionSelectRef.value.submit()
 }
 
-const handleReviewersConfirmed = useLiveMutation(async (db, reviewers) => {
+async function handleReviewersConfirmed(reviewers) {
   saving.value = true
   try {
-    // Create NC first
-    const nc = await createNc(form.value)
-
-    // Create WorkflowStepUser records for selected reviewers
-    for (const [stepId, userIds] of Object.entries(reviewers)) {
-      // Hard-delete any existing step users for this step
-      const existing = await db.WorkflowStepUser.where('stepId', stepId).exec()
-      await Promise.all(existing.map((su) => su.hardDelete()))
-
-      // Create new step users
-      for (const userId of userIds) {
-        const stepUser = db.WorkflowStepUser.create({ stepId, userId })
-        await stepUser.save()
-      }
-    }
-
-    // Navigate to NC detail page
-    router.push(getCompanyPath(`/nonconformances/${nc.id}`))
+    const response = await post('/v1/services/nonconformances', { ...form.value, reviewers })
+    router.push(getCompanyPath(`/nonconformances/${response.nonconformance.id}`))
   } catch (e) {
     toast.notify({ type: 'negative', message: e.message || 'Failed to create NC' })
   } finally {
     saving.value = false
   }
-})
+}
 </script>
 
 <template>

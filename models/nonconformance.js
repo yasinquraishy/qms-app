@@ -1,7 +1,6 @@
 import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
-import { post } from '@/api'
 
 @ClientModel('nonconformances', {
   primaryKey: 'id',

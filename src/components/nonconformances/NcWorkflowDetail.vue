@@ -278,7 +278,12 @@ function getStatusLabel(statusId) {
 }
 
 function canReassignStep(step) {
-  return props.isOwner && (step.statusId === 'PENDING' || step.statusId === 'IN_PROGRESS')
+  return (
+    props.isOwner &&
+    (step.statusId === 'PENDING' ||
+      step.statusId === 'IN_PROGRESS' ||
+      step.statusId === 'SENT_BACK')
+  )
 }
 
 function getStepRecords(instanceStepId) {

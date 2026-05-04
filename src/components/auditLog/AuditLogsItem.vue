@@ -29,19 +29,24 @@ const performerName = computed(() => {
 
 // Resolve entity display label live from IDB.
 // Child entity resolvers (e.g. WorkflowStep) chain to their parent via `this`.
+// isChild=true when the entity resolved to a different (parent) type.
 const resolvedEntity = useLiveQueryWithDeps(
   [() => props.log.entityType, () => props.log.entityId],
   async (db, [entityType, entityId]) => {
     if (!entityType || !entityId)
-      return { label: null, displayType: entityType, displayId: entityId }
+      return { label: null, displayType: entityType, displayId: entityId, isChild: false }
 
     const singularType = singular(entityType)
     const resolver = ENTITY_LABEL_RESOLVERS[singularType]
-    if (!resolver) return { label: entityId, displayType: singularType, displayId: entityId }
-    return await resolver.call(ENTITY_LABEL_RESOLVERS, entityId, db)
+    if (!resolver)
+      return { label: entityId, displayType: singularType, displayId: entityId, isChild: false }
+    const result = await resolver.call(ENTITY_LABEL_RESOLVERS, entityId, db)
+    return { ...result, isChild: result.displayType !== singularType }
   },
-  { models: '*', initial: { label: null, displayType: null, displayId: null } },
+  { models: '*', initial: { label: null, displayType: null, displayId: null, isChild: false } },
 )
+
+const displayAction = computed(() => (resolvedEntity.value.isChild ? 'UPDATE' : props.log.action))
 </script>
 
 <template>
@@ -53,7 +58,7 @@ const resolvedEntity = useLiveQueryWithDeps(
     >
       <!-- Action badge -->
       <div class="tw:shrink-0 tw:pt-0.5">
-        <AuditLogActionBadge :action="log.action" />
+        <AuditLogActionBadge :action="displayAction" />
       </div>
 
       <!-- Content -->

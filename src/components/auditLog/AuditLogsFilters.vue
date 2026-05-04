@@ -68,20 +68,20 @@ const hasActiveFilters = computed(
     />
 
     <!-- Date from -->
-    <input
-      v-model="filters.dateFrom"
-      type="date"
-      class="tw:px-2 tw:py-1 tw:border tw:border-divider tw:rounded-md tw:text-sm tw:bg-main tw:text-on-main"
-      title="From date"
-    />
+    <div class="tw:flex tw:flex-col tw:gap-0.5">
+      <span class="tw:text-[10px] tw:font-medium tw:text-secondary tw:uppercase tw:tracking-wide"
+        >Start date</span
+      >
+      <BaseDatePicker v-model="filters.dateFrom" :showShortcuts="false" />
+    </div>
 
     <!-- Date to -->
-    <input
-      v-model="filters.dateTo"
-      type="date"
-      class="tw:px-2 tw:py-1 tw:border tw:border-divider tw:rounded-md tw:text-sm tw:bg-main tw:text-on-main"
-      title="To date"
-    />
+    <div class="tw:flex tw:flex-col tw:gap-0.5">
+      <span class="tw:text-[10px] tw:font-medium tw:text-secondary tw:uppercase tw:tracking-wide"
+        >End date</span
+      >
+      <BaseDatePicker v-model="filters.dateTo" :showShortcuts="false" />
+    </div>
 
     <!-- Reset -->
     <button

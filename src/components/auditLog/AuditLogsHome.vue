@@ -10,15 +10,15 @@ const { auditLogs, loading } = useAuditLogs()
     <SafeTeleport to="#main-header-title">
       <div>
         <div class="tw:text-xl tw:font-bold tw:text-on-main">Audit Logs</div>
-        <div class="tw:text-xs tw:text-secondary tw:hidden tw:sm:block">
+        <div class="tw:text-xs tw:text-secondary tw:hidden tw:sm:block tw:whitespace-nowrap">
           Tamper-evident record of all system actions.
         </div>
       </div>
     </SafeTeleport>
 
-    <SafeTeleport to="#main-header-actions">
+    <div class="tw:bg-sidebar tw:p-3 tw:rounded-xl">
       <AuditLogsFilters />
-    </SafeTeleport>
+    </div>
 
     <!-- Loading -->
     <div v-if="loading" class="tw:flex tw:justify-center tw:py-16">

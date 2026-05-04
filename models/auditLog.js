@@ -1,28 +1,21 @@
-import { currentSession } from '@/utils/currentSession'
-import { BaseModel, ClientModel, Property } from '@syncEngine/index'
+import { BaseModel, ClientModel, Computed, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
 @ClientModel('auditLogs', {
   primaryKey: 'id',
   syncField: 'createdAt',
-  customIndex: '[entityType+entityId], performedBy',
+  loadStrategy: 'lazy',
+  customIndex: '[entityType+entityId], [companyId+createdAt], performedBy, moduleId',
+  schemaVersion: 1,
 })
 export class AuditLog extends BaseModel {
-  constructor(...args) {
-    super(...args)
-    // Auto-assign companyId from current session on creation
-    if (!this.companyId) {
-      this.companyId = currentSession.value?.companyId || ''
-    }
+  static paranoid = true
 
-    if (!this.id) {
-      this.id = crypto.randomUUID()
-    }
-  }
-  @Property({ type: String, uuid: true, required: true }) id = ''
+  @Property({ type: String, required: true }) id = ''
   @Property({ type: String }) entityType = ''
   @Property({ type: String }) entityId = ''
   @Property({ type: String }) action = ''
+  @Property({ type: String }) moduleId = ''
   @Property({ type: Object }) oldValueJson = null
   @Property({ type: Object }) newValueJson = null
   @Property({ type: String }) performedBy = ''
@@ -32,4 +25,18 @@ export class AuditLog extends BaseModel {
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)
+
+  @Computed
+  get contextLabel() {
+    const ctx = this.newValueJson?.__context || {}
+    return ctx.title || ctx.name || ctx.code || this.entityId
+  }
+
+  @Computed
+  get changes() {
+    if (!this.oldValueJson || !this.newValueJson) return []
+    const old = this.oldValueJson
+    const neu = this.newValueJson
+    return Object.keys(neu).filter((key) => !key.startsWith('__') && old[key] !== neu[key])
+  }
 }

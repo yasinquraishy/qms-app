@@ -1,33 +1,79 @@
-import { get } from '@/api'
+import { currentCompany } from '@/utils/currentCompany.js'
 
 const symbol = Symbol('useAuditLogs')
 
 function AuditLogsState() {
-  const loading = ref(false)
-  const auditLogs = ref([])
-  const grouped = ref({})
-  const total = ref(0)
-  const filters = ref({ entityType: null })
+  const filters = ref({
+    modules: [],
+    actions: [],
+    performedBy: null,
+    entityType: null,
+    dateFrom: null,
+    dateTo: null,
+  })
 
-  async function fetchAuditLogs() {
-    const params = { limit: 200 }
-    if (filters.value.entityType) params.entityType = filters.value.entityType
+  const auditLogs = useLiveQueryWithDeps(
+    [
+      () => currentCompany.value?.id,
+      () => filters.value.modules,
+      () => filters.value.actions,
+      () => filters.value.performedBy,
+      () => filters.value.entityType,
+      () => filters.value.dateFrom,
+      () => filters.value.dateTo,
+    ],
+    async (db, [companyId, modules, actions, performedBy, entityType, dateFrom, dateTo]) => {
+      if (!companyId) return []
 
-    const data = await get('/v1/services/auditLogs', { params, loader: loading })
-    auditLogs.value = data.auditLogs || []
-    grouped.value = data.grouped || {}
-    total.value = data.total || 0
+      let query = db.AuditLog.where(
+        '[companyId+createdAt]',
+        IDBKeyRange.bound([companyId, new Date(0)], [companyId, new Date()]),
+      )
+
+      let results = await query.orderBy('createdAt', 'desc').limit(200).exec()
+
+      if (modules?.length) {
+        results = results.filter((log) => modules.includes(log.moduleId))
+      }
+      if (actions?.length) {
+        results = results.filter((log) => actions.includes(log.action))
+      }
+      if (performedBy) {
+        results = results.filter((log) => log.performedBy === performedBy)
+      }
+      if (entityType) {
+        results = results.filter((log) => log.entityType === entityType)
+      }
+      if (dateFrom) {
+        results = results.filter((log) => log.createdAt >= dateFrom)
+      }
+      if (dateTo) {
+        results = results.filter((log) => log.createdAt <= dateTo)
+      }
+
+      return results
+    },
+    { models: 'AuditLog', initial: [] },
+  )
+
+  const loading = computed(() => auditLogs.value === undefined)
+
+  function resetFilters() {
+    filters.value = {
+      modules: [],
+      actions: [],
+      performedBy: null,
+      entityType: null,
+      dateFrom: null,
+      dateTo: null,
+    }
   }
 
-  watch(filters, () => fetchAuditLogs(), { deep: true })
-
   return {
-    loading,
-    auditLogs,
-    grouped,
-    total,
     filters,
-    fetchAuditLogs,
+    auditLogs,
+    loading,
+    resetFilters,
   }
 }
 

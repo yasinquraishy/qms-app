@@ -141,9 +141,7 @@ export class BaseModel {
 
   /**
    * Reload this instance's properties from IndexedDB.
-   * Called by SyncWorkerBridge after the SW broadcasts a SYNC or ROLLBACK
-   * notification — the SW has already written the authoritative record to IDB,
-   * so this just pulls it back into the live ObjectPool instance.
+   * Can be called externally to re-sync an in-memory instance from the IDB state.
    * @returns {Promise<void>}
    */
   async reload() {

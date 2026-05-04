@@ -130,6 +130,28 @@ export async function dehydrate(modelName, instance) {
 }
 
 /**
+ * Serialize a model instance to a plain object WITHOUT writing to IndexedDB.
+ * Used by MutationRunner to build GraphQL mutation variables before the API call.
+ *
+ * @param {string} modelName
+ * @param {object} instance - model instance
+ * @returns {object} serialized record suitable for network/IDB use
+ */
+export function serializeModel(modelName, instance) {
+  const schema = ModelRegistry.getSchema(modelName)
+  if (!schema) throw new Error(`[serializeModel] Unknown model: ${modelName}`)
+
+  const pk = schema.primaryKey
+  const result = { [pk]: instance[pk] }
+
+  for (const [key, propMeta] of schema.properties) {
+    result[key] = serializeValue(instance[key], propMeta)
+  }
+
+  return result
+}
+
+/**
  * Hydrate all instances of a model from IndexedDB.
  * @param {string} modelName
  * @returns {Promise<object[]>}

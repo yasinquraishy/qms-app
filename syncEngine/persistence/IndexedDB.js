@@ -1,6 +1,7 @@
 // IndexedDB.js
 import { buildStoreDefinitions } from './schemaManager.js'
 import { IndexedDB as AbstractIndexedDB } from '../shared/IndexedDB.js'
+import { SYNC_META_STORE } from '../shared/constants.js'
 
 export class IndexedDB extends AbstractIndexedDB {
   /**
@@ -23,5 +24,8 @@ export class IndexedDB extends AbstractIndexedDB {
         }
       }
     }
+
+    // Delta-sync watermark store (keyed by modelName)
+    db.createObjectStore(SYNC_META_STORE, { keyPath: 'modelName' })
   }
 }

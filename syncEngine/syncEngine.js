@@ -1,42 +1,35 @@
 import { BaseModel } from './core/BaseModel.js'
 import { IndexedDB } from './persistence/IndexedDB.js'
-import { SyncTransaction } from './persistence/SyncTransaction.js'
-import { TableMetaService } from './persistence/TableMetaService.js'
-import { SyncWorkerBridge } from './worker/SyncWorkerBridge.js'
+import { MetaCache } from './core/MetaCache.js'
 import { ObjectPool } from './core/ObjectPool.js'
-import { MSG } from './shared/messageTypes.js'
+import { directSaveStrategy } from './core/directSaveStrategy.js'
+import { bootstrapAll } from './sync/bootstrap.js'
+import { initSocketSubscriber, teardownSocketSubscriber } from './sync/socketSubscriber.js'
 import { shouldNuke, computeSchemaHash } from './persistence/schemaManager.js'
 import { DB_NAME, SCHEMA_HASH_KEY } from './shared/constants.js'
 
 export class SyncEngine {
-  /**
-   *
-   * @type {SyncWorkerBridge}
-   */
-  #workerBridge = null
-
   /**
    * @type {string}
    */
   #rawDbName = null
 
   /**
-   * Set after shouldNuke(). Cleared on successful init.
-   * @type {string|null} - name of the DB to nuke on next init (if any).
+   * Set when a schema change is detected. Holds the old DB name to nuke after the new one opens.
+   * @type {string|null}
    */
   #dbToNuke = null
 
   /**
-   * if the DB name is sync-db-123, then the key will be sync-db-123_dbName to avoid collisions with other localStorage keys
-   * and ensure SW and main thread are in sync on the active DB across reloads.
+   * DB name key in localStorage (scoped to rawDbName to avoid collisions).
    */
   get #dbNameKey() {
     return `${this.#rawDbName}_dbName`
   }
 
   /**
-   * DB name is persisted in localStorage to ensure SW and main thread are in sync across reloads.
-   * @type {string | null}
+   * The active company-scoped IDB name, persisted in localStorage so it survives page reloads.
+   * @type {string|null}
    */
   get dbName() {
     return localStorage.getItem(this.#dbNameKey) || null
@@ -45,42 +38,33 @@ export class SyncEngine {
     localStorage.setItem(this.#dbNameKey, name)
   }
 
-  get workerBridge() {
-    return this.#workerBridge
-  }
-
-  async install({
-    dbName = DB_NAME,
-    socketUrl,
-    graphqlUrl,
-    graphQLWorkerIntervalMs = 100,
-    graphqlClientOptions = {},
-    serviceWorkerUrl,
-  } = {}) {
+  /**
+   * Install the syncEngine for a given company.
+   *
+   * Steps:
+   *   1. Open (or create) the company-scoped IndexedDB.
+   *   2. Build the in-memory MetaCache (GraphQL strings per model).
+   *   3. Wire BaseModel._saveStrategy to call the API directly.
+   *   4. Run the paginated delta-sync bootstrap (non-blocking).
+   *   5. Attach the socket.io 'sync' listener for server-push updates.
+   *
+   * @param {{ dbName?: string }} [options]
+   */
+  async install({ dbName = DB_NAME } = {}) {
     this.#rawDbName = dbName
     await this.#initDatabase(dbName)
 
-    // Populate tableMetas for SW consumption
-    await TableMetaService.populateAll()
+    // Build in-memory GraphQL string cache (replaces TableMetaService IDB store)
+    MetaCache.build()
 
-    // Set save strategy to use SyncTransaction (OCP — no monkey-patching)
-    if (!BaseModel._saveStrategy) {
-      BaseModel._saveStrategy = async (instance) => {
-        const changes = instance.getModifiedProperties()
-        const transaction = new SyncTransaction(instance, changes, instance.action)
-        await transaction.commit()
-        instance._clearModified()
-      }
-    }
+    // Wire direct-API save strategy (replaces SyncTransaction + TransactionQueue + SW poll)
+    BaseModel._saveStrategy = directSaveStrategy
 
-    // --- Service Worker path ---
-    await this.#setupServiceWorker({
-      serviceWorkerUrl,
-      graphqlUrl,
-      socketUrl,
-      headers: graphqlClientOptions.headers,
-      pollIntervalMs: graphQLWorkerIntervalMs,
-    })
+    // Bootstrap: paginated delta-sync for all INSTANT models (non-blocking)
+    bootstrapAll().catch((err) => console.error('[SyncEngine] Bootstrap error:', err))
+
+    // Socket subscriber: server-push sync via the existing app socket
+    initSocketSubscriber()
   }
 
   async #initDatabase(dbName) {
@@ -89,64 +73,37 @@ export class SyncEngine {
     }
 
     if (!this.dbName || this.#dbToNuke !== null) {
-      // First run or new company — no entry in localStorage yet
+      // First run or schema change — create a new timestamped DB
       this.dbName = `${dbName}-${Date.now()}`
     }
 
     await IndexedDB.init(this.dbName)
     localStorage.setItem(SCHEMA_HASH_KEY, computeSchemaHash())
-  }
 
-  async #setupServiceWorker({ serviceWorkerUrl, graphqlUrl, socketUrl, headers, pollIntervalMs }) {
-    if (this.#workerBridge) this.#workerBridge.stop()
-
-    this.#workerBridge = new SyncWorkerBridge({
-      onFlush: (entry) => console.log('[SyncEngine] Flushed:', entry),
-      onError: (err) => console.error('[SyncEngine] SW error:', err),
-      onBootstrapComplete: () => this.#nukeDatabaseIfNeeded(),
-    })
-
-    await this.#workerBridge.register(serviceWorkerUrl)
-
-    this.#workerBridge.sendMessage({
-      type: this.#dbToNuke ? MSG.REINIT : MSG.INIT,
-      dbName: this.dbName,
-      graphqlUrl,
-      socketUrl,
-      headers: headers || {},
-      pollIntervalMs,
-    })
+    // Nuke the old DB immediately after the new one is open
+    this.#nukeDatabaseIfNeeded()
   }
 
   #nukeDatabaseIfNeeded() {
     if (this.#dbToNuke) {
-      const req = indexedDB.deleteDatabase(this.#dbToNuke)
-      req.onsuccess = () => {
-        console.log(`[SyncEngine] Nuked old database: ${this.#dbToNuke}`)
-        this.#dbToNuke = null
-      }
+      const toNuke = this.#dbToNuke
+      this.#dbToNuke = null
+      const req = indexedDB.deleteDatabase(toNuke)
+      req.onsuccess = () => console.log(`[SyncEngine] Nuked old database: ${toNuke}`)
       req.onerror = () =>
-        console.error(`[SyncEngine] Failed to nuke database: ${this.#dbToNuke}`, req.error)
+        console.error(`[SyncEngine] Failed to nuke database: ${toNuke}`, req.error)
       req.onblocked = () =>
-        console.warn(`[SyncEngine] DB delete blocked by open connections: ${this.#dbToNuke}`)
-    }
-  }
-
-  disconnectSocket() {
-    if (this.#workerBridge) {
-      this.#workerBridge.stop()
+        console.warn(`[SyncEngine] DB delete blocked by open connections: ${toNuke}`)
     }
   }
 
   /**
-   * Teardown the engine — stop SW, close IDB, clear in-memory pool.
+   * Teardown the engine — detach socket listener, close IDB, clear in-memory pool.
    * Call before switching to a different company DB or on logout.
    */
   teardown() {
-    if (this.#workerBridge) {
-      this.#workerBridge.stop()
-      this.#workerBridge = null
-    }
+    teardownSocketSubscriber()
+    BaseModel._saveStrategy = null
     IndexedDB.close()
     ObjectPool.clear()
   }

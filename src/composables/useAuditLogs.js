@@ -25,10 +25,7 @@ function AuditLogsState() {
     async (db, [companyId, modules, actions, performedBy, entityType, dateFrom, dateTo]) => {
       if (!companyId) return []
 
-      let query = db.AuditLog.where(
-        '[companyId+createdAt]',
-        IDBKeyRange.bound([companyId, new Date(0)], [companyId, new Date()]),
-      )
+      let query = db.AuditLog.where()
 
       let results = await query.orderBy('createdAt', 'desc').limit(200).exec()
 

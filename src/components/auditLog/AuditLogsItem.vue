@@ -1,5 +1,7 @@
 <script setup>
 import { useRoute } from 'vue-router'
+import { ENTITY_LABEL_RESOLVERS } from '@/utils/auditConstants.js'
+import { singular } from 'pluralize'
 
 const props = defineProps({
   log: {
@@ -23,6 +25,19 @@ const performerName = computed(() => {
   if (!performer.value) return 'System'
   return `${performer.value.firstName} ${performer.value.lastName}`.trim()
 })
+
+// Resolve entity display label live from IDB (always fresh, supports FK chaining)
+const entityLabel = useLiveQueryWithDeps(
+  [() => props.log.entityType, () => props.log.entityId],
+  async (db, [entityType, entityId]) => {
+    if (!entityType || !entityId) return null
+    const modelName = singular(entityType)
+    const resolver = ENTITY_LABEL_RESOLVERS[modelName]
+    if (!resolver) return entityId
+    return await resolver(entityId, db)
+  },
+  { models: '*', initial: null },
+)
 </script>
 
 <template>
@@ -43,7 +58,7 @@ const performerName = computed(() => {
           <AuditLogEntityLink
             :entityType="log.entityType"
             :entityId="log.entityId"
-            :contextLabel="log.contextLabel"
+            :contextLabel="entityLabel"
             :companyCode="companyCode"
           />
           <span

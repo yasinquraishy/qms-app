@@ -27,12 +27,6 @@ export class AuditLog extends BaseModel {
   createdAt = /** @type {DateTime} */ (null)
 
   @Computed
-  get contextLabel() {
-    const ctx = this.newValueJson?.__context || {}
-    return ctx.title || ctx.name || ctx.code || this.entityId
-  }
-
-  @Computed
   get changes() {
     if (!this.oldValueJson || !this.newValueJson) return []
     const old = this.oldValueJson

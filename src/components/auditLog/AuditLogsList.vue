@@ -8,7 +8,7 @@ defineProps({
 </script>
 
 <template>
-  <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-hidden">
+  <div class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-divider tw:overflow-auto">
     <div class="tw:divide-y tw:divide-divider">
       <AuditLogsItem v-for="log in logs" :key="log.id" :log="log" />
     </div>

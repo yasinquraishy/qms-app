@@ -17,6 +17,7 @@ const impersonatedName = computed(() => {
 })
 
 const resetting = ref(false)
+const showHardReset = computed(() => import.meta.env.DEV)
 
 async function resetSync() {
   resetting.value = true
@@ -70,6 +71,7 @@ async function resetSync() {
         <div id="main-header-actions" />
         <NotificationsBell />
         <button
+          v-if="showHardReset"
           class="tw:p-2 tw:rounded-full tw:text-secondary tw:hover:bg-main-hover tw:transition-colors"
           :disabled="resetting"
           @click="resetSync"

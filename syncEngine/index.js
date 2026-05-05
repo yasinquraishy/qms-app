@@ -11,6 +11,7 @@ export { ObjectPool } from './core/ObjectPool.js'
 export { default as ModelRegistry } from './core/ModelRegistry.js'
 export { ModelValidator, ValidationError } from './core/ModelValidator.js'
 export { MetaCache } from './core/MetaCache.js'
+export { pendingRequests } from './core/pendingRequests.js'
 
 // Persistence layer
 export { QueryBuilder } from './query/QueryBuilder.js'

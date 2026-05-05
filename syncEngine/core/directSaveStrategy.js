@@ -17,6 +17,7 @@ import { dehydrate, hydrate } from '../persistence/hydration.js'
 import { ObjectPool } from './ObjectPool.js'
 import { syncBus } from './syncBus.js'
 import { markAsRecentlyWritten } from '../sync/socketSubscriber.js'
+import { pendingRequests } from './pendingRequests.js'
 
 /**
  * @param {import('./BaseModel.js').BaseModel} instance
@@ -40,7 +41,13 @@ export async function directSaveStrategy(instance) {
   }
 
   // Network sync (pessimistic — IDB is only written on API success)
-  const serverRecord = await MutationRunner.run(instance, action)
+  pendingRequests.increment()
+  let serverRecord
+  try {
+    serverRecord = await MutationRunner.run(instance, action)
+  } finally {
+    pendingRequests.decrement()
+  }
 
   if (action === OPERATION.DELETE) {
     await IndexedDB.delete(tableName, id)

@@ -29,6 +29,7 @@ export class Comment extends BaseModel {
   @Property({ type: String, required: true }) userId = ''
   @Property({ type: String, required: true }) objectId = ''
   @Property({ type: String, required: true }) objectType = ''
+  @Property({ type: String }) commentType = 'COMMENT'
   @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })

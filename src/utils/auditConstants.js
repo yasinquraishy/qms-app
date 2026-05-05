@@ -408,4 +408,17 @@ export const ENTITY_LABEL_RESOLVERS = {
     const e = await db.ApiKey.findByPk(id, { force: true })
     return e ? { label: e.name || e.label || id, displayType: 'ApiKey', displayId: id } : null
   },
+
+  async Comment(id, db) {
+    const comment = await db.Comment.findByPk(id, { force: true })
+    if (!comment) return null
+    if (comment.commentType === 'DISCUSSION') return null
+    const parentResolver = this[comment.objectType]
+    const parent = parentResolver ? await parentResolver.call(this, comment.objectId, db) : null
+    return {
+      label: parent ? `Comment on ${parent.label}` : 'Comment',
+      displayType: 'Comment',
+      displayId: id,
+    }
+  },
 }

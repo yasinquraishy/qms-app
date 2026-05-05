@@ -42,16 +42,17 @@ const resolvedEntity = useLiveQueryWithDeps(
     if (!resolver)
       return { label: entityId, displayType: singularType, displayId: entityId, isChild: false }
     const result = await resolver.call(ENTITY_LABEL_RESOLVERS, entityId, db)
+    if (!result) return null
     return { ...result, isChild: result.displayType !== singularType }
   },
   { models: '*', initial: { label: null, displayType: null, displayId: null, isChild: false } },
 )
 
-const displayAction = computed(() => (resolvedEntity.value.isChild ? 'UPDATE' : props.log.action))
+const displayAction = computed(() => (resolvedEntity.value?.isChild ? 'UPDATE' : props.log.action))
 </script>
 
 <template>
-  <div class="tw:hover:bg-main-hover tw:transition-colors">
+  <div v-if="resolvedEntity" class="tw:hover:bg-main-hover tw:transition-colors">
     <div
       class="tw:px-5 tw:py-3 tw:flex tw:items-start tw:gap-4"
       :class="{ 'tw:cursor-pointer': hasDiff }"

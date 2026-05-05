@@ -143,49 +143,53 @@ export const MODULE_META = {
 }
 
 /**
- * Maps entity type (singular) → async (entityId, db) => { label, displayType, displayId }.
+ * Maps entity type (singular) → async (entityId, db) => { label, displayType, displayId } | null.
+ * Returns null when the primary record cannot be found (even with force:true for paranoid models).
+ * Returning null causes AuditLogsItem to hide the log entry entirely.
  * Child entity resolvers chain to their logical parent via `this`.
  * Must be called as ENTITY_LABEL_RESOLVERS[type].call(ENTITY_LABEL_RESOLVERS, id, db).
  */
 export const ENTITY_LABEL_RESOLVERS = {
   async Document(id, db) {
-    const e = await db.Document.findByPk(id)
-    return { label: e ? e.docNumber || e.title || id : id, displayType: 'Document', displayId: id }
+    const e = await db.Document.findByPk(id, { force: true })
+    return e
+      ? { label: e.docNumber || e.title || id, displayType: 'Document', displayId: id }
+      : null
   },
 
   async DocumentVersion(id, db) {
-    const dv = await db.DocumentVersion.findByPk(id)
-    if (!dv) return { label: id, displayType: 'DocumentVersion', displayId: id }
-    const doc = await db.Document.findByPk(dv.documentId)
+    const dv = await db.DocumentVersion.findByPk(id, { force: true })
+    if (!dv) return null
+    const doc = await db.Document.findByPk(dv.documentId, { force: true })
     const vLabel = dv.versionLabel || `${dv.versionMajor}.${dv.versionMinor}`
     const label = doc ? `${doc.docNumber || doc.title} v${vLabel}` : `v${vLabel}`
     return { label, displayType: 'DocumentVersion', displayId: id }
   },
 
   async DocumentTemplate(id, db) {
-    const e = await db.DocumentTemplate.findByPk(id)
-    return { label: e ? e.name || id : id, displayType: 'DocumentTemplate', displayId: id }
+    const e = await db.DocumentTemplate.findByPk(id, { force: true })
+    return e ? { label: e.name || id, displayType: 'DocumentTemplate', displayId: id } : null
   },
 
   async DocumentSection(id, db) {
-    const e = await db.DocumentSection.findByPk(id)
-    return { label: e ? e.title || id : id, displayType: 'DocumentSection', displayId: id }
+    const e = await db.DocumentSection.findByPk(id, { force: true })
+    return e ? { label: e.title || id, displayType: 'DocumentSection', displayId: id } : null
   },
 
   async DocumentLink(id, db) {
-    const e = await db.DocumentLink.findByPk(id)
-    if (!e) return { label: id, displayType: 'DocumentLink', displayId: id }
-    const dv = await db.DocumentVersion.findByPk(e.fromDocumentVersionId)
-    if (!dv) return { label: id, displayType: 'DocumentLink', displayId: id }
-    const doc = await db.Document.findByPk(dv.documentId)
+    const e = await db.DocumentLink.findByPk(id, { force: true })
+    if (!e) return null
+    const dv = await db.DocumentVersion.findByPk(e.fromDocumentVersionId, { force: true })
+    if (!dv) return null
+    const doc = await db.Document.findByPk(dv.documentId, { force: true })
     const vLabel = dv.versionLabel || `${dv.versionMajor}.${dv.versionMinor}`
     const label = doc ? `${doc.docNumber || doc.title} v${vLabel}` : `v${vLabel}`
     return { label, displayType: 'DocumentLink', displayId: id }
   },
 
   async Workflow(id, db) {
-    const e = await db.Workflow.findByPk(id)
-    return { label: e ? e.name || id : id, displayType: 'Workflow', displayId: id }
+    const e = await db.Workflow.findByPk(id, { force: true })
+    return e ? { label: e.name || id, displayType: 'Workflow', displayId: id } : null
   },
 
   async ApprovalWorkflowVersion(id, db) {
@@ -193,20 +197,20 @@ export const ENTITY_LABEL_RESOLVERS = {
   },
 
   async WorkflowVersion(id, db) {
-    const wv = await db.WorkflowVersion.findByPk(id)
-    if (!wv) return { label: id, displayType: 'WorkflowVersion', displayId: id }
-    const workflow = await db.Workflow.findByPk(wv.workflowId)
+    const wv = await db.WorkflowVersion.findByPk(id, { force: true })
+    if (!wv) return null
+    const workflow = await db.Workflow.findByPk(wv.workflowId, { force: true })
     const vLabel = wv.versionLabel || `${wv.versionMajor}.${wv.versionMinor}`
     const label = workflow ? `${workflow.name} v${vLabel}` : `v${vLabel}`
     return { label, displayType: 'WorkflowVersion', displayId: id }
   },
 
   async WorkflowInstance(id, db) {
-    const wi = await db.WorkflowInstance.findByPk(id)
-    if (!wi) return { label: id, displayType: 'WorkflowInstance', displayId: id }
-    const wv = await db.WorkflowVersion.findByPk(wi.workflowVersionId)
-    if (!wv) return { label: id, displayType: 'WorkflowInstance', displayId: id }
-    const workflow = await db.Workflow.findByPk(wv.workflowId)
+    const wi = await db.WorkflowInstance.findByPk(id, { force: true })
+    if (!wi) return null
+    const wv = await db.WorkflowVersion.findByPk(wi.workflowVersionId, { force: true })
+    if (!wv) return null
+    const workflow = await db.Workflow.findByPk(wv.workflowId, { force: true })
     return { label: workflow ? workflow.name : id, displayType: 'WorkflowInstance', displayId: id }
   },
 
@@ -215,26 +219,20 @@ export const ENTITY_LABEL_RESOLVERS = {
   },
 
   async WorkflowInstanceStep(id, db) {
-    const e = await db.WorkflowInstanceStep.findByPk(id)
-    return {
-      label: e ? `Step ${e.stepNumber}` : id,
-      displayType: 'WorkflowInstanceStep',
-      displayId: id,
-    }
+    const e = await db.WorkflowInstanceStep.findByPk(id, { force: true })
+    return e
+      ? { label: `Step ${e.stepNumber}`, displayType: 'WorkflowInstanceStep', displayId: id }
+      : null
   },
 
   async ApprovalWorkflowInstanceStep(id, db) {
-    const e = await db.WorkflowInstanceStep.findByPk(id)
-    return e
-      ? this.WorkflowInstance(e.workflowInstanceId, db)
-      : { label: id, displayType: 'ApprovalWorkflowInstanceStep', displayId: id }
+    const e = await db.WorkflowInstanceStep.findByPk(id, { force: true })
+    return e ? this.WorkflowInstance(e.workflowInstanceId, db) : null
   },
 
   async UsersOnApprovalWorkflowInstanceStep(id, db) {
-    const e = await db.UserOnWorkflowInstanceStep.findByPk(id)
-    return e
-      ? this.WorkflowInstanceStep(e.workflowInstanceStepId, db)
-      : { label: id, displayType: 'UsersOnApprovalWorkflowInstanceStep', displayId: id }
+    const e = await db.UserOnWorkflowInstanceStep.findByPk(id, { force: true })
+    return e ? this.WorkflowInstanceStep(e.workflowInstanceStepId, db) : null
   },
 
   async ApprovalWorkflowStep(id, db) {
@@ -242,17 +240,13 @@ export const ENTITY_LABEL_RESOLVERS = {
   },
 
   async WorkflowStep(id, db) {
-    const e = await db.WorkflowStep.findByPk(id)
-    return e
-      ? this.WorkflowVersion(e.workflowVersionId, db)
-      : { label: id, displayType: 'WorkflowStep', displayId: id }
+    const e = await db.WorkflowStep.findByPk(id, { force: true })
+    return e ? this.WorkflowVersion(e.workflowVersionId, db) : null
   },
 
   async WorkflowStepRole(id, db) {
-    const e = await db.WorkflowStepRole.findByPk(id)
-    return e
-      ? this.WorkflowStep(e.stepId, db)
-      : { label: id, displayType: 'WorkflowStepRole', displayId: id }
+    const e = await db.WorkflowStepRole.findByPk(id, { force: true })
+    return e ? this.WorkflowStep(e.stepId, db) : null
   },
 
   async ApprovalWorkflowStepUser(id, db) {
@@ -260,17 +254,13 @@ export const ENTITY_LABEL_RESOLVERS = {
   },
 
   async WorkflowStepUser(id, db) {
-    const e = await db.WorkflowStepUser.findByPk(id)
-    return e
-      ? this.WorkflowStep(e.stepId, db)
-      : { label: id, displayType: 'WorkflowStepUser', displayId: id }
+    const e = await db.WorkflowStepUser.findByPk(id, { force: true })
+    return e ? this.WorkflowStep(e.stepId, db) : null
   },
 
   async StepSendBackTarget(id, db) {
-    const e = await db.StepSendBackTarget.findByPk(id)
-    return e
-      ? this.WorkflowStep(e.stepId, db)
-      : { label: id, displayType: 'StepSendBackTarget', displayId: id }
+    const e = await db.StepSendBackTarget.findByPk(id, { force: true })
+    return e ? this.WorkflowStep(e.stepId, db) : null
   },
 
   async StepsSendBackTarget(id, db) {
@@ -278,10 +268,8 @@ export const ENTITY_LABEL_RESOLVERS = {
   },
 
   async AllowedOutcomeOnStep(id, db) {
-    const e = await db.AllowedOutcomeOnStep.findByPk(id)
-    return e
-      ? this.WorkflowStep(e.stepId, db)
-      : { label: id, displayType: 'AllowedOutcomeOnStep', displayId: id }
+    const e = await db.AllowedOutcomeOnStep.findByPk(id, { force: true })
+    return e ? this.WorkflowStep(e.stepId, db) : null
   },
 
   async AllowedOutcomesOnStep(id, db) {
@@ -289,10 +277,8 @@ export const ENTITY_LABEL_RESOLVERS = {
   },
 
   async PermissionOnRole(id, db) {
-    const e = await db.PermissionOnRole.findByPk(id)
-    return e
-      ? this.Role(e.roleId, db)
-      : { label: id, displayType: 'PermissionOnRole', displayId: id }
+    const e = await db.PermissionOnRole.findByPk(id, { force: true })
+    return e ? this.Role(e.roleId, db) : null
   },
 
   async PermissionsOnRole(id, db) {
@@ -300,131 +286,126 @@ export const ENTITY_LABEL_RESOLVERS = {
   },
 
   async FormTemplate(id, db) {
-    const e = await db.FormTemplate.findByPk(id)
-    return { label: e ? e.title || e.code || id : id, displayType: 'FormTemplate', displayId: id }
+    const e = await db.FormTemplate.findByPk(id, { force: true })
+    return e ? { label: e.title || e.code || id, displayType: 'FormTemplate', displayId: id } : null
   },
 
   async Record(id, db) {
-    const e = await db.Record.findByPk(id)
-    return { label: e ? e.recordNumber || id : id, displayType: 'Record', displayId: id }
+    const e = await db.Record.findByPk(id, { force: true })
+    return e ? { label: e.recordNumber || id, displayType: 'Record', displayId: id } : null
   },
 
   async Supplier(id, db) {
-    const e = await db.Supplier.findByPk(id)
-    return { label: e ? e.name || id : id, displayType: 'Supplier', displayId: id }
+    const e = await db.Supplier.findByPk(id, { force: true })
+    return e ? { label: e.name || id, displayType: 'Supplier', displayId: id } : null
   },
 
   async SupplierDocument(id, db) {
-    const sd = await db.SupplierDocument.findByPk(id)
-    if (!sd) return { label: id, displayType: 'SupplierDocument', displayId: id }
-    const dv = await db.DocumentVersion.findByPk(sd.documentVersionId)
-    if (!dv) return { label: id, displayType: 'SupplierDocument', displayId: id }
-    const doc = await db.Document.findByPk(dv.documentId)
+    const sd = await db.SupplierDocument.findByPk(id, { force: true })
+    if (!sd) return null
+    const dv = await db.DocumentVersion.findByPk(sd.documentVersionId, { force: true })
+    if (!dv) return null
+    const doc = await db.Document.findByPk(dv.documentId, { force: true })
     const vLabel = dv.versionLabel || `${dv.versionMajor}.${dv.versionMinor}`
     const label = doc ? `${doc.docNumber || doc.title} v${vLabel}` : `v${vLabel}`
     return { label, displayType: 'SupplierDocument', displayId: id }
   },
 
-  async SupplierAsset(id) {
-    return { label: id, displayType: 'SupplierAsset', displayId: id }
+  async SupplierAsset() {
+    return null
   },
 
   async SupplierContact(id, db) {
-    const e = await db.SupplierContact.findByPk(id)
-    return { label: e ? e.email || id : id, displayType: 'SupplierContact', displayId: id }
+    const e = await db.SupplierContact.findByPk(id, { force: true })
+    return e ? { label: e.email || id, displayType: 'SupplierContact', displayId: id } : null
   },
 
   async AssetRequest(id, db) {
-    const e = await db.AssetRequest.findByPk(id)
-    return { label: e ? e.title || id : id, displayType: 'AssetRequest', displayId: id }
+    const e = await db.AssetRequest.findByPk(id, { force: true })
+    return e ? { label: e.title || id, displayType: 'AssetRequest', displayId: id } : null
   },
 
   async Nonconformance(id, db) {
-    const e = await db.Nonconformance.findByPk(id)
-    return {
-      label: e ? e.ncNumber || e.title || id : id,
-      displayType: 'Nonconformance',
-      displayId: id,
-    }
+    const e = await db.Nonconformance.findByPk(id, { force: true })
+    return e
+      ? { label: e.ncNumber || e.title || id, displayType: 'Nonconformance', displayId: id }
+      : null
   },
 
   async User(id, db) {
-    const e = await db.User.findByPk(id)
-    if (!e) return { label: id, displayType: 'User', displayId: id }
+    const e = await db.User.findByPk(id, { force: true })
+    if (!e) return null
     const label = `${e.firstName || ''} ${e.lastName || ''}`.trim() || e.email || id
     return { label, displayType: 'User', displayId: id }
   },
 
   async Role(id, db) {
-    const e = await db.Role.findByPk(id)
-    return { label: e ? e.name || id : id, displayType: 'Role', displayId: id }
+    const e = await db.Role.findByPk(id, { force: true })
+    return e ? { label: e.name || id, displayType: 'Role', displayId: id } : null
   },
 
   async Team(id, db) {
-    const e = await db.Team.findByPk(id)
-    return { label: e ? e.name || id : id, displayType: 'Team', displayId: id }
+    const e = await db.Team.findByPk(id, { force: true })
+    return e ? { label: e.name || id, displayType: 'Team', displayId: id } : null
   },
 
   async Department(id, db) {
-    const e = await db.Department.findByPk(id)
-    return { label: e ? e.name || e.code || id : id, displayType: 'Department', displayId: id }
+    const e = await db.Department.findByPk(id, { force: true })
+    return e ? { label: e.name || e.code || id, displayType: 'Department', displayId: id } : null
   },
 
   async Site(id, db) {
-    const e = await db.Site.findByPk(id)
-    return { label: e ? e.name || e.code || id : id, displayType: 'Site', displayId: id }
+    const e = await db.Site.findByPk(id, { force: true })
+    return e ? { label: e.name || e.code || id, displayType: 'Site', displayId: id } : null
   },
 
   async Product(id, db) {
-    const e = await db.Product.findByPk(id)
-    return { label: e ? e.name || e.sku || id : id, displayType: 'Product', displayId: id }
+    const e = await db.Product.findByPk(id, { force: true })
+    return e ? { label: e.name || e.sku || id, displayType: 'Product', displayId: id } : null
   },
 
   async TaskInstance(id, db) {
-    const task = await db.TaskInstance.findByPk(id)
-    if (!task) return { label: id, displayType: 'TaskInstance', displayId: id }
-    // Chain to the entity this task belongs to for a meaningful label
+    const task = await db.TaskInstance.findByPk(id, { force: true })
+    if (!task) return null
     const entityResolver = this[task.entityType]
     if (entityResolver) {
       const resolved = await entityResolver.call(this, task.entityId, db)
-      return { label: resolved.label, displayType: 'TaskInstance', displayId: id }
+      return resolved ? { label: resolved.label, displayType: 'TaskInstance', displayId: id } : null
     }
-    return { label: id, displayType: 'TaskInstance', displayId: id }
+    return null
   },
 
   async Task(id, db) {
     return this.TaskInstance(id, db)
   },
 
-  async Signature(id) {
-    // No SyncEngine model for Signature — falls back to raw ID
-    return { label: id, displayType: 'Signature', displayId: id }
+  async Signature() {
+    // No SyncEngine model for Signature — cannot resolve a label
+    return null
   },
 
   async UsersOnDocument(id, db) {
-    const e = await db.UserOnDocument.findByPk(id)
-    return e
-      ? this.Document(e.documentId, db)
-      : { label: id, displayType: 'UsersOnDocument', displayId: id }
+    const e = await db.UserOnDocument.findByPk(id, { force: true })
+    return e ? this.Document(e.documentId, db) : null
   },
 
   async RolesOnUser(id, db) {
-    const e = await db.RoleOnUser.findByPk(id)
-    return e ? this.User(e.userId, db) : { label: id, displayType: 'RolesOnUser', displayId: id }
+    const e = await db.RoleOnUser.findByPk(id, { force: true })
+    return e ? this.User(e.userId, db) : null
   },
 
   async UsersOnTeam(id, db) {
-    const e = await db.UserOnTeam.findByPk(id)
-    return e ? this.Team(e.teamId, db) : { label: id, displayType: 'UsersOnTeam', displayId: id }
+    const e = await db.UserOnTeam.findByPk(id, { force: true })
+    return e ? this.Team(e.teamId, db) : null
   },
 
   async OptionSet(id, db) {
-    const e = await db.OptionSet.findByPk(id)
-    return { label: e ? e.name || id : id, displayType: 'OptionSet', displayId: id }
+    const e = await db.OptionSet.findByPk(id, { force: true })
+    return e ? { label: e.name || id, displayType: 'OptionSet', displayId: id } : null
   },
 
   async ApiKey(id, db) {
-    const e = await db.ApiKey.findByPk(id)
-    return { label: e ? e.name || e.label || id : id, displayType: 'ApiKey', displayId: id }
+    const e = await db.ApiKey.findByPk(id, { force: true })
+    return e ? { label: e.name || e.label || id, displayType: 'ApiKey', displayId: id } : null
   },
 }

@@ -1,4 +1,7 @@
 @import 'tailwindcss' prefix(tw);
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/aspect-ratio";
 @import './tokens.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -187,7 +190,7 @@ button {
 }
 
 select {
-  @apply tw:text-sm tw:border tw:border-divider tw:rounded-lg tw:px-3 tw:py-3 tw:bg-sidebar tw:text-on-sidebar tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary/30;
+  @apply tw:text-sm tw:border tw:border-divider tw:rounded-lg tw:px-3 tw:py-1 tw:bg-sidebar tw:text-on-sidebar tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary/30;
 }
 
 /* ==============================================

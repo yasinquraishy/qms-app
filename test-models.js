@@ -10,7 +10,7 @@ const expected = [
 ]
 const missing = expected.filter((name) => !db[name])
 if (missing.length === 0) {
-  console.log('✅ All refactored models import successfully')
+  console.log('✅ All refactored models import successfully done')
   process.exit(0)
 } else {
   console.error('❌ Missing models:', missing)

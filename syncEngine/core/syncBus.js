@@ -1,8 +1,8 @@
 /**
  * syncBus — lightweight event emitter for sync notifications.
  *
- * SyncWorkerBridge fires events here after handling SYNC / ROLLBACK messages
- * from the Service Worker.  useLiveQuery subscribes to re-execute queries.
+ * directSaveStrategy and socketSubscriber fire events here after writing
+ * to IndexedDB.  useLiveQuery subscribes to re-execute queries.
  *
  * Supports optional per-listener debounce so burst syncs (e.g. 50 rows)
  * coalesce into a single callback.
@@ -48,7 +48,7 @@ export const syncBus = {
   },
 
   /**
-   * Emit a sync event. Called by SyncWorkerBridge.
+   * Emit a sync event. Called by directSaveStrategy and socketSubscriber.
    * @param {{ modelName: string, modelId: string, action: string, type: string }} event
    */
   emit(event) {

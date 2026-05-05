@@ -5,6 +5,7 @@ const DB_PREFIX = 'qms-'
 
 /**
  * Install (or reinstall) the syncEngine with a company-scoped IndexedDB.
+ * Must be called after connectSocket() so the socket is available for the subscriber.
  * @param {string} companyId
  */
 export async function initSync(companyId) {
@@ -12,9 +13,6 @@ export async function initSync(companyId) {
 
   await syncEngine.install({
     dbName: `${DB_PREFIX}${companyId}`,
-    serviceWorkerUrl: '/sync-worker.js',
-    graphqlUrl: '/api/graphql',
-    socketUrl: '/socket.io',
   })
 }
 

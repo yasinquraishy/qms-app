@@ -24,11 +24,11 @@ const userMapById = computed(() => {
 })
 
 const memberships = useLiveQueryWithDeps(
-  [() => props.id],
-  async (db, [id]) => {
+  [() => props.id, userMapById],
+  async (db, [id, userMap]) => {
     const records = await db.UserOnTeam.where('teamId', id).exec()
     const resolved = await Promise.all(
-      records.map(async (m) => ({ m, user: userMapById.value.get(m.userId) })),
+      records.map(async (m) => ({ m, user: userMap.get(m.userId) })),
     )
     return resolved.filter((e) => e.user)
   },

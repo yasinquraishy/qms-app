@@ -176,7 +176,6 @@ export default {
     "useCloned": true,
     "useColorMode": true,
     "useCompanyForm": true,
-    "useCompanySettings": true,
     "useConfirmDialog": true,
     "useCountdown": true,
     "useCounter": true,

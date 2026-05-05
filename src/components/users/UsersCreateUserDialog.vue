@@ -9,8 +9,13 @@ const open = defineModel({
 
 // Create user mutation
 const createUser = useLiveMutation(async (db, data) => {
-  const u = db.User.create(data)
+  const { roleIds, ...userData } = data
+  const u = db.User.create(userData)
   await u.save()
+  for (const roleId of roleIds) {
+    const roleOnUser = db.RoleOnUser.create({ userId: u.id, roleId })
+    await roleOnUser.save()
+  }
   return u
 })
 

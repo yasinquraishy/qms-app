@@ -15,7 +15,9 @@ const modelValue = defineModel({
   default: null,
 })
 
-const roles = useLiveQuery(async (db) => db.Role.where().exec(), { initial: [] })
+const roles = useLiveQuery(async (db) => db.Role.where('statusId', 'ACTIVE').exec(), {
+  initial: [],
+})
 
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []

@@ -98,7 +98,7 @@ async function confirmArchiveDocument() {
 }
 
 async function onUnarchiveDocument(row) {
-  row.statusId = 'DRAFT'
+  row.statusId = 'ACTIVE'
   await row.save()
   toast.success('Document unarchived successfully')
 }

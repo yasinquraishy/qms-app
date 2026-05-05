@@ -105,6 +105,11 @@ export const AUDIT_FIELD_FORMATTERS = {
     roleId: { label: 'Role', type: 'fk', refModel: 'Role' },
   },
 
+  WorkflowStepUser: {
+    stepId: { label: 'Step', type: 'fk', refModel: 'WorkflowStep', hidden: true },
+    userId: { label: 'User', type: 'fk', refModel: 'User' },
+  },
+
   WorkflowInstance: {
     workflowVersionId: { label: 'Workflow', type: 'fk', refModel: 'WorkflowVersion' },
     statusId: { label: 'Status', type: 'status', statusModel: 'WorkflowInstanceStatus' },
@@ -386,6 +391,7 @@ export const DISPLAY_TYPE_LABELS = {
   WorkflowVersion: 'Workflow Version',
   WorkflowStep: 'Workflow Step',
   WorkflowStepRole: 'Step Role',
+  WorkflowStepUser: 'Step User',
   WorkflowInstance: 'Workflow Instance',
   WorkflowInstanceStep: 'Workflow Step Instance',
   StepSendBackTarget: 'Send-Back Target',

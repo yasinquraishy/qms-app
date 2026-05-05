@@ -255,6 +255,17 @@ export const ENTITY_LABEL_RESOLVERS = {
       : { label: id, displayType: 'WorkflowStepRole', displayId: id }
   },
 
+  async ApprovalWorkflowStepUser(id, db) {
+    return this.WorkflowStepUser(id, db)
+  },
+
+  async WorkflowStepUser(id, db) {
+    const e = await db.WorkflowStepUser.findByPk(id)
+    return e
+      ? this.WorkflowStep(e.stepId, db)
+      : { label: id, displayType: 'WorkflowStepUser', displayId: id }
+  },
+
   async StepSendBackTarget(id, db) {
     const e = await db.StepSendBackTarget.findByPk(id)
     return e

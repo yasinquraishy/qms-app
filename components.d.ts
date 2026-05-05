@@ -33,6 +33,7 @@ declare module 'vue' {
     AuditLogsIndex: typeof import('./src/components/auditLog/AuditLogsIndex.vue')['default']
     AuditLogsItem: typeof import('./src/components/auditLog/AuditLogsItem.vue')['default']
     AuditLogsList: typeof import('./src/components/auditLog/AuditLogsList.vue')['default']
+    AuditValueCell: typeof import('./src/components/auditLog/AuditValueCell.vue')['default']
     BaseBadge: typeof import('./resource/js/shared/components/BaseBadge.vue')['default']
     BaseBreadcrumbs: typeof import('./resource/js/shared/components/BaseBreadcrumbs.vue')['default']
     BaseButton: typeof import('./resource/js/shared/components/BaseButton.vue')['default']

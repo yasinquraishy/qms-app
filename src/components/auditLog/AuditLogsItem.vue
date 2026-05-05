@@ -1,6 +1,7 @@
 <script setup>
 import { useRoute } from 'vue-router'
 import { ENTITY_LABEL_RESOLVERS } from '@/utils/auditConstants.js'
+import { DISPLAY_TYPE_LABELS } from '@/utils/auditFieldFormatters.js'
 import { singular } from 'pluralize'
 import { IconChevronUp, IconChevronDown } from '@tabler/icons-vue'
 
@@ -73,7 +74,7 @@ const displayAction = computed(() => (resolvedEntity.value.isChild ? 'UPDATE' : 
           <span
             class="tw:text-[10px] tw:px-1.5 tw:py-0.5 tw:rounded tw:bg-main tw:text-secondary tw:border tw:border-divider"
           >
-            {{ resolvedEntity.displayType }}
+            {{ DISPLAY_TYPE_LABELS[resolvedEntity.displayType] || resolvedEntity.displayType }}
           </span>
         </div>
         <div class="tw:text-xs tw:text-secondary tw:mt-0.5">
@@ -92,11 +93,7 @@ const displayAction = computed(() => (resolvedEntity.value.isChild ? 'UPDATE' : 
 
     <!-- Diff viewer -->
     <div v-if="expanded && hasDiff" class="tw:px-5 tw:pb-4">
-      <AuditLogsDiffViewer
-        :entityType="log.entityType"
-        :oldValueJson="log.oldValueJson"
-        :newValueJson="log.newValueJson"
-      />
+      <AuditLogsDiffViewer :log="log" :resolvedEntity="resolvedEntity" />
     </div>
   </div>
 </template>

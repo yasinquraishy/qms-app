@@ -188,6 +188,10 @@ export const ENTITY_LABEL_RESOLVERS = {
     return { label: e ? e.name || id : id, displayType: 'Workflow', displayId: id }
   },
 
+  async ApprovalWorkflowVersion(id, db) {
+    return this.WorkflowVersion(id, db)
+  },
+
   async WorkflowVersion(id, db) {
     const wv = await db.WorkflowVersion.findByPk(id)
     if (!wv) return { label: id, displayType: 'WorkflowVersion', displayId: id }
@@ -231,6 +235,10 @@ export const ENTITY_LABEL_RESOLVERS = {
     return e
       ? this.WorkflowInstanceStep(e.workflowInstanceStepId, db)
       : { label: id, displayType: 'UsersOnApprovalWorkflowInstanceStep', displayId: id }
+  },
+
+  async ApprovalWorkflowStep(id, db) {
+    return this.WorkflowStep(id, db)
   },
 
   async WorkflowStep(id, db) {

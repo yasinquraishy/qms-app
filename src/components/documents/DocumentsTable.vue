@@ -1,5 +1,6 @@
 <script setup>
-import { IconDotsVertical, IconEye, IconArchive } from '@tabler/icons-vue'
+import { IconDotsVertical, IconEye, IconArchive, IconArchiveOff } from '@tabler/icons-vue'
+import { isAllowed } from '@/utils/currentSession.js'
 
 const props = defineProps({
   rows: {
@@ -10,17 +11,15 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  canUpdate: {
-    type: Boolean,
-    default: false,
-  },
-  canArchive: {
-    type: Boolean,
-    default: false,
-  },
 })
 
-const emit = defineEmits(['view', 'archive'])
+const emit = defineEmits(['view'])
+
+const toast = useToast()
+
+const canArchive = computed(() => isAllowed(['documents:delete']))
+
+const confirmArchive = ref({ open: false, doc: null })
 
 // current EFFECTIVE version for each document
 const currentVersionMapById = useLiveQueryWithDeps(
@@ -84,6 +83,25 @@ function getVersionLabel(version) {
   if (!version) return '-'
   return version.versionLabel || `${version.versionMajor}.${version.versionMinor}`
 }
+
+function onArchiveDocument(row) {
+  confirmArchive.value = { open: true, doc: row }
+}
+
+async function confirmArchiveDocument() {
+  const row = confirmArchive.value.doc
+  if (!row) return
+  row.statusId = 'ARCHIVED'
+  await row.save()
+  toast.success('Document archived successfully')
+  confirmArchive.value = { open: false, doc: null }
+}
+
+async function onUnarchiveDocument(row) {
+  row.statusId = 'DRAFT'
+  await row.save()
+  toast.success('Document unarchived successfully')
+}
 </script>
 
 <template>
@@ -95,11 +113,19 @@ function getVersionLabel(version) {
 
     <!-- Title Column -->
     <template #body-cell-title="{ row }">
-      <div
-        class="tw:font-bold tw:text-on-main tw:cursor-pointer tw:hover:text-primary"
-        @click="emit('view', row)"
-      >
-        {{ row.title }}
+      <div class="tw:flex tw:items-center tw:gap-2">
+        <div
+          class="tw:font-bold tw:text-on-main tw:cursor-pointer tw:hover:text-primary"
+          @click="emit('view', row)"
+        >
+          {{ row.title }}
+        </div>
+        <span
+          v-if="row.statusId === 'ARCHIVED'"
+          class="tw:inline-flex tw:items-center tw:rounded tw:bg-amber-100 tw:px-1.5 tw:py-0.5 tw:text-xs tw:font-medium tw:text-amber-700 tw:ring-1 tw:ring-inset tw:ring-amber-600/20"
+        >
+          Archived
+        </span>
       </div>
     </template>
 
@@ -156,10 +182,18 @@ function getVersionLabel(version) {
               <button
                 v-if="canArchive && row.statusId !== 'ARCHIVED'"
                 class="tw:flex tw:items-center tw:gap-2 tw:px-3 tw:py-2 tw:text-sm tw:text-bad tw:hover:bg-sidebar-hover tw:transition-colors"
-                @click="(emit('archive', row), close())"
+                @click="(onArchiveDocument(row), close())"
               >
                 <IconArchive :size="16" />
                 Archive
+              </button>
+              <button
+                v-if="canArchive && row.statusId === 'ARCHIVED'"
+                class="tw:flex tw:items-center tw:gap-2 tw:px-3 tw:py-2 tw:text-sm tw:text-on-sidebar tw:hover:bg-sidebar-hover tw:transition-colors"
+                @click="(onUnarchiveDocument(row), close())"
+              >
+                <IconArchiveOff :size="16" class="tw:text-primary" />
+                Unarchive
               </button>
             </div>
           </template>
@@ -167,4 +201,13 @@ function getVersionLabel(version) {
       </div>
     </template>
   </BaseTable>
+
+  <!-- Confirm Archive Dialog -->
+  <ConfirmDialog
+    v-model="confirmArchive.open"
+    title="Confirm Archive"
+    :message="`Are you sure you want to archive &quot;${confirmArchive.doc?.title}&quot; (${confirmArchive.doc?.docNumber})? This action will change the document status to Archived.`"
+    okLabel="Archive"
+    @ok="confirmArchiveDocument"
+  />
 </template>

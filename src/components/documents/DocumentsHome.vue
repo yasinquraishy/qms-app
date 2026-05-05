@@ -4,9 +4,6 @@ import { getCompanyPath } from '@/utils/routeHelpers.js'
 import { IconFileDescription, IconPlus } from '@tabler/icons-vue'
 
 const router = useRouter()
-const toast = useToast()
-
-const confirmArchive = ref({ open: false, doc: null })
 
 const filters = ref({
   search: '',
@@ -59,8 +56,6 @@ const stats = computed(() => {
 const statsTotal = computed(() => (allDocumentsForStats.value ?? []).length)
 
 const canCreate = computed(() => isAllowed(['documents:create']))
-const canUpdate = computed(() => isAllowed(['documents:update']))
-const canArchive = computed(() => isAllowed(['documents:delete']))
 
 function navigateToCreate() {
   router.push(getCompanyPath('/documents/create'))
@@ -68,19 +63,6 @@ function navigateToCreate() {
 
 function navigateToDetail(row) {
   router.push(getCompanyPath(`/documents/${row.id}`))
-}
-
-async function onArchiveDocument(row) {
-  confirmArchive.value = { open: true, doc: row }
-}
-
-async function confirmArchiveDocument() {
-  const row = confirmArchive.value.doc
-  if (!row) return
-  row.statusId = 'ARCHIVED'
-  await row.save()
-  toast.success('Document archived successfully')
-  confirmArchive.value = { open: false, doc: null }
 }
 </script>
 
@@ -120,19 +102,7 @@ async function confirmArchiveDocument() {
     <DocumentsTable
       :rows="documents"
       :loading="allDocuments === undefined"
-      :canUpdate="canUpdate"
-      :canArchive="canArchive"
       @view="navigateToDetail"
-      @archive="onArchiveDocument"
-    />
-
-    <!-- Confirm Archive Dialog -->
-    <ConfirmDialog
-      v-model="confirmArchive.open"
-      title="Confirm Archive"
-      :message="`Are you sure you want to archive &quot;${confirmArchive.doc?.title}&quot; (${confirmArchive.doc?.docNumber})? This action will change the document status to Archived.`"
-      okLabel="Archive"
-      @ok="confirmArchiveDocument"
     />
   </div>
 </template>

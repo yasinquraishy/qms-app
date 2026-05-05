@@ -1,11 +1,46 @@
 <script setup>
 import { IconSun, IconMoon, IconUpload } from '@tabler/icons-vue'
 import { uploadFile } from '@/utils/uploadService.js'
+import { currentCompany } from '@/utils/currentCompany.js'
 import { useToast } from '@shared/composables/useToast.js'
 
-const model = defineModel({ type: Object, required: true })
+const company = useLiveQueryWithDeps(
+  [() => currentCompany.value?.id],
+  async (db, [id]) => {
+    if (!id) return null
+    return db.Company.findByPk(id)
+  },
+)
 
 const toast = useToast()
+
+const isSaving = ref(false)
+const saveError = ref(null)
+const isFirstChange = ref(true)
+
+const debouncedSave = useDebounceFn(async () => {
+  if (!company.value) return
+  isSaving.value = true
+  saveError.value = null
+  try {
+    await company.value.save()
+  } catch (err) {
+    saveError.value = err.message || 'Failed to save'
+  } finally {
+    isSaving.value = false
+  }
+}, 500)
+
+watch(
+  [() => company.value?.companyIconUrl, () => company.value?.companyDarkIconUrl],
+  () => {
+    if (isFirstChange.value) {
+      isFirstChange.value = false
+      return
+    }
+    debouncedSave()
+  },
+)
 
 const showLightDialog = ref(false)
 const showDarkDialog = ref(false)
@@ -13,10 +48,11 @@ const uploadingLight = ref(false)
 const uploadingDark = ref(false)
 
 async function handleLightSave({ file }) {
+  if (!company.value) return
   uploadingLight.value = true
   try {
     const asset = await uploadFile(file, 'COMPANYLOGO')
-    model.value.companyIconUrl = asset.url
+    company.value.companyIconUrl = asset.url
     showLightDialog.value = false
     toast.notify({ type: 'positive', message: 'Light mode logo uploaded successfully' })
   } finally {
@@ -25,10 +61,11 @@ async function handleLightSave({ file }) {
 }
 
 async function handleDarkSave({ file }) {
+  if (!company.value) return
   uploadingDark.value = true
   try {
     const asset = await uploadFile(file, 'COMPANYLOGO')
-    model.value.companyDarkIconUrl = asset.url
+    company.value.companyDarkIconUrl = asset.url
     showDarkDialog.value = false
     toast.notify({ type: 'positive', message: 'Dark mode logo uploaded successfully' })
   } finally {
@@ -37,39 +74,42 @@ async function handleDarkSave({ file }) {
 }
 
 function handleLightDelete() {
-  model.value.companyIconUrl = null
+  if (!company.value) return
+  company.value.companyIconUrl = null
   showLightDialog.value = false
 }
 
 function handleDarkDelete() {
-  model.value.companyDarkIconUrl = null
+  if (!company.value) return
+  company.value.companyDarkIconUrl = null
   showDarkDialog.value = false
 }
 </script>
 
 <template>
   <div
+    v-if="company"
     class="tw:rounded-xl tw:border tw:border-divider tw:shadow-sm tw:overflow-hidden tw:bg-sidebar"
   >
-    <!-- Card Header -->
-    <div class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover">
+    <div
+      class="tw:px-6 tw:py-4 tw:border-b tw:border-divider tw:bg-main-hover tw:flex tw:items-center tw:justify-between"
+    >
       <h2 class="tw:text-lg tw:font-bold tw:text-on-sidebar">Branding</h2>
+      <CompanyCardSaveStatus :saving="isSaving" :error="saveError" />
     </div>
 
-    <!-- Card Content -->
     <div class="tw:p-6">
       <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-8">
         <!-- Light Mode Logo -->
         <div class="tw:flex tw:flex-col tw:gap-4">
           <label class="tw:text-sm tw:font-semibold tw:text-on-sidebar">Light Mode Logo</label>
           <div class="tw:flex tw:flex-col tw:gap-4">
-            <!-- Logo Preview -->
             <div
               class="tw:size-32 tw:rounded-xl tw:border-2 tw:border-dashed tw:border-divider tw:flex tw:flex-col tw:items-center tw:justify-center tw:gap-2 tw:text-secondary tw:bg-main-hover"
             >
               <img
-                v-if="model.companyIconUrl"
-                :src="model.companyIconUrl"
+                v-if="company.companyIconUrl"
+                :src="company.companyIconUrl"
                 alt="Light logo"
                 class="tw:size-full tw:object-contain tw:rounded-xl"
               />
@@ -79,7 +119,6 @@ function handleDarkDelete() {
               </template>
             </div>
 
-            <!-- Upload Info & Button -->
             <div class="tw:flex tw:flex-col tw:gap-2">
               <p class="tw:text-xs tw:text-secondary tw:leading-relaxed">
                 Used on light backgrounds. Recommended: 512x512px (PNG, SVG, or JPG)
@@ -96,7 +135,7 @@ function handleDarkDelete() {
             <ImageCropDialog
               v-model="showLightDialog"
               title="Light Mode Logo"
-              :currentImageUrl="model.companyIconUrl"
+              :currentImageUrl="company.companyIconUrl"
               @save="handleLightSave"
               @delete="handleLightDelete"
             />
@@ -107,14 +146,13 @@ function handleDarkDelete() {
         <div class="tw:flex tw:flex-col tw:gap-4">
           <label class="tw:text-sm tw:font-semibold tw:text-on-sidebar">Dark Mode Logo</label>
           <div class="tw:flex tw:flex-col tw:gap-4">
-            <!-- Logo Preview -->
             <div
               class="tw:size-32 tw:rounded-xl tw:border-2 tw:border-dashed tw:border-divider tw:flex tw:flex-col tw:items-center tw:justify-center tw:gap-2 tw:text-secondary"
-              :class="model.companyDarkIconUrl ? 'tw:bg-main-hover' : 'tw:bg-[#101822]'"
+              :class="company.companyDarkIconUrl ? 'tw:bg-main-hover' : 'tw:bg-[#101822]'"
             >
               <img
-                v-if="model.companyDarkIconUrl"
-                :src="model.companyDarkIconUrl"
+                v-if="company.companyDarkIconUrl"
+                :src="company.companyDarkIconUrl"
                 alt="Dark logo"
                 class="tw:size-full tw:object-contain tw:rounded-xl"
               />
@@ -126,7 +164,6 @@ function handleDarkDelete() {
               </template>
             </div>
 
-            <!-- Upload Info & Button -->
             <div class="tw:flex tw:flex-col tw:gap-2">
               <p class="tw:text-xs tw:text-secondary tw:leading-relaxed">
                 Used on dark backgrounds. Recommended: 512x512px (PNG, SVG, or JPG)
@@ -143,7 +180,7 @@ function handleDarkDelete() {
             <ImageCropDialog
               v-model="showDarkDialog"
               title="Dark Mode Logo"
-              :currentImageUrl="model.companyDarkIconUrl"
+              :currentImageUrl="company.companyDarkIconUrl"
               @save="handleDarkSave"
               @delete="handleDarkDelete"
             />

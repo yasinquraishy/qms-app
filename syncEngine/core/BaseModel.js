@@ -201,8 +201,8 @@ export class BaseModel {
     const field =
       typeof this.constructor.paranoid === 'string' ? this.constructor.paranoid : 'deletedAt'
     this[field] = null
-    this.#action = OPERATION.UPDATE
-    await this.save()
+    toRaw(this).#action = OPERATION.UPDATE
+    await toRaw(this).save()
   }
 
   /**
@@ -210,8 +210,9 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async hardDelete() {
-    this.#action = OPERATION.DELETE
-    await this.save()
+    const self = toRaw(this)
+    self.#action = OPERATION.DELETE
+    await self.save()
   }
 
   /**
@@ -219,7 +220,7 @@ export class BaseModel {
    * @returns {string}
    */
   get action() {
-    return this.#action
+    return toRaw(this).#action
   }
 
   /**
@@ -229,8 +230,9 @@ export class BaseModel {
    * @param {*} oldValue
    */
   _propertyChanged(name, oldValue) {
-    if (!(name in this.#modified)) {
-      this.#modified[name] = oldValue
+    const self = toRaw(this)
+    if (!(name in self.#modified)) {
+      self.#modified[name] = oldValue
     }
   }
 
@@ -239,7 +241,7 @@ export class BaseModel {
    * @internal
    */
   _clearModified() {
-    this.#modified = {}
+    toRaw(this).#modified = {}
   }
 
   /**
@@ -247,14 +249,14 @@ export class BaseModel {
    * the last save().
    */
   isDirty() {
-    return Object.keys(this.#modified).length > 0
+    return Object.keys(toRaw(this).#modified).length > 0
   }
 
   /**
    * Returns a shallow copy of the current dirty-field snapshot.
    */
   getModifiedProperties() {
-    return { ...this.#modified }
+    return { ...toRaw(this).#modified }
   }
 
   /**
@@ -264,9 +266,10 @@ export class BaseModel {
    * @returns {Promise<void>}
    */
   async save() {
+    const self = toRaw(this)
     await nextTick() // ensure all property changes are flushed to the instance before we read modified properties
 
-    if (!this.isDirty() && this.#action === OPERATION.UPDATE) {
+    if (!self.isDirty() && self.#action === OPERATION.UPDATE) {
       return // early exit if no changes to save (but still allow create/delete actions)
     }
 
@@ -287,14 +290,14 @@ export class BaseModel {
     }
 
     if (BaseModel._saveStrategy) {
-      await BaseModel._saveStrategy(this)
+      await BaseModel._saveStrategy(self)
     } else {
-      const changes = this.getModifiedProperties()
-      const transaction = new UpdateTransaction(this, changes)
+      const changes = self.getModifiedProperties()
+      const transaction = new UpdateTransaction(self, changes)
       await transaction.commit()
-      this._clearModified()
+      self._clearModified()
     }
 
-    this.#action = OPERATION.UPDATE
+    self.#action = OPERATION.UPDATE
   }
 }

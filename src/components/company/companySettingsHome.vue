@@ -1,24 +1,37 @@
 <script setup>
-import { IconSettings, IconDeviceFloppy } from '@tabler/icons-vue'
-import { useCompanySettings } from '@/composables/useCompanySettings.js'
-import { useToast } from '@shared/composables/useToast.js'
+import { IconSettings } from '@tabler/icons-vue'
+import { currentCompany } from '@/utils/currentCompany.js'
 
-const { formData, loading, saving, isDirty, saveSettings, discardChanges } = useCompanySettings()
-const toast = useToast()
+const company = useLiveQueryWithDeps(
+  [() => currentCompany.value?.id],
+  async (db, [id]) => {
+    if (!id) return null
+    return db.Company.findByPk(id)
+  },
+)
 
-async function handleSave() {
-  const success = await saveSettings()
+const loading = computed(() => company.value === undefined)
 
-  if (success) {
-    toast.notify({ type: 'positive', message: 'Company settings updated successfully' })
-  } else {
-    toast.notify({ type: 'negative', message: 'Failed to update company settings' })
-  }
-}
+watch(
+  company,
+  (c) => {
+    if (!c) return
+    // Backfill settings as {} if backend stored null so cards can bind safely.
+    if (c.settings == null) c.settings = {}
+    mirrorToCurrentCompany(c)
+  },
+  { deep: true, immediate: true },
+)
 
-function handleDiscard() {
-  discardChanges()
-  toast.notify({ type: 'info', message: 'Changes discarded' })
+function mirrorToCurrentCompany(c) {
+  if (!currentCompany.value || c.id !== currentCompany.value.id) return
+  currentCompany.value.name = c.name
+  currentCompany.value.code = c.code
+  currentCompany.value.defaultTimeZone = c.defaultTimeZone
+  currentCompany.value.defaultFirstDayOfWeek = c.defaultFirstDayOfWeek
+  currentCompany.value.companyIconUrl = c.companyIconUrl
+  currentCompany.value.companyDarkIconUrl = c.companyDarkIconUrl
+  currentCompany.value.settings = c.settings
 }
 </script>
 
@@ -31,27 +44,17 @@ function handleDiscard() {
       </div>
     </SafeTeleport>
 
-    <SafeTeleport to="#main-header-actions">
-      <div class="tw:flex tw:gap-2">
-        <BaseButton variant="outline" :disabled="!isDirty || saving" @click="handleDiscard">
-          Discard
-        </BaseButton>
-        <BaseButton :disabled="!isDirty || saving" @click="handleSave">
-          <IconDeviceFloppy class="tw:size-4" />
-          {{ saving ? 'Saving...' : 'Save Changes' }}
-        </BaseButton>
-      </div>
-    </SafeTeleport>
-
-    <!-- Page Content -->
     <div v-if="loading" class="tw:flex tw:items-center tw:justify-center tw:h-full">
       <div
         class="tw:animate-spin tw:rounded-full tw:size-12 tw:border-4 tw:border-primary tw:border-t-transparent"
       />
     </div>
 
+    <div v-else-if="!company" class="tw:p-8 tw:text-center tw:text-secondary">
+      Company not found.
+    </div>
+
     <div v-else class="tw:flex tw:flex-col tw:gap-8 tw:max-w-6xl">
-      <!-- Page Title & Description -->
       <div class="tw:flex tw:flex-col tw:gap-1">
         <div class="tw:text-3xl tw:font-bold tw:text-on-sidebar">Company Settings</div>
         <div class="tw:text-sm tw:text-secondary">
@@ -59,20 +62,16 @@ function handleDiscard() {
         </div>
       </div>
 
-      <!-- General Information Card -->
-      <CompanyInfoCard v-model="formData" />
+      <CompanyInfoCard />
 
-      <!-- Two-column layout -->
       <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-3 tw:gap-8">
-        <!-- Left column (2/3 width) -->
         <div class="tw:lg:col-span-2 tw:flex tw:flex-col tw:gap-8">
-          <CompanyBrandingCard v-model="formData" />
-          <CompanyRegionalCard v-model="formData" />
-          <CompanyDefaultsCard v-model="formData" />
+          <CompanyBrandingCard />
+          <CompanyRegionalCard />
+          <CompanyDefaultsCard />
         </div>
 
-        <!-- Right column (1/3 width) - Metadata -->
-        <CompanyMetadataCard :company="formData" />
+        <CompanyMetadataCard />
       </div>
     </div>
   </div>

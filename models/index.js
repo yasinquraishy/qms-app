@@ -21,6 +21,7 @@ import { AssetRequestStatus } from './assetRequestStatus'
 import { AssetRequestType } from './assetRequestType'
 import { AuditLog } from './auditLog'
 import { Comment } from './comment'
+import { Company } from './company'
 import { Department } from './department'
 import { Document } from './document'
 import { DocumentCounter } from './documentCounter'
@@ -103,6 +104,7 @@ export const db = {
   AssetRequestType,
   AuditLog,
   Comment,
+  Company,
   Department,
   Document,
   DocumentCounter,

@@ -63,6 +63,7 @@ declare module 'vue' {
     BaseToastContainer: typeof import('./resource/js/shared/components/BaseToastContainer.vue')['default']
     BaseUploader: typeof import('./src/components/common/BaseUploader.vue')['default']
     CompanyBrandingCard: typeof import('./src/components/company/companyBrandingCard.vue')['default']
+    CompanyCardSaveStatus: typeof import('./src/components/company/CompanyCardSaveStatus.vue')['default']
     CompanyDefaultsCard: typeof import('./src/components/company/companyDefaultsCard.vue')['default']
     CompanyInfoCard: typeof import('./src/components/company/companyInfoCard.vue')['default']
     CompanyMetadataCard: typeof import('./src/components/company/companyMetadataCard.vue')['default']

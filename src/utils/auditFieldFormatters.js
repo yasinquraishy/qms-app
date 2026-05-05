@@ -123,6 +123,45 @@ export const AUDIT_FIELD_FORMATTERS = {
     },
   },
 
+  ApprovalWorkflowInstance: {
+    workflowVersionId: { label: 'Workflow', type: 'fk', refModel: 'WorkflowVersion' },
+    statusId: { label: 'Status', type: 'status', statusModel: 'WorkflowInstanceStatus' },
+    resourceType: { label: 'Resource Type', type: 'text' },
+    resourceId: { label: 'Resource ID', type: 'text' },
+    submittedBy: { label: 'Submitted By', type: 'fk', refModel: 'User' },
+    startedAt: { label: 'Started At', type: 'datetime' },
+    completedAt: { label: 'Completed At', type: 'datetime' },
+    comment: { label: 'Comment', type: 'text' },
+  },
+
+  ApprovalWorkflowInstanceStep: {
+    statusId: { label: 'Status', type: 'status', statusModel: 'WorkflowInstanceStepStatus' },
+    stepNumber: { label: 'Step Number', type: 'text' },
+    workflowInstanceId: {
+      label: 'Workflow Instance',
+      type: 'fk',
+      refModel: 'WorkflowInstance',
+      hidden: true,
+    },
+    startedAt: { label: 'Started At', type: 'datetime' },
+    completedAt: { label: 'Completed At', type: 'datetime' },
+  },
+
+  UsersOnApprovalWorkflowInstanceStep: {
+    workflowInstanceStepId: {
+      label: 'Approval Step',
+      type: 'fk',
+      refModel: 'WorkflowInstanceStep',
+      hidden: true,
+    },
+    userId: { label: 'User', type: 'fk', refModel: 'User' },
+    statusId: {
+      label: 'Status',
+      type: 'status',
+      statusModel: 'WorkflowInstanceStepUserStatus',
+    },
+  },
+
   StepSendBackTarget: {
     stepId: { label: 'Step', type: 'fk', refModel: 'WorkflowStep', hidden: true },
     targetStepId: { label: 'Target Step', type: 'fk', refModel: 'WorkflowStep' },
@@ -230,6 +269,21 @@ export const AUDIT_FIELD_FORMATTERS = {
     permissionId: { label: 'Permission', type: 'text' },
   },
 
+  UsersOnDocument: {
+    userId: { label: 'User', type: 'fk', refModel: 'User' },
+    documentId: { label: 'Document', type: 'fk', refModel: 'Document', hidden: true },
+  },
+
+  RolesOnUser: {
+    userId: { label: 'User', type: 'fk', refModel: 'User', hidden: true },
+    roleId: { label: 'Role', type: 'fk', refModel: 'Role' },
+  },
+
+  UsersOnTeam: {
+    userId: { label: 'User', type: 'fk', refModel: 'User' },
+    teamId: { label: 'Team', type: 'fk', refModel: 'Team', hidden: true },
+  },
+
   Team: {
     name: { label: 'Team Name', type: 'text' },
     statusId: { label: 'Status', type: 'text' },
@@ -262,6 +316,15 @@ export const AUDIT_FIELD_FORMATTERS = {
   },
 
   // ── Tasks ────────────────────────────────────────────────────────────────────
+  Task: {
+    title: { label: 'Title', type: 'text' },
+    statusId: { label: 'Status', type: 'status', statusModel: 'TaskInstanceStatus' },
+    assigneeId: { label: 'Assigned To', type: 'fk', refModel: 'User' },
+    dueDate: { label: 'Due Date', type: 'date' },
+    priority: { label: 'Priority', type: 'text' },
+    description: { label: 'Description', type: 'text' },
+  },
+
   TaskInstance: {
     title: { label: 'Title', type: 'text' },
     statusId: { label: 'Status', type: 'status', statusModel: 'TaskInstanceStatus' },
@@ -269,6 +332,17 @@ export const AUDIT_FIELD_FORMATTERS = {
     dueDate: { label: 'Due Date', type: 'date' },
     priority: { label: 'Priority', type: 'text' },
     description: { label: 'Description', type: 'text' },
+  },
+
+  Signature: {
+    userId: { label: 'Signed By', type: 'fk', refModel: 'User' },
+    taskInstanceId: { label: 'Task', type: 'fk', refModel: 'TaskInstance', hidden: true },
+    meaning: { label: 'Meaning', type: 'text' },
+    comments: { label: 'Comments', type: 'text' },
+    signedAt: { label: 'Signed At', type: 'datetime' },
+    isRevoked: { label: 'Revoked', type: 'boolean' },
+    revokedAt: { label: 'Revoked At', type: 'datetime' },
+    revokedReason: { label: 'Revoke Reason', type: 'text' },
   },
 
   // ── Configuration ────────────────────────────────────────────────────────────
@@ -337,6 +411,14 @@ export const DISPLAY_TYPE_LABELS = {
   Site: 'Site',
   Product: 'Product',
   TaskInstance: 'Task',
+  Task: 'Task',
+  ApprovalWorkflowInstance: 'Approval Workflow',
+  ApprovalWorkflowInstanceStep: 'Approval Step',
+  UsersOnApprovalWorkflowInstanceStep: 'Approver Assignment',
+  UsersOnDocument: 'Document Access',
+  RolesOnUser: 'Role Assignment',
+  UsersOnTeam: 'Team Member',
+  Signature: 'Signature',
   OptionSet: 'Option Set',
   ApiKey: 'API Key',
   Company: 'Company',

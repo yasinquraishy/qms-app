@@ -206,6 +206,10 @@ export const ENTITY_LABEL_RESOLVERS = {
     return { label: workflow ? workflow.name : id, displayType: 'WorkflowInstance', displayId: id }
   },
 
+  async ApprovalWorkflowInstance(id, db) {
+    return this.WorkflowInstance(id, db)
+  },
+
   async WorkflowInstanceStep(id, db) {
     const e = await db.WorkflowInstanceStep.findByPk(id)
     return {
@@ -213,6 +217,20 @@ export const ENTITY_LABEL_RESOLVERS = {
       displayType: 'WorkflowInstanceStep',
       displayId: id,
     }
+  },
+
+  async ApprovalWorkflowInstanceStep(id, db) {
+    const e = await db.WorkflowInstanceStep.findByPk(id)
+    return e
+      ? this.WorkflowInstance(e.workflowInstanceId, db)
+      : { label: id, displayType: 'ApprovalWorkflowInstanceStep', displayId: id }
+  },
+
+  async UsersOnApprovalWorkflowInstanceStep(id, db) {
+    const e = await db.UserOnWorkflowInstanceStep.findByPk(id)
+    return e
+      ? this.WorkflowInstanceStep(e.workflowInstanceStepId, db)
+      : { label: id, displayType: 'UsersOnApprovalWorkflowInstanceStep', displayId: id }
   },
 
   async WorkflowStep(id, db) {
@@ -345,6 +363,32 @@ export const ENTITY_LABEL_RESOLVERS = {
 
   async TaskInstance(id) {
     return { label: id, displayType: 'TaskInstance', displayId: id }
+  },
+
+  async Task(id, db) {
+    return this.TaskInstance(id, db)
+  },
+
+  async Signature(id) {
+    // No SyncEngine model for Signature — falls back to raw ID
+    return { label: id, displayType: 'Signature', displayId: id }
+  },
+
+  async UsersOnDocument(id, db) {
+    const e = await db.UserOnDocument.findByPk(id)
+    return e
+      ? this.Document(e.documentId, db)
+      : { label: id, displayType: 'UsersOnDocument', displayId: id }
+  },
+
+  async RolesOnUser(id, db) {
+    const e = await db.RoleOnUser.findByPk(id)
+    return e ? this.User(e.userId, db) : { label: id, displayType: 'RolesOnUser', displayId: id }
+  },
+
+  async UsersOnTeam(id, db) {
+    const e = await db.UserOnTeam.findByPk(id)
+    return e ? this.Team(e.teamId, db) : { label: id, displayType: 'UsersOnTeam', displayId: id }
   },
 
   async OptionSet(id, db) {

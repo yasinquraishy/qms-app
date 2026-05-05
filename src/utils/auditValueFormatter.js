@@ -238,6 +238,30 @@ export const CHILD_ACTION_PHRASES = {
     DELETE: 'Removed permission from',
     DEFAULT: 'Modified permission on',
   },
+  UsersOnDocument: {
+    CREATE: 'was granted access to',
+    UPDATE: 'had access updated on',
+    DELETE: 'had access revoked from',
+    DEFAULT: 'had access modified on',
+  },
+  RolesOnUser: {
+    CREATE: 'was assigned role on',
+    UPDATE: 'had role updated on',
+    DELETE: 'had role revoked from',
+    DEFAULT: 'had role modified on',
+  },
+  UsersOnTeam: {
+    CREATE: 'was added to',
+    UPDATE: 'had membership updated on',
+    DELETE: 'was removed from',
+    DEFAULT: 'had membership modified on',
+  },
+  UsersOnApprovalWorkflowInstanceStep: {
+    CREATE: 'was assigned as approver on',
+    UPDATE: 'had approver status updated on',
+    DELETE: 'was removed as approver from',
+    DEFAULT: 'had approver assignment modified on',
+  },
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────────────

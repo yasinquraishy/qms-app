@@ -176,6 +176,7 @@ const editingDueDate = ref(false)
               >
                 {{ nc.description }}
               </p>
+
               <div class="tw:grid tw:grid-cols-3 tw:gap-3">
                 <div class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Severity</div>
@@ -205,6 +206,24 @@ const editingDueDate = ref(false)
                     {{ nc.qtyAffected }} {{ nc.unitOfMeasure }}
                   </span>
                 </div>
+              </div>
+
+              <!-- Immediate containment action -->
+              <div class="tw:flex tw:flex-col tw:gap-1 tw:mt-4">
+                <label
+                  class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider"
+                >
+                  Immediate containment action
+                </label>
+                <BaseTextarea
+                  v-if="isEditable"
+                  v-model="nc.immediateContainmentAction"
+                  placeholder="Describe the immediate action taken to contain this nonconformance…"
+                  :rows="3"
+                />
+                <p v-else class="tw:text-sm tw:text-on-main tw:leading-relaxed">
+                  {{ nc.immediateContainmentAction || '—' }}
+                </p>
               </div>
             </div>
 

@@ -47,6 +47,7 @@ export class Nonconformance extends BaseModel {
   @Property({ type: String }) dispositionTypeId = null
   @Property({ type: Boolean }) capaRequired = null
   @Property({ type: String }) dispositionNotes = ''
+  @Property({ type: String }) immediateContainmentAction = ''
   @Property({ type: DateTime }) closedAt = /** @type {DateTime} */ (null)
   @Property({ type: String, required: true }) createdBy = ''
   @Property({ type: String, required: true }) updatedBy = ''

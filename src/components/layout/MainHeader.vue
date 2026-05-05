@@ -17,7 +17,7 @@ const impersonatedName = computed(() => {
 })
 
 const resetting = ref(false)
-const showHardReset = computed(() => import.meta.env.DEV)
+const showHardReset = computed(() => import.meta.env.DEV || true)
 
 async function resetSync() {
   resetting.value = true

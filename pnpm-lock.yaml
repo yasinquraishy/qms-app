@@ -113,6 +113,9 @@ importers:
       luxon:
         specifier: ^3.7.2
         version: 3.7.2
+      pluralize:
+        specifier: ^8.0.0
+        version: 8.0.0
       pluralize-esm:
         specifier: ^9.0.5
         version: 9.0.5
@@ -3810,6 +3813,10 @@ packages:
   pluralize-esm@9.0.5:
     resolution: {integrity: sha512-Kb2dcpMsIutFw2hYrN0EhsAXOUJTd6FVMIxvNAkZCMQLVt9NGZqQczvGpYDxNWCZeCWLHUPxQIBudWzt1h7VVA==}
     engines: {node: '>=14.0.0'}
+
+  pluralize@8.0.0:
+    resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
+    engines: {node: '>=4'}
 
   postcss-selector-parser@7.1.1:
     resolution: {integrity: sha512-orRsuYpJVw8LdAwqqLykBj9ecS5/cRHlI5+nvTo8LcCKmzDmqVORXtOIYEEQuL9D4BxtA1lm5isAqzQZCoQ6Eg==}
@@ -8528,6 +8535,8 @@ snapshots:
       tslib: 2.8.1
 
   pluralize-esm@9.0.5: {}
+
+  pluralize@8.0.0: {}
 
   postcss-selector-parser@7.1.1:
     dependencies:

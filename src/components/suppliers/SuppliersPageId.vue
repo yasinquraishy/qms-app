@@ -59,7 +59,6 @@ const tabs = [
   { value: 'shared-documents', label: 'Shared Documents' },
   { value: 'asset-requests', label: 'Asset Requests' },
   { value: 'evaluations', label: 'Evaluations' },
-  { value: 'audit-logs', label: 'Audit Logs' },
 ]
 
 const editingName = ref(false)
@@ -165,7 +164,6 @@ const activeTab = computed({
           :supplierId="props.id"
         />
         <SuppliersEvaluationsTab v-else-if="activeTab === 'evaluations'" :supplier="supplier" />
-        <SuppliersAuditLogsTab v-else-if="activeTab === 'audit-logs'" :supplier="supplier" />
       </div>
     </div>
   </div>

@@ -25,17 +25,6 @@ const steps = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-const auditLogs = useLiveQueryWithDeps(
-  [() => props.instanceId],
-  async (db, [instanceId]) => {
-    if (!instanceId) return []
-    return db.AuditLog.where('[entityType+entityId]', ['WorkflowInstance', instanceId])
-      .orderBy('performedAt', 'desc')
-      .exec()
-  },
-  { initial: [] },
-)
-
 const documentVersion = useLiveQueryWithDeps(
   [() => instance.value?.resourceType, () => instance.value?.resourceId],
   async (db, [resourceType, resourceId]) => {
@@ -178,8 +167,6 @@ const breadcrumbs = computed(() => {
             :completedSteps="completedSteps"
             :totalSteps="steps.length"
           />
-
-          <WorkflowInstanceAuditTrail :auditLogs="auditLogs" />
         </div>
       </div>
     </div>

@@ -361,7 +361,15 @@ export const ENTITY_LABEL_RESOLVERS = {
     return { label: e ? e.name || e.sku || id : id, displayType: 'Product', displayId: id }
   },
 
-  async TaskInstance(id) {
+  async TaskInstance(id, db) {
+    const task = await db.TaskInstance.findByPk(id)
+    if (!task) return { label: id, displayType: 'TaskInstance', displayId: id }
+    // Chain to the entity this task belongs to for a meaningful label
+    const entityResolver = this[task.entityType]
+    if (entityResolver) {
+      const resolved = await entityResolver.call(this, task.entityId, db)
+      return { label: resolved.label, displayType: 'TaskInstance', displayId: id }
+    }
     return { label: id, displayType: 'TaskInstance', displayId: id }
   },
 

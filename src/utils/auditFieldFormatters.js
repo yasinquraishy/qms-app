@@ -316,13 +316,8 @@ export const AUDIT_FIELD_FORMATTERS = {
   },
 
   // ── Tasks ────────────────────────────────────────────────────────────────────
-  Task: {
-    title: { label: 'Title', type: 'text' },
-    statusId: { label: 'Status', type: 'status', statusModel: 'TaskInstanceStatus' },
-    assigneeId: { label: 'Assigned To', type: 'fk', refModel: 'User' },
-    dueDate: { label: 'Due Date', type: 'date' },
-    priority: { label: 'Priority', type: 'text' },
-    description: { label: 'Description', type: 'text' },
+  get Task() {
+    return this.TaskInstance
   },
 
   TaskInstance: {

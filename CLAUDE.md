@@ -1,465 +1,119 @@
-# Qability — Claude Instructions
+# Qability — Claude Instructions (frontend)
 
-## Development Rules
+> Frontend-specific rules. For monorepo architecture (api/worker/sync services, the logical-replication → IndexedDB pipeline, backend conventions), see the root [`../../CLAUDE.md`](../../CLAUDE.md). Don't duplicate cross-service context here.
 
-1. **W\* Components**: Always use W\* components for lookups (reference `components.d.ts`)
-2. **Component Reuse**: Always reuse existing components if possible
-3. **Auto-Imports (Components)**: No need to import components; all components are auto-imported
-4. **Auto-Imports (Composables)**: No need to import composables or functions from `vueuse`, `vue`, or `vue-router`; everything is auto-imported (reference `auto-imports.d.ts`)
-5. **No Quasar Components**: Do NOT use any Quasar components (`QBtn`, `QInput`, `QSelect`, `QDialog`, `QCard`, etc.) or their `W*` wrappers (`WBtn`, `WInput`, etc.) in new code. Use plain HTML elements with Tailwind CSS (`tw:` prefix) and `Base*` components from `resource/js/shared/components/` instead. Replace existing Quasar usage when touching a file.
-6. **Icons**: Always use `@tabler/icons-vue`. Do NOT use `@heroicons/vue`, `@material-design-icons`, or any other icon library. Icons are NOT auto-imported — always import explicitly (e.g. `import { IconTrash } from '@tabler/icons-vue'`).
-7. **Functions**: Always define functions with the `function` keyword, not `const function`
-8. **Component Name Casing**: Component usage should always be in PascalCase, not kebab-case
-9. **Two-way Binding**: Always use `defineModel` for v-model binding, do not use computed getter/setter pattern
-10. **Date Handling**: All date/time values must use `luxon.DateTime`. Values from the backend are already `luxon.DateTime` instances. Always format using `dt.formatDate()` — never `.toFormat()`, `.toISO()`, or other ad-hoc formatting.
+## Rules
 
-### Component Naming Convention
+Non-negotiable in new and touched code. Migration sections below show what to replace and how.
 
-Feature components use prefix pattern:
+1. **Auto-imports.** Components from `src/components/`, Vue APIs (`ref`, `computed`, `watch`, `onMounted`, `provide`, `inject`), `vueuse`, and `vue-router` are all auto-imported (see `auto-imports.d.ts`, `components.d.ts`). Don't write explicit imports for them.
+2. **Icons are NOT auto-imported.** Always use `@tabler/icons-vue` and import explicitly: `import { IconTrash } from '@tabler/icons-vue'`. Never `@heroicons/vue`, `@material-design-icons`, or any other icon library.
+3. **No Quasar in new code.** Don't use `Q*` components or their `W*` wrappers (`WBtn`, `WInput`, etc.). Replace existing usage when you touch a file. See [Migration: Quasar → Tailwind](#migration-quasar--tailwind). Entity-lookup `W*` components (the ones that wrap an entity select) are still allowed until explicitly migrated.
+4. **No axios composables. No provide/inject for data.** Don't import `get`/`post`/`put`/`del` from `@/api`. Don't write `provideX()` / `useX()` data-fetching composables. Don't pass full objects as props — components receive an `id` and query/mutate via the syncEngine. See [Migration: axios → syncEngine](#migration-axios--provideinject--syncengine).
+5. **`function` keyword.** Define functions with `function foo() {}`, not `const foo = () => {}`.
+6. **`defineModel` for v-model.** Don't use the computed-getter/setter pattern.
+7. **Tailwind has a `tw:` prefix.** Always: `tw:flex tw:gap-4 tw:rounded-lg`.
+8. **No `<form>` elements.** Use `<div>` wrappers with click/change handlers.
+9. **PascalCase component usage** in templates, never kebab-case.
+10. **Dates are luxon `DateTime`.** The axios response transformer already converts backend dates to `DateTime` instances. Format with the project-wide `dt.formatDate()` — never `.toFormat()`, `.toISO()`, or any ad-hoc formatting in components.
+11. **Soft deletes are automatic.** Never manually filter `!record.deletedAt` — the syncEngine excludes soft-deleted records from queries by default. Use `{ force: true }` only when you explicitly need them (e.g. computing the next version number).
+12. **`useLiveMutation` for creates** — don't call `db.Model.create()` + `save()` directly inside a component method.
+13. **Use `Base*` first.** `BaseTextInput`, `BaseTextarea`, `BaseColorPicker`, `BaseDialog`, `BaseTable`, `BaseSelectMenu`, etc. live in `resource/js/shared/components/`. Reuse before building.
+14. **Reuse before adding** — especially badges and select menus, which follow the [triad pattern](#component-pattern-badge-triad-xbadge--xbadgebyid--xselectmenu).
 
-- `formTemplatesIndex.vue` — Provider wrapper
-- `formTemplatesHome.vue` — Main page
-- `formTemplatesTable.vue` — Display component
-- `DocumentTypeSelectMenu.vue` — Reusable filter
+### Feature component naming
 
-### Select Component Props Pattern
+Feature folders use a per-feature prefix; pages are camelCase, reusable components are PascalCase:
+
+- `formTemplatesIndex.vue` — provider/route wrapper
+- `formTemplatesHome.vue` — main page
+- `formTemplatesTable.vue` — display
+- `DocumentTypeSelectMenu.vue` — reusable filter
+
+### Select component props
+
+Both flags belong on every entity select wrapper:
 
 ```vue
 <script setup>
 const props = defineProps({
-  required: { type: Boolean, default: false }, // Controls "All X" option
+  required: { type: Boolean, default: false }, // when false: include "All X" option (null value)
   multiple: { type: Boolean, default: false },
 })
-// When required=false, include "All X" option with null value
-// When required=true, auto-select first item
+// required=true: auto-select first item
 </script>
 ```
 
-### Auto-imports (no explicit imports needed)
-
-- Vue APIs: `ref`, `computed`, `watch`, `onMounted`, `provide`, `inject`
-- Vue Router: via `unplugin-vue-router`
-- Components: auto-registered from `src/components/`
-
 ---
 
-## Migration Guide 1 — Quasar → Plain HTML + Tailwind
+## Component pattern: badge triad (XBadge → XBadgeById → XSelectMenu)
 
-This project is **actively migrating away from Quasar**. Follow these rules in all new and touched code.
+Every entity that appears as a badge or in a select menu follows this triad. **Never use `BaseSelectMenu` directly for an entity** — always wrap it.
 
-### Core Rules
+### Roles
 
-1. **No new Quasar components.** Never use `QBtn`, `QInput`, `QSelect`, `QDialog`, `QCard`, `QTable`, `QForm`, etc.
-2. **No new `W*` wrappers** around Quasar components (`WBtn`, `WInput`, `WSelect`, etc.).
-3. **Replace on touch.** When you edit any file that still uses Quasar components, migrate those components before committing.
-4. **Tailwind prefix.** Use the `tw:` prefix for all Tailwind utility classes in `.vue` files (e.g. `tw:flex tw:gap-4 tw:rounded-lg`).
-
-### Component Replacement Cheatsheet
-
-| Quasar / W\*                     | Replace with                                                                        |
-| -------------------------------- | ----------------------------------------------------------------------------------- |
-| `QBtn` / `WBtn`                  | `<button>` with Tailwind classes or `BaseButton`                                    |
-| `QInput` / `WInput`              | `<input>` with Tailwind classes or `BaseInput`                                      |
-| `QSelect` / `WSelect`            | `<select>` or `BaseSelect`, or a `W*` lookup component if one exists for the entity |
-| `QDialog`                        | `BaseDialog`                                                                        |
-| `QCard`                          | `<div>` with Tailwind classes or `BaseCard`                                         |
-| `QTable`                         | `<table>` with Tailwind classes or `BaseTable`                                      |
-| `QForm`                          | `<div>` with event handlers — avoid `<form>` entirely                               |
-| `QBadge`                         | `<span>` with Tailwind classes                                                      |
-| `QChip`                          | `<span>` or `BaseChip`                                                              |
-| `QTooltip`                       | `BaseTooltip`                                                                       |
-| `QSeparator`                     | `<hr>` with Tailwind or a plain `<div>` border                                      |
-| `QSpinner` / `QCircularProgress` | `BaseSpinner` or a CSS Tailwind animation                                           |
-| `QIcon` / `WIcon`                | `@tabler/icons-vue` — import and use explicitly                                     |
-
-> Check `resource/js/shared/components/` for all available `Base*` components before building something new.
-
-### Icons
-
-Always use `@tabler/icons-vue`. Icons are **not** auto-imported — always import explicitly:
-
-```javascript
-import { IconTrash, IconPencil } from '@tabler/icons-vue'
+```
+XBadge       — receives a full object; styling only (SCHEME_MAP: id → class)
+XBadgeById   — receives an id; resolves to an object (IDB or static map); renders <XBadge>
+XSelectMenu  — uses BaseSelectMenu + XBadgeById in the button slot
 ```
 
-### Forms
+Invariants:
 
-Never use `<form>` elements. Use `<div>` wrappers with `onClick` / `onChange` handlers.
+- `XBadge` never accepts an `id` prop. It receives the full object and renders `object.name` (with `object.id` as fallback).
+- `XBadgeById` is the only component that takes an `id` and resolves it.
+- Inside `XBadgeById`, never fall back to `BaseBadge` directly — let `XBadge` render even before IDB loads, using `{ initial: () => (props.statusId ? { id: props.statusId } : null) }`. `XBadge`'s `name || id` fallback covers the gap.
+
+### Two flavors
+
+| Flavor | When | `XBadgeById` resolves via |
+| --- | --- | --- |
+| **Full** | A SyncEngine model exists (e.g. `Site`, `Department`, `TaskInstanceStatus`) | `useLiveQueryWithDeps` → IDB |
+| **Enum** | No DB model — just an id field on the parent (e.g. user `userStatusId`) | static `STATUS_MAP` constant |
+
+`SCHEME_MAP` lives in `XBadge` and **only** holds styling: `{ ID: { class: 'tw:bg-...' } }`.
+`STATUS_MAP` lives in `XBadgeById` (enum flavor only) and **only** holds data: `{ ID: { id: 'ID', name: 'Label' } }`.
+Never mix — labels never go in `SCHEME_MAP`, classes never go in `STATUS_MAP`.
+
+### Full pattern (Site)
 
 ```vue
-<!-- ❌ Old -->
-<QForm @submit="handleSubmit">
-  <QInput v-model="name" />
-  <QBtn type="submit">Save</QBtn>
-</QForm>
-
-<!-- ✅ New -->
-<div class="tw:flex tw:flex-col tw:gap-4">
-  <BaseInput v-model="name" />
-  <button class="tw:btn-primary" @click="handleSubmit">Save</button>
-</div>
-```
-
-### v-model Binding
-
-Always use `defineModel`. Do not use the computed getter/setter pattern.
-
-```javascript
-// ❌ Old
-const emit = defineEmits(['update:modelValue'])
-const value = computed({
-  get: () => props.modelValue,
-  set: (v) => emit('update:modelValue', v),
-})
-
-// ✅ New
-const value = defineModel()
-```
-
-### Checklist Before Committing a Migrated File
-
-- [ ] No `Q*` or `W*` Quasar wrapper component usages (entity lookup `W*` components are still allowed)
-- [ ] All icons from `@tabler/icons-vue`, explicitly imported
-- [ ] Tailwind classes use `tw:` prefix
-- [ ] No `<form>` elements
-- [ ] `defineModel` used for all v-model bindings
-- [ ] `Base*` components used where available
-
----
-
-## Migration Guide 2 — Axios Composables & Provide/Inject → SyncEngine
-
-This project is **actively migrating away from** axios-based composables and Provide/Inject state management to the SyncEngine offline-first data layer. All new and touched code must use this pattern.
-
-### Core Principle
-
-> Components receive only an `id` prop. They query and mutate their own data directly via the SyncEngine. No data is fetched by a parent composable or passed down as props. There is no shared provided state.
-
-### What's Being Replaced
-
-| Old                                                             | New                                                       |
-| --------------------------------------------------------------- | --------------------------------------------------------- |
-| `import { get, post, put, del } from '@/api'`                   | `useLiveQueryWithDeps`, `useLiveQuery`, `useLiveMutation` |
-| Composable with `ref([])`, `loading`, manual `fetch*` functions | `useLiveQueryWithDeps` — reactive, auto-updating          |
-| `provideX()` / `useX()` Provide/Inject state shared across tree | Live queries directly in each component — no shared state |
-| Parent fetches data → passes as `:document="document"` prop     | Child receives `:documentId="id"` → queries itself        |
-| `await fetchDocument(id)` + `loading.value = true/false`        | `db.Document.findByPk(id)` inside a live query            |
-| `await fetchVersions(id)` → `versions.value = result.versions`  | `db.DocumentVersion.where('documentId', id).exec()`       |
-| `await post('/v1/...')` → then manually call `fetchDocuments()` | `db.Model.create({...})` + `await instance.save()`        |
-| `await put('/v1/...')` + refetch                                | `instance.field = value` + `await instance.save()`        |
-| `await del('/v1/...')` + refetch                                | `await instance.delete()`                                 |
-| Manual `watch(filters, () => fetchDocuments())`                 | Automatic — live queries re-run on syncBus events         |
-| `companyId` guard at top of every function                      | Not needed — syncEngine handles company scoping           |
-
-### Pattern Comparison
-
-#### Reading data
-
-```javascript
-// ❌ Old — composable with manual fetch, provided to tree
-async function fetchDocuments() {
-  const data = await get('/v1/services/documents', { params: { companyId }, loader: loading })
-  documents.value = data.documents || []
-}
-onMounted(() => fetchDocuments())
-
-// ✅ New — live query directly in the component, auto-updating
-const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
-  return db.Document.findByPk(id)
-})
-
-const versions = useLiveQueryWithDeps(
-  [() => props.id],
-  async (db, [id]) => {
-    return db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec()
-  },
-  { initial: [] },
-)
-```
-
-#### Creating a record
-
-```javascript
-// ❌ Old
-const result = await post('/v1/services/documents', { ...docData, companyId })
-await fetchDocuments() // manual refetch
-
-// ✅ New
-const create = useLiveMutation(async (db) => {
-  const doc = db.Document.create({ ...docData })
-  await doc.save()
-  return doc
-})
-const newDoc = await create()
-// No refetch needed — syncBus fires → live queries update automatically
-```
-
-#### Updating a record
-
-```javascript
-// ❌ Old
-await put(`/v1/services/documents/${id}`, { statusId: 'ARCHIVED' }, { params: { companyId } })
-await fetchDocuments()
-
-// ✅ New
-document.value.statusId = 'ARCHIVED'
-await document.value.save()
-```
-
-#### Deleting a record
-
-```javascript
-// ❌ Old
-await del(`/v1/services/documents/${id}`, { params: { companyId } })
-await fetchDocuments()
-await fetchStats()
-
-// ✅ New — paranoid models soft-delete automatically
-await document.value.delete()
-// Live queries auto-exclude soft-deleted records — no refetch needed
-```
-
-### Loading & Empty States
-
-Live queries return `undefined` before their first result — use that as your loading signal.
-
-```javascript
-// ❌ Old
-const loading = ref(false)
-const documents = ref([])
-
-// ✅ New
-const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
-  db.Document.findByPk(id),
-)
-const loading = computed(() => document.value === undefined)
-
-// In template:
-// v-if="!document"  → loading / not found
-// v-else            → ready
-```
-
-For lists, pass `{ initial: [] }` to avoid `undefined` when a loading state isn't needed:
-
-```javascript
-const versions = useLiveQueryWithDeps(
-  [() => props.id],
-  async (db, [id]) => db.DocumentVersion.where('documentId', id).exec(),
-  { initial: [] },
-)
-```
-
-### Passing Data Between Components
-
-Old code passed full objects as props from a shared provided composable. New code passes only IDs — each component queries what it needs itself.
-
-```vue
-<!-- ❌ Old — parent fetches and passes objects down -->
-<DocumentsMainContent :document="document" :currentVersion="selectedVersion" :canEdit="canEdit" />
-
-<!-- ✅ New — child receives IDs and queries itself -->
-<DocumentsMainContent :documentId="props.id" :versionId="selectedVersion?.id" />
-```
-
-### Reactive Filters
-
-```javascript
-// ❌ Old
-const filters = ref({ search: '', statusId: null })
-watch(filters, () => fetchDocuments(), { deep: true })
-
-// ✅ New — filters are deps; query re-runs automatically when they change
-const search = ref('')
-const statusId = ref(null)
-
-const documents = useLiveQueryWithDeps(
-  [() => search.value, () => statusId.value],
-  async (db, [search, statusId]) => {
-    const results = await db.Document.where('statusId', statusId).exec()
-    // In-memory filter for non-indexed fields:
-    return results.filter((d) => d.title.includes(search))
-  },
-  { initial: [] },
-)
-```
-
-### Auto-selecting After Mutation
-
-Watch the live list reactively instead of manually re-fetching and finding items.
-
-```javascript
-// ❌ Old
-await loadData()
-await nextTick()
-const newVersion = versions.value.find((v) => v.id === result.version.id)
-selectVersion(newVersion)
-
-// ✅ New
-watch(versions, (list) => {
-  if (!list?.length) {
-    selectedVersion.value = null
-    return
-  }
-  const currentId = selectedVersion.value?.id
-  const found = currentId ? list.find((v) => v.id === currentId) : null
-  selectedVersion.value = found ?? list[0]
-})
-```
-
-### Soft Deletes
-
-Never manually filter `deletedAt` — the syncEngine excludes soft-deleted records from all queries automatically. Use `{ force: true }` only when explicitly needed.
-
-```javascript
-// ❌ Never do this
-const versions = await db.DocumentVersion.where('documentId', id).exec()
-const active = versions.filter((v) => !v.deletedAt)
-
-// ✅ Soft-deleted records are already excluded automatically
-const versions = await db.DocumentVersion.where('documentId', id).exec()
-
-// ✅ force: true only when intentionally needed (e.g. calculating next version number)
-const latest = await db.DocumentVersion.where('documentId', id, { force: true })
-  .orderBy('createdAt', 'desc')
-  .first()
-```
-
-### Checklist Before Committing a Migrated Composable/Component
-
-- [ ] No imports from `@/api` (`get`, `post`, `put`, `del`)
-- [ ] No `provideX()` / `useX()` Provide/Inject composable pattern for data fetching
-- [ ] No manual `loading` refs wrapping API calls
-- [ ] No `fetch*` functions that hit the network
-- [ ] No `companyId` guards (the syncEngine handles scoping)
-- [ ] Data read via `useLiveQuery` or `useLiveQueryWithDeps`
-- [ ] Mutations use `useLiveMutation` + `instance.save()` / `instance.delete()`
-- [ ] Components receive `id` props, not full object props
-- [ ] No manual refetch calls after mutations
-- [ ] No manual `deletedAt` filtering in queries
-
----
-
-## Component Pattern: XBadge → XBadgeById → XSelectMenu
-
-Every entity that appears in select menus or badge displays must follow the triad pattern. Never use `BaseSelectMenu` directly for an entity — always create the wrapper component.
-
-### Architecture Overview
-
-```
-XBadge          — Receives full object, handles STYLING only (SCHEME_MAP: id → class)
-XBadgeById      — Receives id, resolves to object (from IDB or static map), passes to XBadge
-XSelectMenu     — Uses BaseSelectMenu + XBadgeById
-```
-
-**Key rule:** `XBadge` never receives an `id` string — it receives a full object and renders `object.name`. `XBadgeById` is always the component that receives the `id` and resolves it.
-
-### Full Pattern (SyncEngine models — e.g. Site, Department, TaskInstanceStatus)
-
-For entities backed by a SyncEngine model:
-
-**1. `XBadge.vue`** — Display component (receives full object from IDB). Styling only via `SCHEME_MAP`.
-
-```vue
+<!-- SiteBadge.vue -->
 <script setup>
-defineProps({
-  site: { type: Object, required: true },
-})
+defineProps({ site: { type: Object, required: true } })
 </script>
-
 <template>
   <BaseBadge v-bind="$attrs">{{ site.name }}</BaseBadge>
 </template>
 ```
 
-For status badges that need per-id color styling:
-
 ```vue
+<!-- SiteBadgeById.vue -->
 <script setup>
-defineProps({
-  status: { type: Object, required: true },
-  showDot: { type: Boolean, default: false },
-})
-
-const SCHEME_MAP = {
-  APPROVED: { class: 'tw:bg-green-100 tw:text-green-700' },
-  REJECTED: { class: 'tw:bg-red-100 tw:text-red-700' },
-  PENDING: { class: 'tw:bg-amber-100 tw:text-amber-700' },
-}
-
-const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-600' }
-</script>
-
-<template>
-  <BaseBadge v-bind="$attrs" :class="scheme(status?.id).class" :showDot="showDot">
-    {{ status?.name || status?.id || '—' }}
-  </BaseBadge>
-</template>
-```
-
-**2. `XBadgeById.vue`** — Lookup wrapper (receives `id`, queries SyncEngine)
-
-```vue
-<script setup>
-const props = defineProps({
-  siteId: { type: String, default: null },
-})
-
+const props = defineProps({ siteId: { type: String, default: null } })
 const site = useLiveQueryWithDeps([() => props.siteId], async (db, [siteId]) => {
   if (!siteId) return null
   return db.Site.findByPk(siteId)
 })
 </script>
-
 <template>
   <SiteBadge v-if="site" :site="site" v-bind="$attrs" />
 </template>
 ```
 
-For status badges with a SyncEngine model:
-
 ```vue
-<script setup>
-const props = defineProps({
-  statusId: { type: String, default: null },
-  showDot: { type: Boolean, default: false },
-})
-
-const status = useLiveQueryWithDeps(
-  [() => props.statusId],
-  async (db, [statusId]) => {
-    if (!statusId) return null
-    return db.TaskInstanceStatus.findByPk(statusId)
-  },
-)
-</script>
-
-<template>
-  <TaskInstanceStatusBadge v-if="status" :status="status" :showDot="showDot" v-bind="$attrs" />
-</template>
-</template>
-```
-
-**3. `XSelectMenu.vue`** — Select component (uses BaseSelectMenu + XBadgeById)
-
-```vue
+<!-- SiteSelectMenu.vue -->
 <script setup>
 defineProps({
   required: { type: Boolean, default: false },
   multiple: { type: Boolean, default: false },
 })
-
-const modelValue = defineModel({
-  type: [String, Array, null],
-  default: null,
-})
-
+const modelValue = defineModel({ type: [String, Array, null], default: null })
 const sites = useLiveQuery(async (db) => db.Site.where().exec(), { initial: [] })
-
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []
 }
 </script>
-
 <template>
   <BaseSelectMenu v-model="modelValue" :items="sites" :required="required" :multiple="multiple">
     <template #button="scope">
@@ -492,187 +146,113 @@ function getArray() {
 </template>
 ```
 
-### Enum Pattern (no SyncEngine model — e.g. UserStatus)
-
-For entities that are **not** SyncEngine models (language, timezone, etc.):
-
-**1. `XBadge.vue`** — Display component (receives full object). Styling only via `SCHEME_MAP`.
+For status badges that need per-id colors, add `SCHEME_MAP` to `XBadge`:
 
 ```vue
+<!-- TaskInstanceStatusBadge.vue -->
 <script setup>
 defineProps({
-  status: { type: Object, default: null },
+  status: { type: Object, required: true },
+  showDot: { type: Boolean, default: false },
 })
-
 const SCHEME_MAP = {
-  ACTIVE: { class: 'tw:bg-green-100 tw:text-green-700' },
-  INACTIVE: { class: 'tw:bg-gray-100 tw:text-gray-600' },
-  INVITED: { class: 'tw:bg-blue-100 tw:text-blue-700' },
+  APPROVED: { class: 'tw:bg-green-100 tw:text-green-700' },
+  REJECTED: { class: 'tw:bg-red-100 tw:text-red-700' },
+  PENDING: { class: 'tw:bg-amber-100 tw:text-amber-700' },
 }
-
 const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-600' }
 </script>
-
 <template>
-  <BaseBadge v-bind="$attrs" :class="scheme(status?.id).class">
+  <BaseBadge v-bind="$attrs" :class="scheme(status?.id).class" :showDot="showDot">
     {{ status?.name || status?.id || '—' }}
   </BaseBadge>
 </template>
 ```
 
-**2. `XBadgeById.vue`** — Lookup wrapper (receives `id`, resolves from static `STATUS_MAP`)
+### Enum pattern (UserStatus)
 
 ```vue
+<!-- UserStatusBadgeById.vue — only the resolution differs from the full pattern -->
 <script setup>
-const props = defineProps({
-  statusId: { type: String, default: null },
-})
-
+const props = defineProps({ statusId: { type: String, default: null } })
 const STATUS_MAP = {
-  ACTIVE: { id: 'ACTIVE', name: 'Active' },
+  ACTIVE:   { id: 'ACTIVE',   name: 'Active'   },
   INACTIVE: { id: 'INACTIVE', name: 'Inactive' },
-  INVITED: { id: 'INVITED', name: 'Invited' },
+  INVITED:  { id: 'INVITED',  name: 'Invited'  },
 }
-
 const status = computed(
   () =>
     STATUS_MAP[props.statusId] ||
     (props.statusId ? { id: props.statusId, name: props.statusId } : null),
 )
 </script>
-
 <template>
   <UserStatusBadge v-if="status" :status="status" v-bind="$attrs" />
 </template>
 ```
 
-**3. `XSelectMenu.vue`** — Select component (uses BaseSelectMenu with static items + XBadgeById)
+`UserStatusBadge` is identical in shape to `TaskInstanceStatusBadge` (object prop, `SCHEME_MAP`). `UserStatusSelectMenu` is identical in shape to `SiteSelectMenu` but feeds `BaseSelectMenu` a static `items` array of the `STATUS_MAP` values.
 
-```vue
-<script setup>
-defineProps({
-  required: { type: Boolean, default: false },
-})
-
-const modelValue = defineModel({ type: [String, null], default: null })
-
-const items = computed(() => [
-  { id: 'ACTIVE', name: 'Active' },
-  { id: 'INACTIVE', name: 'Inactive' },
-])
-</script>
-
-<template>
-  <BaseSelectMenu v-model="modelValue" :items="items" :required="required">
-    <template #button="scope">
-      <slot name="button" v-bind="scope">
-        <UserStatusBadgeById
-          v-if="modelValue"
-          :statusId="modelValue"
-          :clearable="!required"
-          selectable
-          @clear="() => scope.clear(modelValue)"
-        />
-        <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">Select Status</span>
-      </slot>
-    </template>
-  </BaseSelectMenu>
-</template>
-```
-
-### SCHEME_MAP vs STATUS_MAP — when to use which
-
-| Map          | Lives in                 | Contains                              | Purpose                                                 |
-| ------------ | ------------------------ | ------------------------------------- | ------------------------------------------------------- |
-| `SCHEME_MAP` | `XBadge`                 | `{ ID: { class: 'tw:bg-...' } }`      | Styling only — maps id to Tailwind classes              |
-| `STATUS_MAP` | `XBadgeById` (enum only) | `{ ID: { id: 'ID', name: 'Label' } }` | Data only — static label lookup when no DB model exists |
-
-**Never** put labels in `SCHEME_MAP`. **Never** put styling classes in `STATUS_MAP`.
-
-**When a SyncEngine model exists**, `XBadgeById` queries IDB — no `STATUS_MAP` needed. The label comes from `status.name` (from the DB record).
-
-**When no SyncEngine model exists**, `XBadgeById` has a static `STATUS_MAP` — the label comes from the map.
-
-### XBadgeById `initial` Pattern
-
-`XBadgeById` should use `{ initial: () => (props.statusId ? { id: props.statusId } : null) }` instead of `{ initial: null }`. This ensures a fallback object exists before IDB loads, so `XBadge` can render `status.name || status.id` immediately.
-
-**Never use `BaseBadge` as a fallback in `XBadgeById`** — always let `XBadge` handle the display. If the IDB record hasn't loaded yet, `XBadge` will show `status.id` as the label via the `status.name || status.id` fallback.
-
-### How to decide which pattern to use
-
-1. **Check if a SyncEngine model exists** — look in `models/` directory (e.g. `taskInstanceStatus.js` exists → use Full Pattern)
-2. **No model** — use Enum Pattern (e.g. no `userStatus.js` model, only `user.userStatusId` field → enum pattern)
-
-### File Locations
+### File locations
 
 - Badges: `src/components/badges/`
-- Select Menus: `src/components/menus/`
+- Select menus: `src/components/menus/`
 
-### Checklist: When Adding a New Entity to the UI
+### Checklist when adding a new entity
 
-- [ ] Does the entity need a badge display? Create `XBadge`
-- [ ] Is it a SyncEngine model? Create `XBadgeById` with IDB query too
-- [ ] Is it an enum (no DB model)? Create `XBadgeById` with static `STATUS_MAP`
-- [ ] Does the entity need a select menu? Create `XSelectMenu` using the appropriate pattern above
-- [ ] Never use `BaseSelectMenu` directly for entity selection — always wrap it
-- [ ] Never do inline `useLiveQuery` + entity rendering when an `XBadgeById` or `XSelectMenu` exists
-- [ ] `XBadge` never accepts an `id` prop — it always receives a full object
-- [ ] `XBadgeById` always accepts an `id` prop and resolves it (via IDB or static map)
+- [ ] Need a badge? Create `XBadge` (object → display, optional `SCHEME_MAP` for color).
+- [ ] SyncEngine model exists? Create `XBadgeById` with `useLiveQueryWithDeps` → `findByPk`.
+- [ ] No model (enum)? Create `XBadgeById` with a static `STATUS_MAP`.
+- [ ] Need a select menu? Create `XSelectMenu` using the matching pattern.
+- [ ] Don't use `BaseSelectMenu` directly. Don't render an entity inline with `useLiveQuery` + display logic when an `XBadgeById` exists.
 
 ---
 
-## Inline Edit + Auto-Save Pattern
+## Component pattern: inline edit + auto-save
 
-When a page shows entity details that can be edited, use inline editing with auto-save instead of a separate edit dialog.
+When a page shows entity details that can be edited, edit inline on the page — no separate edit dialog, no separate form ref.
 
-### Rules
+Rules:
 
-1. **No separate form ref** — bind `v-model` directly to the `user.value` (or other entity) from the live query
-2. **No edit dialog** — all fields are inline-editable on the page itself
-3. **Auto-save via deep watcher + `useDebounceFn`**:
+1. Bind `v-model` directly to the entity from the live query (e.g. `user.value.firstName`). No copy.
+2. Auto-save with a deep watcher + `useDebounceFn`. Skip the first watcher trigger so the initial load doesn't trigger a save.
+3. Don't pre-validate. `BaseModel` validates on save — surface errors from `save()`.
+4. Show `isSaving` and `saveError`.
 
-   ```javascript
-   const isSaving = ref(false)
-   const saveError = ref(null)
-   const isFirstLoad = ref(true)
+```javascript
+const isSaving = ref(false)
+const saveError = ref(null)
+const isFirstLoad = ref(true)
 
-   const debouncedSave = useDebounceFn(async () => {
-     if (!user.value) return
-     isSaving.value = true
-     saveError.value = null
-     try {
-       await user.value.save()
-     } catch (err) {
-       saveError.value = err.message || 'Failed to save'
-     } finally {
-       isSaving.value = false
-     }
-   }, 500)
+const debouncedSave = useDebounceFn(async () => {
+  if (!user.value) return
+  isSaving.value = true
+  saveError.value = null
+  try {
+    await user.value.save()
+  } catch (err) {
+    saveError.value = err.message || 'Failed to save'
+  } finally {
+    isSaving.value = false
+  }
+}, 500)
 
-   watch(
-     user,
-     (u) => {
-       if (isFirstLoad.value) {
-         isFirstLoad.value = false
-         return
-       }
-       if (u) debouncedSave()
-     },
-     { deep: true },
-   )
-   ```
+watch(
+  user,
+  (u) => {
+    if (isFirstLoad.value) {
+      isFirstLoad.value = false
+      return
+    }
+    if (u) debouncedSave()
+  },
+  { deep: true },
+)
+```
 
-4. **No validation before save** — BaseModel handles validation. Catch errors from `save()` and display to user
-5. **Skip first watcher trigger** — use `isFirstLoad` ref to avoid saving on initial data load
-6. **Show saving indicator** — display `isSaving` state and `saveError` to the user
-
-### Template Pattern
-
-Each field shows the edit control when `canUpdate` is true, otherwise shows the read-only display:
+Each field shows the edit control when `canUpdate`, otherwise the read-only badge:
 
 ```vue
-<!-- Editable field -->
 <div>
   <p class="tw:text-secondary tw:mb-1">Site</p>
   <SiteSelectMenu v-if="canUpdate" v-model="user.siteId" :required="true" />
@@ -683,20 +263,13 @@ Each field shows the edit control when `canUpdate` is true, otherwise shows the 
 </div>
 ```
 
-For name/title fields, click to edit:
+For text fields, click-to-edit:
 
 ```vue
 <template v-if="editingName && canUpdate">
   <BaseTextInput
     v-model="user.firstName"
     placeholder="First Name"
-    size="sm"
-    @keyup.enter="editingName = false"
-    @blur="editingName = false"
-  />
-  <BaseTextInput
-    v-model="user.lastName"
-    placeholder="Last Name"
     size="sm"
     @keyup.enter="editingName = false"
     @blur="editingName = false"
@@ -711,9 +284,9 @@ For name/title fields, click to edit:
 </h2>
 ```
 
-### Role Assignment Changes
+### Join-table mutations (e.g. role assignments)
 
-Role assignments are separate `RoleOnUser` records, not direct user properties. Use `useLiveMutation` for creates:
+Role assignments are `RoleOnUser` records, not direct user fields. Diff against the live list and apply with `useLiveMutation` for creates and `instance.delete()` for removals:
 
 ```javascript
 const addRoleOnUser = useLiveMutation(async (db, { userId, roleId }) => {
@@ -726,10 +299,7 @@ async function handleRolesChange(newRoleIds) {
   const currentIds = assignedRoleIds.value
   const toAdd = newRoleIds.filter((id) => !currentIds.includes(id))
   const toRemove = currentIds.filter((id) => !newRoleIds.includes(id))
-
-  for (const roleId of toAdd) {
-    await addRoleOnUser({ userId: props.id, roleId })
-  }
+  for (const roleId of toAdd) await addRoleOnUser({ userId: props.id, roleId })
   for (const roleId of toRemove) {
     const match = roleAssignments.value.find((ra) => ra.roleId === roleId)
     if (match) await match.delete()
@@ -739,50 +309,226 @@ async function handleRolesChange(newRoleIds) {
 
 ---
 
-## General Rules
+## Migration: Quasar → Tailwind
 
-- **Use `BaseTextInput` / `BaseTextarea`** instead of raw `<input>` / `<textarea>` elements
-- **Use `BaseColorPicker`** instead of `WColorPicker`/`QColor`
-- **Use `@tabler/icons-vue`** for all icons — never Material Icons or other icon libraries
-- **Use `defineModel`** for v-model bindings — never computed getter/setter pattern
-- **Use `useLiveMutation`** for all creates — never call `db.Model.create()` + `save()` directly in components
-- **Never manually filter `deletedAt`** — the syncEngine excludes soft-deleted records automatically
-- **Use indexed queries** when `customIndex` exists on the model (e.g. `db.Department.where('siteId', siteId)`)
-- **Use `useLiveQuery`** (no deps) when there are no reactive dependencies; **`useLiveQueryWithDeps`** when there are
-- **Loading state**: `const loading = computed(() => data.value === undefined)` — don't use `{ initial: [] }` if you need a loading state
+The project is actively migrating off Quasar. Replace on touch.
 
-## SyncEngine Reference
+### Cheatsheet
 
-### Architecture
+| Quasar / `W*`                    | Replace with                                                          |
+| -------------------------------- | --------------------------------------------------------------------- |
+| `QBtn` / `WBtn`                  | `<button>` + Tailwind, or `BaseButton`                                |
+| `QInput` / `WInput`              | `BaseTextInput` (or `<input>` + Tailwind)                             |
+| `QSelect` / `WSelect`            | `BaseSelectMenu` — or an `XSelectMenu` if one exists for that entity  |
+| `QDialog`                        | `BaseDialog`                                                          |
+| `QCard`                          | `<div>` + Tailwind, or `BaseCard`                                     |
+| `QTable`                         | `BaseTable`                                                           |
+| `QForm`                          | `<div>` with handlers — never `<form>`                                |
+| `QBadge`                         | `<span>` + Tailwind, or the entity's `XBadge`/`XBadgeById`            |
+| `QChip`                          | `BaseChip`                                                            |
+| `QTooltip`                       | `BaseTooltip`                                                         |
+| `QSeparator`                     | `<hr>` + Tailwind                                                     |
+| `QSpinner` / `QCircularProgress` | `BaseSpinner`                                                         |
+| `QIcon` / `WIcon`                | `@tabler/icons-vue`                                                   |
 
+Check `resource/js/shared/components/` for existing `Base*` components before building anything new.
+
+### Example
+
+```vue
+<!-- ❌ Old -->
+<QForm @submit="handleSubmit">
+  <QInput v-model="name" />
+  <QBtn type="submit">Save</QBtn>
+</QForm>
+
+<!-- ✅ New -->
+<div class="tw:flex tw:flex-col tw:gap-4">
+  <BaseTextInput v-model="name" />
+  <button class="tw:btn-primary" @click="handleSubmit">Save</button>
+</div>
 ```
-Backend (PostgreSQL) ←→ Service Worker ←→ IndexedDB ←→ Vue components
-                              ↑                              ↓
-                         SyncWorkerBridge              useLiveQuery
-                              ↑
-                          syncBus (event bus per model)
+
+### Pre-commit checklist
+
+- [ ] No `Q*` components, no `W*` wrappers (entity-lookup `W*` are still allowed)
+- [ ] All icons from `@tabler/icons-vue`, explicitly imported
+- [ ] Tailwind classes carry the `tw:` prefix
+- [ ] No `<form>` elements
+- [ ] `defineModel` used for v-model
+
+---
+
+## Migration: axios + provide/inject → syncEngine
+
+> **Core principle.** Components receive only an `id` prop. They query and mutate their own data via the syncEngine. No data is fetched by a parent composable or passed down as props. There is no shared provided state.
+
+### Read
+
+```javascript
+// ❌ Old — composable with manual fetch, provided to tree
+async function fetchDocuments() {
+  const data = await get('/v1/services/documents', { params: { companyId }, loader: loading })
+  documents.value = data.documents || []
+}
+onMounted(() => fetchDocuments())
+
+// ✅ New — live query directly in the component
+const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
+  db.Document.findByPk(id),
+)
+const versions = useLiveQueryWithDeps(
+  [() => props.id],
+  async (db, [id]) =>
+    db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec(),
+  { initial: [] },
+)
 ```
 
-### Defining a Model
+### Create / update / delete
+
+```javascript
+// Create — useLiveMutation
+const createDoc = useLiveMutation(async (db, payload) => {
+  const doc = db.Document.create(payload)
+  await doc.save()
+  return doc
+})
+await createDoc({ /* ... */ })
+
+// Update — mutate and save
+document.value.statusId = 'ARCHIVED'
+await document.value.save()
+
+// Soft delete (paranoid) — never refetch after; syncBus updates live queries automatically
+await document.value.delete()
+```
+
+No manual refetch — `syncBus` fires and live queries refresh on their own.
+
+### Reactive filters
+
+```javascript
+const search = ref('')
+const statusId = ref(null)
+
+const documents = useLiveQueryWithDeps(
+  [() => search.value, () => statusId.value],
+  async (db, [search, statusId]) => {
+    const results = await db.Document.where('statusId', statusId).exec()
+    return results.filter((d) => d.title.includes(search))
+  },
+  { initial: [] },
+)
+```
+
+### Loading state
+
+A live query returns `undefined` before its first result — use that as the loading signal:
+
+```javascript
+const document = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
+  db.Document.findByPk(id),
+)
+const loading = computed(() => document.value === undefined)
+// template: v-if="!document" → loading/not-found, v-else → ready
+```
+
+For lists, passing `{ initial: [] }` skips the `undefined` phase but you lose the ability to distinguish loading from empty. Pick one based on the UI.
+
+### Auto-select after a mutation
+
+Watch the live list — never re-fetch + `find`:
+
+```javascript
+watch(versions, (list) => {
+  if (!list?.length) {
+    selectedVersion.value = null
+    return
+  }
+  const currentId = selectedVersion.value?.id
+  const found = currentId ? list.find((v) => v.id === currentId) : null
+  selectedVersion.value = found ?? list[0]
+})
+```
+
+### Passing data between components
+
+```vue
+<!-- ❌ Old: parent fetches and passes objects down -->
+<DocumentsMainContent :document="document" :currentVersion="selectedVersion" :canEdit="canEdit" />
+
+<!-- ✅ New: child receives ids and queries itself -->
+<DocumentsMainContent :documentId="props.id" :versionId="selectedVersion?.id" />
+```
+
+### Pre-commit checklist
+
+- [ ] No imports from `@/api` (`get`/`post`/`put`/`del`)
+- [ ] No `provideX()` / `useX()` data-fetching composable
+- [ ] No manual `loading` refs wrapping API calls
+- [ ] No `fetch*` functions hitting the network
+- [ ] No `companyId` guards (syncEngine handles scoping)
+- [ ] Reads via `useLiveQuery` / `useLiveQueryWithDeps`
+- [ ] Creates via `useLiveMutation` (never `db.Model.create()` + `save()` inline)
+- [ ] Components receive `id` props, not full object props
+- [ ] No manual refetch after mutations
+- [ ] No manual `deletedAt` filtering
+
+---
+
+## SyncEngine API Reference
+
+> For the cross-service flow (Postgres logical replication → `sync` service → frontend → IndexedDB), see the root [`../../CLAUDE.md`](../../CLAUDE.md). This section only covers the in-frontend API.
+
+### Engine lifecycle (no service worker)
+
+The syncEngine runs entirely on the main thread. There is no service worker, no `TransactionQueue`, no optimistic IDB writes.
+
+`syncEngine.install()` (called once after login when the active company is known):
+
+1. Open / create the company-scoped IndexedDB. The DB name is timestamped and stored in `localStorage`; on schema change, the old DB is nuked and a new one is opened.
+2. Build `MetaCache` — in-memory cache of GraphQL queries/mutations per model.
+3. Wire `BaseModel._saveStrategy = directSaveStrategy` (pessimistic save: API first, then IDB).
+4. Run `bootstrapAll()` — paginated delta-sync via GraphQL for every `INSTANT`-strategy model, using a `lastSyncValue` watermark per model in `syncMetaStore`. A `localStorage` gate (`bootstrapGate`) dedupes across tabs and skips re-bootstrap when data is < 5 min old. Non-blocking — UI starts rendering from IDB immediately.
+5. `initSocketSubscriber()` — attach a `'sync'` listener to the existing app socket from `src/api/socket.js`.
+
+**Mutations** (`instance.save()` / `.delete()`):
+
+1. `directSaveStrategy` calls `MutationRunner` → GraphQL.
+2. On success: write the server record to IDB, `markAsRecentlyWritten` (suppresses the echo socket event for 2 s), update the in-memory `ObjectPool`, emit on `syncBus`. Live queries refresh.
+3. On failure: throw. IDB is untouched, no rollback needed. **Surface the error in the UI** — pessimistic saves mean a failed save means no change anywhere.
+
+`LOCAL`-strategy models bypass the network and just write IDB.
+
+**Server-pushed updates** (from `backend/sync` via socket.io):
+
+1. Backend emits `{ table, action, pkValue }` on the `sync` event.
+2. `socketSubscriber` looks up `MetaCache` by table, fetches the full record via GraphQL, writes it to IDB, advances the `syncMetaStore` watermark, emits on `syncBus`.
+3. Echo events for records the local save just wrote (within 2 s) are dropped to avoid double-fetching what's already in IDB.
+
+`syncEngine.teardown()` — detaches the socket listener, closes IDB, clears the `ObjectPool`. Call before switching company DB or on logout.
+
+### Defining a model
 
 ```javascript
 import { ClientModel, BaseModel, Property, Computed } from '@syncEngine/index.js'
 
 @ClientModel('document_versions', {
   primaryKey: 'id',
-  loadStrategy: 'instant', // 'instant' | 'lazy' | 'local'
-  customIndex: 'documentId', // or '[documentId+statusId]' for compound
+  loadStrategy: 'instant',     // 'instant' | 'lazy' | 'local'
+  customIndex: 'documentId',   // or '[documentId+statusId]' for compound
   schemaVersion: 1,
 })
 class DocumentVersion extends BaseModel {
-  static paranoid = true // soft-delete via deletedAt field
+  static paranoid = true       // soft-delete via deletedAt; or 'fieldName' for custom
 
   @Property({ type: String, required: true }) id = null
   @Property({ type: String }) documentId = null
   @Property({ type: String }) statusId = null
   @Property({ type: Number }) versionMajor = 0
   @Property({ type: DateTime, required: true, timestamp: true }) createdAt = null
-  @Property({ type: DateTime }) deletedAt = null // required when paranoid = true
+  @Property({ type: DateTime }) deletedAt = null   // required when paranoid
 
   get label() {
     return `${this.versionMajor}.${this.versionMinor}`
@@ -790,94 +536,96 @@ class DocumentVersion extends BaseModel {
 }
 ```
 
-- **`@Property({ type })`** — persisted field. `type` is required: `String`, `Number`, `Boolean`, `Date`, `DateTime`.
-  - **`timestamp: true`** — auto-sets to "now" when created via `Model.create()`.
-  - **`autoUpdate: true`** — auto-sets to "now" before every `save()`.
-- **`@Computed`** — Vue computed getter, never persisted.
-- **`static paranoid`** — `true` uses `deletedAt`; a string uses that field name instead.
+- `@Property({ type })` — persisted, dirty-tracked. `type` is required: `String`, `Number`, `Boolean`, `Date`, `DateTime`.
+  - `timestamp: true` — auto-set to "now" on `Model.create()`. Format depends on `type`: `Number` → `Date.now()`, `String` → ISO string, `Date` → `new Date()`, `DateTime` → `DateTime.now()`.
+  - `autoUpdate: true` — auto-set to "now" before every `save()`.
+- `@Computed` — Vue computed getter, never persisted.
 
-### Querying (QueryBuilder)
+### Querying
 
 ```javascript
 // Indexed lookup (fast)
-const versions = await db.DocumentVersion.where('documentId', id).exec()
+await db.DocumentVersion.where('documentId', id).exec()
 
-// Indexed lookup + filter + sort + limit
-const drafts = await db.DocumentVersion.where('documentId', id)
+// Indexed + chained filters/sort/limit (filters after the first .where() are in-memory)
+await db.DocumentVersion.where('documentId', id)
   .where('statusId', 'DRAFT')
   .orderBy('createdAt', 'desc')
   .limit(10)
   .exec()
 
 // Compound index
-const result = await db.Issue.where('[status+priority]', ['OPEN', 1]).exec()
+await db.Issue.where('[status+priority]', ['OPEN', 1]).exec()
 
-// Full scan (no index — use sparingly)
-const all = await db.DocumentVersion.where().exec()
+// Full scan — use sparingly
+await db.DocumentVersion.where().exec()
 
-// First result only
-const latest = await db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').first()
+// First only
+await db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').first()
 
-// Include soft-deleted records
-const withDeleted = await db.DocumentVersion.where('documentId', id, { force: true }).exec()
+// Include soft-deleted (bypass paranoid)
+await db.DocumentVersion.where('documentId', id, { force: true }).exec()
+await db.Document.findByPk(id, { force: true })
 
-// findByPk
-const doc = await db.Document.findByPk(id) // null if soft-deleted
-const doc = await db.Document.findByPk(id, { force: true }) // includes soft-deleted
+// findByPk — null if soft-deleted
+await db.Document.findByPk(id)
 ```
 
 ### Mutations
 
 ```javascript
-// Create
-const version = db.DocumentVersion.create({ documentId: id, statusId: 'DRAFT', versionMajor: 1 })
-await version.save()
+const v = db.DocumentVersion.create({ documentId: id, statusId: 'DRAFT', versionMajor: 1 })
+await v.save()
 
-// Update
-version.statusId = 'APPROVED'
-await version.save()
+v.statusId = 'APPROVED'
+await v.save()
 
-// Soft delete (paranoid model)
-await version.delete()
-
-// Hard delete (bypasses paranoid)
-await version.hardDelete()
-
-// Restore soft-deleted
-await version.restore()
+await v.delete()       // soft (paranoid)
+await v.hardDelete()   // bypass paranoid
+await v.restore()      // un-soft-delete
 ```
 
-### Vue Integration — Live Queries
+### Live queries
 
 ```javascript
-// Re-runs when deps change AND when syncBus fires for any model
-const versions = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
-  return db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec()
-})
+// Re-runs when deps change AND when syncBus fires
+const versions = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
+  db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec(),
+)
 
-// No deps needed
+// No deps
 const allDocs = useLiveQuery(async (db) => db.Document.where().exec())
 
 // Options
 useLiveQueryWithDeps(deps, fn, {
-  models: 'DocumentVersion', // only re-run on DocumentVersion sync events (default: '*')
-  initial: [], // value before first load (default: undefined)
-  debounce: 50, // ms to coalesce burst syncs
+  models: 'DocumentVersion',  // only this model's sync events trigger re-run (default '*')
+  initial: [],                // value before first load (default undefined)
+  debounce: 50,               // coalesce burst syncs, ms
 })
 ```
 
-### SyncEngine Files Reference
+### File map
 
-| File                                         | Purpose                                        |
-| -------------------------------------------- | ---------------------------------------------- |
-| `syncEngine/index.js`                        | Public exports                                 |
-| `syncEngine/core/BaseModel.js`               | Base class — create/save/delete/findByPk/where |
-| `syncEngine/decorators/ClientModel.js`       | `@ClientModel` class decorator                 |
-| `syncEngine/decorators/Property.js`          | `@Property` field decorator                    |
-| `syncEngine/decorators/Computed.js`          | `@Computed` getter decorator                   |
-| `syncEngine/query/QueryBuilder.js`           | Chainable IDB query builder                    |
-| `syncEngine/persistence/IndexedDB.js`        | Low-level IDB adapter                          |
-| `syncEngine/persistence/TransactionQueue.js` | Queues mutations for SW                        |
-| `syncEngine/core/syncBus.js`                 | Per-model event bus                            |
-| `src/composables/useLiveQuery.js`            | Vue composables for live queries               |
-| `frontend/app/models/`                       | All model definitions                          |
+| File                                          | Purpose                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------ |
+| `syncEngine/index.js`                         | Public exports                                                     |
+| `syncEngine/syncEngine.js`                    | `SyncEngine.install()` / `.teardown()` — engine entry point        |
+| `syncEngine/core/BaseModel.js`                | Base class — create/save/delete/findByPk/where                     |
+| `syncEngine/core/directSaveStrategy.js`       | Pessimistic save (API first, then IDB) — wired into `BaseModel`    |
+| `syncEngine/core/MetaCache.js`                | In-memory GraphQL query/mutation cache per model                   |
+| `syncEngine/core/ObjectPool.js`               | Reactive instance cache — same `id` returns the same Vue object    |
+| `syncEngine/core/syncBus.js`                  | Per-model event bus that drives live-query re-runs                 |
+| `syncEngine/decorators/ClientModel.js`        | `@ClientModel`                                                     |
+| `syncEngine/decorators/Property.js`           | `@Property`                                                        |
+| `syncEngine/decorators/Computed.js`           | `@Computed`                                                        |
+| `syncEngine/network/MutationRunner.js`        | Runs GraphQL mutations + per-record refetch                        |
+| `syncEngine/network/graphqlClient.js`         | GraphQL fetch client                                               |
+| `syncEngine/persistence/IndexedDB.js`         | Low-level IDB adapter                                              |
+| `syncEngine/persistence/syncMetaStore.js`     | `lastSyncValue` watermarks per model (delta-sync)                  |
+| `syncEngine/persistence/schemaManager.js`     | Schema-hash detection → nuke old DB on change                      |
+| `syncEngine/sync/bootstrap.js`                | Paginated delta-sync on install                                    |
+| `syncEngine/sync/bootstrapGate.js`            | Cross-tab bootstrap dedup via `localStorage`                       |
+| `syncEngine/sync/socketSubscriber.js`         | Attaches `'sync'` listener to the app socket                       |
+| `syncEngine/query/QueryBuilder.js`            | Chainable IDB query builder                                        |
+| `src/composables/useLiveQuery.js`             | Vue composables (`useLiveQuery`, `useLiveQueryWithDeps`, `useLiveMutation`) |
+| `frontend/app/models/`                        | All model definitions                                              |

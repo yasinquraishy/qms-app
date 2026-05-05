@@ -4,6 +4,12 @@ import { MetaCache } from './core/MetaCache.js'
 import { ObjectPool } from './core/ObjectPool.js'
 import { directSaveStrategy } from './core/directSaveStrategy.js'
 import { bootstrapAll } from './sync/bootstrap.js'
+import {
+  shouldBootstrap,
+  markBootstrapStarted,
+  markBootstrapComplete,
+  clearBootstrapGate,
+} from './sync/bootstrapGate.js'
 import { initSocketSubscriber, teardownSocketSubscriber } from './sync/socketSubscriber.js'
 import { shouldNuke, computeSchemaHash } from './persistence/schemaManager.js'
 import { DB_NAME, SCHEMA_HASH_KEY } from './shared/constants.js'
@@ -60,8 +66,17 @@ export class SyncEngine {
     // Wire direct-API save strategy (replaces SyncTransaction + TransactionQueue + SW poll)
     BaseModel._saveStrategy = directSaveStrategy
 
-    // Bootstrap: paginated delta-sync for all INSTANT models (non-blocking)
-    bootstrapAll().catch((err) => console.error('[SyncEngine] Bootstrap error:', err))
+    // Bootstrap: paginated delta-sync for all INSTANT models (non-blocking).
+    // Gated by bootstrapGate: skips if another tab is in progress or data is < 5 min old.
+    if (shouldBootstrap(this.dbName)) {
+      markBootstrapStarted(this.dbName)
+      bootstrapAll()
+        .then(() => markBootstrapComplete(this.dbName))
+        .catch((err) => {
+          clearBootstrapGate(this.dbName)
+          console.error('[SyncEngine] Bootstrap error:', err)
+        })
+    }
 
     // Socket subscriber: server-push sync via the existing app socket
     initSocketSubscriber()
@@ -102,6 +117,7 @@ export class SyncEngine {
    * Call before switching to a different company DB or on logout.
    */
   teardown() {
+    if (this.dbName) clearBootstrapGate(this.dbName)
     teardownSocketSubscriber()
     BaseModel._saveStrategy = null
     IndexedDB.close()

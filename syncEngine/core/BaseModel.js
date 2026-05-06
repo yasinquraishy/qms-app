@@ -279,12 +279,18 @@ export class BaseModel {
     // otherwise the watcher fires debouncedSave again → infinite loop.
     ModelValidator.validate(this, this.constructor.name)
 
-    // Apply autoUpdate timestamps before saving
+    // Apply autoUpdate timestamps before saving.
+    // We must synchronously record the old value in #modified BEFORE setting
+    // the new value. The observabilityHelper watcher is async, so it won't
+    // have fired by the time _saveStrategy calls getModifiedProperties().
     const schema = ModelRegistry.getSchema(this.constructor.name)
     if (schema?.properties) {
       for (const [name, meta] of schema.properties) {
         if (meta.options?.autoUpdate) {
-          this[name] = BaseModel.#nowForType(meta.options.type)
+          if (!(name in self.#modified)) {
+            self.#modified[name] = self[name]
+          }
+          self[name] = BaseModel.#nowForType(meta.options.type)
         }
       }
     }

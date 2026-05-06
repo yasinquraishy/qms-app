@@ -9,9 +9,11 @@
  * written for ECHO_TTL_MS so the redundant server-push for the same record is ignored.
  */
 
+import { DateTime } from 'luxon'
 import { IndexedDB } from '../persistence/IndexedDB.js'
 import { MetaCache } from '../core/MetaCache.js'
 import { MutationRunner } from '../network/MutationRunner.js'
+import { ObjectPool } from '../core/ObjectPool.js'
 import { syncBus } from '../core/syncBus.js'
 import { syncMetaStore } from '../persistence/syncMetaStore.js'
 import { toCamelCase } from '../utils/changeCase.js'
@@ -51,6 +53,24 @@ function attachSyncListener(socket) {
 
     const echoKey = `${meta.modelName}:${pkValue}`
     if (recentlyWritten.has(echoKey)) return
+
+    // If we already have an up-to-date instance in memory, skip the network fetch.
+    if (action === 'create' || action === 'update') {
+      const syncUpdatedAt = payload.updatedAt
+      if (syncUpdatedAt) {
+        const instance = ObjectPool.get(meta.modelName, pkValue)
+        if (instance?.updatedAt) {
+          const instanceDt =
+            instance.updatedAt instanceof DateTime
+              ? instance.updatedAt
+              : DateTime.fromISO(instance.updatedAt)
+          const syncDt = DateTime.fromISO(syncUpdatedAt)
+          if (instanceDt.isValid && syncDt.isValid && instanceDt.toMillis() >= syncDt.toMillis()) {
+            return
+          }
+        }
+      }
+    }
 
     try {
       let resolvedAction = action

@@ -60,7 +60,7 @@ export async function directSaveStrategy(instance) {
       // Suppress the echo socket event for this write
       markAsRecentlyWritten(modelName, id)
       // Sync the in-memory instance with the server values (via ObjectPool)
-      await hydrate(modelName, id, {}, serverRecord)
+      // await hydrate(modelName, id, {}, serverRecord)
     } else {
       // Fallback: no server record returned — persist local state
       await dehydrate(modelName, instance)

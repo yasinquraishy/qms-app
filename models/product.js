@@ -4,6 +4,8 @@ import { DateTime } from 'luxon'
 
 @ClientModel('products', { primaryKey: 'id', syncField: 'updatedAt' })
 export class Product extends BaseModel {
+  static paranoid = true
+
   constructor(...args) {
     super(...args)
     if (!this.companyId) {

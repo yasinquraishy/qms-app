@@ -4,6 +4,7 @@ import { DateTime } from 'luxon'
 
 @ClientModel('departments', { primaryKey: 'id', syncField: 'updatedAt', customIndex: 'siteId' })
 export class Department extends BaseModel {
+  static paranoid = true
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation

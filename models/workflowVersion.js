@@ -8,6 +8,7 @@ import { DateTime } from 'luxon'
   customIndex: 'workflowId',
 })
 export class WorkflowVersion extends BaseModel {
+  static paranoid = true
   constructor(...args) {
     super(...args)
     // Auto-assign companyId from current session on creation

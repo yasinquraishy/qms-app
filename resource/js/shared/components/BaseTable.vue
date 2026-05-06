@@ -221,7 +221,7 @@ function tdAlignClass(align) {
         <span>Rows per page:</span>
         <select
           :value="pagination.rowsPerPage"
-          class="tw:py-2! tw:px-2! tw:bg-main tw:border-none tw:cursor-pointer tw:font-medium tw:text-on-main focus:tw:ring-0"
+          class=""
           @change="updatePagination({ rowsPerPage: parseInt($event.target.value), page: 1 })"
         >
           <option v-for="n in [5, 10, 25, 50]" :key="n" :value="n">{{ n }}</option>

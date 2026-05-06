@@ -2,7 +2,11 @@ import { currentSession } from '@/utils/currentSession'
 import { BaseModel, ClientModel, Property } from '@syncEngine/index'
 import { DateTime } from 'luxon'
 
-@ClientModel('assetRequestsOnContacts', { primaryKey: 'id', syncField: 'updatedAt' })
+@ClientModel('assetRequestsOnContacts', {
+  primaryKey: 'id',
+  syncField: 'updatedAt',
+  customIndex: 'assetRequestId',
+})
 export class AssetRequestOnContact extends BaseModel {
   constructor(...args) {
     super(...args)

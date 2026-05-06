@@ -4,8 +4,7 @@
  * Vue batches reactive writes automatically within the same tick, so no
  * explicit action wrapper is needed. The method is returned as-is.
  *
- * The decorator does NOT create an UpdateTransaction — any save() call inside
- * the method handles that.
+ * Any save() call inside the method delegates to the installed save strategy.
  *
  * Usage:
  *   @Action

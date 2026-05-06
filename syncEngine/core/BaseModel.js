@@ -1,4 +1,3 @@
-import { UpdateTransaction } from './UpdateTransaction.js'
 import ModelRegistry from './ModelRegistry.js'
 import { ObjectPool } from './ObjectPool.js'
 import { hydrate } from '../persistence/hydration.js'
@@ -15,11 +14,10 @@ export { ValidationError }
  * Base class for all @ClientModel classes
  *
  * Provides:
- *   _propertyChanged(name, oldValue) — called by observabilityHelper on every
- *     setter invocation; records the first old value so the diff is correct.
+ *   _propertyChanged(name) — called by observabilityHelper on every setter
+ *     invocation; records the field name as dirty.
  *
- *   save() — snapshots modified properties into an UpdateTransaction and
- *     clears the local dirty state.
+ *   save() — delegates to BaseModel._saveStrategy (installed by SyncEngine).
  *
  *   isDirty() / getModifiedProperties() — introspection helpers.
  *
@@ -32,8 +30,7 @@ export { ValidationError }
 export class BaseModel {
   /**
    * Pluggable save strategy — set by SyncEngine.install() to wire persistence.
-   * When null, save() uses the default UpdateTransaction path.
-   * This replaces monkey-patching of BaseModel.prototype.save (OCP).
+   * Must be installed before any model save() is called.
    * @type {((instance: BaseModel) => Promise<void>) | null}
    */
   static _saveStrategy = null
@@ -83,7 +80,7 @@ export class BaseModel {
   }
 
   #action = OPERATION.UPDATE
-  #modified = {}
+  #modified = new Set()
 
   /**
    * Create a new instance of this model class.
@@ -225,15 +222,13 @@ export class BaseModel {
 
   /**
    * Called by observabilityHelper whenever a watched field changes.
-   * Only records the FIRST old value (before any subsequent mutations).
+   * Set semantics make this idempotent — repeated calls for the same field
+   * are no-ops. The second arg (legacy oldValue) is ignored; kept for
+   * compatibility with Property.js's call site.
    * @param {string} name
-   * @param {*} oldValue
    */
-  _propertyChanged(name, oldValue) {
-    const self = toRaw(this)
-    if (!(name in self.#modified)) {
-      self.#modified[name] = oldValue
-    }
+  _propertyChanged(name) {
+    toRaw(this).#modified.add(name)
   }
 
   /**
@@ -241,7 +236,21 @@ export class BaseModel {
    * @internal
    */
   _clearModified() {
-    toRaw(this).#modified = {}
+    toRaw(this).#modified.clear()
+  }
+
+  /**
+   * Clear only the specified fields from the modified state.
+   * Used by directSaveStrategy to clear only the fields that were sent in a
+   * mutation, preserving any fields the user edited while the request was in flight.
+   * @param {Iterable<string>} keys
+   * @internal
+   */
+  _clearModifiedFields(keys) {
+    const modified = toRaw(this).#modified
+    for (const key of keys) {
+      modified.delete(key)
+    }
   }
 
   /**
@@ -249,20 +258,30 @@ export class BaseModel {
    * the last save().
    */
   isDirty() {
-    return Object.keys(toRaw(this).#modified).length > 0
+    for (const key of toRaw(this).#modified) {
+      if (key !== 'updatedAt') return true
+    }
+    return false
   }
 
   /**
-   * Returns a shallow copy of the current dirty-field snapshot.
+   * Returns the names of currently dirty fields.
+   * @returns {string[]}
    */
   getModifiedProperties() {
-    return { ...toRaw(this).#modified }
+    return Array.from(toRaw(this).#modified)
+  }
+
+  getDirtyProperties() {
+    const result = {}
+    for (const key of toRaw(this).#modified) {
+      if (key !== 'updatedAt') result[key] = this[key]
+    }
+    return result
   }
 
   /**
-   * Validates properties, captures changes, and commits the transaction.
-   * Delegates to _saveStrategy if set (e.g., by SyncEngine), otherwise
-   * uses the default UpdateTransaction path.
+   * Validates properties and delegates to the installed save strategy.
    * @returns {Promise<void>}
    */
   async save() {
@@ -279,30 +298,22 @@ export class BaseModel {
     // otherwise the watcher fires debouncedSave again → infinite loop.
     ModelValidator.validate(this, this.constructor.name)
 
-    // Apply autoUpdate timestamps before saving.
-    // We must synchronously record the old value in #modified BEFORE setting
-    // the new value. The observabilityHelper watcher is async, so it won't
-    // have fired by the time _saveStrategy calls getModifiedProperties().
+    // Apply autoUpdate timestamps. Mark the field dirty synchronously so
+    // _saveStrategy sees it without waiting for the async deep watcher.
     const schema = ModelRegistry.getSchema(this.constructor.name)
     if (schema?.properties) {
       for (const [name, meta] of schema.properties) {
         if (meta.options?.autoUpdate) {
-          if (!(name in self.#modified)) {
-            self.#modified[name] = self[name]
-          }
+          self.#modified.add(name)
           self[name] = BaseModel.#nowForType(meta.options.type)
         }
       }
     }
 
-    if (BaseModel._saveStrategy) {
-      await BaseModel._saveStrategy(self)
-    } else {
-      const changes = self.getModifiedProperties()
-      const transaction = new UpdateTransaction(self, changes)
-      await transaction.commit()
-      self._clearModified()
+    if (!BaseModel._saveStrategy) {
+      throw new Error('[BaseModel] No _saveStrategy installed; call SyncEngine.install() first')
     }
+    await BaseModel._saveStrategy(self)
 
     self.#action = OPERATION.UPDATE
   }

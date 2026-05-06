@@ -33,7 +33,7 @@ function buildQueryAndVariables(meta, instance, action) {
     }
     case OPERATION.UPDATE: {
       // Only send the changed fields as patch
-      const changedKeys = Object.keys(instance.getModifiedProperties())
+      const changedKeys = instance.getModifiedProperties()
       const allValues = serializeModel(instance.constructor.name, instance)
       const patch = {}
       for (const key of changedKeys) {

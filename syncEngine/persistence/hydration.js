@@ -3,6 +3,32 @@ import { IndexedDB } from './IndexedDB.js'
 import { ObjectPool } from '../core/ObjectPool.js'
 import ModelRegistry from '../core/ModelRegistry.js'
 import { defaultSerializers } from './defaultSerializers.js'
+import { DateTime } from 'luxon'
+
+/**
+ * Shallow equality check for deserialized model values.
+ * Avoids triggering reactive setters when the hydrated value is identical
+ * to what the instance already holds.
+ * @param {*} a
+ * @param {*} b
+ * @returns {boolean}
+ */
+export function valuesEqual(a, b) {
+  if (Object.is(a, b)) return true
+  // Luxon DateTime — compare by millisecond value
+  if (a instanceof DateTime && b instanceof DateTime) {
+    return a.isValid && b.isValid && a.toMillis() === b.toMillis()
+  }
+  // Array shallow equality
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false
+    }
+    return true
+  }
+  return false
+}
 
 /**
  * Deserialize a value from its stored (raw) form.
@@ -78,25 +104,40 @@ export async function hydrate(modelName, id, overrides = {}, rawRecord = null) {
 
   // Use pk value from record (not the lookup key, which may differ)
   const pkValue = raw[pk]
-  let instance = ObjectPool.get(modelName, pkValue) ?? new Ctor()
+  const existingInstance = ObjectPool.get(modelName, pkValue)
+  let instance = existingInstance ?? new Ctor()
 
   // Build property metadata lookup map — schema.properties is already a Map
   const propertyMetaMap = schema.properties
 
-  // Apply deserialized fields to the instance
+  // Apply deserialized fields to the instance.
+  // For an existing pooled instance, skip assignments where the value hasn't
+  // changed — this prevents reactive setters from firing and triggering
+  // downstream watchers (e.g. auto-save debounce loops).
+  let didAssign = false
   for (const [key, value] of Object.entries(raw)) {
     if (!(key in overrides)) {
-      instance[key] = deserializeValue(value, propertyMetaMap.get(key))
+      const deserialized = deserializeValue(value, propertyMetaMap.get(key))
+      if (!existingInstance || !valuesEqual(deserialized, instance[key])) {
+        instance[key] = deserialized
+        didAssign = true
+      }
     }
   }
 
   // Apply any overrides last
   for (const [key, value] of Object.entries(overrides)) {
     instance[key] = value
+    didAssign = true
   }
 
-  // Clear dirty flags set during hydration
-  instance._clearModified()
+  // Clear dirty flags set during hydration — but only if hydrate actually
+  // wrote a field. A no-op refresh on a pooled instance must not wipe dirty
+  // marks that an in-flight save is relying on (race with directSaveStrategy
+  // re-marking mid-flight edits).
+  if (!existingInstance || didAssign) {
+    instance._clearModified()
+  }
 
   // Register in the pool using pkValue
   ObjectPool.register(modelName, pkValue, instance)

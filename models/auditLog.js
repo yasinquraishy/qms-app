@@ -11,7 +11,7 @@ import { DateTime } from 'luxon'
 export class AuditLog extends BaseModel {
   static paranoid = true
 
-  @Property({ type: String, required: true }) id = ''
+  @Property({ type: String, required: true, uuid: true }) id = ''
   @Property({ type: String }) entityType = ''
   @Property({ type: String }) entityId = ''
   @Property({ type: String }) action = ''

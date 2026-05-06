@@ -79,24 +79,6 @@ export declare const ObjectPool: {
 }
 
 // ---------------------------------------------------------------------------
-// UpdateTransaction
-// ---------------------------------------------------------------------------
-
-export declare class UpdateTransaction<M extends BaseModel = BaseModel> {
-  readonly model: M
-  readonly changes: Partial<Record<string, unknown>>
-  committed: boolean
-
-  constructor(model: M, changes: Partial<Record<string, unknown>>)
-
-  /** Persist/send the changes. Override for custom transport logic. */
-  commit(): this
-
-  /** Undo changes by restoring old values onto the model. */
-  rollback(): this
-}
-
-// ---------------------------------------------------------------------------
 // QueryBuilder
 // ---------------------------------------------------------------------------
 
@@ -137,7 +119,7 @@ export declare class BaseModel {
   get action(): OperationType
 
   /** @internal Called by observabilityHelper on every setter invocation. */
-  _propertyChanged(name: string, oldValue: unknown): void
+  _propertyChanged(name: string, _oldValue?: unknown): void
 
   /** @internal Clear the modified state. Called by persistence layer after hydration or save. */
   _clearModified(): void
@@ -145,8 +127,8 @@ export declare class BaseModel {
   /** True if any @Property field has changed since last save(). */
   isDirty(): boolean
 
-  /** Shallow copy of the current dirty-field snapshot (fieldName → oldValue). */
-  getModifiedProperties(): Record<string, unknown>
+  /** Names of fields currently marked dirty. */
+  getModifiedProperties(): string[]
 
   /**
    * Validate properties, capture changes, commit transaction, and return void.
@@ -343,12 +325,6 @@ export declare const IndexedDB: {
     indexName: string,
     values: unknown[],
   ): Promise<Record<string, unknown>[]>
-}
-
-export declare class SyncTransaction<M extends BaseModel = BaseModel> extends UpdateTransaction<M> {
-  get modelName(): string
-  commit(): Promise<this>
-  rollback(): Promise<this>
 }
 
 /**

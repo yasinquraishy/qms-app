@@ -6,7 +6,6 @@ export { Computed } from './decorators/Computed.js'
 
 // Core
 export { BaseModel } from './core/BaseModel.js'
-export { UpdateTransaction } from './core/UpdateTransaction.js'
 export { ObjectPool } from './core/ObjectPool.js'
 export { default as ModelRegistry } from './core/ModelRegistry.js'
 export { ModelValidator, ValidationError } from './core/ModelValidator.js'

@@ -5,8 +5,8 @@ import { PROP_TYPE } from '../shared/constants.js'
  * @Property([options]) — field decorator for plain owned fields.
  *
  * - Wraps the field in an observable box via observabilityHelper (M1).
- * - Setter calls instance._propertyChanged(name, oldValue) so BaseModel
- *   can track diffs for UpdateTransaction.
+ * - Setter calls instance._propertyChanged(name) so BaseModel can track
+ *   the dirty key for the next save.
  * - Registers { name, type: 'property', options } in context.metadata._syncProps
  *   so @ClientModel can include the field in the schemaHash.
  *
@@ -62,8 +62,8 @@ export function Property(options = {}) {
     // addInitializer runs on each new instance after the field initializer,
     // so `this[name]` already holds the declared default value.
     context.addInitializer(function () {
-      observabilityHelper(this, name, (instance, fieldName, oldValue) => {
-        instance._propertyChanged?.(fieldName, oldValue)
+      observabilityHelper(this, name, (instance, fieldName) => {
+        instance._propertyChanged?.(fieldName)
       })
     })
   }

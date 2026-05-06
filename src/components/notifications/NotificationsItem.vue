@@ -8,6 +8,9 @@ import {
   IconInfoCircle,
   IconBell,
   IconChevronRight,
+  IconUserShare,
+  IconRefresh,
+  IconCalendarExclamation,
 } from '@tabler/icons-vue'
 import { DateTime } from 'luxon'
 import { getCompanyPath } from '@/utils/routeHelpers'
@@ -27,6 +30,9 @@ const TYPE_ICON_MAP = {
   WORKFLOW_ACTION_REQUIRED: IconClock,
   RECORD_ASSIGNED: IconUserCheck,
   TASK_ASSIGNED: IconClipboard,
+  TASK_REASSIGNED: IconUserShare,
+  TASK_STATUS_CHANGED: IconRefresh,
+  TASK_DUE_TOMORROW: IconCalendarExclamation,
   DOCUMENT_MESSAGE: IconMessage,
   SYSTEM: IconInfoCircle,
 }
@@ -36,6 +42,9 @@ const TYPE_COLOR_MAP = {
   WORKFLOW_ACTION_REQUIRED: 'tw:text-amber-600',
   RECORD_ASSIGNED: 'tw:text-blue-600',
   TASK_ASSIGNED: 'tw:text-purple-600',
+  TASK_REASSIGNED: 'tw:text-purple-600',
+  TASK_STATUS_CHANGED: 'tw:text-blue-600',
+  TASK_DUE_TOMORROW: 'tw:text-orange-600',
   DOCUMENT_MESSAGE: 'tw:text-blue-600',
   SYSTEM: 'tw:text-gray-600',
 }

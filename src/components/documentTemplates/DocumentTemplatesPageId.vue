@@ -273,10 +273,7 @@ function goBack() {
         </div>
 
         <!-- Sections Card -->
-        <DocumentSectionsEditor
-          v-model="template.sections"
-          :readonly="!canUpdate"
-        />
+        <DocumentSectionsEditor v-model="template.sections" :readonly="!canUpdate" />
       </div>
     </div>
 

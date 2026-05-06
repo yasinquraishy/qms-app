@@ -4,13 +4,10 @@ import { uploadFile } from '@/utils/uploadService.js'
 import { currentCompany } from '@/utils/currentCompany.js'
 import { useToast } from '@shared/composables/useToast.js'
 
-const company = useLiveQueryWithDeps(
-  [() => currentCompany.value?.id],
-  async (db, [id]) => {
-    if (!id) return null
-    return db.Company.findByPk(id)
-  },
-)
+const company = useLiveQueryWithDeps([() => currentCompany.value?.id], async (db, [id]) => {
+  if (!id) return null
+  return db.Company.findByPk(id)
+})
 
 const toast = useToast()
 
@@ -31,16 +28,13 @@ const debouncedSave = useDebounceFn(async () => {
   }
 }, 500)
 
-watch(
-  [() => company.value?.companyIconUrl, () => company.value?.companyDarkIconUrl],
-  () => {
-    if (isFirstChange.value) {
-      isFirstChange.value = false
-      return
-    }
-    debouncedSave()
-  },
-)
+watch([() => company.value?.companyIconUrl, () => company.value?.companyDarkIconUrl], () => {
+  if (isFirstChange.value) {
+    isFirstChange.value = false
+    return
+  }
+  debouncedSave()
+})
 
 const showLightDialog = ref(false)
 const showDarkDialog = ref(false)

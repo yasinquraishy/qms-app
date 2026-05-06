@@ -5,9 +5,9 @@
  */
 export class UpdateTransaction {
   constructor(model, changes) {
-    this.model = model;
-    this.changes = changes;
-    this.committed = false;
+    this.model = model
+    this.changes = changes
+    this.committed = false
   }
 
   /**
@@ -15,8 +15,8 @@ export class UpdateTransaction {
    * Consumers should override or replace this with their transport logic.
    */
   async commit() {
-    this.committed = true;
-    return this;
+    this.committed = true
+    return this
   }
 
   /**
@@ -26,10 +26,10 @@ export class UpdateTransaction {
    */
   async rollback() {
     for (const [key, oldVal] of Object.entries(this.changes)) {
-      this.model[key] = oldVal;
+      this.model[key] = oldVal
     }
-    await this.model._clearModified();
-    await this.model.save(); // re-persist the rolled-back state
-    return this;
+    await this.model._clearModified()
+    await this.model.save() // re-persist the rolled-back state
+    return this
   }
 }

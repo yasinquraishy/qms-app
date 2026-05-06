@@ -57,7 +57,10 @@ function rowMenuItems(row) {
     </template>
 
     <template #body-cell-code="{ row }">
-      <span class="tw:inline-flex tw:items-center tw:rounded tw:border tw:border-primary tw:px-2 tw:py-0.5 tw:text-xs tw:font-medium tw:text-primary">{{ row.code }}</span>
+      <span
+        class="tw:inline-flex tw:items-center tw:rounded tw:border tw:border-primary tw:px-2 tw:py-0.5 tw:text-xs tw:font-medium tw:text-primary"
+        >{{ row.code }}</span
+      >
     </template>
 
     <template #body-cell-address="{ row }">

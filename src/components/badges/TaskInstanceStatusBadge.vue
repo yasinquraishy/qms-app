@@ -14,6 +14,9 @@ const SCHEME_MAP = {
   IN_PROGRESS: { class: 'tw:bg-amber-100 tw:text-amber-700' },
   ASSIGNED: { class: 'tw:bg-blue-100 tw:text-blue-700' },
   CANCELLED: { class: 'tw:bg-gray-100 tw:text-gray-600' },
+  REASSIGNED: { class: 'tw:bg-purple-100 tw:text-purple-700' },
+  SENT_BACK: { class: 'tw:bg-orange-100 tw:text-orange-700' },
+  FORM_SUBMITTED: { class: 'tw:bg-sky-100 tw:text-sky-700' },
 }
 
 const name = computed(() => {

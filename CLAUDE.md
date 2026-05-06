@@ -66,10 +66,10 @@ Invariants:
 
 ### Two flavors
 
-| Flavor | When | `XBadgeById` resolves via |
-| --- | --- | --- |
+| Flavor   | When                                                                        | `XBadgeById` resolves via    |
+| -------- | --------------------------------------------------------------------------- | ---------------------------- |
 | **Full** | A SyncEngine model exists (e.g. `Site`, `Department`, `TaskInstanceStatus`) | `useLiveQueryWithDeps` → IDB |
-| **Enum** | No DB model — just an id field on the parent (e.g. user `userStatusId`) | static `STATUS_MAP` constant |
+| **Enum** | No DB model — just an id field on the parent (e.g. user `userStatusId`)     | static `STATUS_MAP` constant |
 
 `SCHEME_MAP` lives in `XBadge` and **only** holds styling: `{ ID: { class: 'tw:bg-...' } }`.
 `STATUS_MAP` lives in `XBadgeById` (enum flavor only) and **only** holds data: `{ ID: { id: 'ID', name: 'Label' } }`.
@@ -176,9 +176,9 @@ const scheme = (id) => SCHEME_MAP[id] || { class: 'tw:bg-gray-100 tw:text-gray-6
 <script setup>
 const props = defineProps({ statusId: { type: String, default: null } })
 const STATUS_MAP = {
-  ACTIVE:   { id: 'ACTIVE',   name: 'Active'   },
+  ACTIVE: { id: 'ACTIVE', name: 'Active' },
   INACTIVE: { id: 'INACTIVE', name: 'Inactive' },
-  INVITED:  { id: 'INVITED',  name: 'Invited'  },
+  INVITED: { id: 'INVITED', name: 'Invited' },
 }
 const status = computed(
   () =>
@@ -315,21 +315,21 @@ The project is actively migrating off Quasar. Replace on touch.
 
 ### Cheatsheet
 
-| Quasar / `W*`                    | Replace with                                                          |
-| -------------------------------- | --------------------------------------------------------------------- |
-| `QBtn` / `WBtn`                  | `<button>` + Tailwind, or `BaseButton`                                |
-| `QInput` / `WInput`              | `BaseTextInput` (or `<input>` + Tailwind)                             |
-| `QSelect` / `WSelect`            | `BaseSelectMenu` — or an `XSelectMenu` if one exists for that entity  |
-| `QDialog`                        | `BaseDialog`                                                          |
-| `QCard`                          | `<div>` + Tailwind, or `BaseCard`                                     |
-| `QTable`                         | `BaseTable`                                                           |
-| `QForm`                          | `<div>` with handlers — never `<form>`                                |
-| `QBadge`                         | `<span>` + Tailwind, or the entity's `XBadge`/`XBadgeById`            |
-| `QChip`                          | `BaseChip`                                                            |
-| `QTooltip`                       | `BaseTooltip`                                                         |
-| `QSeparator`                     | `<hr>` + Tailwind                                                     |
-| `QSpinner` / `QCircularProgress` | `BaseSpinner`                                                         |
-| `QIcon` / `WIcon`                | `@tabler/icons-vue`                                                   |
+| Quasar / `W*`                    | Replace with                                                         |
+| -------------------------------- | -------------------------------------------------------------------- |
+| `QBtn` / `WBtn`                  | `<button>` + Tailwind, or `BaseButton`                               |
+| `QInput` / `WInput`              | `BaseTextInput` (or `<input>` + Tailwind)                            |
+| `QSelect` / `WSelect`            | `BaseSelectMenu` — or an `XSelectMenu` if one exists for that entity |
+| `QDialog`                        | `BaseDialog`                                                         |
+| `QCard`                          | `<div>` + Tailwind, or `BaseCard`                                    |
+| `QTable`                         | `BaseTable`                                                          |
+| `QForm`                          | `<div>` with handlers — never `<form>`                               |
+| `QBadge`                         | `<span>` + Tailwind, or the entity's `XBadge`/`XBadgeById`           |
+| `QChip`                          | `BaseChip`                                                           |
+| `QTooltip`                       | `BaseTooltip`                                                        |
+| `QSeparator`                     | `<hr>` + Tailwind                                                    |
+| `QSpinner` / `QCircularProgress` | `BaseSpinner`                                                        |
+| `QIcon` / `WIcon`                | `@tabler/icons-vue`                                                  |
 
 Check `resource/js/shared/components/` for existing `Base*` components before building anything new.
 
@@ -394,7 +394,9 @@ const createDoc = useLiveMutation(async (db, payload) => {
   await doc.save()
   return doc
 })
-await createDoc({ /* ... */ })
+await createDoc({
+  /* ... */
+})
 
 // Update — mutate and save
 document.value.statusId = 'ARCHIVED'
@@ -516,19 +518,19 @@ import { ClientModel, BaseModel, Property, Computed } from '@syncEngine/index.js
 
 @ClientModel('document_versions', {
   primaryKey: 'id',
-  loadStrategy: 'instant',     // 'instant' | 'lazy' | 'local'
-  customIndex: 'documentId',   // or '[documentId+statusId]' for compound
+  loadStrategy: 'instant', // 'instant' | 'lazy' | 'local'
+  customIndex: 'documentId', // or '[documentId+statusId]' for compound
   schemaVersion: 1,
 })
 class DocumentVersion extends BaseModel {
-  static paranoid = true       // soft-delete via deletedAt; or 'fieldName' for custom
+  static paranoid = true // soft-delete via deletedAt; or 'fieldName' for custom
 
   @Property({ type: String, required: true }) id = null
   @Property({ type: String }) documentId = null
   @Property({ type: String }) statusId = null
   @Property({ type: Number }) versionMajor = 0
   @Property({ type: DateTime, required: true, timestamp: true }) createdAt = null
-  @Property({ type: DateTime }) deletedAt = null   // required when paranoid
+  @Property({ type: DateTime }) deletedAt = null // required when paranoid
 
   get label() {
     return `${this.versionMajor}.${this.versionMinor}`
@@ -580,9 +582,9 @@ await v.save()
 v.statusId = 'APPROVED'
 await v.save()
 
-await v.delete()       // soft (paranoid)
-await v.hardDelete()   // bypass paranoid
-await v.restore()      // un-soft-delete
+await v.delete() // soft (paranoid)
+await v.hardDelete() // bypass paranoid
+await v.restore() // un-soft-delete
 ```
 
 ### Live queries
@@ -598,34 +600,34 @@ const allDocs = useLiveQuery(async (db) => db.Document.where().exec())
 
 // Options
 useLiveQueryWithDeps(deps, fn, {
-  models: 'DocumentVersion',  // only this model's sync events trigger re-run (default '*')
-  initial: [],                // value before first load (default undefined)
-  debounce: 50,               // coalesce burst syncs, ms
+  models: 'DocumentVersion', // only this model's sync events trigger re-run (default '*')
+  initial: [], // value before first load (default undefined)
+  debounce: 50, // coalesce burst syncs, ms
 })
 ```
 
 ### File map
 
-| File                                          | Purpose                                                            |
-| --------------------------------------------- | ------------------------------------------------------------------ |
-| `syncEngine/index.js`                         | Public exports                                                     |
-| `syncEngine/syncEngine.js`                    | `SyncEngine.install()` / `.teardown()` — engine entry point        |
-| `syncEngine/core/BaseModel.js`                | Base class — create/save/delete/findByPk/where                     |
-| `syncEngine/core/directSaveStrategy.js`       | Pessimistic save (API first, then IDB) — wired into `BaseModel`    |
-| `syncEngine/core/MetaCache.js`                | In-memory GraphQL query/mutation cache per model                   |
-| `syncEngine/core/ObjectPool.js`               | Reactive instance cache — same `id` returns the same Vue object    |
-| `syncEngine/core/syncBus.js`                  | Per-model event bus that drives live-query re-runs                 |
-| `syncEngine/decorators/ClientModel.js`        | `@ClientModel`                                                     |
-| `syncEngine/decorators/Property.js`           | `@Property`                                                        |
-| `syncEngine/decorators/Computed.js`           | `@Computed`                                                        |
-| `syncEngine/network/MutationRunner.js`        | Runs GraphQL mutations + per-record refetch                        |
-| `syncEngine/network/graphqlClient.js`         | GraphQL fetch client                                               |
-| `syncEngine/persistence/IndexedDB.js`         | Low-level IDB adapter                                              |
-| `syncEngine/persistence/syncMetaStore.js`     | `lastSyncValue` watermarks per model (delta-sync)                  |
-| `syncEngine/persistence/schemaManager.js`     | Schema-hash detection → nuke old DB on change                      |
-| `syncEngine/sync/bootstrap.js`                | Paginated delta-sync on install                                    |
-| `syncEngine/sync/bootstrapGate.js`            | Cross-tab bootstrap dedup via `localStorage`                       |
-| `syncEngine/sync/socketSubscriber.js`         | Attaches `'sync'` listener to the app socket                       |
-| `syncEngine/query/QueryBuilder.js`            | Chainable IDB query builder                                        |
-| `src/composables/useLiveQuery.js`             | Vue composables (`useLiveQuery`, `useLiveQueryWithDeps`, `useLiveMutation`) |
-| `frontend/app/models/`                        | All model definitions                                              |
+| File                                      | Purpose                                                                     |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| `syncEngine/index.js`                     | Public exports                                                              |
+| `syncEngine/syncEngine.js`                | `SyncEngine.install()` / `.teardown()` — engine entry point                 |
+| `syncEngine/core/BaseModel.js`            | Base class — create/save/delete/findByPk/where                              |
+| `syncEngine/core/directSaveStrategy.js`   | Pessimistic save (API first, then IDB) — wired into `BaseModel`             |
+| `syncEngine/core/MetaCache.js`            | In-memory GraphQL query/mutation cache per model                            |
+| `syncEngine/core/ObjectPool.js`           | Reactive instance cache — same `id` returns the same Vue object             |
+| `syncEngine/core/syncBus.js`              | Per-model event bus that drives live-query re-runs                          |
+| `syncEngine/decorators/ClientModel.js`    | `@ClientModel`                                                              |
+| `syncEngine/decorators/Property.js`       | `@Property`                                                                 |
+| `syncEngine/decorators/Computed.js`       | `@Computed`                                                                 |
+| `syncEngine/network/MutationRunner.js`    | Runs GraphQL mutations + per-record refetch                                 |
+| `syncEngine/network/graphqlClient.js`     | GraphQL fetch client                                                        |
+| `syncEngine/persistence/IndexedDB.js`     | Low-level IDB adapter                                                       |
+| `syncEngine/persistence/syncMetaStore.js` | `lastSyncValue` watermarks per model (delta-sync)                           |
+| `syncEngine/persistence/schemaManager.js` | Schema-hash detection → nuke old DB on change                               |
+| `syncEngine/sync/bootstrap.js`            | Paginated delta-sync on install                                             |
+| `syncEngine/sync/bootstrapGate.js`        | Cross-tab bootstrap dedup via `localStorage`                                |
+| `syncEngine/sync/socketSubscriber.js`     | Attaches `'sync'` listener to the app socket                                |
+| `syncEngine/query/QueryBuilder.js`        | Chainable IDB query builder                                                 |
+| `src/composables/useLiveQuery.js`         | Vue composables (`useLiveQuery`, `useLiveQueryWithDeps`, `useLiveMutation`) |
+| `frontend/app/models/`                    | All model definitions                                                       |

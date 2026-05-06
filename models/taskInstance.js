@@ -30,6 +30,7 @@ export class TaskInstance extends BaseModel {
   @Property({ type: String, required: true }) entityId = ''
   @Property({ type: String, required: true }) sourceType = ''
   @Property({ type: String, required: true }) sourceId = ''
+  @Property({ type: String }) reassignedToUserId = null
   @Property({ type: String, required: true }) companyId = ''
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })

@@ -91,12 +91,12 @@ export default defineComponent({
 
     const hasImage = computed(() => !!displayUrl.value)
 
-    const showCameraButton = computed(() => 
-      ['both', 'camera'].includes(props.mode) && !props.disabled && !props.readonly
+    const showCameraButton = computed(
+      () => ['both', 'camera'].includes(props.mode) && !props.disabled && !props.readonly,
     )
 
-    const showUploadButton = computed(() => 
-      ['both', 'upload'].includes(props.mode) && !props.disabled && !props.readonly
+    const showUploadButton = computed(
+      () => ['both', 'upload'].includes(props.mode) && !props.disabled && !props.readonly,
     )
 
     // Start camera stream
@@ -111,7 +111,7 @@ export default defineComponent({
           },
         }
         stream.value = await navigator.mediaDevices.getUserMedia(constraints)
-        
+
         // Wait for dialog to open and video element to be available
         setTimeout(() => {
           if (videoRef.value) {
@@ -188,7 +188,7 @@ export default defineComponent({
           }
         },
         'image/jpeg',
-        0.9
+        0.9,
       )
     }
 
@@ -266,7 +266,7 @@ export default defineComponent({
                     [
                       h(QIcon, { name: 'sym_r_error', size: '48px', class: 'q-mb-md' }),
                       h('div', {}, cameraError.value),
-                    ]
+                    ],
                   )
                 : h('video', {
                     ref: videoRef,
@@ -288,33 +288,25 @@ export default defineComponent({
                 style: { display: 'none' },
               }),
             ]),
-            h(
-              QCardActions,
-              { align: 'center', class: 'q-pa-md' },
-              () => [
-                h(
-                  QBtn,
-                  {
-                    flat: true,
-                    label: 'Cancel',
-                    color: 'grey',
-                    onClick: closeCamera,
-                  }
-                ),
+            h(QCardActions, { align: 'center', class: 'q-pa-md' }, () =>
+              [
+                h(QBtn, {
+                  flat: true,
+                  label: 'Cancel',
+                  color: 'grey',
+                  onClick: closeCamera,
+                }),
                 !cameraError.value &&
-                  h(
-                    QBtn,
-                    {
-                      unelevated: true,
-                      label: 'Capture',
-                      color: 'primary',
-                      icon: 'sym_r_photo_camera',
-                      onClick: capturePhoto,
-                    }
-                  ),
-              ].filter(Boolean)
+                  h(QBtn, {
+                    unelevated: true,
+                    label: 'Capture',
+                    color: 'primary',
+                    icon: 'sym_r_photo_camera',
+                    onClick: capturePhoto,
+                  }),
+              ].filter(Boolean),
             ),
-          ])
+          ]),
       )
 
     // Render preview image
@@ -341,25 +333,22 @@ export default defineComponent({
           }),
           !props.disabled &&
             !props.readonly &&
-            h(
-              QBtn,
-              {
-                round: true,
-                dense: true,
-                flat: true,
-                icon: 'sym_r_close',
-                color: 'white',
-                class: 'w-photo-clear-btn',
-                style: {
-                  position: 'absolute',
-                  top: '4px',
-                  right: '4px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                },
-                onClick: clearImage,
-              }
-            ),
-        ].filter(Boolean)
+            h(QBtn, {
+              round: true,
+              dense: true,
+              flat: true,
+              icon: 'sym_r_close',
+              color: 'white',
+              class: 'w-photo-clear-btn',
+              style: {
+                position: 'absolute',
+                top: '4px',
+                right: '4px',
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              },
+              onClick: clearImage,
+            }),
+        ].filter(Boolean),
       )
 
     // Render placeholder with action buttons
@@ -390,16 +379,13 @@ export default defineComponent({
             color: 'grey-6',
             class: 'q-mb-sm',
           }),
+          h('div', { class: 'text-caption text-grey-6 text-center q-mb-xs' }, props.placeholder),
           h(
             'div',
-            { class: 'text-caption text-grey-6 text-center q-mb-xs' },
-            props.placeholder
-          ),
-          h('div', { class: 'row q-gutter-x-sm justify-center' }, [
-            showCameraButton.value &&
-              h(
-                QBtn,
-                {
+            { class: 'row q-gutter-x-sm justify-center' },
+            [
+              showCameraButton.value &&
+                h(QBtn, {
                   dense: true,
                   flat: true,
                   round: true,
@@ -409,12 +395,9 @@ export default defineComponent({
                     e.stopPropagation()
                     openCamera()
                   },
-                }
-              ),
-            showUploadButton.value &&
-              h(
-                QBtn,
-                {
+                }),
+              showUploadButton.value &&
+                h(QBtn, {
                   dense: true,
                   flat: true,
                   round: true,
@@ -424,10 +407,10 @@ export default defineComponent({
                     e.stopPropagation()
                     triggerFileInput()
                   },
-                }
-              ),
-          ].filter(Boolean)),
-        ]
+                }),
+            ].filter(Boolean),
+          ),
+        ],
       )
 
     // Hidden file input
@@ -454,12 +437,8 @@ export default defineComponent({
           ],
           ref: root,
         },
-        [
-          hasImage.value ? PreviewImage() : Placeholder(),
-          FileInput(),
-          CameraDialog(),
-        ]
-      )
+        [hasImage.value ? PreviewImage() : Placeholder(), FileInput(), CameraDialog()],
+      ),
     )
 
     return forwardRefs(
@@ -469,7 +448,7 @@ export default defineComponent({
         clearImage,
         capturePhoto,
       },
-      root
+      root,
     )
   },
 })

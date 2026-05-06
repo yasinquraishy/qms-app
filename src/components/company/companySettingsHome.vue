@@ -2,13 +2,10 @@
 import { IconSettings } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany.js'
 
-const company = useLiveQueryWithDeps(
-  [() => currentCompany.value?.id],
-  async (db, [id]) => {
-    if (!id) return null
-    return db.Company.findByPk(id)
-  },
-)
+const company = useLiveQueryWithDeps([() => currentCompany.value?.id], async (db, [id]) => {
+  if (!id) return null
+  return db.Company.findByPk(id)
+})
 
 const loading = computed(() => company.value === undefined)
 

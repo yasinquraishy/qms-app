@@ -15,10 +15,9 @@ const modelValue = defineModel({
   default: null,
 })
 
-const types = useLiveQuery(
-  (db) => db.ProductType.where().orderBy('displayOrder').exec(),
-  { initial: [] },
-)
+const types = useLiveQuery((db) => db.ProductType.where().orderBy('displayOrder').exec(), {
+  initial: [],
+})
 
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []
@@ -26,12 +25,7 @@ function getArray() {
 </script>
 
 <template>
-  <BaseSelectMenu
-    v-model="modelValue"
-    :items="types"
-    :required="required"
-    :multiple="multiple"
-  >
+  <BaseSelectMenu v-model="modelValue" :items="types" :required="required" :multiple="multiple">
     <template #button="scope">
       <slot name="button" v-bind="scope">
         <!-- MULTIPLE MODE -->

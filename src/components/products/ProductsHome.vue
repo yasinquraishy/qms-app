@@ -60,9 +60,7 @@ async function confirmDeleteProduct() {
     </SafeTeleport>
 
     <SafeTeleport to="#main-header-actions">
-      <BaseButton v-if="canCreateProduct" @click="openDialog()">
-        Create New Product
-      </BaseButton>
+      <BaseButton v-if="canCreateProduct" @click="openDialog()"> Create New Product </BaseButton>
     </SafeTeleport>
 
     <!-- Page Header -->
@@ -87,11 +85,7 @@ async function confirmDeleteProduct() {
   </div>
 
   <!-- Create/Edit Product Dialog -->
-  <ProductsCreateUpdateDialog
-    v-if="showDialog"
-    :id="selectedProductId"
-    v-model="showDialog"
-  />
+  <ProductsCreateUpdateDialog v-if="showDialog" :id="selectedProductId" v-model="showDialog" />
 
   <!-- Delete Confirm Dialog -->
   <ConfirmDialog

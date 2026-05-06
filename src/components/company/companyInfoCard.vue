@@ -1,13 +1,10 @@
 <script setup>
 import { currentCompany } from '@/utils/currentCompany.js'
 
-const company = useLiveQueryWithDeps(
-  [() => currentCompany.value?.id],
-  async (db, [id]) => {
-    if (!id) return null
-    return db.Company.findByPk(id)
-  },
-)
+const company = useLiveQueryWithDeps([() => currentCompany.value?.id], async (db, [id]) => {
+  if (!id) return null
+  return db.Company.findByPk(id)
+})
 
 const isSaving = ref(false)
 const saveError = ref(null)

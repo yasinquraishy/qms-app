@@ -15,10 +15,9 @@ const modelValue = defineModel({
   default: null,
 })
 
-const statuses = useLiveQuery(
-  (db) => db.WorkflowStatus.where().orderBy('displayOrder').exec(),
-  { initial: [] },
-)
+const statuses = useLiveQuery((db) => db.WorkflowStatus.where().orderBy('displayOrder').exec(), {
+  initial: [],
+})
 
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []

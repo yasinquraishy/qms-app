@@ -11,10 +11,5 @@ const status = useLiveQueryWithDeps([() => props.statusId], async (db, [statusId
 </script>
 
 <template>
-  <WorkflowInstanceStatusBadge
-    v-if="status"
-    :status="status"
-    :showDot="showDot"
-    v-bind="$attrs"
-  />
+  <WorkflowInstanceStatusBadge v-if="status" :status="status" :showDot="showDot" v-bind="$attrs" />
 </template>

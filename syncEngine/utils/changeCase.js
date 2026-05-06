@@ -5,7 +5,7 @@
  */
 export function toCamelCase(input) {
   if (typeof input !== 'string') {
-    throw new Error('Input must be a string');
+    throw new Error('Input must be a string')
   }
 
   return (
@@ -22,7 +22,7 @@ export function toCamelCase(input) {
           : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
       )
       .join('')
-  );
+  )
 }
 
 /**
@@ -31,7 +31,7 @@ export function toCamelCase(input) {
  * @returns {object | Array} New object or array with all keys converted to camelCase.
  */
 export function keysToCamelCase(obj) {
-  return keysToCase(obj, toCamelCase);
+  return keysToCase(obj, toCamelCase)
 }
 
 /**
@@ -41,7 +41,7 @@ export function keysToCamelCase(obj) {
  */
 export function toSnakeCase(input) {
   if (typeof input !== 'string') {
-    throw new Error('Input must be a string');
+    throw new Error('Input must be a string')
   }
 
   return (
@@ -54,21 +54,21 @@ export function toSnakeCase(input) {
       .replace(/([A-Z]+)([A-Z][a-z0-9])/g, '$1_$2')
       // Lowercase everything
       .toLowerCase()
-  );
+  )
 }
 
 export function keysToSnakeCase(obj) {
-  return keysToCase(obj, toSnakeCase);
+  return keysToCase(obj, toSnakeCase)
 }
 
 function keysToCase(obj, caseFn) {
   if (Array.isArray(obj)) {
-    return obj.map(item => keysToCase(item, caseFn));
+    return obj.map((item) => keysToCase(item, caseFn))
   } else if (typeof obj === 'object' && obj !== null && obj instanceof Date === false) {
     return Object.entries(obj).reduce((acc, [key, value]) => {
-      acc[caseFn(key)] = keysToCase(value, caseFn);
-      return acc;
-    }, {});
+      acc[caseFn(key)] = keysToCase(value, caseFn)
+      return acc
+    }, {})
   }
-  return obj;
+  return obj
 }

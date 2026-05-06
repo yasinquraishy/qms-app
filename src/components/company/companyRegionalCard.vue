@@ -1,13 +1,10 @@
 <script setup>
 import { currentCompany } from '@/utils/currentCompany.js'
 
-const company = useLiveQueryWithDeps(
-  [() => currentCompany.value?.id],
-  async (db, [id]) => {
-    if (!id) return null
-    return db.Company.findByPk(id)
-  },
-)
+const company = useLiveQueryWithDeps([() => currentCompany.value?.id], async (db, [id]) => {
+  if (!id) return null
+  return db.Company.findByPk(id)
+})
 
 const isSaving = ref(false)
 const saveError = ref(null)
@@ -26,16 +23,13 @@ const debouncedSave = useDebounceFn(async () => {
   }
 }, 500)
 
-watch(
-  [() => company.value?.defaultTimeZone, () => company.value?.defaultFirstDayOfWeek],
-  () => {
-    if (isFirstChange.value) {
-      isFirstChange.value = false
-      return
-    }
-    debouncedSave()
-  },
-)
+watch([() => company.value?.defaultTimeZone, () => company.value?.defaultFirstDayOfWeek], () => {
+  if (isFirstChange.value) {
+    isFirstChange.value = false
+    return
+  }
+  debouncedSave()
+})
 
 const firstDayOfWeekOptions = [
   { label: 'Monday', value: 1 },

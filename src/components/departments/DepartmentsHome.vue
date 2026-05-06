@@ -24,7 +24,9 @@ const departments = useLiveQueryWithDeps(
       const q = search.toLowerCase()
       results = results.filter((d) => d.name.toLowerCase().includes(q))
     }
-    return results.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))
+    return results.sort(
+      (a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0),
+    )
   },
   { initial: [] },
 )

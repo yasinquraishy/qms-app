@@ -103,8 +103,8 @@ async function onSubmit() {
 
     <div class="tw:flex tw:flex-col tw:gap-4">
       <div class="tw:text-sm tw:text-secondary tw:leading-relaxed">
-        Reusable option sets can be used across multiple forms for dropdowns, checkboxes, and
-        radio groups.
+        Reusable option sets can be used across multiple forms for dropdowns, checkboxes, and radio
+        groups.
       </div>
 
       <BaseTextInput

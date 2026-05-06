@@ -6,39 +6,34 @@
 // Shared types
 // ---------------------------------------------------------------------------
 
-export type LoadStrategy =
-  | "instant"
-  | "lazy"
-  | "partial"
-  | "explicitlyRequested"
-  | "local";
+export type LoadStrategy = 'instant' | 'lazy' | 'partial' | 'explicitlyRequested' | 'local'
 
-export type OperationType = "create" | "update" | "delete";
+export type OperationType = 'create' | 'update' | 'delete'
 
 export const OPERATION: {
-  readonly CREATE: "create";
-  readonly UPDATE: "update";
-  readonly DELETE: "delete";
-};
+  readonly CREATE: 'create'
+  readonly UPDATE: 'update'
+  readonly DELETE: 'delete'
+}
 
 export interface Serializer<T = unknown> {
-  toStore(value: T): unknown;
-  fromStore(raw: unknown): T;
+  toStore(value: T): unknown
+  fromStore(raw: unknown): T
 }
 
 export interface PropertyMeta {
-  name: string;
-  type: "property" | "reference" | "referenceModel";
-  options: Record<string, unknown>;
+  name: string
+  type: 'property' | 'reference' | 'referenceModel'
+  options: Record<string, unknown>
 }
 
 export interface SchemaEntry {
-  schemaHash: string;
-  loadStrategy: LoadStrategy;
-  properties: PropertyMeta[];
-  primaryKey: string;
-  syncField?: string;
-  tableName: string;
+  schemaHash: string
+  loadStrategy: LoadStrategy
+  properties: PropertyMeta[]
+  primaryKey: string
+  syncField?: string
+  tableName: string
 }
 
 // ---------------------------------------------------------------------------
@@ -46,8 +41,8 @@ export interface SchemaEntry {
 // ---------------------------------------------------------------------------
 
 export declare const ModelRegistry: {
-  modelLookup: Record<string, new (...args: unknown[]) => unknown>;
-  schemas: Record<string, SchemaEntry>;
+  modelLookup: Record<string, new (...args: unknown[]) => unknown>
+  schemas: Record<string, SchemaEntry>
 
   register(
     name: string,
@@ -59,11 +54,11 @@ export declare const ModelRegistry: {
     primaryKey?: string,
     syncField?: string,
     tableName?: string,
-  ): void;
+  ): void
 
-  getSchema(name: string): SchemaEntry | null;
-  getConstructor(name: string): (new (...args: unknown[]) => unknown) | null;
-};
+  getSchema(name: string): SchemaEntry | null
+  getConstructor(name: string): (new (...args: unknown[]) => unknown) | null
+}
 
 // ---------------------------------------------------------------------------
 // ObjectPool
@@ -71,34 +66,34 @@ export declare const ModelRegistry: {
 
 export declare const ObjectPool: {
   /** Register an instance so getters can resolve it. */
-  register(modelName: string, id: unknown, instance: object): void;
+  register(modelName: string, id: unknown, instance: object): void
 
   /** Remove a previously registered instance. */
-  unregister(modelName: string, id: unknown): void;
+  unregister(modelName: string, id: unknown): void
 
   /** Resolve an instance by modelName + id. Returns null if not found. */
-  get(modelName: string, id: unknown): object | null;
+  get(modelName: string, id: unknown): object | null
 
   /** Clear the pool, optionally scoped to one model. */
-  clear(modelName?: string): void;
-};
+  clear(modelName?: string): void
+}
 
 // ---------------------------------------------------------------------------
 // UpdateTransaction
 // ---------------------------------------------------------------------------
 
 export declare class UpdateTransaction<M extends BaseModel = BaseModel> {
-  readonly model: M;
-  readonly changes: Partial<Record<string, unknown>>;
-  committed: boolean;
+  readonly model: M
+  readonly changes: Partial<Record<string, unknown>>
+  committed: boolean
 
-  constructor(model: M, changes: Partial<Record<string, unknown>>);
+  constructor(model: M, changes: Partial<Record<string, unknown>>)
 
   /** Persist/send the changes. Override for custom transport logic. */
-  commit(): this;
+  commit(): this
 
   /** Undo changes by restoring old values onto the model. */
-  rollback(): this;
+  rollback(): this
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +101,12 @@ export declare class UpdateTransaction<M extends BaseModel = BaseModel> {
 // ---------------------------------------------------------------------------
 
 export declare class QueryBuilder<M extends BaseModel = BaseModel> {
-  constructor(modelName: string, indexField?: string, indexValue?: unknown, paranoid?: boolean | string);
+  constructor(
+    modelName: string,
+    indexField?: string,
+    indexValue?: unknown,
+    paranoid?: boolean | string,
+  )
 
   /**
    * Add an in-memory filter condition.
@@ -117,15 +117,15 @@ export declare class QueryBuilder<M extends BaseModel = BaseModel> {
    * Issue.where('status', 'open').where('priority', v => v > 3).exec()
    * Issue.where('status', ['open', 'in_progress']).exec()  // IN-style
    */
-  where(field: string, value: unknown | unknown[] | ((v: unknown) => boolean)): this;
-  orderBy(field: string, direction?: "asc" | "desc" | ((a: unknown, b: unknown) => number)): this;
-  sortBy(field: string, direction?: "asc" | "desc" | ((a: unknown, b: unknown) => number)): this;
-  limit(n: number): this;
-  offset(n: number): this;
+  where(field: string, value: unknown | unknown[] | ((v: unknown) => boolean)): this
+  orderBy(field: string, direction?: 'asc' | 'desc' | ((a: unknown, b: unknown) => number)): this
+  sortBy(field: string, direction?: 'asc' | 'desc' | ((a: unknown, b: unknown) => number)): this
+  limit(n: number): this
+  offset(n: number): this
 
-  exec(): Promise<M[]>;
-  first(): Promise<M | null>;
-  last(): Promise<M | null>;
+  exec(): Promise<M[]>
+  first(): Promise<M | null>
+  last(): Promise<M | null>
 }
 
 // ---------------------------------------------------------------------------
@@ -134,39 +134,39 @@ export declare class QueryBuilder<M extends BaseModel = BaseModel> {
 
 export declare class BaseModel {
   /** Returns the current action for this instance. */
-  get action(): OperationType;
+  get action(): OperationType
 
   /** @internal Called by observabilityHelper on every setter invocation. */
-  _propertyChanged(name: string, oldValue: unknown): void;
+  _propertyChanged(name: string, oldValue: unknown): void
 
   /** @internal Clear the modified state. Called by persistence layer after hydration or save. */
-  _clearModified(): void;
+  _clearModified(): void
 
   /** True if any @Property field has changed since last save(). */
-  isDirty(): boolean;
+  isDirty(): boolean
 
   /** Shallow copy of the current dirty-field snapshot (fieldName → oldValue). */
-  getModifiedProperties(): Record<string, unknown>;
+  getModifiedProperties(): Record<string, unknown>
 
   /**
    * Validate properties, capture changes, commit transaction, and return void.
    */
-  save(): Promise<void>;
+  save(): Promise<void>
 
   /**
    * Mark this instance for deletion. Sets action to 'delete' so save() will
    * queue a delete operation.
    */
-  delete(): Promise<void>;
+  delete(): Promise<void>
 
   /** Restore a soft-deleted instance by clearing the paranoid field. */
-  restore(): Promise<void>;
+  restore(): Promise<void>
 
   /** Permanently delete this instance, bypassing paranoid soft-delete. */
-  hardDelete(): Promise<void>;
+  hardDelete(): Promise<void>
 
   /** Validate all @Property fields against their declared type and required constraint. */
-  _validateProperties(): void;
+  _validateProperties(): void
 
   /**
    * Create a new instance of this model class.
@@ -181,7 +181,7 @@ export declare class BaseModel {
   static create<T extends typeof BaseModel>(
     this: T,
     object: Partial<InstanceType<T>>,
-  ): InstanceType<T>;
+  ): InstanceType<T>
 
   /**
    * Find a model instance by primary key.
@@ -192,7 +192,7 @@ export declare class BaseModel {
     this: T,
     id: unknown,
     options?: { force?: boolean },
-  ): Promise<InstanceType<T> | null>;
+  ): Promise<InstanceType<T> | null>
 
   /**
    * Create a QueryBuilder for filtering instances.
@@ -211,15 +211,15 @@ export declare class BaseModel {
     indexField?: string,
     indexValue?: unknown,
     options?: { force?: boolean },
-  ): QueryBuilder<InstanceType<T>>;
+  ): QueryBuilder<InstanceType<T>>
 }
 
 /**
  * Error thrown when @Property validation fails during validateProperties().
  */
 export declare class ValidationError extends Error {
-  errors: Array<{ field: string; message: string }>;
-  constructor(errors: Array<{ field: string; message: string }>);
+  errors: Array<{ field: string; message: string }>
+  constructor(errors: Array<{ field: string; message: string }>)
 }
 
 // ---------------------------------------------------------------------------
@@ -227,11 +227,11 @@ export declare class ValidationError extends Error {
 // ---------------------------------------------------------------------------
 
 export interface ClientModelOptions {
-  loadStrategy?: LoadStrategy;
-  schemaVersion?: number;
-  primaryKey?: string;
-  syncField?: string;
-  customIndex?: string;
+  loadStrategy?: LoadStrategy
+  schemaVersion?: number
+  primaryKey?: string
+  syncField?: string
+  customIndex?: string
 }
 
 /**
@@ -245,10 +245,7 @@ export interface ClientModelOptions {
  * @ClientModel("users", { loadStrategy: "lazy" })
  * class User extends BaseModel { ... }
  */
-export declare function ClientModel(
-  tableName: string,
-  options?: ClientModelOptions,
-): ClassDecorator;
+export declare function ClientModel(tableName: string, options?: ClientModelOptions): ClassDecorator
 
 // ---------------------------------------------------------------------------
 // @Property
@@ -256,13 +253,13 @@ export declare function ClientModel(
 
 export interface PropertyOptions {
   /** Built-in type constructor (String, Number, Boolean, Date) or custom class constructor. Required. */
-  type: new (...args: unknown[]) => unknown;
+  type: new (...args: unknown[]) => unknown
   /** When true, field value cannot be null/undefined/empty string. Default: false */
-  required?: boolean;
-  timestamp?: boolean;
-  autoUpdate?: boolean;
-  serializer?: Serializer;
-  uuid?: boolean;
+  required?: boolean
+  timestamp?: boolean
+  autoUpdate?: boolean
+  serializer?: Serializer
+  uuid?: boolean
 }
 
 /**
@@ -281,7 +278,7 @@ export interface PropertyOptions {
  */
 export declare function Property(
   options?: PropertyOptions,
-): (target: undefined, context: ClassFieldDecoratorContext) => void;
+): (target: undefined, context: ClassFieldDecoratorContext) => void
 
 // ---------------------------------------------------------------------------
 // @Computed
@@ -298,21 +295,21 @@ export declare function Property(
 export declare function Computed(
   target: Function,
   context: ClassGetterDecoratorContext,
-): () => unknown;
+): () => unknown
 
 // ---------------------------------------------------------------------------
 // Persistence layer
 // ---------------------------------------------------------------------------
 
 export interface TransactionQueueEntry {
-  id: string;
-  modelName: string;
-  modelId: unknown;
-  changes: Record<string, unknown>;
-  newValues: Record<string, unknown>;
-  action: OperationType;
-  status: "pending" | "synced";
-  createdAt: number;
+  id: string
+  modelName: string
+  modelId: unknown
+  changes: Record<string, unknown>
+  newValues: Record<string, unknown>
+  action: OperationType
+  status: 'pending' | 'synced'
+  createdAt: number
 }
 
 export declare const TransactionQueue: {
@@ -322,44 +319,36 @@ export declare const TransactionQueue: {
     changes: Record<string, unknown>,
     newValues: Record<string, unknown>,
     action?: OperationType,
-  ): Promise<string>;
-  getPending(): Promise<unknown[]>;
-  markSynced(id: string): Promise<void>;
-  getById(id: string): Promise<TransactionQueueEntry | null>;
-};
+  ): Promise<string>
+  getPending(): Promise<unknown[]>
+  markSynced(id: string): Promise<void>
+  getById(id: string): Promise<TransactionQueueEntry | null>
+}
 
 export declare const IndexedDB: {
-  _db: IDBDatabase | null;
-  init(dbName?: string): Promise<IDBDatabase>;
-  put(
-    modelName: string,
-    record: Record<string, unknown>,
-  ): Promise<Record<string, unknown>>;
-  bulkPut(
-    modelName: string,
-    records: Record<string, unknown>[],
-  ): Promise<Record<string, unknown>[]>;
-  get(modelName: string, id: unknown): Promise<Record<string, unknown> | null>;
-  getAll(modelName: string): Promise<Record<string, unknown>[]>;
-  delete(modelName: string, id: unknown): Promise<void>;
+  _db: IDBDatabase | null
+  init(dbName?: string): Promise<IDBDatabase>
+  put(modelName: string, record: Record<string, unknown>): Promise<Record<string, unknown>>
+  bulkPut(modelName: string, records: Record<string, unknown>[]): Promise<Record<string, unknown>[]>
+  get(modelName: string, id: unknown): Promise<Record<string, unknown> | null>
+  getAll(modelName: string): Promise<Record<string, unknown>[]>
+  delete(modelName: string, id: unknown): Promise<void>
   getByIndex(
     modelName: string,
     indexName: string,
     value: unknown,
-  ): Promise<Record<string, unknown>[]>;
+  ): Promise<Record<string, unknown>[]>
   getByIndexMulti(
     modelName: string,
     indexName: string,
     values: unknown[],
-  ): Promise<Record<string, unknown>[]>;
-};
+  ): Promise<Record<string, unknown>[]>
+}
 
-export declare class SyncTransaction<
-  M extends BaseModel = BaseModel,
-> extends UpdateTransaction<M> {
-  get modelName(): string;
-  commit(): Promise<this>;
-  rollback(): Promise<this>;
+export declare class SyncTransaction<M extends BaseModel = BaseModel> extends UpdateTransaction<M> {
+  get modelName(): string
+  commit(): Promise<this>
+  rollback(): Promise<this>
 }
 
 /**
@@ -372,13 +361,13 @@ export declare function hydrate(
   modelName: string,
   id: unknown,
   overrides?: Record<string, unknown>,
-): Promise<BaseModel | null>;
+): Promise<BaseModel | null>
 
 /**
  * Hydrate all instances of a model from IndexedDB.
  * @param modelName - The registered model name
  */
-export declare function hydrateAll(modelName: string): Promise<BaseModel[]>;
+export declare function hydrateAll(modelName: string): Promise<BaseModel[]>
 
 /**
  * Initialize the persistence layer.
@@ -392,73 +381,67 @@ export declare function hydrateAll(modelName: string): Promise<BaseModel[]>;
  * @returns Promise resolving to the IDBDatabase
  */
 export declare function install(options?: {
-  dbName?: string;
-  socketUrl?: string;
-  graphqlUrl?: string;
-  graphQLWorkerIntervalMs?: number;
-  graphqlClientOptions?: Record<string, unknown>;
-}): Promise<IDBDatabase>;
+  dbName?: string
+  socketUrl?: string
+  graphqlUrl?: string
+  graphQLWorkerIntervalMs?: number
+  graphqlClientOptions?: Record<string, unknown>
+}): Promise<IDBDatabase>
 
 /**
  * Get the Socket.IO socket instance.
  */
-export declare function getSocket(): unknown;
+export declare function getSocket(): unknown
 
 /**
  * Disconnect the Socket.IO connection.
  */
-export declare function disconnectSocket(): void;
+export declare function disconnectSocket(): void
 
 // ---------------------------------------------------------------------------
 // GraphQL Network Layer
 // ---------------------------------------------------------------------------
 
 export interface GraphQLClient {
-  client: unknown;
-  request(document: unknown, variables?: Record<string, unknown>): Promise<unknown>;
+  client: unknown
+  request(document: unknown, variables?: Record<string, unknown>): Promise<unknown>
 }
 
 export interface GraphQLClientOptions {
-  headers?: Record<string, string>;
-  onError?: (error: Error) => void;
+  headers?: Record<string, string>
+  onError?: (error: Error) => void
 }
 
 export declare function createGraphQLClient(
   url: string,
   options?: GraphQLClientOptions,
-): GraphQLClient;
+): GraphQLClient
 
 export declare class GraphQLWorker {
   constructor(
     client: GraphQLClient,
     options?: {
-      intervalMs?: number;
-      onError?: (error: Error) => void;
-      onFlush?: (entry: unknown) => void;
+      intervalMs?: number
+      onError?: (error: Error) => void
+      onFlush?: (entry: unknown) => void
     },
-  );
-  start(): void;
-  stop(): void;
+  )
+  start(): void
+  stop(): void
 }
 
-
 export declare const GraphQLSchemaGenerator: {
-  generateUpsertMutation(
-    modelName: string,
-  ): { mutation: string; variableName: string };
-  generateFetchQuery(
-    modelName: string,
-  ): { query: string; variableName: string };
-  generateFetchAllQuery(modelName: string): { query: string };
-};
+  generateUpsertMutation(modelName: string): { mutation: string; variableName: string }
+  generateFetchQuery(modelName: string): { query: string; variableName: string }
+  generateFetchAllQuery(modelName: string): { query: string }
+}
 
 /**
  * Get the Graffle GraphQL client instance.
  */
-export declare function getGraphQLClient(): GraphQLClient | null;
+export declare function getGraphQLClient(): GraphQLClient | null
 
 /**
  * Get the GraphQL worker instance.
  */
-export declare function getGraphQLWorker(): GraphQLWorker | null;
-
+export declare function getGraphQLWorker(): GraphQLWorker | null

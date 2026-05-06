@@ -8,7 +8,29 @@ const props = defineProps({
   },
 })
 
-const documents = computed(() => props.supplier.documents || [])
+const supplierAssets = useLiveQueryWithDeps(
+  [() => props.supplier?.id],
+  async (db, [supplierId]) => {
+    if (!supplierId) return []
+    return db.SupplierAsset.where('supplierId', supplierId).exec()
+  },
+  { initial: [] },
+)
+
+const documents = useLiveQueryWithDeps(
+  [() => supplierAssets.value],
+  async (db, [assets]) => {
+    if (!assets?.length) return []
+    const results = await Promise.all(
+      assets.map(async (sa) => {
+        const asset = sa.assetId ? await db.Asset.findByPk(sa.assetId) : null
+        return { ...sa, asset }
+      }),
+    )
+    return results
+  },
+  { initial: [], models: ['SupplierAsset', 'Asset'] },
+)
 
 const typeLabel = {
   certificate: 'Certificate',
@@ -48,7 +70,7 @@ const typeLabel = {
         </div>
         <div class="tw:flex-1 tw:min-w-0">
           <p class="tw:text-sm tw:font-medium tw:text-on-main tw:truncate">
-            {{ doc.asset?.fileName || 'Document' }}
+            {{ doc.asset?.originalFilename || doc.asset?.filename || 'Document' }}
           </p>
           <p class="tw:text-xs tw:text-secondary">
             {{ typeLabel[doc.documentType] || doc.documentType }}

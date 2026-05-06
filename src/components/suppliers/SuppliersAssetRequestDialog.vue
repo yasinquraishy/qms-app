@@ -208,7 +208,7 @@ async function onSave() {
         <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-1">
           Request Type
         </label>
-        <AssetRequestTypeSelectMenu v-model="form.requestTypeId" />
+        <AssetRequestTypeSelectMenu v-model="form.requestTypeId" required />
       </div>
 
       <div>

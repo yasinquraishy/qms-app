@@ -167,6 +167,7 @@ function formatDate(value) {
             <IconStar :size="16" />
           </button>
           <button
+            v-if="request.statusId === 'PENDING'"
             class="tw:p-1.5 tw:rounded tw:text-secondary tw:hover:text-on-main tw:hover:bg-main-hover tw:transition-colors"
             @click="openEditDialog(request)"
           >

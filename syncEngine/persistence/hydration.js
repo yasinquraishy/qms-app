@@ -6,24 +6,50 @@ import { defaultSerializers } from './defaultSerializers.js'
 import { DateTime } from 'luxon'
 
 /**
- * Shallow equality check for deserialized model values.
- * Avoids triggering reactive setters when the hydrated value is identical
- * to what the instance already holds.
+ * Deep equality check for deserialized model values.
+ *
+ * Avoids triggering reactive setters when the hydrated value is structurally
+ * identical to what the instance already holds. The IDB layer round-trips
+ * arrays/objects through JSON.parse(JSON.stringify(...)), so freshly hydrated
+ * values always have new references — a shallow check would always say
+ * "different" and re-assign on every refresh, which (because Vue's ref triggers
+ * watchers asynchronously while `_clearModified()` runs synchronously) produces
+ * a save→hydrate→save loop.
+ *
  * @param {*} a
  * @param {*} b
  * @returns {boolean}
  */
 export function valuesEqual(a, b) {
   if (Object.is(a, b)) return true
-  // Luxon DateTime — compare by millisecond value
+  // Luxon DateTime — compare by millisecond value.
   if (a instanceof DateTime && b instanceof DateTime) {
     return a.isValid && b.isValid && a.toMillis() === b.toMillis()
   }
-  // Array shallow equality
+  // Native Date.
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() === b.getTime()
+  }
+  // Arrays — recursive element-wise compare so arrays of plain objects (e.g.
+  // attachments lists) match after a JSON round-trip.
   if (Array.isArray(a) && Array.isArray(b)) {
     if (a.length !== b.length) return false
     for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false
+      if (!valuesEqual(a[i], b[i])) return false
+    }
+    return true
+  }
+  // Plain objects — recursive key-by-key compare. Class instances (DateTime,
+  // Date, Map, Set) are handled by their dedicated branches above; if a value
+  // reaches here it is treated as a plain object/POJO.
+  if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object') {
+    if (Array.isArray(a) !== Array.isArray(b)) return false
+    const ak = Object.keys(a)
+    const bk = Object.keys(b)
+    if (ak.length !== bk.length) return false
+    for (const k of ak) {
+      if (!Object.prototype.hasOwnProperty.call(b, k)) return false
+      if (!valuesEqual(a[k], b[k])) return false
     }
     return true
   }

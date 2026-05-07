@@ -142,6 +142,7 @@ const debouncedSaveComment = useDebounceFn(async () => {
     <div class="section-content">
       <TiptapEditor
         v-if="section.sectionType === 'text'"
+        :key="`${section.id}-${canUpdateSection ? 'editable' : 'readonly'}`"
         v-model="section.content"
         :editable="canUpdateSection"
         class="tw:border-0! tw:min-h-fit!"
@@ -149,6 +150,7 @@ const debouncedSaveComment = useDebounceFn(async () => {
 
       <BaseUploader
         v-if="section.sectionType === 'attachment'"
+        :key="`${section.id}-${canUpdateSection ? 'editable' : 'readonly'}`"
         v-model="section.attachments"
         :readonly="!canUpdateSection"
         hideHeader

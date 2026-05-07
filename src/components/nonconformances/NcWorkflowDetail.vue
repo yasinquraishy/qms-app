@@ -476,6 +476,8 @@ function getSubmittedRecords(instanceStepId) {
 
         <!-- Readonly: render every submitted record, plus the current user's draft (only). -->
         <template v-else>
+          <!-- label -->
+          <div class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2">Form data</div>
           <div v-for="record in getSubmittedRecords(step.id)" :key="record.id" class="tw:mb-3">
             <div
               v-if="getSubmittedRecords(step.id).length > 1"

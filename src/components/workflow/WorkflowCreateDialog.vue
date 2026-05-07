@@ -2,6 +2,7 @@
 import { IconLayoutKanban } from '@tabler/icons-vue'
 import { required, helpers } from '@vuelidate/validators'
 import { useValidator } from '@shared/composables/validator.js'
+import { currentCompany } from '@/utils/currentCompany.js'
 
 const emit = defineEmits(['created'])
 
@@ -25,6 +26,10 @@ const isFormValid = computed(() => {
   return form.value.name.trim() && form.value.moduleId
 })
 
+// Create the workflow, its first draft version, and a seeded "Step 1" all in
+// one transactional flow. Doing the first-step creation here (instead of an
+// auto-add watcher in WorkflowStepList) avoids the empty-array re-fire race
+// where two "Step 1"s could be created concurrently.
 const createWorkflowAndVersion = useLiveMutation(async (db, { name, description, moduleId }) => {
   const workflow = db.Workflow.create({
     name,
@@ -33,6 +38,7 @@ const createWorkflowAndVersion = useLiveMutation(async (db, { name, description,
     statusId: 'ACTIVE',
   })
   await workflow.save()
+
   const version = db.WorkflowVersion.create({
     workflowId: workflow.id,
     versionMajor: 1,
@@ -40,6 +46,28 @@ const createWorkflowAndVersion = useLiveMutation(async (db, { name, description,
     statusId: 'DRAFT',
   })
   await version.save()
+
+  const settings = currentCompany.value?.settings || {}
+  const step = db.WorkflowStep.create({
+    workflowVersionId: version.id,
+    name: 'Step 1',
+    description: '',
+    stepOrder: 1,
+    approvalRule: settings.defaultWorkflowApprovalRule ?? 'ALL',
+    slaDays: settings.defaultSla ?? null,
+    requireComments: settings.defaultWorkflowRequireComment ?? false,
+    requireEsignature: settings.defaultWorkflowRequireSignature ?? false,
+  })
+  await step.save()
+
+  // Seed every allowed outcome on the new step (mirrors the per-step seeding
+  // that WorkflowStepList.createStep does when steps are added later).
+  const outcomes = await db.WorkflowStepOutcome.where().exec()
+  for (const o of outcomes) {
+    const record = db.AllowedOutcomeOnStep.create({ stepId: step.id, outcomeId: o.id })
+    await record.save()
+  }
+
   return workflow
 })
 

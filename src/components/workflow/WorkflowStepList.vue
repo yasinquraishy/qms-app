@@ -5,7 +5,6 @@ import { currentCompany } from '@/utils/currentCompany.js'
 const props = defineProps({
   versionId: { type: String, required: true },
   canUpdate: { type: Boolean, default: false },
-  autoAddStep: { type: Boolean, default: false },
   showChildSteps: { type: Boolean, default: false },
 })
 
@@ -37,14 +36,6 @@ const childrenByParentId = computed(() =>
     return acc
   }, {}),
 )
-
-// Auto-add first step when autoAddStep is enabled and version has no steps
-watch(steps, async (newSteps) => {
-  if (props.autoAddStep && props.canUpdate && newSteps?.length === 0 && props.versionId) {
-    await nextTick()
-    await addStep()
-  }
-})
 
 function selectStep(step) {
   stepId.value = step.id

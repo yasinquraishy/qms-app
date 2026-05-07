@@ -5,7 +5,6 @@ import { getCompanyPath } from '@/utils/routeHelpers'
 
 const props = defineProps({
   id: { type: String, required: true },
-  autoAddStep: { type: Boolean, default: true },
 })
 
 const toast = useToast()
@@ -431,7 +430,6 @@ watch(steps, () => {
           v-model:stepId="selectedStepId"
           :versionId="selectedVersionId"
           :canUpdate="canUpdate"
-          :autoAddStep="autoAddStep"
           :showChildSteps="showChildSteps"
         />
 

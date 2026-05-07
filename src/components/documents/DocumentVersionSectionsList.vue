@@ -36,14 +36,15 @@ const showAddSectionDialog = ref(false)
 </script>
 
 <template>
-  <div>
-    <section v-for="section in sections" :id="section.id" :key="section.id">
+  <div class="tw:flex tw:flex-col tw:gap-4">
+    <section v-for="(section, index) in sections" :id="section.id" :key="section.id">
       <DocumentVersionSection
         :sectionId="section.id"
         :documentVersionId="documentVersionId"
         :canEdit="canEdit"
         :dense="dense"
         :reviewMode="reviewMode"
+        :index="index"
       />
     </section>
 
@@ -56,11 +57,7 @@ const showAddSectionDialog = ref(false)
     />
 
     <!-- Add Section Button -->
-    <div
-      v-if="canEdit"
-      class="tw:border-t tw:border-divider tw:print:hidden"
-      :class="dense ? 'tw:mt-4 tw:pt-3' : 'tw:mt-8 tw:pt-6'"
-    >
+    <div v-if="canEdit" class="tw:border-t tw:border-divider tw:print:hidden">
       <BaseButton variant="outline" class="tw:w-full" @click="showAddSectionDialog = true">
         <template #icon>
           <IconPlus :size="20" />

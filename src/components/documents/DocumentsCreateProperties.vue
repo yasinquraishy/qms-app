@@ -85,7 +85,7 @@ function decrementReviewMonths() {
       <BaseTextInput
         v-model="form.title"
         name="title"
-        label="Document Title *"
+        label="Document Title"
         placeholder="e.g. Clean Room Sterilization Protocol"
         :required="true"
       />
@@ -102,7 +102,7 @@ function decrementReviewMonths() {
       <BaseTextInput
         v-model="prefix"
         name="prefix"
-        label="Document Prefix *"
+        label="Document Prefix"
         placeholder="e.g. SOP, DOC-{SITE_CODE}"
         :required="true"
       />

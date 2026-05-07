@@ -69,7 +69,7 @@ export const originalUserName = computed(() => {
 // Function to return to the original admin user
 export function returnToOriginalUser() {
   if (!isImpersonating.value) return
-  window.location.href = '/v1/auth/return-from-impersonation'
+  window.location.href = '/api/v1/auth/return-from-impersonation'
 }
 
 export const logoutCurrentSession = async () => {
@@ -135,8 +135,18 @@ async function fetchUserSession(options = {}) {
     }
 
     currentSession.value = newCurrentSession
-  } catch {
-    // Not logged in - redirect unless already on auth pages
+  } catch (err) {
+    const status = err?.status ?? err?.raw?.response?.status
+
+    // 403 = authenticated, but no access to the requested company. Don't
+    // bounce to /signin — the user is logged in. Leave currentSession null
+    // and let App.vue redirect into a company they actually belong to.
+    if (status === 403) {
+      currentSession.value = null
+      return null
+    }
+
+    // 401 / network / unknown → fall back to the login page.
     const path = window.location.pathname
     if (!isPublicRoute(path) && path !== '/app') {
       window.location.href = '/signin'

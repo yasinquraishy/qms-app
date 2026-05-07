@@ -13,7 +13,7 @@ const userForAvatar = computed(() => ({
 
 function onClick() {
   const returnUrl = window.location.pathname
-  window.location.href = `/v1/auth/impersonate?id=${props.user.id}&returnUrl=${encodeURIComponent(returnUrl)}`
+  window.location.href = `/api/v1/auth/impersonate?id=${props.user.id}&returnUrl=${encodeURIComponent(returnUrl)}`
 }
 </script>
 

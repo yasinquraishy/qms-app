@@ -6,5 +6,5 @@ pageInfo.value = {
 </script>
 
 <template>
-  <TaskInstanceIndex :id="$route.params.id" />
+  <TaskInstancesHome />
 </template>

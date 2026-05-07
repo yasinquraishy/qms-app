@@ -27,7 +27,11 @@ defineProps({
         />
 
         <!-- Right Column: Sidebar (1/4 width, sticky) -->
-        <DocumentsMainContentRight :documentId="documentId" :versionId="versionId" />
+        <DocumentsMainContentRight
+          :documentId="documentId"
+          :versionId="versionId"
+          :reviewMode="reviewMode"
+        />
       </div>
     </PrintTeleport>
   </main>

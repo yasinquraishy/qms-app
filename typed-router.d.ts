@@ -163,11 +163,11 @@ declare module 'vue-router/auto-routes' {
       { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
       | never
     >,
-    '/[companyCode]/task-instances/[[id]]': RouteRecordInfo<
-      '/[companyCode]/task-instances/[[id]]',
-      '/:companyCode/task-instances/:id?',
-      { companyCode: ParamValue<true>, id?: ParamValueZeroOrOne<true> },
-      { companyCode: ParamValue<false>, id?: ParamValueZeroOrOne<false> },
+    '/[companyCode]/task-instances': RouteRecordInfo<
+      '/[companyCode]/task-instances',
+      '/:companyCode/task-instances',
+      { companyCode: ParamValue<true> },
+      { companyCode: ParamValue<false> },
       | never
     >,
     '/[companyCode]/templates/[[id]]': RouteRecordInfo<
@@ -394,9 +394,9 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'src/pages/[companyCode]/task-instances/[[id]].vue': {
+    'src/pages/[companyCode]/task-instances.vue': {
       routes:
-        | '/[companyCode]/task-instances/[[id]]'
+        | '/[companyCode]/task-instances'
       views:
         | never
     }

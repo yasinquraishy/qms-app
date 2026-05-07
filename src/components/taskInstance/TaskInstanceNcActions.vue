@@ -129,11 +129,12 @@ const filteredReassignCandidates = computed(() =>
   reassignCandidates.value.filter((u) => u.id !== currentUserId.value),
 )
 
-// Whether the step has a form that must be saved first
+// Whether the step has a form that must be submitted (not just drafted) first.
+// A draft NcRecord exists with submittedAt=null and must still block approval.
 const formRequired = computed(
   () => Array.isArray(props.workflowStep?.formSchema) && props.workflowStep.formSchema.length > 0,
 )
-const formSaveRequired = computed(() => formRequired.value && !ncRecord.value)
+const formSaveRequired = computed(() => formRequired.value && !ncRecord.value?.submittedAt)
 
 const pendingConfig = computed(() =>
   pendingOutcomeId.value ? (OUTCOME_CONFIG[pendingOutcomeId.value] ?? null) : null,
@@ -223,7 +224,7 @@ async function submitAction({ method, provider, token } = {}) {
         v-if="OUTCOME_CONFIG[allowed.outcomeId]"
         :title="
           allowed.outcomeId === 'COMPLETE_AND_ADVANCE' && formSaveRequired
-            ? 'Save the form first before approving'
+            ? 'Submit the form first before approving'
             : undefined
         "
       >

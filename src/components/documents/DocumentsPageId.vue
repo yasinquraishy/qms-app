@@ -49,16 +49,46 @@ const selectedVersion = ref(null)
 const showWorkflowSidebar = ref(false)
 const showMessages = ref(false)
 
-// Auto-select version when versions list changes
-watch(versions, (list) => {
+// Find an open task on any version of this document for the current user.
+// Used to auto-select the version with the active task on first load.
+const activeTaskVersionId = useLiveQueryWithDeps(
+  [() => versions.value?.map((v) => v.id).join(','), () => currentSession.value?.userId],
+  async (db, [versionIdsStr, userId]) => {
+    if (!versionIdsStr || !userId) return null
+    const versionIds = versionIdsStr.split(',')
+    for (const versionId of versionIds) {
+      const tasks = await db.TaskInstance.where('[entityType+entityId]', [
+        'DocumentVersion',
+        versionId,
+      ]).exec()
+      const match = tasks.find(
+        (t) => t.assignedTo === userId && ['ASSIGNED', 'FORM_SUBMITTED'].includes(t.statusId),
+      )
+      if (match) return versionId
+    }
+    return null
+  },
+  { models: 'TaskInstance' },
+)
+
+// Auto-select version when versions list changes.
+// Prefer the version with an open task for the current user when available.
+watch([versions, activeTaskVersionId], ([list, taskVersionId]) => {
   if (!list?.length) {
     selectedVersion.value = null
     return
   }
   const currentId = selectedVersion.value?.id
-  const found = currentId ? list.find((v) => v.id === currentId) : null
-  selectedVersion.value = found ?? list[0]
+  const taskMatch = taskVersionId ? list.find((v) => v.id === taskVersionId) : null
+  const currentMatch = currentId ? list.find((v) => v.id === currentId) : null
+  selectedVersion.value = taskMatch ?? currentMatch ?? list[0]
 })
+
+const hasActiveTaskOnSelected = computed(
+  () =>
+    !!activeTaskVersionId.value &&
+    selectedVersion.value?.id === activeTaskVersionId.value,
+)
 
 const breadcrumbs = computed(() => [
   { label: 'Documents', to: getCompanyPath('/documents') },
@@ -230,6 +260,12 @@ async function createNewVersion() {
           class="tw:max-w-360 tw:mx-auto tw:px-6 tw:py-4 tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-4"
         >
           <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-3">
+            <TaskActionBar
+              v-if="selectedVersion?.id"
+              entityType="DocumentVersion"
+              :entityId="selectedVersion.id"
+            />
+
             <BaseButton v-if="canCreate" @click="createNewVersion">
               <IconNotes :size="20" class="tw:mr-1" />
               Create New Draft
@@ -353,7 +389,11 @@ async function createNewVersion() {
       </div>
 
       <!-- Main Content Grid -->
-      <DocumentsMainContent :documentId="props.id" :versionId="selectedVersion?.id" />
+      <DocumentsMainContent
+        :documentId="props.id"
+        :versionId="selectedVersion?.id"
+        :reviewMode="hasActiveTaskOnSelected"
+      />
 
       <!-- Workflow Overlay Sidebar -->
       <DocumentsWorkflowSidebar

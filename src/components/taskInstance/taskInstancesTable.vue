@@ -76,8 +76,19 @@ const filteredInstances = computed(() => {
   })
 })
 
+const EntityType = {
+  DocumentVersion: 'Document',
+  Nonconformance: 'Nonconformance',
+}
+
 const columns = [
   { name: 'title', label: 'ITEM', field: 'title', align: 'left' },
+  {
+    name: 'entityType',
+    label: 'ENTITY TYPE',
+    field: (row) => EntityType[row.entityType] || row.entityType,
+    align: 'left',
+  },
   { name: 'type', label: 'TYPE', field: 'type', align: 'left' },
   { name: 'dueDate', label: 'DUE DATE', field: 'dueDate', align: 'left', sortable: true },
   { name: 'status', label: 'STATUS', field: 'status', align: 'left' },

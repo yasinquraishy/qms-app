@@ -24,7 +24,11 @@ export function observabilityHelper(instance, name, onSet) {
 
   // Watch deeply so internal mutations of arrays/objects also flag dirty.
   // _propertyChanged is idempotent (Set.add) so spurious fires are no-ops.
-  watch(box, () => onSet(instance, name), { deep: true })
+  // flush: 'sync' so dirty marking runs inside the setter rather than on the
+  // next tick — otherwise hydrate's _clearModifiedFields() runs first and the
+  // async watcher re-dirties the field afterwards, causing subsequent sync
+  // pushes to be skipped by the dirtyKeys check in hydrate().
+  watch(box, () => onSet(instance, name), { deep: true, flush: 'sync' })
 
   Object.defineProperty(instance, name, {
     enumerable: true,

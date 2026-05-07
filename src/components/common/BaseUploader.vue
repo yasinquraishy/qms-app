@@ -195,7 +195,7 @@ async function uploadAllFiles() {
   if (successful.length > 0) {
     // Update v-model with successfully uploaded files
     const newUploadedAssets = successful.map((r) => r.asset)
-    uploadedFiles.value = [...uploadedFiles.value, ...newUploadedAssets]
+    uploadedFiles.value = [...(uploadedFiles.value ?? []), ...newUploadedAssets]
 
     // Remove successfully uploaded files from pending list
     const successfulFileObjs = successful.map((r) => r.fileObj)

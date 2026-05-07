@@ -11,6 +11,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  reviewMode: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const document = useLiveQueryWithDeps([() => props.documentId], async (db, [id]) => {
@@ -22,7 +26,10 @@ const currentVersion = useLiveQueryWithDeps([() => props.versionId], async (db, 
 })
 
 const canEdit = computed(
-  () => isAllowed(['documents:update']) && document.value?.statusId !== 'ARCHIVED',
+  () =>
+    isAllowed(['documents:update']) &&
+    document.value?.statusId !== 'ARCHIVED' &&
+    !props.reviewMode,
 )
 
 // State
@@ -138,14 +145,21 @@ watch(
           <div>
             <label class="ds-label"> Department </label>
             <div class="tw:mt-1">
-              <DepartmentSelectMenu v-model="document.departmentId" required />
+              <DepartmentSelectMenu v-if="canEdit" v-model="document.departmentId" required />
+              <DepartmentBadgeById v-else-if="document.departmentId" :departmentId="document.departmentId" />
+              <span v-else class="tw:text-sm tw:text-secondary">—</span>
             </div>
           </div>
 
           <div>
             <label class="ds-label"> Related Standard </label>
             <div class="tw:mt-1">
-              <RelatedStandardSelectMenu v-model="document.relatedStandardId" />
+              <RelatedStandardSelectMenu v-if="canEdit" v-model="document.relatedStandardId" />
+              <RelatedStandardBadgeById
+                v-else-if="document.relatedStandardId"
+                :relatedStandardId="document.relatedStandardId"
+              />
+              <span v-else class="tw:text-sm tw:text-secondary">—</span>
             </div>
           </div>
 
@@ -179,6 +193,9 @@ watch(
               v-model="currentVersion.effectiveDate"
               :required="false"
             />
+            <p v-else class="tw:text-sm tw:font-medium">
+              {{ currentVersion.effectiveDate ? currentVersion.effectiveDate.formatDate('date') : '—' }}
+            </p>
           </div>
 
           <!-- Collaborators Section -->

@@ -1,8 +1,11 @@
 <script setup>
-import { IconUserCheck, IconArrowBackUp, IconEye, IconX } from '@tabler/icons-vue'
+import { IconUserCheck, IconArrowBackUp, IconDeviceFloppy, IconSend } from '@tabler/icons-vue'
 import { post } from '@/api'
 import DynamicForm from '@/components/form/DynamicForm.js'
 import FormSchemaReadonlyView from '@/components/form/FormSchemaReadonlyView.vue'
+import { currentSession } from '@/utils/currentSession.js'
+import { db } from '@models/index'
+import { DateTime } from 'luxon'
 
 const props = defineProps({
   ncId: { type: String, required: true },
@@ -11,6 +14,7 @@ const props = defineProps({
 })
 
 const toast = useToast()
+const currentUserId = computed(() => currentSession.value?.userId)
 
 // ─── Workflow instance steps ──────────────────────────────────────────────────
 const workflowInstanceSteps = useLiveQueryWithDeps(
@@ -132,26 +136,103 @@ const sendBackTargets = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-// ─── Record viewer panel ──────────────────────────────────────────────────────
-const recordPanelOpen = ref(false)
-const recordPanelStepId = ref(null)
-const recordPanelUserId = ref(null)
+// ─── Current user's tasks for this workflow's steps ───────────────────────────
+// Used to satisfy NcRecord.taskInstanceId when the assignee saves/submits.
+const currentUserTasksByStep = useLiveQueryWithDeps(
+  [() => workflowInstanceSteps.value.map((s) => s.id).join(','), () => currentUserId.value],
+  async (db, [stepIdsStr, userId]) => {
+    if (!stepIdsStr || !userId) return {}
+    const stepIds = stepIdsStr.split(',')
+    const map = {}
+    for (const stepId of stepIds) {
+      const tasks = await db.TaskInstance.where('[sourceType+sourceId]', [
+        'WorkflowInstanceStep',
+        stepId,
+      ]).exec()
+      const ownTask = tasks.find((t) => t.assignedTo === userId)
+      if (ownTask) map[stepId] = ownTask
+    }
+    return map
+  },
+  { initial: {}, models: 'TaskInstance' },
+)
 
-const recordPanelStep = computed(() => {
-  if (!recordPanelStepId.value) return null
-  const instanceStep = workflowInstanceSteps.value.find((s) => s.id === recordPanelStepId.value)
-  return instanceStep ? stepDefinitions.value[instanceStep.stepId] : null
-})
+// ─── Per-step form state for the current user ────────────────────────────────
+const formDataByStep = ref({})
+const savingByStep = ref({})
 
-const recordPanelRecord = computed(() => {
-  if (!recordPanelStepId.value || !recordPanelUserId.value) return null
-  return getSubmittedRecord(recordPanelStepId.value, recordPanelUserId.value)
-})
+function getCurrentUserAssignment(instanceStepId) {
+  const list = stepAssignments.value[instanceStepId] || []
+  return list.find((a) => a.userId === currentUserId.value) || null
+}
 
-function openRecordPanel(instanceStepId, userId) {
-  recordPanelStepId.value = instanceStepId
-  recordPanelUserId.value = userId
-  recordPanelOpen.value = true
+function getCurrentUserRecord(instanceStepId) {
+  const records = ncRecords.value[instanceStepId] || []
+  return records.find((r) => r.userId === currentUserId.value) || null
+}
+
+function isStepEditableByCurrentUser(step) {
+  if (step.statusId !== 'IN_PROGRESS') return false
+  if (!getCurrentUserAssignment(step.id)) return false
+  const record = getCurrentUserRecord(step.id)
+  return !record || !record.submittedAt
+}
+
+// Seed formDataByStep from the current user's NcRecord whenever it changes.
+watch(
+  ncRecords,
+  () => {
+    for (const step of workflowInstanceSteps.value) {
+      const record = getCurrentUserRecord(step.id)
+      if (record && !(step.id in formDataByStep.value)) {
+        formDataByStep.value[step.id] = { ...(record.payload || {}) }
+      }
+    }
+  },
+  { immediate: true, deep: true },
+)
+
+async function persistRecord(step, { submit }) {
+  if (savingByStep.value[step.id]) return
+  const taskInstance = currentUserTasksByStep.value[step.id]
+  if (!taskInstance) {
+    toast.error('No task assigned to you for this step')
+    return
+  }
+  savingByStep.value[step.id] = true
+  try {
+    const payload = { ...(formDataByStep.value[step.id] || {}) }
+    const existing = getCurrentUserRecord(step.id)
+    const submittedAt = submit ? DateTime.now() : (existing?.submittedAt ?? null)
+    if (existing) {
+      existing.payload = payload
+      if (submit) existing.submittedAt = submittedAt
+      await existing.save()
+    } else {
+      const record = db.NcRecord.create({
+        ncId: props.ncId,
+        workflowInstanceStepId: step.id,
+        taskInstanceId: taskInstance.id,
+        stepId: step.stepId,
+        payload,
+        submittedAt,
+      })
+      await record.save()
+    }
+    toast.success(submit ? 'Form submitted' : 'Draft saved')
+  } catch (e) {
+    toast.error(e.message || 'Failed to save form')
+  } finally {
+    savingByStep.value[step.id] = false
+  }
+}
+
+function saveDraft(step) {
+  return persistRecord(step, { submit: false })
+}
+
+function submitForm(step) {
+  return persistRecord(step, { submit: true })
 }
 
 // ─── Reassign dialog ──────────────────────────────────────────────────────────
@@ -267,11 +348,6 @@ function getUserStatusClass(statusId) {
   }
 }
 
-function getSubmittedRecord(instanceStepId, userId) {
-  const records = ncRecords.value[instanceStepId] || []
-  return records.find((r) => r.userId === userId && r.submittedAt)
-}
-
 function getStatusLabel(statusId) {
   if (statusId === 'APPROVED') return 'Completed'
   return statusId.replace('_', ' ')
@@ -333,15 +409,6 @@ function getSubmittedRecords(instanceStepId) {
             <IconUserCheck :size="14" />
             Reassign
           </button>
-          <div class="tw:border-l tw:border-divider tw:h-4" />
-          <button
-            v-if="stepDefinitions[step.stepId]?.formSchema?.length"
-            class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-primary tw:hover:underline tw:cursor-pointer tw:font-medium"
-            @click="openRecordPanel(step.id, getSubmittedRecords(step.id)[0]?.userId)"
-          >
-            <IconEye :size="14" />
-            View
-          </button>
         </div>
       </div>
 
@@ -379,13 +446,42 @@ function getSubmittedRecords(instanceStepId) {
         <span v-else class="tw:text-sm tw:text-secondary">—</span>
       </div>
 
-      <!-- Submitted record data (inline) -->
+      <!-- Step form (editable for the assignee while step is in progress; readonly otherwise) -->
       <template v-if="stepDefinitions[step.stepId]?.formSchema?.length">
-        <template v-if="getSubmittedRecords(step.id).length">
-          <div v-for="record in getSubmittedRecords(step.id)" :key="record.id">
+        <!-- Editable: current user is assignee on an in-progress step and has not submitted yet. -->
+        <template v-if="isStepEditableByCurrentUser(step)">
+          <DynamicForm
+            v-model="formDataByStep[step.id]"
+            :fields="stepDefinitions[step.stepId].formSchema"
+          />
+          <div class="tw:mt-4 tw:flex tw:justify-end tw:gap-2">
+            <BaseButton
+              variant="outline"
+              :disabled="savingByStep[step.id]"
+              @click="saveDraft(step)"
+            >
+              <template #icon><IconDeviceFloppy :size="16" /></template>
+              {{ savingByStep[step.id] ? 'Saving…' : 'Save draft' }}
+            </BaseButton>
+            <BaseButton
+              variant="primary"
+              :disabled="savingByStep[step.id]"
+              @click="submitForm(step)"
+            >
+              <template #icon><IconSend :size="16" /></template>
+              Submit
+            </BaseButton>
+          </div>
+        </template>
+
+        <!-- Readonly: render every submitted record, plus the current user's draft (only). -->
+        <template v-else>
+          <!-- label -->
+          <div class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2">Form data</div>
+          <div v-for="record in getSubmittedRecords(step.id)" :key="record.id" class="tw:mb-3">
             <div
               v-if="getSubmittedRecords(step.id).length > 1"
-              class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2 tw:mt-2"
+              class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2"
             >
               {{ getUserName(record.userId) }}
             </div>
@@ -394,8 +490,25 @@ function getSubmittedRecords(instanceStepId) {
               :values="record.payload || {}"
             />
           </div>
+
+          <div v-if="getCurrentUserRecord(step.id) && !getCurrentUserRecord(step.id).submittedAt">
+            <div class="tw:text-[11px] tw:text-amber-600 tw:font-medium tw:mb-2">
+              Your draft (not submitted)
+            </div>
+            <FormSchemaReadonlyView
+              :fields="stepDefinitions[step.stepId].formSchema"
+              :values="getCurrentUserRecord(step.id).payload || {}"
+            />
+          </div>
+
+          <DynamicForm
+            v-if="!getSubmittedRecords(step.id).length && !getCurrentUserRecord(step.id)"
+            :fields="stepDefinitions[step.stepId].formSchema"
+            :readonly="true"
+            disabled
+            :values="{}"
+          />
         </template>
-        <div v-else class="tw:text-sm tw:text-secondary tw:italic">No submission yet</div>
       </template>
     </div>
   </template>
@@ -490,65 +603,4 @@ function getSubmittedRecords(instanceStepId) {
       </BaseButton>
     </div>
   </BaseDialog>
-
-  <!-- Record viewer panel -->
-  <Teleport to="body">
-    <Transition
-      enterActiveClass="tw:transition-transform tw:duration-300 tw:ease-out"
-      enterFromClass="tw:translate-y-full"
-      enterToClass="tw:translate-y-0"
-      leaveActiveClass="tw:transition-transform tw:duration-200 tw:ease-in"
-      leaveFromClass="tw:translate-y-0"
-      leaveToClass="tw:translate-y-full"
-    >
-      <div
-        v-if="recordPanelOpen"
-        class="tw:fixed tw:inset-0 tw:z-50 tw:flex tw:flex-col tw:bg-main"
-      >
-        <div class="tw:flex tw:flex-col tw:h-full tw:flex-nowrap">
-          <!-- Header -->
-          <div
-            class="tw:flex tw:items-center tw:border-b tw:border-divider tw:py-3 tw:px-4 tw:shrink-0"
-          >
-            <div class="tw:flex tw:items-center tw:gap-3">
-              <div class="tw:text-lg tw:font-medium tw:text-on-main">
-                {{ recordPanelStep?.name || 'Step' }} — Record
-              </div>
-              <span v-if="recordPanelUserId" class="tw:text-sm tw:text-secondary">
-                by {{ getUserName(recordPanelUserId) }}
-              </span>
-            </div>
-            <div class="tw:flex-1" />
-            <div v-if="recordPanelRecord?.submittedAt" class="tw:text-xs tw:text-secondary tw:mr-4">
-              Submitted: {{ recordPanelRecord.submittedAt.formatDate('dateTime') }}
-            </div>
-            <div v-else class="tw:text-xs tw:text-secondary tw:italic tw:mr-4">
-              Not yet submitted
-            </div>
-            <button
-              class="tw:p-1.5 tw:rounded-full tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:bg-main-hover tw:text-secondary tw:transition-colors"
-              @click="recordPanelOpen = false"
-            >
-              <IconX :size="20" />
-            </button>
-          </div>
-
-          <!-- Content -->
-          <div class="tw:flex-1 tw:overflow-auto tw:bg-sidebar">
-            <div class="tw:max-w-175 tw:mx-auto tw:p-6">
-              <DynamicForm
-                v-if="recordPanelStep?.formSchema?.length"
-                :fields="recordPanelStep.formSchema"
-                :modelValue="recordPanelRecord?.payload || {}"
-                :readonly="true"
-              />
-              <div v-else class="tw:text-sm tw:text-secondary tw:italic">
-                No form schema defined for this step.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
 </template>

@@ -118,6 +118,7 @@ const editingDueDate = ref(false)
 
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:items-center tw:gap-2">
+        <TaskActionBar v-if="nc?.id" entityType="Nonconformance" :entityId="nc.id" />
         <BaseButton
           v-if="nc?.statusId === 'DRAFT'"
           variant="primary"

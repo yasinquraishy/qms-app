@@ -76,8 +76,19 @@ const filteredInstances = computed(() => {
   })
 })
 
+const EntityType = {
+  DocumentVersion: 'Document',
+  Nonconformance: 'Nonconformance',
+}
+
 const columns = [
   { name: 'title', label: 'ITEM', field: 'title', align: 'left' },
+  {
+    name: 'entityType',
+    label: 'ENTITY TYPE',
+    field: (row) => EntityType[row.entityType] || row.entityType,
+    align: 'left',
+  },
   { name: 'type', label: 'TYPE', field: 'type', align: 'left' },
   { name: 'dueDate', label: 'DUE DATE', field: 'dueDate', align: 'left', sortable: true },
   { name: 'status', label: 'STATUS', field: 'status', align: 'left' },
@@ -95,15 +106,27 @@ function isDuePast(dueDate) {
   if (!dueDate) return false
   return dueDate < DateTime.now()
 }
+
+function entityRoute(row) {
+  if (row.entityType === 'Nonconformance') {
+    return getCompanyPath(`nonconformances/${row.entityId}`)
+  }
+  if (row.entityType === 'DocumentVersion') {
+    const doc = documentMap.value[row.entityId]
+    return doc ? getCompanyPath(`documents/${doc.id}`) : null
+  }
+  return null
+}
 </script>
 
 <template>
   <BaseTable :rows="filteredInstances" :columns="columns" rowKey="id">
     <!-- Item Title -->
     <template #body-cell-title="{ row }">
-      <RouterLink
+      <component
+        :is="entityRoute(row) ? 'RouterLink' : 'div'"
         class="tw:flex tw:flex-col tw:group"
-        :to="getCompanyPath(`task-instances/${row.id}`)"
+        :to="entityRoute(row) || undefined"
       >
         <template v-if="row.entityType === 'Nonconformance'">
           <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
@@ -121,7 +144,7 @@ function isDuePast(dueDate) {
             {{ getDocument(row)?.docNumber || '—' }}
           </span>
         </template>
-      </RouterLink>
+      </component>
     </template>
 
     <!-- Type -->

@@ -1,11 +1,6 @@
 <script setup>
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
-import {
-  IconPencil,
-  IconMessageCheck,
-  IconMessageExclamation,
-  IconLoader2,
-} from '@tabler/icons-vue'
+import { IconMessageCheck, IconMessageExclamation, IconLoader2 } from '@tabler/icons-vue'
 
 const props = defineProps({
   sectionId: {
@@ -28,6 +23,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  index: {
+    type: Number,
+    default: 0,
+  },
 })
 
 const section = useLiveQueryWithDeps(
@@ -40,29 +39,9 @@ const canUpdateSection = computed(
   () => props.canEdit && section.value && isAllowed(['documents:update']),
 )
 
-// ── Editing state ───────────────────────────────────────────────
-const editingType = ref(/** @type {'title'|'content'|null} */ (null))
+// ── Auto-save on any change while the section is editable ──────
+const isFirstLoad = ref(true)
 
-function startEditingTitle() {
-  if (!canUpdateSection.value) return
-  editingType.value = 'title'
-}
-
-function startEditingContent() {
-  if (!canUpdateSection.value) return
-  editingType.value = 'content'
-}
-
-function stopEditing() {
-  editingType.value = null
-}
-
-useEventListener('click', (event) => {
-  if (event.target.closest('[role="dialog"]')) return
-  stopEditing()
-})
-
-// ── Debounced save ──────────────────────────────────────────────
 const debouncedSave = useDebounceFn(async () => {
   if (canUpdateSection.value && section.value) {
     section.value.updatedBy = currentSession.value?.userId || null
@@ -73,7 +52,11 @@ const debouncedSave = useDebounceFn(async () => {
 watch(
   section,
   () => {
-    if (editingType.value) debouncedSave()
+    if (isFirstLoad.value) {
+      isFirstLoad.value = false
+      return
+    }
+    if (canUpdateSection.value) debouncedSave()
   },
   { deep: true },
 )
@@ -142,60 +125,34 @@ const debouncedSaveComment = useDebounceFn(async () => {
 <template>
   <div v-if="section" class="tw:break-inside-avoid">
     <!-- Section Title -->
-    <div v-if="editingType === 'title'" class="tw:flex tw:items-center tw:gap-2 tw:mb-4">
-      <BaseTextInput
-        v-model="section.title"
-        size="sm"
-        autofocus
-        class="tw:flex-1"
-        @blur="stopEditing"
-        @keyup.enter="stopEditing"
-      />
+    <div v-if="canUpdateSection" class="tw:flex tw:items-center tw:gap-2 tw:mb-4">
+      <span>{{ index + 1 }}.</span>
+      <BaseTextInput v-model="section.title" size="sm" class="tw:flex-1" />
     </div>
     <h3
       v-else
       class="tw:font-bold tw:flex tw:items-center tw:gap-2"
-      :class="[
-        dense ? 'tw:text-base' : 'tw:text-xl',
-        { 'tw:cursor-pointer tw:px-2 tw:-mx-2 tw:group': canEdit },
-      ]"
-      @click.prevent.stop="startEditingTitle"
+      :class="dense ? 'tw:text-base' : 'tw:text-xl'"
     >
-      <span>{{ section.order + 1 }}.</span>
+      <span>{{ index + 1 }}.</span>
       <span>{{ section.title }}</span>
-      <IconPencil
-        v-if="canUpdateSection"
-        :size="16"
-        class="tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity tw:text-primary/50"
-      />
     </h3>
 
     <!-- Section Content -->
-    <div class="tw:group tw:relative section-content" @click.prevent.stop="startEditingContent">
-      <div class="tw:absolute tw:-top-5 tw:right-0">
-        <IconPencil
-          v-if="canUpdateSection"
-          :size="16"
-          class="tw:opacity-0 tw:group-hover:opacity-100 tw:transition-opacity tw:text-primary/50"
-        />
-      </div>
-
+    <div class="section-content">
       <TiptapEditor
         v-if="section.sectionType === 'text'"
-        :key="`${section.id}-${editingType === 'content'}`"
         v-model="section.content"
-        :editable="editingType === 'content'"
+        :editable="canUpdateSection"
         class="tw:border-0! tw:min-h-fit!"
-        :class="{ 'tw:cursor-pointer': canEdit && editingType !== 'content' }"
       />
 
       <BaseUploader
         v-if="section.sectionType === 'attachment'"
         v-model="section.attachments"
-        :readonly="editingType !== 'content'"
+        :readonly="!canUpdateSection"
         hideHeader
         class="tw:border-0 tw:shadow-none! tw:p-0"
-        :class="{ 'tw:cursor-pointer': canEdit && editingType !== 'content' }"
       />
     </div>
 

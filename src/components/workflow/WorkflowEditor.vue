@@ -142,7 +142,7 @@ const handlePublish = useLiveMutation(async () => {
   }
 
   // Validate each step has at least one role or reviewer
-  if (stepsWithoutAssignees.value.length > 0) {
+  if (stepsWithoutAssignees.value?.length > 0) {
     toast.warning('Please assign at least one user or role to each step before publishing.')
     return
   }

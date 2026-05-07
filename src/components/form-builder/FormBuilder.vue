@@ -198,7 +198,7 @@ function onPreviewSubmit(data) {
 }
 
 function confirmClear() {
-  if (schema.value.length > 0) {
+  if (schema.value?.length > 0) {
     showClearDialog.value = true
   }
 }

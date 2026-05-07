@@ -14,7 +14,7 @@ const modelValue = defineModel({
 })
 
 const filterSections = ref(
-  modelValue.value.length > 0
+  modelValue.value?.length > 0
     ? modelValue.value.map((filter) => ({ ...filter, id: Date.now() + Math.random() }))
     : [{ id: Date.now(), column: null, operator: 'includes', value: '' }],
 )

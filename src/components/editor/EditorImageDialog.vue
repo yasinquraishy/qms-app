@@ -157,7 +157,7 @@ defineExpose({ open })
       </p>
     </div>
 
-    <template #actions>
+    <template #footer>
       <button
         class="tw:px-4 tw:py-2 tw:text-sm tw:font-medium tw:text-secondary tw:bg-transparent tw:border-0 tw:cursor-pointer tw:hover:text-on-main"
         @click="cancel"

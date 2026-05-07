@@ -1,7 +1,7 @@
 import { VueRenderer } from '@tiptap/vue-3'
 import { PluginKey } from '@tiptap/pm/state'
 import tippy from 'tippy.js'
-import { get } from '@/api'
+import { db } from '@models/index'
 import MentionList from '../MentionList.vue'
 
 export const UserMentionPluginKey = new PluginKey('userMention')
@@ -12,12 +12,15 @@ export const userSuggestion = {
 
   async items({ query }) {
     if (!query) return []
-    const data = await get('/v1/services/users', {
-      params: { search: query },
+    const q = query.toLowerCase()
+    const all = await db.User.where().exec()
+    const matched = all.filter((user) => {
+      const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.toLowerCase()
+      return fullName.includes(q) || user.email?.toLowerCase().includes(q)
     })
-    return (data?.users ?? []).slice(0, 10).map((user) => ({
+    return matched.slice(0, 10).map((user) => ({
       id: user.id,
-      label: `${user.firstName} ${user.lastName}`,
+      label: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
     }))
   },
 

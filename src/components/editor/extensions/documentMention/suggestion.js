@@ -1,8 +1,8 @@
 import { VueRenderer } from '@tiptap/vue-3'
 import { PluginKey } from '@tiptap/pm/state'
 import tippy from 'tippy.js'
-import { get } from '@/api'
-import MentionList from '../MentionList.vue'
+import { db } from '@models/index'
+import DocumentMentionList from './DocumentMentionList.vue'
 
 export const DocumentMentionPluginKey = new PluginKey('documentMention')
 
@@ -12,13 +12,18 @@ export const documentSuggestion = {
 
   async items({ query }) {
     if (!query) return []
-    const data = await get('/v1/services/documents', {
-      params: { search: query },
-    })
-    return (data?.documents ?? []).slice(0, 10).map((doc) => ({
-      id: doc.id,
-      label: `<span class="tw:text-on-main/50">#${doc.docNumber}</span> - ${doc.title}`,
-    }))
+    const q = query.toLowerCase()
+    const [allDocs, effectiveVersions] = await Promise.all([
+      db.Document.where().exec(),
+      db.DocumentVersion.where().where('statusId', 'EFFECTIVE').exec(),
+    ])
+    const effectiveDocIds = new Set(effectiveVersions.map((v) => v.documentId))
+    return allDocs
+      .filter((doc) => effectiveDocIds.has(doc.id))
+      .filter(
+        (doc) => doc.title?.toLowerCase().includes(q) || doc.docNumber?.toLowerCase().includes(q),
+      )
+      .slice(0, 10)
   },
 
   render: () => {
@@ -27,7 +32,7 @@ export const documentSuggestion = {
 
     return {
       onStart(props) {
-        component = new VueRenderer(MentionList, {
+        component = new VueRenderer(DocumentMentionList, {
           props,
           editor: props.editor,
         })

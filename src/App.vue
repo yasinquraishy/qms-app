@@ -32,7 +32,7 @@ onMounted(async () => {
     await initSession()
     if (currentSession.value && isAuthRoute(currentPath)) {
       await initCurrentCompany()
-      if (companies.value.length > 0) {
+      if (companies.value?.length > 0) {
         const firstCompanyCode = companies.value[0].code
         window.location.href = `/${firstCompanyCode}/dashboard`
         return
@@ -50,7 +50,7 @@ onMounted(async () => {
   await initCurrentCompany()
 
   const isCompanyExists = companies.value.some((c) => c.code === companyCode)
-  if (!isCompanyExists && companies.value.length > 0) {
+  if (!isCompanyExists && companies.value?.length > 0) {
     const firstCompanyCode = companies.value[0].code
     window.location.href = `/${firstCompanyCode}/dashboard`
     return

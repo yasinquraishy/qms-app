@@ -306,7 +306,7 @@ const allColumnsVisible = computed(() => visibleColumns.value.length === columns
 const filteredRecords = computed(() => {
   let records = templateRecords.value
 
-  if (advancedFilters.value.length > 0) {
+  if (advancedFilters.value?.length > 0) {
     records = records.filter((record) => {
       return advancedFilters.value.every((filter) => {
         const value = getProp(record, filter.column)
@@ -367,7 +367,7 @@ function getFieldValue(payload, fieldPath) {
     }
   }
   if (value === null || value === undefined || value === '') return '-'
-  if (Array.isArray(value)) return value.length > 0 ? `${value.length} items` : '-'
+  if (Array.isArray(value)) return value?.length > 0 ? `${value.length} items` : '-'
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
 }

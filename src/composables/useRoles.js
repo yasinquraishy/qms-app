@@ -25,7 +25,7 @@ function RolesState() {
         value !== null &&
         value !== '' &&
         typeof value !== 'string' &&
-        (Array.isArray(value) ? value.length > 0 : true)
+        (Array.isArray(value) ? value?.length > 0 : true)
       ) {
         params[key] = value
       }

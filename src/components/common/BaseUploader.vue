@@ -144,13 +144,13 @@ function handleFiles(fileList) {
 }
 
 async function uploadAllFiles() {
-  if (files.value.length === 0) {
+  if (files.value?.length === 0) {
     return
   }
 
   const pendingFiles = files.value.filter((f) => f.status === 'pending')
 
-  if (pendingFiles.length === 0) {
+  if (pendingFiles?.length === 0) {
     return
   }
 
@@ -266,21 +266,21 @@ defineExpose({
       </h3>
       <div class="tw:flex tw:items-center tw:gap-2">
         <span
-          v-if="uploadedFiles.length > 0"
+          v-if="uploadedFiles?.length > 0"
           class="tw:text-[10px] tw:font-medium tw:bg-good/10 tw:text-good tw:px-2 tw:py-0.5 tw:rounded-full"
         >
-          {{ uploadedFiles.length }} Uploaded
+          {{ uploadedFiles?.length }} Uploaded
         </span>
         <span
-          v-if="files.length > 0"
+          v-if="files?.length > 0"
           class="tw:text-[10px] tw:font-medium tw:bg-primary/10 tw:text-primary tw:px-2 tw:py-0.5 tw:rounded-full"
         >
-          {{ files.length }} Pending
+          {{ files?.length }} Pending
         </span>
       </div>
     </div>
 
-    <div v-if="readonly && uploadedFiles.length === 0">
+    <div v-if="readonly && uploadedFiles?.length === 0">
       <div class="tw:p-5 tw:text-center tw:text-secondary tw:bg-primary/5 tw:rounded-2xl">
         No files to display.
       </div>
@@ -337,7 +337,7 @@ defineExpose({
 
     <div class="tw:px-5 tw:pt-3 tw:pb-5">
       <!-- Uploaded Files List (from v-model) -->
-      <div v-if="uploadedFiles.length > 0" class="tw:pb-0 tw:space-y-2">
+      <div v-if="uploadedFiles?.length > 0" class="tw:pb-0 tw:space-y-2">
         <div class="ds-label-sm tw:text-secondary tw:mb-2">Uploaded Files</div>
         <BaseFileItem
           v-for="asset in uploadedFiles"
@@ -354,11 +354,11 @@ defineExpose({
 
       <!-- File List Section -->
       <div
-        v-if="files.length > 0"
+        v-if="files?.length > 0"
         class="tw:space-y-3 tw:max-h-96 tw:overflow-y-auto"
-        :class="{ 'tw:pt-5': uploadedFiles.length === 0, 'tw:pt-3': uploadedFiles.length > 0 }"
+        :class="{ 'tw:pt-5': uploadedFiles?.length === 0, 'tw:pt-3': uploadedFiles?.length > 0 }"
       >
-        <div v-if="uploadedFiles.length > 0" class="ds-label-sm tw:text-secondary tw:mb-2">
+        <div v-if="uploadedFiles?.length > 0" class="ds-label-sm tw:text-secondary tw:mb-2">
           Pending Files
         </div>
         <BaseFileItem
@@ -377,7 +377,7 @@ defineExpose({
 
     <!-- Footer Action -->
     <div
-      v-if="files.length > 0"
+      v-if="files?.length > 0"
       class="tw:px-5 tw:py-3 tw:bg-primary/5 tw:border-t tw:border-divider tw:flex tw:justify-end tw:gap-2"
     >
       <BaseButton
@@ -389,7 +389,7 @@ defineExpose({
       </BaseButton>
       <BaseButton
         variant="primary"
-        :disabled="files.length === 0 || files.some((f) => f.status === 'uploading')"
+        :disabled="files?.length === 0 || files.some((f) => f.status === 'uploading')"
         @click="uploadAllFiles"
       >
         Finalize Upload

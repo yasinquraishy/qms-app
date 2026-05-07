@@ -124,7 +124,7 @@ const rules = computed(() => ({
   sections: {
     minLength: helpers.withMessage(
       'At least one section is required',
-      (value) => value && value.length > 0,
+      (value) => value && value?.length > 0,
     ),
     hasValidSections: helpers.withMessage('All sections must have a title', (value) => {
       if (!value || value.length === 0) return true

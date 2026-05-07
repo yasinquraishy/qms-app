@@ -178,6 +178,8 @@ async function saveDraft() {
     toast.success('Document saved as draft')
     form.value = { ...DEFAULT_FORM }
     router.push(getCompanyPath(`/documents/${doc.id}`))
+  } catch {
+    toast.error('Failed to save document. Please try again.')
   } finally {
     saving.value = false
   }

@@ -137,32 +137,47 @@ export async function hydrate(modelName, id, overrides = {}, rawRecord = null) {
   const propertyMetaMap = schema.properties
 
   // Apply deserialized fields to the instance.
-  // For an existing pooled instance, skip assignments where the value hasn't
-  // changed — this prevents reactive setters from firing and triggering
-  // downstream watchers (e.g. auto-save debounce loops).
-  let didAssign = false
+  //
+  // Two skip rules for an existing pooled instance:
+  //   1. Skip fields whose deserialized value already equals the current value
+  //      (keeps reactive setters quiet and avoids no-op writes).
+  //   2. Skip fields that have pending local edits (in `#modified`). A live-
+  //      query refresh that arrives between a user edit and the debounced
+  //      save would otherwise read stale IDB state and clobber the user's
+  //      in-memory change before it reaches the server.
+  const dirtyKeys =
+    existingInstance && typeof existingInstance.getModifiedProperties === 'function'
+      ? new Set(existingInstance.getModifiedProperties())
+      : null
+
+  // Track which keys hydrate actually wrote so we can clear ONLY those dirty
+  // marks afterwards. Wholesale `_clearModified()` would wipe the pending-edit
+  // flags we just preserved via the dirtyKeys skip rule.
+  const assignedKeys = []
   for (const [key, value] of Object.entries(raw)) {
-    if (!(key in overrides)) {
-      const deserialized = deserializeValue(value, propertyMetaMap.get(key))
-      if (!existingInstance || !valuesEqual(deserialized, instance[key])) {
-        instance[key] = deserialized
-        didAssign = true
-      }
+    if (key in overrides) continue
+    if (dirtyKeys?.has(key)) continue
+    const deserialized = deserializeValue(value, propertyMetaMap.get(key))
+    if (!existingInstance || !valuesEqual(deserialized, instance[key])) {
+      instance[key] = deserialized
+      assignedKeys.push(key)
     }
   }
 
   // Apply any overrides last
   for (const [key, value] of Object.entries(overrides)) {
     instance[key] = value
-    didAssign = true
+    assignedKeys.push(key)
   }
 
-  // Clear dirty flags set during hydration — but only if hydrate actually
-  // wrote a field. A no-op refresh on a pooled instance must not wipe dirty
-  // marks that an in-flight save is relying on (race with directSaveStrategy
-  // re-marking mid-flight edits).
-  if (!existingInstance || didAssign) {
+  // For a fresh instance, wipe everything (initialization-time setter noise
+  // shouldn't leave the instance pre-dirty). For a pooled instance, clear only
+  // the keys we actually wrote — leaves any unrelated pending-edit dirty flags
+  // intact so the user's debounced save still reflects them.
+  if (!existingInstance) {
     instance._clearModified()
+  } else if (assignedKeys.length > 0) {
+    instance._clearModifiedFields(assignedKeys)
   }
 
   // Register in the pool using pkValue

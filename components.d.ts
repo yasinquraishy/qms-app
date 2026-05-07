@@ -88,6 +88,7 @@ declare module 'vue' {
     DialogCloseBtn: typeof import('./resource/js/shared/components/DialogCloseBtn.vue')['default']
     DocumentContentReadonly: typeof import('./src/components/documents/DocumentContentReadonly.vue')['default']
     DocumentMention: typeof import('./src/components/editor/extensions/documentMention/documentMention.js')['default']
+    DocumentMentionList: typeof import('./src/components/editor/extensions/documentMention/DocumentMentionList.vue')['default']
     DocumentsAddSectionDialog: typeof import('./src/components/documents/DocumentsAddSectionDialog.vue')['default']
     DocumentsCollaborators: typeof import('./src/components/documents/DocumentsCollaborators.vue')['default']
     DocumentsCreate: typeof import('./src/components/documents/DocumentsCreate.vue')['default']

@@ -8,7 +8,11 @@ export const DocumentMention = Mention.extend({
   addAttributes() {
     return {
       id: { default: null, parseHTML: (el) => el.getAttribute('data-id') },
-      label: { default: null, parseHTML: (el) => el.getAttribute('data-label') },
+      docNumber: {
+        default: null,
+        parseHTML: (el) => el.getAttribute('data-doc-number'),
+      },
+      title: { default: null, parseHTML: (el) => el.getAttribute('data-title') },
     }
   },
 
@@ -17,24 +21,29 @@ export const DocumentMention = Mention.extend({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const label = node.attrs.label ?? node.attrs.id
+    const docNumber = node.attrs.docNumber ?? ''
+    const title = node.attrs.title ?? ''
     return [
       'a',
       mergeAttributes(
         {
           'data-type': 'documentMention',
           'data-id': node.attrs.id,
-          'data-label': label,
+          'data-doc-number': docNumber,
+          'data-title': title,
           class: 'mention-chip mention-document',
         },
         HTMLAttributes,
       ),
-      `#${label}`,
+      ['span', { class: 'tw:text-on-main/50' }, `#${docNumber}`],
+      ` - ${title}`,
     ]
   },
 
   renderText({ node }) {
-    return `#${node.attrs.label ?? node.attrs.id}`
+    const docNumber = node.attrs.docNumber ?? node.attrs.id ?? ''
+    const title = node.attrs.title ?? ''
+    return `#${docNumber} - ${title}`
   },
 }).configure({
   suggestion: documentSuggestion,

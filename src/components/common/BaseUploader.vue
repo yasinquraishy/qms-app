@@ -144,13 +144,13 @@ function handleFiles(fileList) {
 }
 
 async function uploadAllFiles() {
-  if (files.value.length === 0) {
+  if (files.value?.length === 0) {
     return
   }
 
   const pendingFiles = files.value.filter((f) => f.status === 'pending')
 
-  if (pendingFiles.length === 0) {
+  if (pendingFiles?.length === 0) {
     return
   }
 
@@ -266,21 +266,21 @@ defineExpose({
       </h3>
       <div class="tw:flex tw:items-center tw:gap-2">
         <span
-          v-if="uploadedFiles.length > 0"
+          v-if="uploadedFiles?.length > 0"
           class="tw:text-[10px] tw:font-medium tw:bg-good/10 tw:text-good tw:px-2 tw:py-0.5 tw:rounded-full"
         >
-          {{ uploadedFiles.length }} Uploaded
+          {{ uploadedFiles?.length }} Uploaded
         </span>
         <span
-          v-if="files.length > 0"
+          v-if="files?.length > 0"
           class="tw:text-[10px] tw:font-medium tw:bg-primary/10 tw:text-primary tw:px-2 tw:py-0.5 tw:rounded-full"
         >
-          {{ files.length }} Pending
+          {{ files?.length }} Pending
         </span>
       </div>
     </div>
 
-    <div v-if="readonly && uploadedFiles.length === 0">
+    <div v-if="readonly && uploadedFiles?.length === 0">
       <div class="tw:p-5 tw:text-center tw:text-secondary tw:bg-primary/5 tw:rounded-2xl">
         No files to display.
       </div>
@@ -389,7 +389,7 @@ defineExpose({
       </BaseButton>
       <BaseButton
         variant="primary"
-        :disabled="files.length === 0 || files.some((f) => f.status === 'uploading')"
+        :disabled="files?.length === 0 || files.some((f) => f.status === 'uploading')"
         @click="uploadAllFiles"
       >
         Finalize Upload

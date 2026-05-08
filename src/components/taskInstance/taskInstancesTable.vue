@@ -40,7 +40,7 @@ const documentMap = useLiveQueryWithDeps(
     const docById = Object.fromEntries(documents.filter(Boolean).map((d) => [d.id, d]))
     const map = {}
     for (const v of versions.filter(Boolean)) {
-      map[v.id] = docById[v.documentId]
+      map[v.id] = { doc: docById[v.documentId], version: v }
     }
     return map
   },
@@ -70,7 +70,7 @@ const filteredInstances = computed(() => {
       if (!nc) return false
       return nc.title?.toLowerCase().includes(q) || nc.ncNumber?.toLowerCase().includes(q)
     }
-    const doc = documentMap.value[instance.entityId]
+    const doc = documentMap.value[instance.entityId]?.doc
     if (!doc) return false
     return doc.title?.toLowerCase().includes(q) || doc.docNumber?.toLowerCase().includes(q)
   })
@@ -104,7 +104,11 @@ const pagination = ref({
 })
 
 function getDocument(instance) {
-  return documentMap.value[instance.entityId] || null
+  return documentMap.value[instance.entityId]?.doc || null
+}
+
+function getVersion(instance) {
+  return documentMap.value[instance.entityId]?.version || null
 }
 
 function getNc(instance) {
@@ -121,7 +125,7 @@ function entityRoute(row) {
     return getCompanyPath(`nonconformances/${row.entityId}`)
   }
   if (row.entityType === 'DocumentVersion') {
-    const doc = documentMap.value[row.entityId]
+    const doc = documentMap.value[row.entityId]?.doc
     return doc ? getCompanyPath(`documents/${doc.id}`) : null
   }
   return null
@@ -154,9 +158,21 @@ function entityRoute(row) {
           <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:group-hover:text-primary">
             {{ getDocument(row)?.title || '—' }}
           </span>
-          <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
-            {{ getDocument(row)?.docNumber || '—' }}
-          </span>
+          <div class="tw:flex tw:items-center tw:gap-1.5">
+            <span class="tw:text-[10px] tw:text-secondary tw:font-mono tw:tracking-tight">
+              {{ getDocument(row)?.docNumber || '—' }}
+            </span>
+            <template v-if="getVersion(row)">
+              <span class="tw:text-[10px] tw:text-secondary">·</span>
+              <span class="tw:text-[10px] tw:text-primary tw:font-mono tw:tracking-tight">
+                {{
+                  getVersion(row).versionLabel
+                    ? `v${getVersion(row).versionLabel}`
+                    : `v${getVersion(row).versionMajor}.${getVersion(row).versionMinor}`
+                }}
+              </span>
+            </template>
+          </div>
         </template>
       </component>
     </template>

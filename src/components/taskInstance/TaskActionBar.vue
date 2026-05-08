@@ -12,14 +12,14 @@ const taskInstance = useLiveQueryWithDeps(
   [() => props.entityType, () => props.entityId, () => currentSession.value?.userId],
   async (db, [entityType, entityId, userId]) => {
     if (!entityType || !entityId || !userId) return null
-    const tasks = await db.TaskInstance.where('[entityType+entityId]', [entityType, entityId]).exec()
+    const tasks = await db.TaskInstance.where('[entityType+entityId]', [
+      entityType,
+      entityId,
+    ]).exec()
     return (
-      tasks.find(
-        (t) => t.assignedTo === userId && ACTIONABLE_STATUSES.includes(t.statusId),
-      ) || null
+      tasks.find((t) => t.assignedTo === userId && ACTIONABLE_STATUSES.includes(t.statusId)) || null
     )
   },
-  { models: 'TaskInstance' },
 )
 
 const instanceStep = useLiveQueryWithDeps(
@@ -38,9 +38,7 @@ const workflowStep = useLiveQueryWithDeps(
   },
 )
 
-const canActOnStep = computed(() =>
-  ACTIONABLE_STATUSES.includes(taskInstance.value?.statusId),
-)
+const canActOnStep = computed(() => ACTIONABLE_STATUSES.includes(taskInstance.value?.statusId))
 
 defineExpose({ taskInstance })
 </script>

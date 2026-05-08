@@ -118,20 +118,11 @@ export declare class BaseModel {
   /** Returns the current action for this instance. */
   get action(): OperationType
 
-  /** @internal Called by observabilityHelper on every setter invocation. */
-  _propertyChanged(name: string, _oldValue?: unknown): void
-
-  /** @internal Clear the modified state. Called by persistence layer after hydration or save. */
-  _clearModified(): void
-
-  /** True if any @Property field has changed since last save(). */
-  isDirty(): boolean
-
-  /** Names of fields currently marked dirty. */
-  getModifiedProperties(): string[]
-
   /**
-   * Validate properties, capture changes, commit transaction, and return void.
+   * Validate properties and persist the instance through the installed save
+   * strategy. For UPDATE actions, the strategy diffs the in-memory instance
+   * against the latest persisted IDB row and skips the network request when
+   * nothing has changed.
    */
   save(): Promise<void>
 

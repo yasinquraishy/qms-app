@@ -12,9 +12,8 @@ import { DateTime } from 'luxon'
  * identical to what the instance already holds. The IDB layer round-trips
  * arrays/objects through JSON.parse(JSON.stringify(...)), so freshly hydrated
  * values always have new references — a shallow check would always say
- * "different" and re-assign on every refresh, which (because Vue's ref triggers
- * watchers asynchronously while `_clearModified()` runs synchronously) produces
- * a save→hydrate→save loop.
+ * "different" and re-assign on every refresh, producing pointless setter
+ * triggers and downstream watcher work.
  *
  * @param {*} a
  * @param {*} b
@@ -131,56 +130,25 @@ export async function hydrate(modelName, id, overrides = {}, rawRecord = null) {
   // Use pk value from record (not the lookup key, which may differ)
   const pkValue = raw[pk]
   const existingInstance = ObjectPool.get(modelName, pkValue)
-  let instance = existingInstance ?? new Ctor()
+  const instance = existingInstance ?? new Ctor()
 
-  // Build property metadata lookup map — schema.properties is already a Map
   const propertyMetaMap = schema.properties
 
-  // Apply deserialized fields to the instance.
-  //
-  // Two skip rules for an existing pooled instance:
-  //   1. Skip fields whose deserialized value already equals the current value
-  //      (keeps reactive setters quiet and avoids no-op writes).
-  //   2. Skip fields that have pending local edits (in `#modified`). A live-
-  //      query refresh that arrives between a user edit and the debounced
-  //      save would otherwise read stale IDB state and clobber the user's
-  //      in-memory change before it reaches the server.
-  const dirtyKeys =
-    existingInstance && typeof existingInstance.getModifiedProperties === 'function'
-      ? new Set(existingInstance.getModifiedProperties())
-      : null
-
-  // Track which keys hydrate actually wrote so we can clear ONLY those dirty
-  // marks afterwards. Wholesale `_clearModified()` would wipe the pending-edit
-  // flags we just preserved via the dirtyKeys skip rule.
-  const assignedKeys = []
+  // Server is authoritative — always overwrite the local instance with the
+  // record from IDB. Only skip fields whose deserialized value already equals
+  // the current value, to avoid spurious reactive setter triggers.
   for (const [key, value] of Object.entries(raw)) {
     if (key in overrides) continue
-    if (dirtyKeys?.has(key)) continue
     const deserialized = deserializeValue(value, propertyMetaMap.get(key))
     if (!existingInstance || !valuesEqual(deserialized, instance[key])) {
       instance[key] = deserialized
-      assignedKeys.push(key)
     }
   }
 
-  // Apply any overrides last
   for (const [key, value] of Object.entries(overrides)) {
     instance[key] = value
-    assignedKeys.push(key)
   }
 
-  // For a fresh instance, wipe everything (initialization-time setter noise
-  // shouldn't leave the instance pre-dirty). For a pooled instance, clear only
-  // the keys we actually wrote — leaves any unrelated pending-edit dirty flags
-  // intact so the user's debounced save still reflects them.
-  if (!existingInstance) {
-    instance._clearModified()
-  } else if (assignedKeys.length > 0) {
-    instance._clearModifiedFields(assignedKeys)
-  }
-
-  // Register in the pool using pkValue
   ObjectPool.register(modelName, pkValue, instance)
 
   return instance
@@ -234,6 +202,39 @@ export function serializeModel(modelName, instance, op = null) {
   }
 
   return result
+}
+
+/**
+ * Build an UPDATE patch by diffing the in-memory instance against its last-
+ * persisted IDB row. Returns an object containing only the properties whose
+ * serialized values differ. Fields marked `excludeFromGraphQL: ['update']`
+ * are always omitted.
+ *
+ * Called from directSaveStrategy at save time — replaces the previous eager
+ * dirty-tracking system. The "previousRecord" should be the raw IDB row read
+ * immediately before the mutation so the diff captures only changes the user
+ * has made on top of the latest known server state (and ignores fields that
+ * a concurrent socket push has already brought up to date).
+ *
+ * @param {string} modelName
+ * @param {object} instance - in-memory model instance with current values
+ * @param {object|null} previousRecord - last-known raw IDB row, or null for fresh creates
+ * @returns {object} patch object suitable for the GraphQL update mutation's `patch` field
+ */
+export function computeUpdatePatch(modelName, instance, previousRecord) {
+  const schema = ModelRegistry.getSchema(modelName)
+  if (!schema) throw new Error(`[computeUpdatePatch] Unknown model: ${modelName}`)
+
+  const patch = {}
+  for (const [key, propMeta] of schema.properties) {
+    if (propMeta.options?.excludeFromGraphQL?.includes('update')) continue
+    const newValue = serializeValue(instance[key], propMeta)
+    const prevValue = previousRecord?.[key]
+    if (!valuesEqual(newValue, prevValue)) {
+      patch[key] = newValue
+    }
+  }
+  return patch
 }
 
 /**

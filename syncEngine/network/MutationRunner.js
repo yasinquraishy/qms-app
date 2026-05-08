@@ -18,9 +18,10 @@ function capitalize(str) {
  * @param {object} meta - MetaCache entry
  * @param {import('../core/BaseModel.js').BaseModel} instance
  * @param {string} action - OPERATION.*
+ * @param {object} [patch] - precomputed UPDATE patch (required for UPDATE)
  * @returns {{ query: string, variables: object }}
  */
-function buildQueryAndVariables(meta, instance, action) {
+function buildQueryAndVariables(meta, instance, action, patch) {
   const id = instance[meta.pk]
 
   switch (action) {
@@ -32,12 +33,8 @@ function buildQueryAndVariables(meta, instance, action) {
       }
     }
     case OPERATION.UPDATE: {
-      // Only send the changed fields as patch
-      const changedKeys = instance.getModifiedProperties()
-      const allValues = serializeModel(instance.constructor.name, instance, 'update')
-      const patch = {}
-      for (const key of changedKeys) {
-        if (key in allValues) patch[key] = allValues[key]
+      if (!patch) {
+        throw new Error('[MutationRunner] UPDATE requires a precomputed patch')
       }
       return {
         query: meta.update,
@@ -77,10 +74,11 @@ export const MutationRunner = {
    *
    * @param {import('../core/BaseModel.js').BaseModel} instance
    * @param {string} action - OPERATION.CREATE | UPDATE | DELETE
+   * @param {{ patch?: object }} [options] - UPDATE patch (required for UPDATE)
    * @returns {Promise<object|null>} server-returned record (null for DELETE or LOCAL models)
    * @throws {GraphQLError} if the request fails
    */
-  async run(instance, action) {
+  async run(instance, action, { patch } = {}) {
     const modelName = instance.constructor.name
     const schema = ModelRegistry.getSchema(modelName)
     if (!schema) throw new Error(`[MutationRunner] Unknown model: ${modelName}`)
@@ -91,7 +89,7 @@ export const MutationRunner = {
     const meta = MetaCache.get(modelName)
     if (!meta) throw new Error(`[MutationRunner] No meta for model: ${modelName}`)
 
-    const { query, variables } = buildQueryAndVariables(meta, instance, action)
+    const { query, variables } = buildQueryAndVariables(meta, instance, action, patch)
     const data = await graphqlRequest(query, variables)
     return extractServerRecord(data, meta, action)
   },

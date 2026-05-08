@@ -4,9 +4,8 @@ import { PROP_TYPE } from '../shared/constants.js'
 /**
  * @Property([options]) — field decorator for plain owned fields.
  *
- * - Wraps the field in an observable box via observabilityHelper (M1).
- * - Setter calls instance._propertyChanged(name) so BaseModel can track
- *   the dirty key for the next save.
+ * - Wraps the field in a Vue ref via observabilityHelper so reads/writes
+ *   participate in Vue reactivity.
  * - Registers { name, type: 'property', options } in context.metadata._syncProps
  *   so @ClientModel can include the field in the schemaHash.
  *
@@ -77,9 +76,7 @@ export function Property(options = {}) {
     // addInitializer runs on each new instance after the field initializer,
     // so `this[name]` already holds the declared default value.
     context.addInitializer(function () {
-      observabilityHelper(this, name, (instance, fieldName) => {
-        instance._propertyChanged?.(fieldName)
-      })
+      observabilityHelper(this, name)
     })
   }
 }

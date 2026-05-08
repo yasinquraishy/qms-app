@@ -1,48 +1,37 @@
 import { ref } from 'vue'
 
 /**
- * observabilityHelper — "M1" in the plan.
+ * observabilityHelper — wraps an instance field in a Vue ref exposed via a
+ * custom getter/setter pair so Vue's reactivity tracks reads and writes for
+ * template re-renders and watchers.
  *
- * Replaces a plain instance field with a Vue ref exposed via a custom
- * getter/setter pair. The setter writes the new value into the ref (triggers
- * reactive re-renders) and notifies the model via onSet so it can record the
- * field as dirty.
+ * No dirty tracking: the syncEngine is now remote-first — `directSaveStrategy`
+ * computes the UPDATE patch by diffing the in-memory instance against the
+ * latest persisted IDB row at save time, so there is no per-field "is this
+ * field locally modified?" state to maintain.
  *
- * @param {object}   instance      - The model instance.
- * @param {string}   name          - Field name.
- * @param {Function} onSet         - Called with (instance, name) whenever the
- *                                   value changes.
+ * `updatedAt` keeps a non-reactive code path so the server's autoUpdate
+ * timestamp landing via hydrate() doesn't trigger a render storm.
+ *
+ * @param {object} instance - The model instance.
+ * @param {string} name     - Field name.
  */
-export function observabilityHelper(instance, name, onSet) {
-  // Capture any value already placed on the instance by a field initializer.
+export function observabilityHelper(instance, name) {
   const existing = Object.getOwnPropertyDescriptor(instance, name)
   const initialValue = existing?.value
-  // updatedAt is non-reactive (skips re-renders on auto-bumped saves), so
-  // we keep its current value in a plain variable rather than the ref.
   let updatedAtValue = initialValue
   const box = ref(initialValue)
-
-  // Watch deeply so internal mutations of arrays/objects also flag dirty.
-  // _propertyChanged is idempotent (Set.add) so spurious fires are no-ops.
-  // flush: 'sync' so dirty marking runs inside the setter rather than on the
-  // next tick — otherwise hydrate's _clearModifiedFields() runs first and the
-  // async watcher re-dirties the field afterwards, causing subsequent sync
-  // pushes to be skipped by the dirtyKeys check in hydrate().
-  watch(box, () => onSet(instance, name), { deep: true, flush: 'sync' })
 
   Object.defineProperty(instance, name, {
     enumerable: true,
     configurable: true,
     get() {
-      if (name === 'updatedAt') {
-        return updatedAtValue
-      }
+      if (name === 'updatedAt') return updatedAtValue
       return box.value
     },
     set(newVal) {
       if (name === 'updatedAt') {
         updatedAtValue = newVal
-        onSet(instance, name)
       } else {
         box.value = newVal
       }

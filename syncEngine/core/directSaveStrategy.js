@@ -1,65 +1,37 @@
 /**
- * directSaveStrategy — the save strategy used by BaseModel when the syncEngine
- * is running in main-thread direct-API mode.
+ * directSaveStrategy — pessimistic save: API first, then IDB.
  *
- * Pessimistic flow:
- *   1. Fire GraphQL mutation via MutationRunner.
- *   2. On success: write server record to IDB, update ObjectPool, emit syncBus.
- *   3. On failure: throw — no IDB mutation, no rollback needed.
+ * Flow:
+ *   1. For UPDATE: read the latest IDB row, diff against the in-memory
+ *      instance, build a patch. If patch is empty, return without firing
+ *      a network request.
+ *   2. Fire the GraphQL mutation via MutationRunner.
+ *   3. On success: write the server response to IDB, hydrate the pooled
+ *      instance from that record, emit syncBus.
+ *   4. On failure: throw — IDB is untouched, no rollback needed.
  *
  * Coalescing: per-instance backpressure with at most 1 in-flight + 1 pending
  * save. Additional save() calls while a save is pending share the pending
  * promise; when the in-flight save settles, the pending slot becomes the next
  * in-flight save and re-reads instance state at run time, so 5 rapid edits
  * collapse into 2 HTTP requests.
+ *
+ * Echo suppression: `markAsRecentlyWritten` is fired before and after the
+ * mutation so the socket event for our own write doesn't trigger a redundant
+ * fetch + IDB.put. Server is authoritative; the result is identical either
+ * way, but skipping the redundant work avoids extra GraphQL traffic and
+ * spurious live-query refires.
  */
 
 import { OPERATION, LOAD_STRATEGY } from '../shared/constants.js'
 import ModelRegistry from './ModelRegistry.js'
 import { MutationRunner } from '../network/MutationRunner.js'
 import { IndexedDB } from '../persistence/IndexedDB.js'
-import { dehydrate, serializeValue, valuesEqual } from '../persistence/hydration.js'
+import { computeUpdatePatch, dehydrate, hydrate } from '../persistence/hydration.js'
 import { ObjectPool } from './ObjectPool.js'
 import { syncBus } from './syncBus.js'
 import { markAsRecentlyWritten } from '../sync/socketSubscriber.js'
 import { pendingRequests } from './pendingRequests.js'
-
-/**
- * Detach a value from the live model so subsequent in-place mutations on
- * arrays/objects don't bleed into the snapshot. JSON-based clone is sufficient
- * for our use case (comparing structural equality against the live value
- * after the API returns); DateTime instances serialize via their toJSON.
- */
-function snapshotValue(value) {
-  if (value === null || typeof value !== 'object') return value
-  try {
-    return JSON.parse(JSON.stringify(value))
-  } catch {
-    return value
-  }
-}
-
-/**
- * Compare a snapshot taken with snapshotValue() against a live instance value.
- * Falls back to JSON-stringified comparison for arrays/objects where reference
- * equality (valuesEqual) is meaningless after deep cloning.
- */
-function snapshotEqual(snapshot, current) {
-  if (valuesEqual(snapshot, current)) return true
-  if (
-    snapshot === null ||
-    current === null ||
-    typeof snapshot !== 'object' ||
-    typeof current !== 'object'
-  ) {
-    return false
-  }
-  try {
-    return JSON.stringify(snapshot) === JSON.stringify(current)
-  } catch {
-    return false
-  }
-}
 
 /**
  * Per-instance save state — keyed by "ModelName:pk".
@@ -88,7 +60,6 @@ export async function directSaveStrategy(instance) {
   // LOCAL strategy: just write to IDB (no network), no queueing needed.
   if (schema.loadStrategy === LOAD_STRATEGY.LOCAL) {
     await dehydrate(modelName, instance)
-    instance._clearModified()
     syncBus.emit({ modelName, modelId: id, action: instance.action, type: 'transactionCommitted' })
     return
   }
@@ -100,7 +71,6 @@ export async function directSaveStrategy(instance) {
     saveStates.set(queueKey, state)
   }
 
-  // Nothing in flight: start immediately.
   if (!state.inFlight) {
     return runSave(instance, schema, pk, id, tableName, state, queueKey)
   }
@@ -118,11 +88,6 @@ export async function directSaveStrategy(instance) {
   return state.pendingPromise
 }
 
-/**
- * Kick off a single save and arrange the pending slot to be picked up next.
- * Errors are not propagated to the pending caller — the pending save runs
- * regardless and the new caller awaits its own outcome.
- */
 function runSave(instance, schema, pk, id, tableName, state, queueKey) {
   const promise = _executeSave(instance, schema, pk, id, tableName)
   state.inFlight = promise
@@ -154,24 +119,15 @@ async function _executeSave(instance, schema, pk, id, tableName) {
   // Re-read action at run time — a delete may have been queued after an update.
   const action = instance.action
 
-  // Re-check dirtiness at run time: the previous save may already have
-  // committed all pending changes, making this one a no-op.
-  if (!instance.isDirty() && action === OPERATION.UPDATE) return
-
-  // Snapshot the dirty field NAMES before the async request.
-  // After the request we use this to:
-  //   (a) clear only the fields we actually sent from #modified, and
-  //   (b) detect which fields the user edited while the request was in flight.
-  const dirtyKeysAtSendTime = new Set(instance.getModifiedProperties())
-
-  // Snapshot the VALUES we are about to send so we can compare afterwards
-  // and re-mark any field the user changed mid-flight as dirty again.
-  // Deep-clone Array/Object fields — otherwise the snapshot would share its
-  // reference with the live instance and an in-place mutation (e.g. push to
-  // an `options` array) would be invisible to the post-flight comparison.
-  const preMutationValues = {}
-  for (const key of dirtyKeysAtSendTime) {
-    preMutationValues[key] = snapshotValue(instance[key])
+  // For UPDATE: compute the patch by diffing the in-memory instance against
+  // the latest persisted IDB row. If nothing changed (e.g. a debounced save
+  // fired but the user reverted, or a previous save already committed all
+  // pending edits), return without a network round trip.
+  let patch = null
+  if (action === OPERATION.UPDATE) {
+    const previousRecord = await IndexedDB.get(tableName, id)
+    patch = computeUpdatePatch(modelName, instance, previousRecord)
+    if (Object.keys(patch).length === 0) return
   }
 
   // Mark as pending BEFORE the network request so socket echo events arriving
@@ -181,7 +137,7 @@ async function _executeSave(instance, schema, pk, id, tableName) {
   pendingRequests.increment()
   let serverRecord
   try {
-    serverRecord = await MutationRunner.run(instance, action)
+    serverRecord = await MutationRunner.run(instance, action, { patch })
   } finally {
     pendingRequests.decrement()
   }
@@ -189,40 +145,21 @@ async function _executeSave(instance, schema, pk, id, tableName) {
   if (action === OPERATION.DELETE) {
     await IndexedDB.delete(tableName, id)
     ObjectPool.unregister(modelName, id)
-    instance._clearModified()
+  } else if (serverRecord) {
+    await IndexedDB.put(tableName, serverRecord)
+    // Refresh the echo-suppression window now that we have the server ack.
+    markAsRecentlyWritten(modelName, id)
+    // Re-hydrate the pooled instance from the freshly-written server record so
+    // the in-memory model reflects what the server actually persisted (which
+    // may include server-set fields like updatedAt, server defaults, etc.).
+    await hydrate(modelName, id, {}, serverRecord)
   } else {
-    if (serverRecord) {
-      // Build the record to persist in IDB.
-      // For fields the user edited while the request was in flight, keep their
-      // current value so a subsequent hydration won't revert their work.
-      const currentDirtyKeys = instance.getModifiedProperties()
-      let recordToWrite = serverRecord
-      if (currentDirtyKeys.length > 0) {
-        recordToWrite = { ...serverRecord }
-        for (const key of currentDirtyKeys) {
-          const propMeta = schema.properties?.get(key)
-          recordToWrite[key] = serializeValue(instance[key], propMeta)
-        }
-      }
-      await IndexedDB.put(tableName, recordToWrite)
-      // Refresh the echo-suppression window now that we have the server ack.
-      markAsRecentlyWritten(modelName, id)
-
-      // Partial dirty-state reconciliation:
-      // Clear only the fields we sent (others may have been edited mid-flight).
-      instance._clearModifiedFields(dirtyKeysAtSendTime)
-      // Re-mark any sent field whose value the user changed while we waited,
-      // so the next queued save will include those edits.
-      for (const key of dirtyKeysAtSendTime) {
-        if (!snapshotEqual(preMutationValues[key], instance[key])) {
-          instance._propertyChanged(key)
-        }
-      }
-    } else {
-      // Fallback: no server record returned — persist local state.
-      await dehydrate(modelName, instance)
-      instance._clearModifiedFields(dirtyKeysAtSendTime)
-    }
+    // No server record returned for a non-DELETE — the mutation succeeded but
+    // the response was empty. Fall back to persisting local state.
+    console.warn(
+      `[directSaveStrategy] ${action} for ${modelName}:${id} returned no record; persisting local state`,
+    )
+    await dehydrate(modelName, instance)
   }
 
   syncBus.emit({ modelName, modelId: id, action, type: 'transactionCommitted' })

@@ -5,27 +5,30 @@ import { QueryBuilder } from '../query/QueryBuilder.js'
 import { OPERATION } from '../shared/constants.js'
 import { ModelValidator, ValidationError } from './ModelValidator.js'
 import { DateTime } from 'luxon'
-import { nextTick } from 'vue'
 
 // Re-export for backwards compatibility
 export { ValidationError }
 
 /**
- * Base class for all @ClientModel classes
+ * Base class for all @ClientModel classes.
  *
  * Provides:
- *   _propertyChanged(name) — called by observabilityHelper on every setter
- *     invocation; records the field name as dirty.
+ *   save() — validates the instance and delegates to BaseModel._saveStrategy
+ *     (installed by SyncEngine). The strategy is responsible for deciding
+ *     whether a network round trip is needed; for UPDATE it diffs the
+ *     in-memory instance against the latest persisted IDB row and skips
+ *     the request when there is no change.
  *
- *   save() — delegates to BaseModel._saveStrategy (installed by SyncEngine).
+ *   delete() / hardDelete() / restore() — lifecycle helpers that set the
+ *     instance's #action and call save().
  *
- *   isDirty() / getModifiedProperties() — introspection helpers.
+ *   create() — static helper that constructs a fresh instance, applies
+ *     timestamp fields, and registers the instance in the ObjectPool.
  *
- *   validateProperties() — validates all @Property fields against their
- *     declared type and required constraint.
+ *   findByPk() / where() — read helpers that hydrate model instances from
+ *     IndexedDB.
  *
- *   _clearModified() — clears the modified state; called by persistence layer
- *     after hydration or save.
+ *   reload() — re-reads this instance's fields from IDB.
  */
 export class BaseModel {
   /**
@@ -80,7 +83,6 @@ export class BaseModel {
   }
 
   #action = OPERATION.UPDATE
-  #modified = new Set()
 
   /**
    * Create a new instance of this model class.
@@ -108,10 +110,6 @@ export class BaseModel {
 
     // Set timestamp fields to current time
     BaseModel.#applyTimestamps(instance, schema)
-
-    // Clear dirty state from property assignments — a newly created instance
-    // should not appear dirty until a property is explicitly modified.
-    instance._clearModified()
 
     // Mark as create action
     instance.#action = OPERATION.CREATE
@@ -220,115 +218,26 @@ export class BaseModel {
     return toRaw(this).#action
   }
 
-  #propertiesMeta = null
-
-  get propertiesMeta() {
-    const self = toRaw(this)
-    if (!self.#propertiesMeta) {
-      const schema = ModelRegistry.getSchema(self.constructor.name)
-      self.#propertiesMeta = schema?.properties || new Map()
-    }
-    return self.#propertiesMeta
-  }
-
-  /**
-   * Called by observabilityHelper whenever a watched field changes.
-   * Set semantics make this idempotent — repeated calls for the same field
-   * are no-ops. The second arg (legacy oldValue) is ignored; kept for
-   * compatibility with Property.js's call site.
-   * @param {string} name
-   */
-  _propertyChanged(name) {
-    const propMeta = this.propertiesMeta.get(name)
-    if (
-      Array.isArray(propMeta?.options?.excludeFromGraphQL) &&
-      propMeta.options.excludeFromGraphQL.includes('update')
-    )
-      return
-    toRaw(this).#modified.add(name)
-  }
-
-  /**
-   * Clear the modified state. Called by persistence layer after hydration or save.
-   * @internal
-   */
-  _clearModified() {
-    toRaw(this).#modified.clear()
-  }
-
-  /**
-   * Clear only the specified fields from the modified state.
-   * Used by directSaveStrategy to clear only the fields that were sent in a
-   * mutation, preserving any fields the user edited while the request was in flight.
-   * @param {Iterable<string>} keys
-   * @internal
-   */
-  _clearModifiedFields(keys) {
-    const modified = toRaw(this).#modified
-    for (const key of keys) {
-      modified.delete(key)
-    }
-  }
-
-  /**
-   * Returns true if any @Property field has changed since
-   * the last save().
-   */
-  isDirty() {
-    for (const key of toRaw(this).#modified) {
-      if (key !== 'updatedAt') return true
-    }
-    return false
-  }
-
-  /**
-   * Returns the names of currently dirty fields.
-   * @returns {string[]}
-   */
-  getModifiedProperties() {
-    return Array.from(toRaw(this).#modified)
-  }
-
-  getDirtyProperties() {
-    const result = {}
-    for (const key of toRaw(this).#modified) {
-      if (key !== 'updatedAt') result[key] = this[key]
-    }
-    return result
-  }
-
   /**
    * Validates properties and delegates to the installed save strategy.
+   *
+   * Whether the save fires a network request is decided by the save strategy,
+   * not here — for UPDATE actions, `directSaveStrategy` reads the latest IDB
+   * row, diffs against the in-memory instance, and skips the request entirely
+   * if nothing changed. autoUpdate fields like `updatedAt` are filled in by
+   * the server and written back via the mutation response.
+   *
    * @returns {Promise<void>}
    */
   async save() {
     const self = toRaw(this)
-    await nextTick() // ensure all property changes are flushed to the instance before we read modified properties
 
-    if (!self.isDirty() && self.#action === OPERATION.UPDATE) {
-      return // early exit if no changes to save (but still allow create/delete actions)
-    }
-
-    // Validate BEFORE applying autoUpdate timestamps — setting timestamps
-    // mutates the reactive instance which re-triggers deep watchers.  If
-    // validation fails we must not have touched the instance at all,
-    // otherwise the watcher fires debouncedSave again → infinite loop.
     ModelValidator.validate(this, this.constructor.name)
 
-    // Apply autoUpdate timestamps. Mark the field dirty synchronously so
-    // _saveStrategy sees it without waiting for the async deep watcher.
-    const schema = ModelRegistry.getSchema(this.constructor.name)
-    if (schema?.properties) {
-      for (const [name, meta] of schema.properties) {
-        if (meta.options?.autoUpdate) {
-          self.#modified.add(name)
-          self[name] = BaseModel.#nowForType(meta.options.type)
-        }
-      }
-    }
-
     if (!BaseModel._saveStrategy) {
-      throw new Error('[BaseModel] No _saveStrategy installed; call SyncEngine.install() first')
+      throw new Error(
+        '[BaseModel] No _saveStrategy installed; call SyncEngine.install() first',
+      )
     }
     await BaseModel._saveStrategy(self)
 

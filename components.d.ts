@@ -114,7 +114,6 @@ declare module 'vue' {
     DocumentsStatsCards: typeof import('./src/components/documents/DocumentsStatsCards.vue')['default']
     DocumentsStatusBadge: typeof import('./src/components/documents/DocumentsStatusBadge.vue')['default']
     DocumentsTable: typeof import('./src/components/documents/DocumentsTable.vue')['default']
-    DocumentsWorkflowSidebar: typeof import('./src/components/documents/DocumentsWorkflowSidebar.vue')['default']
     DocumentTemplateBadge: typeof import('./src/components/badges/DocumentTemplateBadge.vue')['default']
     DocumentTemplateBadgeById: typeof import('./src/components/badges/DocumentTemplateBadgeById.vue')['default']
     DocumentTemplatesCreate: typeof import('./src/components/documentTemplates/DocumentTemplatesCreate.vue')['default']

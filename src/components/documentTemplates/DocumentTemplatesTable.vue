@@ -41,7 +41,7 @@ async function onArchiveTemplate(row) {
 }
 
 async function onUnarchiveTemplate(row) {
-  row.statusId = 'ACTIVE'
+  row.statusId = 'DRAFT'
   try {
     await row.save()
     toast.success('Template unarchived successfully')

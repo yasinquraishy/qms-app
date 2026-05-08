@@ -5,7 +5,7 @@ defineProps({
 })
 
 const SCHEME_MAP = {
-  ACTIVE: { class: 'tw:bg-green-100 tw:text-green-700' },
+  PUBLISHED: { class: 'tw:bg-green-100 tw:text-green-700' },
   DRAFT: { class: 'tw:bg-amber-100 tw:text-amber-700' },
   ARCHIVED: { class: 'tw:bg-gray-100 tw:text-gray-600' },
   INACTIVE: { class: 'tw:bg-gray-100 tw:text-gray-600' },

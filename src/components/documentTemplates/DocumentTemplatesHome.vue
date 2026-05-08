@@ -12,7 +12,7 @@ const canCreate = computed(() => isAllowed(['document-templates:create']))
 
 const totalTemplates = computed(() => (documentTemplates.value || []).length)
 const activeTemplates = computed(
-  () => (documentTemplates.value || []).filter((t) => t.statusId === 'ACTIVE').length,
+  () => (documentTemplates.value || []).filter((t) => t.statusId === 'PUBLISHED').length,
 )
 const withTraining = computed(
   () => (documentTemplates.value || []).filter((t) => t.trainingAvailable).length,

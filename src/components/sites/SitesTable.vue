@@ -27,8 +27,17 @@ const columns = [
   { name: 'code', label: 'CODE', field: 'code', align: 'left', sortable: true },
   { name: 'address', label: 'ADDRESS', field: 'address', align: 'left', sortable: true },
   { name: 'timezone', label: 'TIMEZONE', field: 'timezone', align: 'left', sortable: true },
+  { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 
 function onEdit(row) {
   emit('edit', row)
@@ -51,7 +60,13 @@ function rowMenuItems(row) {
 </script>
 
 <template>
-  <BaseTable :rows="rows" :columns="columns" :loading="loading" rowKey="id">
+  <BaseTable
+    v-model:pagination="pagination"
+    :rows="rows"
+    :columns="columns"
+    :loading="loading"
+    rowKey="id"
+  >
     <template #body-cell-name="{ row }">
       <div class="tw:font-bold tw:text-on-main">{{ row.name }}</div>
     </template>
@@ -69,6 +84,10 @@ function rowMenuItems(row) {
 
     <template #body-cell-timezone="{ row }">
       <span class="tw:text-xs tw:text-secondary">{{ row.timezone }}</span>
+    </template>
+
+    <template #body-cell-createdAt="{ row }">
+      <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
     </template>
 
     <template #body-cell-actions="{ row }">

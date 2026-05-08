@@ -141,7 +141,16 @@ const columns = [
   { name: 'submittedBy', label: 'SUBMITTED BY', field: 'submittedBy', align: 'left' },
   { name: 'currentStep', label: 'CURRENT STEP', field: 'currentStep', align: 'left' },
   { name: 'status', label: 'STATUS', field: 'status', align: 'left' },
+  { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
 ]
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 
 function getDocument(instance) {
   return documentMap.value[instance.resourceId] || null
@@ -153,7 +162,12 @@ function getNc(instance) {
 </script>
 
 <template>
-  <BaseTable :rows="filteredInstances" :columns="columns" rowKey="id">
+  <BaseTable
+    v-model:pagination="pagination"
+    :rows="filteredInstances"
+    :columns="columns"
+    rowKey="id"
+  >
     <!-- Item Title -->
     <template #body-cell-title="{ row }">
       <RouterLink
@@ -214,6 +228,11 @@ function getNc(instance) {
     <!-- Status -->
     <template #body-cell-status="{ row }">
       <WorkflowInstanceStatusBadgeById :statusId="row.statusId" showDot />
+    </template>
+
+    <!-- Created -->
+    <template #body-cell-createdAt="{ row }">
+      <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
     </template>
   </BaseTable>
 </template>

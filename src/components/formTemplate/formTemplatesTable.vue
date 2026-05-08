@@ -32,6 +32,14 @@ const columns = [
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
 
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
+
 const previewSchema = computed(() => {
   if (!previewTemplate.value?.schema) return []
   return Array.isArray(previewTemplate.value.schema) ? previewTemplate.value.schema : []
@@ -67,7 +75,7 @@ function rowMenuItems(row) {
 </script>
 
 <template>
-  <BaseTable :rows="rows" :columns="columns" rowKey="id">
+  <BaseTable v-model:pagination="pagination" :rows="rows" :columns="columns" rowKey="id">
     <!-- Title Column -->
     <template #body-cell-title="{ row }">
       <div class="tw:flex tw:flex-col tw:cursor-pointer" @click="navigateToTemplate(row)">

@@ -76,8 +76,17 @@ const columns = computed(() => [
     sortable: false,
   },
   { name: 'owner', label: 'OWNER', field: 'owner', align: 'left', sortable: true },
+  { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right' },
 ])
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 
 function getVersionLabel(version) {
   if (!version) return '-'
@@ -105,7 +114,7 @@ async function onUnarchiveDocument(row) {
 </script>
 
 <template>
-  <BaseTable :rows="rows" :columns="columns" :loading="loading">
+  <BaseTable v-model:pagination="pagination" :rows="rows" :columns="columns" :loading="loading">
     <!-- Doc Number Column -->
     <template #body-cell-docNumber="{ row }">
       <BaseBadge>{{ row.docNumber }}</BaseBadge>
@@ -157,6 +166,11 @@ async function onUnarchiveDocument(row) {
     <!-- Owner Column -->
     <template #body-cell-owner="{ row }">
       <UserBadgeById :userId="row.userId" />
+    </template>
+
+    <!-- Created Column -->
+    <template #body-cell-createdAt="{ row }">
+      <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
     </template>
 
     <!-- Actions Column -->

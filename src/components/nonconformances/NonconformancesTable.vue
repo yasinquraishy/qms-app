@@ -29,8 +29,17 @@ const columns = [
   { name: 'status', label: 'STATUS', field: 'statusId', align: 'left', sortable: false },
   { name: 'type', label: 'TYPE', field: 'typeId', align: 'left', sortable: false },
   { name: 'dueDate', label: 'DUE DATE', field: 'dueDate', align: 'left', sortable: true },
+  { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 
 function rowMenuItems(row) {
   const items = []
@@ -45,7 +54,7 @@ function rowMenuItems(row) {
 </script>
 
 <template>
-  <BaseTable :rows="rows" :columns="columns" rowKey="id">
+  <BaseTable v-model:pagination="pagination" :rows="rows" :columns="columns" rowKey="id">
     <template #body-cell-ncNumber="{ row }">
       <RouterLink
         :to="getCompanyPath(`/nonconformances/${row.id}`)"
@@ -89,6 +98,10 @@ function rowMenuItems(row) {
         <span v-if="isOverdue(row)">↑</span>
       </span>
       <span v-else class="tw:text-secondary">—</span>
+    </template>
+
+    <template #body-cell-createdAt="{ row }">
+      <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
     </template>
 
     <template #body-cell-actions="{ row }">

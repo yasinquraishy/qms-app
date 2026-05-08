@@ -20,7 +20,7 @@ const tasks = useLiveQueryWithDeps(
   [() => props.instanceStepId],
   async (db, [instanceStepId]) => {
     if (!instanceStepId) return []
-    return db.TaskInstance.where('[entityType+entityId]', [
+    return db.TaskInstance.where('[sourceType+sourceId]', [
       'WorkflowInstanceStep',
       instanceStepId,
     ]).exec()

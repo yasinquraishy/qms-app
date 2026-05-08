@@ -241,7 +241,8 @@ export interface PropertyOptions {
   timestamp?: boolean
   autoUpdate?: boolean
   serializer?: Serializer
-  uuid?: boolean
+  uuid?: boolean,
+  excludeFromGraphQL?: Array<string>
 }
 
 /**

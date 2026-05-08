@@ -27,9 +27,7 @@ const currentVersion = useLiveQueryWithDeps([() => props.versionId], async (db, 
 
 const canEdit = computed(
   () =>
-    isAllowed(['documents:update']) &&
-    document.value?.statusId !== 'ARCHIVED' &&
-    !props.reviewMode,
+    isAllowed(['documents:update']) && document.value?.statusId !== 'ARCHIVED' && !props.reviewMode,
 )
 
 // State
@@ -146,7 +144,10 @@ watch(
             <label class="ds-label"> Department </label>
             <div class="tw:mt-1">
               <DepartmentSelectMenu v-if="canEdit" v-model="document.departmentId" required />
-              <DepartmentBadgeById v-else-if="document.departmentId" :departmentId="document.departmentId" />
+              <DepartmentBadgeById
+                v-else-if="document.departmentId"
+                :departmentId="document.departmentId"
+              />
               <span v-else class="tw:text-sm tw:text-secondary">—</span>
             </div>
           </div>
@@ -194,7 +195,9 @@ watch(
               :required="false"
             />
             <p v-else class="tw:text-sm tw:font-medium">
-              {{ currentVersion.effectiveDate ? currentVersion.effectiveDate.formatDate('date') : '—' }}
+              {{
+                currentVersion.effectiveDate ? currentVersion.effectiveDate.formatDate('date') : '—'
+              }}
             </p>
           </div>
 
@@ -260,11 +263,8 @@ watch(
       </div>
 
       <!-- Approval Workflow Timeline (live) -->
-      <div
-        v-if="currentVersion.workflowInstanceId"
-        class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5"
-      >
-        <h4 class="ds-label tw:text-secondary tw:mb-4">Approval Workflow</h4>
+      <div v-if="currentVersion.workflowInstanceId" class="tw:space-y-4">
+        <h4 class="ds-label tw:text-secondary tw:px-1">Workflow Timeline</h4>
         <WorkflowInstanceTimeline :workflowInstanceId="currentVersion.workflowInstanceId" />
       </div>
 

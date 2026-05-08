@@ -16,6 +16,18 @@ function camelToUpperSnake(str) {
  */
 export const GraphQLSchemaGenerator = {
   /**
+   * Field names that belong in selection sets — i.e. those NOT marked
+   * `excludeFromGraphQL: ['query', ...]`.
+   * @param {object} schema
+   * @returns {string[]}
+   */
+  _selectableFieldNames(schema) {
+    return [...schema.properties.entries()]
+      .filter(([, meta]) => !meta.options?.excludeFromGraphQL?.includes('query'))
+      .map(([name]) => name)
+  },
+
+  /**
    * Look up schema helpers shared across generators.
    * @param {string} modelName
    * @returns {{ schema: object, singularName: string, capitalSingular: string, pk: string, fields: string }}
@@ -29,7 +41,7 @@ export const GraphQLSchemaGenerator = {
     const singularName = pluralize.singular(tableName)
     const capitalSingular = capitalize(singularName)
     const pk = schema.primaryKey
-    const fields = [...schema.properties.keys()].join('\n      ')
+    const fields = this._selectableFieldNames(schema).join('\n      ')
     const pkSchema = schema.properties.get(pk)
     if (!pkSchema) {
       throw new Error(
@@ -83,7 +95,7 @@ export const GraphQLSchemaGenerator = {
       this._resolveSchema(modelName)
     const tableName = schema.tableName
     const pluralName = pluralize(tableName)
-    const allFields = [...schema.properties.keys()].join('\n      ')
+    const allFields = this._selectableFieldNames(schema).join('\n      ')
     const filterType = `${capitalSingular}Filter`
     const orderByType = `${capitalSingular}OrderBy`
     const syncFieldOrderByDesc = schema.syncField

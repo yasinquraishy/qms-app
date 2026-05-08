@@ -116,11 +116,11 @@ function tdAlignClass(align) {
 
     <!-- Scrollable container -->
     <div
-      class="tw:overflow-x-auto tw:transition-opacity tw:duration-200"
+      class="tw:overflow-auto tw:transition-opacity tw:duration-200"
       :class="loading ? 'tw:opacity-50 tw:pointer-events-none' : 'tw:opacity-100'"
     >
       <table class="tw:w-full tw:min-w-125 tw:border-collapse tw:text-sm">
-        <thead>
+        <thead class="tw:sticky tw:top-0 tw:z-10">
           <tr>
             <th
               v-for="col in columns"

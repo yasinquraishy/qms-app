@@ -18,7 +18,7 @@ defineProps({
 <template>
   <main class="tw:max-w-360 tw:mx-auto tw:px-6 tw:py-8 tw:w-full">
     <PrintTeleport>
-      <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-4 tw:gap-8">
+      <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-3 tw:gap-8">
         <!-- Left Column: Document Content (3/4 width) -->
         <DocumentsMainContentLeft
           :documentId="documentId"

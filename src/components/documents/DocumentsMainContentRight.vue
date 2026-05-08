@@ -259,6 +259,15 @@ watch(
         </BaseDialog>
       </div>
 
+      <!-- Approval Workflow Timeline (live) -->
+      <div
+        v-if="currentVersion.workflowInstanceId"
+        class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5"
+      >
+        <h4 class="ds-label tw:text-secondary tw:mb-4">Approval Workflow</h4>
+        <WorkflowInstanceTimeline :workflowInstanceId="currentVersion.workflowInstanceId" />
+      </div>
+
       <!-- Table of Contents Card -->
       <div class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:p-5">
         <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">

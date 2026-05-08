@@ -50,7 +50,7 @@ const versionLabel = computed(() => {
 </script>
 
 <template>
-  <div v-if="document && currentVersion" class="tw:lg:col-span-3 tw:space-y-6">
+  <div v-if="document && currentVersion" class="tw:lg:col-span-2 tw:space-y-6">
     <!-- Document Card -->
     <div
       class="tw:bg-sidebar tw:rounded-xl tw:shadow-sm tw:border tw:border-divider tw:print:border-0 tw:print:shadow-none tw:overflow-hidden"

@@ -58,22 +58,24 @@ const breadcrumbs = computed(() => [
 
 async function onArchive() {
   if (!template.value) return
+  const lastStatus = template.value.statusId
   template.value.statusId = 'ARCHIVED'
   try {
     await template.value.save()
     router.push(getCompanyPath('/document-templates'))
   } catch {
-    template.value.statusId = 'ACTIVE'
+    template.value.statusId = lastStatus
   }
 }
 
 async function onUnarchive() {
   if (!template.value) return
-  template.value.statusId = 'ACTIVE'
+  const lastStatus = template.value.statusId
+  template.value.statusId = 'DRAFT'
   try {
     await template.value.save()
   } catch {
-    template.value.statusId = 'ARCHIVED'
+    template.value.statusId = lastStatus
   }
 }
 

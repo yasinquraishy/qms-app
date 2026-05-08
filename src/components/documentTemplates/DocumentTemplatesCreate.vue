@@ -174,7 +174,10 @@ const createTemplate = useLiveMutation(async (db, data) => {
 
 async function saveTemplate() {
   const isValid = await validator.value.$validate()
-  if (!isValid) return
+  if (!isValid) {
+    toast.error(validator.value.$errors[0].$message || 'Please fix validation errors before saving')
+    return
+  }
   if (prefixAvailable.value === false) return
 
   saving.value = true
@@ -192,8 +195,9 @@ async function saveTemplate() {
       toast.success('Document template created successfully')
     }
     router.push(getCompanyPath(`/document-templates/${docId}`))
-  } catch {
+  } catch (error) {
     // BaseModel validation errors are caught here
+    toast.error(error.message || 'An error occurred while saving the document template')
   } finally {
     saving.value = false
   }
@@ -306,16 +310,18 @@ const breadcrumbs = computed(() => [
             </div>
             <div class="tw:p-6 tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-x-12 tw:gap-y-6">
               <div>
-                <label class="tw:inline-block tw:mb-1 tw:text-sm tw:font-medium"
-                  >Training Available?</label
-                >
-                <BaseCheckbox v-model="form.trainingAvailable" label="Yes" />
+                <BaseCheckbox v-model="form.trainingAvailable" label="Yes">
+                  <label class="tw:inline-block tw:mb-1 tw:text-sm tw:font-medium">
+                    Training Available?
+                  </label>
+                </BaseCheckbox>
               </div>
               <div>
-                <label class="tw:inline-block tw:mb-1 tw:text-sm tw:font-medium"
-                  >Retraining Required on Each Version?</label
-                >
-                <BaseCheckbox v-model="form.retrainingOnVersion" label="Yes" />
+                <BaseCheckbox v-model="form.retrainingOnVersion" label="Yes">
+                  <label class="tw:inline-block tw:mb-1 tw:text-sm tw:font-medium">
+                    Retraining Required on Each Version?
+                  </label>
+                </BaseCheckbox>
               </div>
               <BaseTextInput
                 v-model.number="form.periodicReviewMonths"
@@ -339,16 +345,18 @@ const breadcrumbs = computed(() => [
                 :required="true"
               />
               <div>
-                <label class="tw:inline-block tw:mb-1 tw:text-sm tw:font-medium"
-                  >Auto Effective on Approval?</label
-                >
-                <BaseCheckbox v-model="form.autoEffectiveOnApproval" label="Yes" />
+                <BaseCheckbox v-model="form.autoEffectiveOnApproval" label="Yes">
+                  <label class="tw:inline-block tw:mb-1 tw:text-sm tw:font-medium">
+                    Auto Effective on Approval?
+                  </label>
+                </BaseCheckbox>
               </div>
               <div>
-                <label class="tw:inline-block tw:mb-1 tw:text-sm tw:font-medium"
-                  >Show Text Section Titles?</label
-                >
-                <BaseCheckbox v-model="form.showSectionTitles" label="Yes" />
+                <BaseCheckbox v-model="form.showSectionTitles" label="Yes">
+                  <label class="tw:inline-block tw:mb-1 tw:text-sm tw:font-medium">
+                    Show Text Section Titles?
+                  </label>
+                </BaseCheckbox>
               </div>
             </div>
           </div>

@@ -229,7 +229,6 @@ const editingDueDate = ref(false)
             </div>
 
             <NcWorkflowDetail
-              v-if="workflowInstance?.statusId === 'IN_PROGRESS'"
               :ncId="id"
               :workflowInstanceId="workflowInstance?.id"
               :isOwner="isOwner"

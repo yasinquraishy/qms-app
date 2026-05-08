@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 @ClientModel('ncRecords', {
   primaryKey: 'id',
   syncField: 'updatedAt',
-  customIndex: 'taskInstanceId, ncId',
+  customIndex: 'taskInstanceId, ncId, workflowInstanceStepId',
 })
 export class NcRecord extends BaseModel {
   static paranoid = true

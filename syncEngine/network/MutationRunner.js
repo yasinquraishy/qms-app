@@ -25,7 +25,7 @@ function buildQueryAndVariables(meta, instance, action) {
 
   switch (action) {
     case OPERATION.CREATE: {
-      const serialized = serializeModel(instance.constructor.name, instance)
+      const serialized = serializeModel(instance.constructor.name, instance, 'create')
       return {
         query: meta.create,
         variables: { input: { [meta.singularName]: serialized } },
@@ -34,7 +34,7 @@ function buildQueryAndVariables(meta, instance, action) {
     case OPERATION.UPDATE: {
       // Only send the changed fields as patch
       const changedKeys = instance.getModifiedProperties()
-      const allValues = serializeModel(instance.constructor.name, instance)
+      const allValues = serializeModel(instance.constructor.name, instance, 'update')
       const patch = {}
       for (const key of changedKeys) {
         if (key in allValues) patch[key] = allValues[key]

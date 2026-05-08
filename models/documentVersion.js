@@ -34,7 +34,7 @@ export class DocumentVersion extends BaseModel {
   @Property({ type: String, required: true }) createdBy = ''
   @Property({ type: DateTime }) lockedAt = null
   @Property({ type: DateTime }) approvedAt = null
-  @Property({ type: String }) statusId = 'DRAFT'
+  @Property({ type: String, excludeFromGraphQL: ['update'] }) statusId = 'DRAFT'
   @Property({ type: String }) workflowInstanceId = /** @type {String|null} */ (null)
   @Property({ type: Boolean }) isLatest = true
   @Property({ type: DateTime }) effectiveDate = DateTime.now()

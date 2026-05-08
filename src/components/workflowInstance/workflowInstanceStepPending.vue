@@ -20,7 +20,7 @@ const tasks = useLiveQueryWithDeps(
   [() => props.instanceStepId],
   async (db, [instanceStepId]) => {
     if (!instanceStepId) return []
-    return db.TaskInstance.where('[entityType+entityId]', [
+    return db.TaskInstance.where('[sourceType+sourceId]', [
       'WorkflowInstanceStep',
       instanceStepId,
     ]).exec()
@@ -42,12 +42,12 @@ const usersMap = useLiveQueryWithDeps(
 
 <template>
   <div
-    class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-dashed tw:border-divider tw:p-5"
+    class="tw:bg-sidebar tw:rounded-xl tw:border tw:border-dashed tw:border-divider tw:p-4"
     :class="{ 'tw:opacity-60': !tasks.length }"
   >
-    <div class="tw:flex tw:items-center tw:justify-between">
-      <div>
-        <h3 class="tw:font-bold tw:text-secondary">
+    <div class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-2">
+      <div class="tw:min-w-0 tw:flex-1">
+        <h3 class="tw:font-bold tw:text-secondary tw:break-words">
           Step {{ instanceStep?.stepNumber }}: {{ step?.name }}
         </h3>
         <p class="tw:text-xs tw:text-secondary tw:italic">
@@ -61,7 +61,7 @@ const usersMap = useLiveQueryWithDeps(
       </div>
 
       <!-- Avatar stack -->
-      <div v-if="tasks.length" class="tw:flex tw:-space-x-3 tw:overflow-hidden">
+      <div v-if="tasks.length" class="tw:flex tw:-space-x-3 tw:overflow-hidden tw:shrink-0">
         <UserAvatarById
           v-for="task in tasks"
           :key="task.id"
@@ -69,25 +69,31 @@ const usersMap = useLiveQueryWithDeps(
           class="tw:size-8 tw:border-divider tw:grayscale tw:opacity-50"
         />
       </div>
-      <WorkflowInstanceStepStatusBadgeById v-else :statusId="instanceStep?.statusId" />
+      <WorkflowInstanceStepStatusBadgeById
+        v-else
+        class="tw:shrink-0"
+        :statusId="instanceStep?.statusId"
+      />
     </div>
 
     <template v-if="tasks.length">
-      <div class="tw:space-y-3 tw:mt-4">
+      <div class="tw:space-y-2 tw:mt-3">
         <div
           v-for="task in tasks"
           :key="task.id"
-          class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:rounded-lg tw:border tw:bg-sidebar tw:border-divider tw:opacity-60"
+          class="tw:flex tw:items-center tw:gap-3 tw:p-2.5 tw:rounded-lg tw:border tw:bg-sidebar tw:border-divider tw:opacity-60"
         >
           <UserAvatarById
             :userId="task.assignedTo"
-            class="tw:size-10 tw:border-divider tw:grayscale tw:opacity-50"
+            class="tw:size-8 tw:shrink-0 tw:border-divider tw:grayscale tw:opacity-50"
           />
-          <div>
-            <p class="tw:text-sm tw:font-semibold tw:text-on-main">
+          <div class="tw:min-w-0">
+            <p class="tw:text-sm tw:font-semibold tw:text-on-main tw:truncate">
               {{ usersMap[task.assignedTo]?.firstName }} {{ usersMap[task.assignedTo]?.lastName }}
             </p>
-            <p class="ds-label-sm tw:text-secondary">{{ usersMap[task.assignedTo]?.email }}</p>
+            <p class="ds-label-sm tw:text-secondary tw:truncate">
+              {{ usersMap[task.assignedTo]?.email }}
+            </p>
           </div>
         </div>
       </div>

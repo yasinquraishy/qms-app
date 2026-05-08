@@ -65,15 +65,20 @@ const usersMap = useLiveQueryWithDeps(
 
 <template>
   <div
-    class="tw:bg-sidebar tw:rounded-xl tw:border-2 tw:border-primary tw:p-5 tw:shadow-lg tw:shadow-primary/5"
+    class="tw:bg-sidebar tw:rounded-xl tw:border-2 tw:border-primary tw:p-4 tw:shadow-lg tw:shadow-primary/5"
   >
     <div
-      class="tw:flex tw:flex-col tw:md:flex-row tw:md:items-center tw:justify-between tw:gap-4 tw:mb-6"
+      class="tw:flex tw:flex-col tw:md:flex-row tw:md:items-center tw:justify-between tw:gap-3 tw:mb-4"
     >
-      <div>
-        <h3 class="tw:font-bold tw:text-on-main tw:flex tw:items-center tw:gap-2">
-          Step {{ instanceStep?.stepNumber }}: {{ step?.name }}
-          <WorkflowInstanceStepStatusBadgeById :statusId="instanceStep?.statusId" />
+      <div class="tw:min-w-0 tw:flex-1">
+        <h3 class="tw:font-bold tw:text-on-main tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+          <span class="tw:min-w-0 tw:wrap-break-word">
+            Step {{ instanceStep?.stepNumber }}: {{ step?.name }}
+          </span>
+          <WorkflowInstanceStepStatusBadgeById
+            class="tw:shrink-0"
+            :statusId="instanceStep?.statusId"
+          />
         </h3>
         <p class="tw:text-xs tw:text-secondary">
           Rule: {{ step?.approvalRule }} tasks must be completed &bull;
@@ -83,7 +88,7 @@ const usersMap = useLiveQueryWithDeps(
         </p>
       </div>
       <!-- Avatar stack -->
-      <div class="tw:flex tw:-space-x-3 tw:overflow-hidden">
+      <div class="tw:flex tw:-space-x-3 tw:overflow-hidden tw:shrink-0">
         <UserAvatarById
           v-for="task in tasks"
           :key="task.id"
@@ -99,11 +104,11 @@ const usersMap = useLiveQueryWithDeps(
     </div>
 
     <!-- Approver list -->
-    <div class="tw:space-y-4 tw:mb-8">
+    <div class="tw:space-y-3 tw:mb-6">
       <div
         v-for="task in tasks"
         :key="task.id"
-        class="tw:flex tw:items-center tw:justify-between tw:p-3 tw:rounded-lg tw:border"
+        class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:p-2.5 tw:rounded-lg tw:border"
         :class="{
           'tw:bg-emerald-50/50 tw:border-emerald-200': task.statusId === 'APPROVED',
           'tw:bg-sidebar tw:border-divider tw:ring-2 tw:ring-primary/20':
@@ -112,7 +117,7 @@ const usersMap = useLiveQueryWithDeps(
             !isCurrentUser(task) && task.statusId !== 'APPROVED',
         }"
       >
-        <div class="tw:flex tw:items-center tw:gap-3">
+        <div class="tw:flex tw:items-center tw:gap-3 tw:min-w-0 tw:flex-1">
           <div class="tw:relative">
             <UserAvatarById
               :userId="task.assignedTo"
@@ -124,29 +129,31 @@ const usersMap = useLiveQueryWithDeps(
               "
             />
           </div>
-          <div>
-            <p class="tw:text-sm tw:font-semibold tw:text-on-main">
+          <div class="tw:min-w-0">
+            <p class="tw:text-sm tw:font-semibold tw:text-on-main tw:truncate">
               {{ usersMap[task.assignedTo]?.firstName }} {{ usersMap[task.assignedTo]?.lastName }}
               <span v-if="isCurrentUser(task)" class="tw:text-primary">(You)</span>
             </p>
-            <p class="ds-label-sm tw:text-secondary">{{ usersMap[task.assignedTo]?.email }}</p>
+            <p class="ds-label-sm tw:text-secondary tw:truncate">
+              {{ usersMap[task.assignedTo]?.email }}
+            </p>
           </div>
         </div>
-        <TaskInstanceStatusBadgeById :statusId="task.statusId" />
+        <TaskInstanceStatusBadgeById class="tw:shrink-0" :statusId="task.statusId" />
       </div>
     </div>
 
     <!-- Action buttons (only for current user with ASSIGNED status, and not for NC) -->
     <div
       v-if="myTask && workflowInstance?.resourceType !== 'Nonconformance'"
-      class="tw:bg-primary/5 tw:rounded-xl tw:p-4 tw:border tw:border-primary/20"
+      class="tw:bg-primary/5 tw:rounded-xl tw:p-3 tw:border tw:border-primary/20"
     >
-      <div class="tw:flex tw:flex-col tw:gap-4">
-        <div class="tw:flex tw:items-center tw:gap-2 tw:mb-2">
-          <IconSignature :size="20" class="tw:text-primary" />
+      <div class="tw:flex tw:flex-col tw:gap-3">
+        <div class="tw:flex tw:items-center tw:gap-2">
+          <IconSignature :size="18" class="tw:text-primary" />
           <p class="tw:text-sm tw:font-semibold tw:text-primary">Your required action</p>
         </div>
-        <div class="tw:flex tw:flex-wrap tw:gap-3">
+        <div class="tw:flex tw:flex-wrap tw:gap-2">
           <WorkflowInstanceApproverAction
             action="APPROVE"
             :taskInstanceId="myTask?.id"

@@ -58,6 +58,14 @@ const editingField = ref(null)
 const editSaving = ref(false)
 const showEditDialog = ref(false)
 
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
+
 // ---- Helpers ----
 function getRawValue(obj, path) {
   if (!obj) return undefined
@@ -647,6 +655,7 @@ async function handleExport(format) {
     <!-- Table -->
     <BaseTable
       v-else
+      v-model:pagination="pagination"
       :columns="activeColumns"
       :rows="filteredRecords"
       :loading="recordsLoading"

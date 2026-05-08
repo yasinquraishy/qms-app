@@ -32,8 +32,17 @@ const columns = [
     align: 'left',
     sortable: true,
   },
+  { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 
 function getInitials(name) {
   if (!name) return '??'
@@ -55,7 +64,7 @@ function rowMenuItems(row) {
 </script>
 
 <template>
-  <BaseTable :rows="rows" :columns="columns" rowKey="id">
+  <BaseTable v-model:pagination="pagination" :rows="rows" :columns="columns" rowKey="id">
     <!-- Name Column -->
     <template #body-cell-name="{ row }">
       <RouterLink
@@ -95,6 +104,11 @@ function rowMenuItems(row) {
     <template #body-cell-status="{ row }">
       <SupplierStatusBadgeById v-if="row.statusId" :statusId="row.statusId" />
       <span v-else class="tw:text-sm tw:text-secondary">—</span>
+    </template>
+
+    <!-- Created Column -->
+    <template #body-cell-createdAt="{ row }">
+      <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
     </template>
 
     <!-- Last Evaluation Column -->

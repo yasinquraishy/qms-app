@@ -43,8 +43,17 @@ const columns = [
     align: 'center',
     sortable: false,
   },
+  { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 
 function rowMenuItems(row) {
   if (!props.canDelete) return []
@@ -70,7 +79,14 @@ function onRowClick(row) {
 </script>
 
 <template>
-  <BaseTable :rows="rows" :columns="columns" :loading="loading" rowKey="id" @rowClick="onRowClick">
+  <BaseTable
+    v-model:pagination="pagination"
+    :rows="rows"
+    :columns="columns"
+    :loading="loading"
+    rowKey="id"
+    @rowClick="onRowClick"
+  >
     <template #body-cell-name="{ row }">
       <div class="tw:font-bold tw:text-on-main">{{ row.name }}</div>
     </template>
@@ -81,6 +97,10 @@ function onRowClick(row) {
 
     <template #body-cell-optionsCount="{ row }">
       <BaseBadge> {{ row.options?.length || 0 }} </BaseBadge>
+    </template>
+
+    <template #body-cell-createdAt="{ row }">
+      <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
     </template>
 
     <template #body-cell-actions="{ row }">

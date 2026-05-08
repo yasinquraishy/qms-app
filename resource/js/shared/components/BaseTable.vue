@@ -20,7 +20,13 @@ const emit = defineEmits(['row-click'])
 
 const pagination = defineModel('pagination', {
   type: Object,
-  default: () => ({ page: 1, rowsPerPage: 5, sortBy: null, descending: false, total: null }),
+  default: () => ({
+    page: 1,
+    rowsPerPage: 50,
+    sortBy: null,
+    descending: false,
+    total: null,
+  }),
 })
 
 const sortColumn = computed(() => pagination.value.sortBy ?? null)

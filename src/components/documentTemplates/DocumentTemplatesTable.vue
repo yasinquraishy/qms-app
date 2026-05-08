@@ -70,9 +70,17 @@ const columns = [
     align: 'center',
     sortable: true,
   },
-  { name: 'created', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
+  { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 
 function getSectionCount(row) {
   return row.sections?.length || 0
@@ -93,7 +101,13 @@ function rowMenuItems(row) {
 </script>
 
 <template>
-  <BaseTable :rows="rows" :columns="columns" :loading="loading" rowKey="id">
+  <BaseTable
+    v-model:pagination="pagination"
+    :rows="rows"
+    :columns="columns"
+    :loading="loading"
+    rowKey="id"
+  >
     <template #body-cell-name="{ row }">
       <div
         class="tw:font-bold tw:text-on-main tw:cursor-pointer tw:hover:text-primary"
@@ -143,7 +157,7 @@ function rowMenuItems(row) {
       </div>
     </template>
 
-    <template #body-cell-created="{ row }">
+    <template #body-cell-createdAt="{ row }">
       <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
     </template>
 

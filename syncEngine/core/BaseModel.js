@@ -220,6 +220,17 @@ export class BaseModel {
     return toRaw(this).#action
   }
 
+  #propertiesMeta = null
+
+  get propertiesMeta() {
+    const self = toRaw(this)
+    if (!self.#propertiesMeta) {
+      const schema = ModelRegistry.getSchema(self.constructor.name)
+      self.#propertiesMeta = schema?.properties || new Map()
+    }
+    return self.#propertiesMeta
+  }
+
   /**
    * Called by observabilityHelper whenever a watched field changes.
    * Set semantics make this idempotent — repeated calls for the same field
@@ -228,6 +239,12 @@ export class BaseModel {
    * @param {string} name
    */
   _propertyChanged(name) {
+    const propMeta = this.propertiesMeta.get(name)
+    if (
+      Array.isArray(propMeta?.options?.excludeFromGraphQL) &&
+      propMeta.options.excludeFromGraphQL.includes('update')
+    )
+      return
     toRaw(this).#modified.add(name)
   }
 

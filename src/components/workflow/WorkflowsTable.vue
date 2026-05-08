@@ -85,10 +85,18 @@ function rowMenuItems(workflow) {
   }
   return items
 }
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 </script>
 
 <template>
-  <BaseTable :rows="rows" :columns="columns" rowKey="id">
+  <BaseTable v-model:pagination="pagination" :rows="rows" :columns="columns" rowKey="id">
     <template #body-cell-name="{ row }">
       <div class="tw:flex tw:flex-col tw:cursor-pointer" @click="navigateToWorkflow(row)">
         <span class="tw:font-bold tw:text-on-main">{{ row.name }}</span>

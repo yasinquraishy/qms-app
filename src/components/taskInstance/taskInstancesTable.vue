@@ -92,7 +92,16 @@ const columns = [
   { name: 'type', label: 'TYPE', field: 'type', align: 'left' },
   { name: 'dueDate', label: 'DUE DATE', field: 'dueDate', align: 'left', sortable: true },
   { name: 'status', label: 'STATUS', field: 'status', align: 'left' },
+  { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
 ]
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 
 function getDocument(instance) {
   return documentMap.value[instance.entityId] || null
@@ -120,7 +129,12 @@ function entityRoute(row) {
 </script>
 
 <template>
-  <BaseTable :rows="filteredInstances" :columns="columns" rowKey="id">
+  <BaseTable
+    v-model:pagination="pagination"
+    :rows="filteredInstances"
+    :columns="columns"
+    rowKey="id"
+  >
     <!-- Item Title -->
     <template #body-cell-title="{ row }">
       <component
@@ -174,6 +188,11 @@ function entityRoute(row) {
     <!-- Status -->
     <template #body-cell-status="{ row }">
       <TaskInstanceStatusBadgeById :statusId="row.statusId" :module="row.entityType" />
+    </template>
+
+    <!-- Created -->
+    <template #body-cell-createdAt="{ row }">
+      <span class="tw:text-sm tw:text-secondary">{{ row.createdAt?.formatDate('date') }}</span>
     </template>
   </BaseTable>
 </template>

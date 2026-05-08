@@ -11,7 +11,6 @@ import {
   IconChartBar,
   IconFileDescription,
   IconMessage,
-  IconSitemap,
   IconTrash,
   IconArchive,
 } from '@tabler/icons-vue'
@@ -46,7 +45,6 @@ const latestVersion = useLiveQueryWithDeps([() => props.id], async (db, [documen
 })
 
 const selectedVersion = ref(null)
-const showWorkflowSidebar = ref(false)
 const showMessages = ref(false)
 
 // Find an open task on any version of this document for the current user.
@@ -186,15 +184,6 @@ async function handleSetEffective() {
 
 const moreActionsItems = computed(() => {
   const items = []
-  if (selectedVersion.value?.workflowInstanceId) {
-    items.push({
-      name: 'View Workflow',
-      icon: IconSitemap,
-      click: () => {
-        showWorkflowSidebar.value = true
-      },
-    })
-  }
   if (canDelete.value && selectedVersion.value?.statusId === 'DRAFT') {
     items.push({ name: 'Delete Version', icon: IconTrash, click: handleDeleteVersion })
   }
@@ -393,12 +382,6 @@ async function createNewVersion() {
         :documentId="props.id"
         :versionId="selectedVersion?.id"
         :reviewMode="hasActiveTaskOnSelected"
-      />
-
-      <!-- Workflow Overlay Sidebar -->
-      <DocumentsWorkflowSidebar
-        v-model="showWorkflowSidebar"
-        :instanceId="selectedVersion?.workflowInstanceId"
       />
 
       <!-- Messages Drawer -->

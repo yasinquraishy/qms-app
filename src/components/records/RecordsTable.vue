@@ -47,10 +47,19 @@ const columns = [
   { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right', sortable: false },
 ]
+
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 50,
+  sortBy: 'createdAt',
+  descending: true,
+  total: null,
+})
 </script>
 
 <template>
   <BaseTable
+    v-model:pagination="pagination"
     :rows="rows"
     :columns="columns"
     :loading="loading"

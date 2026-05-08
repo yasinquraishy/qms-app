@@ -217,9 +217,11 @@ export async function dehydrate(modelName, instance) {
  *
  * @param {string} modelName
  * @param {object} instance - model instance
+ * @param {'create'|'update'|null} [op] - mutation kind; when set, fields whose
+ *   `excludeFromGraphQL` includes this op are omitted from the result.
  * @returns {object} serialized record suitable for network/IDB use
  */
-export function serializeModel(modelName, instance) {
+export function serializeModel(modelName, instance, op = null) {
   const schema = ModelRegistry.getSchema(modelName)
   if (!schema) throw new Error(`[serializeModel] Unknown model: ${modelName}`)
 
@@ -227,6 +229,7 @@ export function serializeModel(modelName, instance) {
   const result = { [pk]: instance[pk] }
 
   for (const [key, propMeta] of schema.properties) {
+    if (op && propMeta.options?.excludeFromGraphQL?.includes(op)) continue
     result[key] = serializeValue(instance[key], propMeta)
   }
 

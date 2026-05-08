@@ -36,6 +36,7 @@ export function Property(options = {}) {
       timestamp = false,
       autoUpdate = false,
       uuid = false,
+      excludeFromGraphQL = [],
     } = options
 
     // type is required
@@ -49,6 +50,20 @@ export function Property(options = {}) {
       throw new Error(`@Property("${context.name}"): 'required' must be a boolean`)
     }
 
+    const VALID_GQL_OPS = ['query', 'create', 'update']
+    if (!Array.isArray(excludeFromGraphQL)) {
+      throw new Error(
+        `@Property("${context.name}"): 'excludeFromGraphQL' must be an array of strings (allowed: ${VALID_GQL_OPS.join(', ')})`,
+      )
+    }
+    for (const op of excludeFromGraphQL) {
+      if (!VALID_GQL_OPS.includes(op)) {
+        throw new Error(
+          `@Property("${context.name}"): unknown excludeFromGraphQL token "${op}" (allowed: ${VALID_GQL_OPS.join(', ')})`,
+        )
+      }
+    }
+
     const name = context.name
 
     // Register in shared metadata so @ClientModel can build the schemaHash.
@@ -56,7 +71,7 @@ export function Property(options = {}) {
     context.metadata._syncProps.push({
       name,
       type: PROP_TYPE.PROPERTY,
-      options: { type, required, serializer, timestamp, autoUpdate, uuid },
+      options: { type, required, serializer, timestamp, autoUpdate, uuid, excludeFromGraphQL },
     })
 
     // addInitializer runs on each new instance after the field initializer,

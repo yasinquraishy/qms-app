@@ -197,15 +197,6 @@ function goBack() {
               </template>
             </div>
             <div>
-              <p class="tw:text-secondary tw:mb-1">Status</p>
-              <DocumentTemplateStatusSelectMenu
-                v-if="canUpdate"
-                v-model="template.statusId"
-                :required="true"
-              />
-              <DocumentTemplateStatusBadgeById v-else :statusId="template.statusId" />
-            </div>
-            <div>
               <p class="tw:text-secondary tw:mb-1">Created Date</p>
               <p class="tw:text-on-sidebar">{{ template.createdAt?.formatDate('date') }}</p>
             </div>

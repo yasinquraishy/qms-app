@@ -420,6 +420,7 @@ declare module 'vue' {
     WorkflowsStatusSelectMenu: typeof import('./src/components/menus/WorkflowsStatusSelectMenu.vue')['default']
     WorkflowsTable: typeof import('./src/components/workflow/WorkflowsTable.vue')['default']
     WorkflowStatusBadge: typeof import('./src/components/badges/WorkflowStatusBadge.vue')['default']
+    WorkflowStepAssigneesDialog: typeof import('./src/components/workflow/WorkflowStepAssigneesDialog.vue')['default']
     WorkflowStepCard: typeof import('./src/components/workflow/WorkflowStepCard.vue')['default']
     WorkflowStepEditor: typeof import('./src/components/workflow/WorkflowStepEditor.vue')['default']
     WorkflowStepFormBuilderPanel: typeof import('./src/components/workflow/WorkflowStepFormBuilderPanel.vue')['default']

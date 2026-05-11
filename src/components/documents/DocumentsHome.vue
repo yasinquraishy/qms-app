@@ -18,21 +18,66 @@ const allDocuments = useLiveQueryWithDeps(
     () => filters.value.documentTypeId,
     () => filters.value.documentTemplateId,
     () => filters.value.departmentId,
-    () => filters.value.statusId,
   ],
-  async (db, [documentTypeId, documentTemplateId, departmentId, statusId]) => {
+  async (db, [documentTypeId, documentTemplateId, departmentId]) => {
     let q = db.Document.where()
     if (documentTypeId) q = q.where('documentTypeId', documentTypeId)
     if (documentTemplateId) q = q.where('documentTemplateId', documentTemplateId)
     if (departmentId) q = q.where('departmentId', departmentId)
-    if (statusId) q = q.where('statusId', statusId)
     return q.exec()
   },
   { initial: [] },
 )
 
+const currentVersionStatusByDocId = useLiveQueryWithDeps(
+  [() => (allDocuments.value ?? []).map((d) => d.id)],
+  async (db, [ids]) => {
+    if (ids.length === 0) return {}
+    const versions = await db.DocumentVersion.where(
+      '[documentId+statusId]',
+      ids.map((id) => [id, 'EFFECTIVE']),
+    ).exec()
+    const map = {}
+    for (const v of versions) map[v.documentId] = v.statusId
+    return map
+  },
+  { initial: {} },
+)
+
+const latestVersionStatusByDocId = useLiveQueryWithDeps(
+  [() => (allDocuments.value ?? []).map((d) => d.id)],
+  async (db, [ids]) => {
+    if (ids.length === 0) return {}
+    const versions = await db.DocumentVersion.where('documentId', ids)
+      .where('isLatest', true)
+      .exec()
+    const map = {}
+    for (const v of versions) {
+      const existing = map[v.documentId]
+      if (!existing || v.createdAt > existing.createdAt) {
+        map[v.documentId] = v
+      }
+    }
+    const statusMap = {}
+    for (const [docId, v] of Object.entries(map)) statusMap[docId] = v.statusId
+    return statusMap
+  },
+  { initial: {} },
+)
+
 const documents = computed(() => {
-  const list = allDocuments.value ?? []
+  let list = allDocuments.value ?? []
+  const statusId = filters.value.statusId
+  if (statusId) {
+    const currentStatuses = currentVersionStatusByDocId.value ?? {}
+    const latestStatuses = latestVersionStatusByDocId.value ?? {}
+    list = list.filter(
+      (d) =>
+        d.statusId === statusId ||
+        currentStatuses[d.id] === statusId ||
+        latestStatuses[d.id] === statusId,
+    )
+  }
   if (!filters.value.search) return list
   const q = filters.value.search.toLowerCase()
   return list.filter(

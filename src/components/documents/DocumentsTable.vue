@@ -75,6 +75,13 @@ const columns = computed(() => [
     align: 'left',
     sortable: false,
   },
+  {
+    name: 'effectiveDate',
+    label: 'EFFECTIVE DATE',
+    field: (row) => currentVersionMapById.value[row.id]?.effectiveDate,
+    align: 'left',
+    sortable: false,
+  },
   { name: 'owner', label: 'OWNER', field: 'owner', align: 'left', sortable: true },
   { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right' },
@@ -144,11 +151,11 @@ async function onUnarchiveDocument(row) {
     </template>
 
     <!-- Current Version Column -->
-    <template #body-cell-current="{ value }">
+    <template #body-cell-current="{ row, value }">
       <DocumentsStatusBadge
         v-if="value"
         :version="getVersionLabel(value)"
-        :status="value.statusId"
+        :status="row.statusId === 'ARCHIVED' ? 'ARCHIVED' : value.statusId"
       />
       <span v-else class="tw:text-sm tw:text-secondary">-</span>
     </template>
@@ -161,6 +168,11 @@ async function onUnarchiveDocument(row) {
         :status="value.statusId"
       />
       <span v-else class="tw:text-sm tw:text-secondary">-</span>
+    </template>
+
+    <!-- Effective Date Column -->
+    <template #body-cell-effectiveDate="{ value }">
+      <span class="tw:text-sm tw:text-secondary">{{ value?.formatDate('date') || '-' }}</span>
     </template>
 
     <!-- Owner Column -->

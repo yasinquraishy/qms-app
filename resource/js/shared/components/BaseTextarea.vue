@@ -69,6 +69,10 @@ const props = defineProps({
     type: [Number, null],
     default: null,
   },
+  maxRows: {
+    type: [Number, null],
+    default: null,
+  },
   showFocusRing: {
     type: Boolean,
     default: false,
@@ -99,13 +103,12 @@ function focus() {
   inputEl.value?.focus()
 }
 
+const autosizeInput = computed(() => props.modelValue ?? '')
+
 if (props.autosize) {
   useTextareaAutosize({
     element: inputEl,
-    // Provide a getter that returns the value to watch.
-    // Previously the function had a block body but did not return anything,
-    // so Vue's watch couldn't track changes and a watcher callback could throw.
-    watch: () => props.modelValue,
+    input: autosizeInput,
   })
 }
 
@@ -121,6 +124,12 @@ const minHeight = computed(() => {
   // first row is 40px, each additional row is 24px
   const firstRowHeight = 24
   return `${(props.rows - 1) * 24 + firstRowHeight}px`
+})
+
+const maxHeight = computed(() => {
+  if (!props.autosize || !props.maxRows) return 'none'
+  const firstRowHeight = 24
+  return `${(props.maxRows - 1) * 24 + firstRowHeight}px`
 })
 
 // --- Lifecycle hooks & related ---
@@ -169,7 +178,7 @@ defineExpose({
         :aria-disabled="disabled"
         :required="required"
         :rows="rows"
-        :style="`min-height: ${minHeight}`"
+        :style="`min-height: ${minHeight}; max-height: ${maxHeight}; overflow-y: ${maxHeight !== 'none' ? 'auto' : 'hidden'}`"
         dir="auto"
         autocomplete="off"
         :maxlength="maxlength"
@@ -192,7 +201,7 @@ defineExpose({
       :aria-disabled="disabled"
       :required="required"
       :rows="rows"
-      :style="`min-height: ${minHeight}`"
+      :style="`min-height: ${minHeight}; max-height: ${maxHeight}; overflow-y: ${maxHeight !== 'none' ? 'auto' : 'hidden'}`"
       dir="auto"
       autocomplete="off"
       :maxlength="maxlength"

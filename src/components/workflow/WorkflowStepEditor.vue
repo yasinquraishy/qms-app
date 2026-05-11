@@ -184,6 +184,7 @@ watch(
               v-model="step.description"
               placeholder="Describe what happens at this step..."
               :disabled="!canUpdate"
+              rows="6"
             />
           </div>
         </div>
@@ -268,22 +269,20 @@ watch(
               </span>
             </div>
           </div>
+
+          <!-- Compliance Controls -->
+          <div class="tw:flex tw:justify-between">
+            <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
+              <BaseCheckbox v-model="step.requireComments" :disabled="!canUpdate" />
+              <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require Comments</span>
+            </label>
+            <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
+              <BaseCheckbox v-model="step.requireEsignature" :disabled="!canUpdate" />
+              <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require E-signature</span>
+            </label>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Compliance Controls -->
-    <div
-      class="tw:grid tw:grid-cols-2 tw:gap-4 tw:p-6 tw:bg-main-hover tw:rounded-2xl tw:border tw:border-divider"
-    >
-      <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
-        <BaseCheckbox v-model="step.requireComments" :disabled="!canUpdate" />
-        <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require Comments</span>
-      </label>
-      <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
-        <BaseCheckbox v-model="step.requireEsignature" :disabled="!canUpdate" />
-        <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require E-signature</span>
-      </label>
     </div>
 
     <!-- Allowed Outcomes -->
@@ -321,41 +320,6 @@ watch(
           </template>
           {{ o.name }}
         </BaseButton>
-      </div>
-    </div>
-
-    <!-- Send-Back Targets -->
-    <div v-if="showSendBackTargets && isSendBackActive" class="tw:space-y-4">
-      <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
-        <IconCornerLeftUp :size="22" />
-        <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Send-Back Targets</h2>
-      </div>
-      <p class="tw:text-xs tw:text-secondary">
-        Which earlier steps this one can send back to. A send-back creates a new instance of the
-        target step.
-      </p>
-      <div v-if="siblingSteps.length === 0" class="tw:text-xs tw:text-secondary tw:italic tw:px-1">
-        First step — nothing to send back to.
-      </div>
-      <div v-else class="tw:space-y-2">
-        <label
-          v-for="s in siblingSteps"
-          :key="s.id"
-          class="tw:flex tw:items-center tw:gap-3"
-          :class="canUpdate ? 'tw:cursor-pointer' : 'tw:cursor-default tw:opacity-60'"
-        >
-          <BaseCheckbox
-            :modelValue="sendBackTargetIds.has(s.id)"
-            :disabled="!canUpdate"
-            @update:modelValue="canUpdate && toggleSendBackTarget(s.id)"
-          />
-          <span
-            class="tw:inline-flex tw:items-center tw:justify-center tw:w-5 tw:h-5 tw:text-[10px] tw:font-bold tw:bg-main-hover tw:border tw:border-divider tw:rounded tw:text-secondary"
-          >
-            {{ s.stepOrder }}
-          </span>
-          <span class="tw:text-xs tw:font-medium tw:text-on-main">{{ s.name }}</span>
-        </label>
       </div>
     </div>
 
@@ -439,5 +403,40 @@ watch(
 
     <!-- Form Schema -->
     <WorkflowStepFormSchema v-if="showFormSchema" :stepId="stepId" :canUpdate="canUpdate" />
+
+    <!-- Send-Back Targets -->
+    <div
+      v-if="showSendBackTargets && isSendBackActive && siblingSteps.length > 0"
+      class="tw:space-y-4"
+    >
+      <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
+        <IconCornerLeftUp :size="22" />
+        <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Send-Back Targets</h2>
+      </div>
+      <p class="tw:text-xs tw:text-secondary">
+        Which earlier steps this one can send back to. A send-back creates a new instance of the
+        target step.
+      </p>
+      <div class="tw:space-y-2">
+        <label
+          v-for="s in siblingSteps"
+          :key="s.id"
+          class="tw:flex tw:items-center tw:gap-3"
+          :class="canUpdate ? 'tw:cursor-pointer' : 'tw:cursor-default tw:opacity-60'"
+        >
+          <BaseCheckbox
+            :modelValue="sendBackTargetIds.has(s.id)"
+            :disabled="!canUpdate"
+            @update:modelValue="canUpdate && toggleSendBackTarget(s.id)"
+          />
+          <span
+            class="tw:inline-flex tw:items-center tw:justify-center tw:w-5 tw:h-5 tw:text-[10px] tw:font-bold tw:bg-main-hover tw:border tw:border-divider tw:rounded tw:text-secondary"
+          >
+            {{ s.stepOrder }}
+          </span>
+          <span class="tw:text-xs tw:font-medium tw:text-on-main">{{ s.name }}</span>
+        </label>
+      </div>
+    </div>
   </div>
 </template>

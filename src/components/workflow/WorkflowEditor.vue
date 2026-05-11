@@ -420,6 +420,8 @@ watch(steps, () => {
           placeholder="Describe the purpose of this workflow"
           :disabled="!canUpdate"
           class="tw:mt-4"
+          autosize
+          :maxRows="4"
         />
       </div>
 

@@ -213,7 +213,7 @@ watch(
         </slot>
 
         <!-- Footer slot -->
-        <slot name="footer" />
+        <slot name="footer" :close="close" />
       </div>
     </template>
   </BasePopover>

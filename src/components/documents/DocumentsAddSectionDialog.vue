@@ -56,6 +56,7 @@ async function handleAddSection() {
       content: newSection.value.sectionType === 'text' ? '' : null,
       attachments: newSection.value.sectionType === 'attachment' ? [] : null,
       order: props.currentSectionCount,
+      isAddOn: true,
     })
     await section.save()
     return section

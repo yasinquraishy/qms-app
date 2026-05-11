@@ -11,9 +11,9 @@ const form = defineModel('form', {
   required: true,
 })
 
-// Check if section should be readonly (sections from template)
+// Sections inherited from a template are read-only in the create form.
 function isReadonly(section) {
-  return section?.fromTemplate === true
+  return section?.isAddOn === false
 }
 
 // Watch for template changes and copy sections
@@ -23,7 +23,7 @@ watch(
     if (template) {
       form.value.sections = template.sections.map((section) => ({
         ...section,
-        fromTemplate: true,
+        isAddOn: false,
         id: crypto.randomUUID(),
       }))
     } else {

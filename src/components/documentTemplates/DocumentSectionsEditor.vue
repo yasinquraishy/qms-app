@@ -28,6 +28,7 @@ function addSection() {
       title: '',
       sectionType: 'text',
       content: '',
+      isAddOn: true,
     },
   ]
 }

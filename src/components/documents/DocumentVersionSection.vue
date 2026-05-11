@@ -1,6 +1,11 @@
 <script setup>
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
-import { IconMessageCheck, IconMessageExclamation, IconLoader2 } from '@tabler/icons-vue'
+import {
+  IconMessageCheck,
+  IconMessageExclamation,
+  IconLoader2,
+  IconTrash,
+} from '@tabler/icons-vue'
 
 const props = defineProps({
   sectionId: {
@@ -38,6 +43,16 @@ const section = useLiveQueryWithDeps(
 const canUpdateSection = computed(
   () => props.canEdit && section.value && isAllowed(['documents:update']),
 )
+
+const canDeleteSection = computed(() => canUpdateSection.value && section.value?.isAddOn === true)
+
+const confirmDelete = ref(false)
+
+async function deleteSection() {
+  if (!section.value) return
+  await section.value.delete()
+  confirmDelete.value = false
+}
 
 // ── Auto-save on any change while the section is editable ──────
 const isFirstLoad = ref(true)
@@ -128,6 +143,14 @@ const debouncedSaveComment = useDebounceFn(async () => {
     <div v-if="canUpdateSection" class="tw:flex tw:items-center tw:gap-2 tw:mb-4">
       <span>{{ index + 1 }}.</span>
       <BaseTextInput v-model="section.title" size="sm" class="tw:flex-1" />
+      <button
+        v-if="canDeleteSection"
+        class="tw:p-1.5 tw:rounded tw:text-red-400 tw:hover:text-red-600 tw:hover:bg-red-50 tw:transition-colors tw:print:hidden"
+        title="Delete section"
+        @click="confirmDelete = true"
+      >
+        <IconTrash :size="16" />
+      </button>
     </div>
     <h3
       v-else
@@ -192,5 +215,13 @@ const debouncedSaveComment = useDebounceFn(async () => {
         {{ reviewerComment.body }}
       </p>
     </div>
+
+    <ConfirmDialog
+      v-model="confirmDelete"
+      title="Delete Section"
+      :message="`Are you sure you want to delete '${section.title}'? This cannot be undone.`"
+      okLabel="Delete"
+      @ok="deleteSection"
+    />
   </div>
 </template>

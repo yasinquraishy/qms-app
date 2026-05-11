@@ -323,41 +323,6 @@ watch(
       </div>
     </div>
 
-    <!-- Send-Back Targets -->
-    <div v-if="showSendBackTargets && isSendBackActive" class="tw:space-y-4">
-      <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
-        <IconCornerLeftUp :size="22" />
-        <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Send-Back Targets</h2>
-      </div>
-      <p class="tw:text-xs tw:text-secondary">
-        Which earlier steps this one can send back to. A send-back creates a new instance of the
-        target step.
-      </p>
-      <div v-if="siblingSteps.length === 0" class="tw:text-xs tw:text-secondary tw:italic tw:px-1">
-        First step — nothing to send back to.
-      </div>
-      <div v-else class="tw:space-y-2">
-        <label
-          v-for="s in siblingSteps"
-          :key="s.id"
-          class="tw:flex tw:items-center tw:gap-3"
-          :class="canUpdate ? 'tw:cursor-pointer' : 'tw:cursor-default tw:opacity-60'"
-        >
-          <BaseCheckbox
-            :modelValue="sendBackTargetIds.has(s.id)"
-            :disabled="!canUpdate"
-            @update:modelValue="canUpdate && toggleSendBackTarget(s.id)"
-          />
-          <span
-            class="tw:inline-flex tw:items-center tw:justify-center tw:w-5 tw:h-5 tw:text-[10px] tw:font-bold tw:bg-main-hover tw:border tw:border-divider tw:rounded tw:text-secondary"
-          >
-            {{ s.stepOrder }}
-          </span>
-          <span class="tw:text-xs tw:font-medium tw:text-on-main">{{ s.name }}</span>
-        </label>
-      </div>
-    </div>
-
     <!-- Step Assignee -->
     <div class="tw:space-y-4">
       <div class="tw:flex tw:items-center tw:justify-between">
@@ -438,5 +403,40 @@ watch(
 
     <!-- Form Schema -->
     <WorkflowStepFormSchema v-if="showFormSchema" :stepId="stepId" :canUpdate="canUpdate" />
+
+    <!-- Send-Back Targets -->
+    <div
+      v-if="showSendBackTargets && isSendBackActive && siblingSteps.length > 0"
+      class="tw:space-y-4"
+    >
+      <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">
+        <IconCornerLeftUp :size="22" />
+        <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Send-Back Targets</h2>
+      </div>
+      <p class="tw:text-xs tw:text-secondary">
+        Which earlier steps this one can send back to. A send-back creates a new instance of the
+        target step.
+      </p>
+      <div class="tw:space-y-2">
+        <label
+          v-for="s in siblingSteps"
+          :key="s.id"
+          class="tw:flex tw:items-center tw:gap-3"
+          :class="canUpdate ? 'tw:cursor-pointer' : 'tw:cursor-default tw:opacity-60'"
+        >
+          <BaseCheckbox
+            :modelValue="sendBackTargetIds.has(s.id)"
+            :disabled="!canUpdate"
+            @update:modelValue="canUpdate && toggleSendBackTarget(s.id)"
+          />
+          <span
+            class="tw:inline-flex tw:items-center tw:justify-center tw:w-5 tw:h-5 tw:text-[10px] tw:font-bold tw:bg-main-hover tw:border tw:border-divider tw:rounded tw:text-secondary"
+          >
+            {{ s.stepOrder }}
+          </span>
+          <span class="tw:text-xs tw:font-medium tw:text-on-main">{{ s.name }}</span>
+        </label>
+      </div>
+    </div>
   </div>
 </template>

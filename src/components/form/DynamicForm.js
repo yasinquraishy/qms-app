@@ -562,7 +562,7 @@ export default defineComponent({
       }
 
       if (field.type === 'row' || field.type === 'column') {
-        const fieldClass = `${field.type === 'row' ? 'tw:flex tw:flex-row tw:items-end' : 'tw:flex tw:flex-col'} tw:gap-4 tw:m-0`
+        const fieldClass = `${field.type === 'row' ? 'tw:flex tw:flex-row tw:items-start tw:justify-around' : 'tw:flex tw:flex-col'} tw:gap-4 tw:m-0`
 
         return h(
           'div',

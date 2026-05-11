@@ -10,6 +10,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  label: {
+    type: String,
+    default: '',
+  },
 })
 
 const checked = defineModel({
@@ -41,8 +45,8 @@ const checked = defineModel({
       <IconMinus v-if="indeterminate" :size="10" class="tw:text-white" :stroke-width="3" />
       <IconCheck v-else-if="checked" :size="10" class="tw:text-white" :stroke-width="3" />
     </span>
-    <span v-if="$slots.default" class="tw:text-sm tw:text-on-main">
-      <slot />
+    <span v-if="label" class="tw:text-sm tw:text-on-main">
+      <slot>{{ label }}</slot>
     </span>
   </label>
 </template>

@@ -7,6 +7,7 @@ import {
   IconAlertCircle,
   IconListCheck,
   IconCornerLeftUp,
+  IconEdit,
 } from '@tabler/icons-vue'
 
 const props = defineProps({
@@ -68,18 +69,10 @@ const stepUsers = useLiveQueryWithDeps(
 const roleIds = computed(() => stepRoles.value.map((sr) => sr.roleId))
 const reviewerIds = computed(() => stepUsers.value.map((su) => su.userId))
 
-const approverTab = ref(props.stepApproversTab === 'users' ? 'users' : 'roles')
+const assigneesDialogOpen = ref(false)
 
-const showRoleSelector = computed(
-  () =>
-    props.stepApproversTab !== 'users' &&
-    (props.stepApproversTab !== 'both' || approverTab.value === 'roles'),
-)
-const showUserSelector = computed(
-  () =>
-    props.stepApproversTab !== 'roles' &&
-    (props.stepApproversTab !== 'both' || approverTab.value === 'users'),
-)
+const showRolesInline = computed(() => props.stepApproversTab !== 'users')
+const showUsersInline = computed(() => props.stepApproversTab !== 'roles')
 
 // ─── Allowed Outcomes ─────────────────────────────────────────────────────────
 
@@ -330,6 +323,15 @@ watch(
           <IconUsers :size="22" />
           <h2 class="tw:text-lg tw:font-bold tw:text-on-main">Step Assignees</h2>
         </div>
+        <BaseButton
+          v-if="canUpdate"
+          variant="outline"
+          size="sm"
+          @click="assigneesDialogOpen = true"
+        >
+          <template #icon><IconEdit :size="14" /></template>
+          Manage Assignees
+        </BaseButton>
       </div>
 
       <!-- Warning Callout -->
@@ -347,47 +349,26 @@ watch(
         </div>
       </div>
 
-      <!-- Tabs (only when both are enabled) -->
-      <div class="tw:border tw:border-divider tw:rounded-xl tw:overflow-hidden">
-        <div
-          v-if="stepApproversTab === 'both'"
-          class="tw:flex tw:border-b tw:border-divider tw:bg-main-hover"
-        >
-          <button
-            class="tw:px-6 tw:py-3 tw:text-xs tw:font-bold tw:transition-colors"
-            :class="
-              approverTab === 'roles'
-                ? 'tw:text-primary tw:border-b-2 tw:border-primary tw:bg-main'
-                : 'tw:text-secondary tw:hover:text-on-main'
-            "
-            @click="approverTab = 'roles'"
-          >
-            BY ROLE
-          </button>
-          <button
-            class="tw:px-6 tw:py-3 tw:text-xs tw:font-bold tw:transition-colors"
-            :class="
-              approverTab === 'users'
-                ? 'tw:text-primary tw:border-b-2 tw:border-primary tw:bg-main'
-                : 'tw:text-secondary tw:hover:text-on-main'
-            "
-            @click="approverTab = 'users'"
-          >
-            BY USERS
-          </button>
+      <!-- Assigned Roles / Users (read-only display) -->
+      <div class="tw:border tw:border-divider tw:rounded-xl tw:p-6 tw:space-y-5">
+        <div v-if="showRolesInline">
+          <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-2">
+            Assigned Roles
+          </label>
+          <div v-if="roleIds.length > 0" class="tw:flex tw:flex-wrap tw:gap-2">
+            <RoleBadgeById v-for="roleId in roleIds" :key="roleId" :roleId="roleId" />
+          </div>
+          <span v-else class="tw:text-sm tw:text-secondary">No roles assigned</span>
         </div>
 
-        <div class="tw:p-6">
-          <WorkflowRoleSelector
-            v-show="showRoleSelector"
-            :stepId="step.id"
-            :canUpdate="canUpdate"
-          />
-          <WorkflowUserSelector
-            v-show="showUserSelector"
-            :stepId="step.id"
-            :canUpdate="canUpdate"
-          />
+        <div v-if="showUsersInline">
+          <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-2">
+            Assigned Users
+          </label>
+          <div v-if="reviewerIds.length > 0" class="tw:flex tw:flex-wrap tw:gap-2">
+            <UserBadgeById v-for="userId in reviewerIds" :key="userId" :userId="userId" />
+          </div>
+          <span v-else class="tw:text-sm tw:text-secondary">No users assigned</span>
         </div>
       </div>
 
@@ -400,6 +381,14 @@ watch(
         <span class="ds-label-sm"> At least one approver must be selected for this step </span>
       </div>
     </div>
+
+    <!-- Manage Assignees Dialog -->
+    <WorkflowStepAssigneesDialog
+      v-model="assigneesDialogOpen"
+      :stepId="step.id"
+      :canUpdate="canUpdate"
+      :stepApproversTab="stepApproversTab"
+    />
 
     <!-- Form Schema -->
     <WorkflowStepFormSchema v-if="showFormSchema" :stepId="stepId" :canUpdate="canUpdate" />

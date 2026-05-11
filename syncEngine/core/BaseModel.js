@@ -2,8 +2,12 @@ import ModelRegistry from './ModelRegistry.js'
 import { ObjectPool } from './ObjectPool.js'
 import { hydrate } from '../persistence/hydration.js'
 import { QueryBuilder } from '../query/QueryBuilder.js'
-import { OPERATION } from '../shared/constants.js'
+import { OPERATION, LOAD_STRATEGY } from '../shared/constants.js'
 import { ModelValidator, ValidationError } from './ModelValidator.js'
+import { MutationRunner } from '../network/MutationRunner.js'
+import { MetaCache } from './MetaCache.js'
+import { IndexedDB } from '../persistence/IndexedDB.js'
+import { syncBus } from './syncBus.js'
 import { DateTime } from 'luxon'
 
 // Re-export for backwards compatibility
@@ -85,6 +89,22 @@ export class BaseModel {
   #action = OPERATION.UPDATE
 
   /**
+   * Cached schema for the model class. Looked up once per subclass on first
+   * access — schemas are identical across all instances of a given model, so
+   * the cache lives on the constructor instead of on each instance.
+   *
+   * `this` inside a static getter is the class being accessed; the assignment
+   * creates an own property on that subclass, so Document, User, etc. each
+   * get their own cache slot rather than sharing BaseModel's inherited one.
+   */
+  static get schema() {
+    if (!Object.prototype.hasOwnProperty.call(this, '_cachedSchema')) {
+      this._cachedSchema = ModelRegistry.getSchema(this.name)
+    }
+    return this._cachedSchema
+  }
+
+  /**
    * Create a new instance of this model class.
    * Sets action to 'create' so save() will queue a create operation.
    * @param {Record<string, unknown>} object — initial property values
@@ -95,7 +115,7 @@ export class BaseModel {
     const Ctor = ModelRegistry.getConstructor(modelName)
     if (!Ctor) throw new Error(`[BaseModel] Unknown model: ${modelName}`)
 
-    const schema = ModelRegistry.getSchema(modelName)
+    const schema = this.schema
     const pk = schema.primaryKey
 
     // Create instance
@@ -122,11 +142,47 @@ export class BaseModel {
 
   /**
    * Find a model instance by primary key.
+   *
+   * Lookup order:
+   *   1. IndexedDB (via `hydrate`) — fast path for records the local store
+   *      already has.
+   *   2. If absent and the model is networked (not LOAD_STRATEGY.LOCAL): fetch
+   *      from the server via GraphQL, persist to IDB, hydrate, and return.
+   *      Emits a `syncBus` 'create' event so other live queries see the new
+   *      record. Returns null if the server says the record does not exist.
+   *
+   * Paranoid filter is applied after the lookup completes so a soft-deleted
+   * record fetched from the server is written to IDB but returned as null
+   * unless `force: true` is passed.
+   *
    * @param {*} id - The primary key value
+   * @param {{ force?: boolean }} [options]
    * @returns {Promise<this|null>} The model instance or null if not found
    */
   static async findByPk(id, { force = false } = {}) {
-    const instance = await hydrate(this.name, id)
+    let instance = await hydrate(this.name, id)
+
+    if (!instance) {
+      const schema = this.schema
+      if (schema && schema.loadStrategy !== LOAD_STRATEGY.LOCAL) {
+        const meta = MetaCache.get(this.name)
+        if (meta) {
+          const record = await MutationRunner.fetchOne(meta, id)
+          if (record) {
+            const tableName = ModelRegistry.getTableName(this.name)
+            await IndexedDB.put(tableName, record)
+            instance = await hydrate(this.name, id, {}, record)
+            syncBus.emit({
+              modelName: this.name,
+              modelId: id,
+              action: 'create',
+              type: 'sync',
+            })
+          }
+        }
+      }
+    }
+
     if (!force && instance && this.paranoid) {
       const field = typeof this.paranoid === 'string' ? this.paranoid : 'deletedAt'
       if (instance[field] != null) return null
@@ -141,8 +197,7 @@ export class BaseModel {
    */
   async reload() {
     const modelName = this.constructor.name
-    const schema = ModelRegistry.getSchema(modelName)
-    const pk = schema.primaryKey
+    const pk = this.constructor.schema.primaryKey
     await hydrate(modelName, this[pk])
   }
 
@@ -169,8 +224,7 @@ export class BaseModel {
     const paranoid = this.constructor.paranoid
     if (paranoid) {
       const field = typeof paranoid === 'string' ? paranoid : 'deletedAt'
-      const schema = ModelRegistry.getSchema(this.constructor.name)
-      const propMeta = schema?.properties?.get(field)
+      const propMeta = this.constructor.schema?.properties?.get(field)
       const fieldType = propMeta?.options?.type
 
       if (fieldType === DateTime) {

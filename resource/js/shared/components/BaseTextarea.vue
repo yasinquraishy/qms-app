@@ -99,13 +99,12 @@ function focus() {
   inputEl.value?.focus()
 }
 
+const autosizeInput = computed(() => props.modelValue ?? '')
+
 if (props.autosize) {
   useTextareaAutosize({
     element: inputEl,
-    // Provide a getter that returns the value to watch.
-    // Previously the function had a block body but did not return anything,
-    // so Vue's watch couldn't track changes and a watcher callback could throw.
-    watch: () => props.modelValue,
+    input: autosizeInput,
   })
 }
 

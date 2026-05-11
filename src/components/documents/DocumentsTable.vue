@@ -144,11 +144,11 @@ async function onUnarchiveDocument(row) {
     </template>
 
     <!-- Current Version Column -->
-    <template #body-cell-current="{ value }">
+    <template #body-cell-current="{ row, value }">
       <DocumentsStatusBadge
         v-if="value"
         :version="getVersionLabel(value)"
-        :status="value.statusId"
+        :status="row.statusId === 'ARCHIVED' ? 'ARCHIVED' : value.statusId"
       />
       <span v-else class="tw:text-sm tw:text-secondary">-</span>
     </template>

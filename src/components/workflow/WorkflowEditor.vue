@@ -421,6 +421,7 @@ watch(steps, () => {
           :disabled="!canUpdate"
           class="tw:mt-4"
           autosize
+          :maxRows="4"
         />
       </div>
 

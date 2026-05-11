@@ -184,6 +184,7 @@ watch(
               v-model="step.description"
               placeholder="Describe what happens at this step..."
               :disabled="!canUpdate"
+              rows="6"
             />
           </div>
         </div>
@@ -268,22 +269,20 @@ watch(
               </span>
             </div>
           </div>
+
+          <!-- Compliance Controls -->
+          <div class="tw:flex tw:justify-between">
+            <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
+              <BaseCheckbox v-model="step.requireComments" :disabled="!canUpdate" />
+              <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require Comments</span>
+            </label>
+            <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
+              <BaseCheckbox v-model="step.requireEsignature" :disabled="!canUpdate" />
+              <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require E-signature</span>
+            </label>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Compliance Controls -->
-    <div
-      class="tw:grid tw:grid-cols-2 tw:gap-4 tw:p-6 tw:bg-main-hover tw:rounded-2xl tw:border tw:border-divider"
-    >
-      <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
-        <BaseCheckbox v-model="step.requireComments" :disabled="!canUpdate" />
-        <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require Comments</span>
-      </label>
-      <label class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer">
-        <BaseCheckbox v-model="step.requireEsignature" :disabled="!canUpdate" />
-        <span class="tw:text-xs tw:font-semibold tw:text-on-main">Require E-signature</span>
-      </label>
     </div>
 
     <!-- Allowed Outcomes -->

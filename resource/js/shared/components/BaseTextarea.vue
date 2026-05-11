@@ -69,6 +69,10 @@ const props = defineProps({
     type: [Number, null],
     default: null,
   },
+  maxRows: {
+    type: [Number, null],
+    default: null,
+  },
   showFocusRing: {
     type: Boolean,
     default: false,
@@ -122,6 +126,12 @@ const minHeight = computed(() => {
   return `${(props.rows - 1) * 24 + firstRowHeight}px`
 })
 
+const maxHeight = computed(() => {
+  if (!props.autosize || !props.maxRows) return 'none'
+  const firstRowHeight = 24
+  return `${(props.maxRows - 1) * 24 + firstRowHeight}px`
+})
+
 // --- Lifecycle hooks & related ---
 onMounted(() => {
   if (props.autofocus) {
@@ -168,7 +178,7 @@ defineExpose({
         :aria-disabled="disabled"
         :required="required"
         :rows="rows"
-        :style="`min-height: ${minHeight}`"
+        :style="`min-height: ${minHeight}; max-height: ${maxHeight}; overflow-y: ${maxHeight !== 'none' ? 'auto' : 'hidden'}`"
         dir="auto"
         autocomplete="off"
         :maxlength="maxlength"
@@ -191,7 +201,7 @@ defineExpose({
       :aria-disabled="disabled"
       :required="required"
       :rows="rows"
-      :style="`min-height: ${minHeight}`"
+      :style="`min-height: ${minHeight}; max-height: ${maxHeight}; overflow-y: ${maxHeight !== 'none' ? 'auto' : 'hidden'}`"
       dir="auto"
       autocomplete="off"
       :maxlength="maxlength"

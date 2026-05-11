@@ -52,23 +52,31 @@ async function fetchIdentityMethods() {
 async function verifyWithGoogle() {
   oauthLoading.value = true
   errorMessage.value = ''
+
   try {
-    await new Promise((resolve, reject) => {
-      window.google.accounts.id.initialize({
-        client_id: googleClientId.value,
-        callback(response) {
-          if (response.error) {
-            reject(new Error(response.error_description || response.error))
-            return
-          }
-          emit('verified', { method: 'OAUTH', provider: 'GOOGLE', token: response.credential })
-          show.value = false
-          resolve()
-        },
-        itp_support: true, // Enables FedCM for improved privacy/ITP support
-      })
-      window.google.accounts.id.prompt()
+    const tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: googleClientId.value,
+
+      scope: 'openid email profile',
+
+      callback(response) {
+        if (response.error) {
+          errorMessage.value = response.error_description || response.error
+
+          return
+        }
+
+        emit('verified', {
+          method: 'OAUTH',
+          provider: 'GOOGLE',
+          token: response.access_token,
+        })
+
+        show.value = false
+      },
     })
+
+    tokenClient.requestAccessToken()
   } catch (err) {
     errorMessage.value = err.message || 'Google verification failed. Please try again.'
   } finally {

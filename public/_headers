@@ -1,0 +1,10 @@
+# Cloudflare Pages response headers.
+# See: https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  # Allow Google OAuth popup (`oauth2.initTokenClient`) to post the access_token
+  # back to the opener tab via window.opener.postMessage. The default `same-origin`
+  # would null out window.opener in the popup and the callback would never fire —
+  # producing the "user signs in but dialog stays open" behavior in production
+  # while localhost (no COOP header) works fine.
+  Cross-Origin-Opener-Policy: same-origin-allow-popups

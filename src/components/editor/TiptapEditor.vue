@@ -23,6 +23,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import EditorToolbar from './EditorToolbar.vue'
 import TableToolbar from './TableToolbar.vue'
 import LinkDialog from './LinkDialog.vue'
+import ImageCropDialog from '@/components/common/ImageCropDialog.vue'
 import ImageBubbleMenu from './extensions/image/ImageBubbleMenu.vue'
 import { AdvancedImage } from './extensions/image/advancedImage.js'
 import { uploadFile } from '@/composables/useFileUpload.js'
@@ -91,6 +92,16 @@ function handleUploadError(err) {
   toast.error(err?.message || 'Image upload failed')
 }
 
+// Image-crop dialog state. The toolbar (and bubble-menu "Replace") routes the
+// picked file through the cropper before handing it to the extension upload
+// pipeline so users can frame the image before it leaves the browser.
+const showCropDialog = ref(false)
+const cropFile = ref(null)
+// 'insert' = new image at insertPos; 'replace' = swap the currently selected
+// image's attrs.
+const cropMode = ref('insert')
+const insertPos = ref(null)
+
 // Toolbar entry point — defers to the extension's command so paste/drop and
 // toolbar uploads share the same placeholder + replace pipeline.
 //
@@ -101,21 +112,56 @@ function handleUploadError(err) {
 // image goes AFTER it; the selection's content is preserved.
 function handleToolbarImageUpload(file) {
   if (!editor.value || !file) return
-  const pos = editor.value.state.selection.to
-  editor.value.commands.uploadImage(file, pos)
+  insertPos.value = editor.value.state.selection.to
+  cropMode.value = 'insert'
+  cropFile.value = file
+  showCropDialog.value = true
 }
 
-// Bubble-menu "Replace" action: open a picker, then swap the current image
-// node's attrs (no placeholder needed — the node already exists, we're just
-// changing src).
+// Bubble-menu "Replace" action: open a picker, then route through the cropper
+// before swapping the current image node's attrs.
 function handleReplaceImage() {
   if (!editor.value) return
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'
-  input.onchange = async (e) => {
+  input.onchange = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    cropMode.value = 'replace'
+    cropFile.value = file
+    showCropDialog.value = true
+  }
+  input.click()
+}
+
+// Bubble-menu "Crop" action on an already-uploaded image: fetch the current
+// src into a File, then reuse the replace pipeline so the cropped result is
+// uploaded fresh and the node's attrs are swapped to the new asset.
+async function handleCropImage() {
+  if (!editor.value) return
+  const attrs = editor.value.getAttributes('image') || {}
+  const src = attrs.src
+  if (!src) return
+  try {
+    const res = await fetch(src, { credentials: 'include' })
+    if (!res.ok) throw new Error(`Failed to load image (${res.status})`)
+    const blob = await res.blob()
+    const name = attrs.originalFilename || src.split('/').pop()?.split('?')[0] || 'image.jpg'
+    const file = new File([blob], name, { type: blob.type || 'image/jpeg' })
+    cropMode.value = 'replace'
+    cropFile.value = file
+    showCropDialog.value = true
+  } catch (err) {
+    handleUploadError(err)
+  }
+}
+
+async function handleCropSave({ file }) {
+  showCropDialog.value = false
+  if (!editor.value || !file) return
+
+  if (cropMode.value === 'replace') {
     try {
       const result = await uploadImageFile(file)
       editor.value
@@ -132,8 +178,11 @@ function handleReplaceImage() {
     } catch (err) {
       handleUploadError(err)
     }
+    return
   }
-  input.click()
+
+  // Insert flow — let the extension drive the placeholder + replace pipeline.
+  editor.value.commands.uploadImage(file, insertPos.value)
 }
 
 const editor = useEditor({
@@ -398,7 +447,21 @@ defineExpose({
     />
 
     <!-- Image bubble menu (appears when an image node is selected) -->
-    <ImageBubbleMenu v-if="editor && editable" :editor="editor" @replace="handleReplaceImage" />
+    <ImageBubbleMenu
+      v-if="editor && editable"
+      :editor="editor"
+      @replace="handleReplaceImage"
+      @crop="handleCropImage"
+    />
+
+    <!-- Image Crop Dialog (opens before any image is uploaded) -->
+    <ImageCropDialog
+      v-model="showCropDialog"
+      :initialFile="cropFile"
+      :aspectRatio="null"
+      title="Crop Image"
+      @save="handleCropSave"
+    />
 
     <!-- Link Dialog -->
     <LinkDialog

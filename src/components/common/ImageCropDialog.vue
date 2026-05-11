@@ -13,12 +13,16 @@ const props = defineProps({
     default: 'Edit Image',
   },
   aspectRatio: {
-    type: Number,
+    type: [Number, null],
     default: 1,
   },
   maxSize: {
     type: Number,
     default: 2048, // Max width/height in pixels
+  },
+  initialFile: {
+    type: File,
+    default: null,
   },
 })
 
@@ -109,6 +113,29 @@ function cancel() {
   model.value = false
 }
 
+function loadFileIntoCropper(file) {
+  if (!file) return
+  if (file.size > 10 * 1024 * 1024) {
+    alert('File size must be less than 10MB')
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    selectedImage.value = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+// When opened with a pre-selected file (e.g. from the editor toolbar), skip the
+// in-dialog file picker and drop straight into crop mode.
+watch(
+  [model, () => props.initialFile],
+  ([open, file]) => {
+    if (open && file) loadFileIntoCropper(file)
+  },
+  { immediate: true },
+)
+
 // Reset when dialog closes
 watch(model, (newVal) => {
   if (!newVal) {
@@ -134,7 +161,10 @@ watch(model, (newVal) => {
           />
         </div>
         <p class="tw:text-xs tw:text-center tw:text-secondary">
-          Adjust the crop area. Image will be saved as {{ aspectRatio }}:1 aspect ratio.
+          <template v-if="aspectRatio">
+            Adjust the crop area. Image will be saved as {{ aspectRatio }}:1 aspect ratio.
+          </template>
+          <template v-else> Adjust the crop area to fit your needs. </template>
         </p>
       </div>
 

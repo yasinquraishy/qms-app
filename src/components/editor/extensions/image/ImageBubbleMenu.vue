@@ -7,6 +7,7 @@ import {
   IconTextCaption,
   IconLetterA,
   IconReplace,
+  IconCrop,
   IconTrash,
   IconCopy,
   IconExternalLink,
@@ -17,7 +18,7 @@ const props = defineProps({
   editor: { type: Object, required: true },
 })
 
-const emit = defineEmits(['replace'])
+const emit = defineEmits(['replace', 'crop'])
 
 const toast = useToast()
 
@@ -86,6 +87,10 @@ function openInNewTab() {
 
 function replaceImage() {
   emit('replace')
+}
+
+function cropImage() {
+  emit('crop')
 }
 
 const alignButtons = computed(() => [
@@ -211,6 +216,17 @@ const widthPresets = [25, 50, 75, 100]
           @click="replaceImage"
         >
           <IconReplace :size="18" />
+        </button>
+
+        <!-- Crop -->
+        <button
+          type="button"
+          class="tw:flex tw:items-center tw:justify-center tw:size-8 tw:rounded tw:transition-colors tw:border-0 tw:cursor-pointer tw:text-secondary tw:bg-transparent tw:hover:bg-sidebar tw:hover:text-on-sidebar"
+          title="Crop image"
+          aria-label="Crop image"
+          @click="cropImage"
+        >
+          <IconCrop :size="18" />
         </button>
 
         <div class="tw:w-px tw:h-5 tw:bg-divider tw:mx-0.5" />

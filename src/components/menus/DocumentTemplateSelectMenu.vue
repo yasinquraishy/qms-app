@@ -15,7 +15,12 @@ const modelValue = defineModel({
   default: null,
 })
 
-const templates = useLiveQuery(async (db) => db.DocumentTemplate.where().exec(), { initial: [] })
+// Only PUBLISHED templates can be attached to new documents. DRAFT templates
+// are not yet usable; ARCHIVED templates are read-only and not re-attachable.
+const templates = useLiveQuery(
+  async (db) => db.DocumentTemplate.where('statusId', 'PUBLISHED').exec(),
+  { initial: [] },
+)
 
 function getArray() {
   return Array.isArray(modelValue.value) ? modelValue.value : []

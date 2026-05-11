@@ -5,6 +5,7 @@ import {
   IconArchive,
   IconArchiveOff,
   IconArrowLeft,
+  IconSend,
 } from '@tabler/icons-vue'
 import { isAllowed } from '@/utils/currentSession.js'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
@@ -27,8 +28,17 @@ const loading = computed(() => template.value === undefined)
 const canUpdate = computed(() => isAllowed(['document-templates:update']))
 const canArchive = computed(() => isAllowed(['document-templates:delete']))
 
+// canEdit gates inline-edit behavior: only DRAFT templates can be edited.
+// PUBLISHED templates are immutable (they may be referenced by documents);
+// ARCHIVED templates are immutable too. The user must Unarchive (→ DRAFT)
+// to make changes again.
+const canEdit = computed(() => canUpdate.value && template.value?.statusId === 'DRAFT')
+
 const isFirstLoad = ref(true)
 const editingName = ref(false)
+const showPublishConfirm = ref(false)
+const showArchiveConfirm = ref(false)
+const showUnarchiveConfirm = ref(false)
 
 const debouncedSave = useDebounceFn(async () => {
   if (!template.value) return
@@ -56,6 +66,19 @@ const breadcrumbs = computed(() => [
   { label: template.value?.name || 'Template' },
 ])
 
+async function onPublish() {
+  if (!template.value) return
+  const lastStatus = template.value.statusId
+  template.value.statusId = 'PUBLISHED'
+  try {
+    await template.value.save()
+    toast.success('Template published')
+  } catch (err) {
+    template.value.statusId = lastStatus
+    toast.error(err)
+  }
+}
+
 async function onArchive() {
   if (!template.value) return
   const lastStatus = template.value.statusId
@@ -63,8 +86,9 @@ async function onArchive() {
   try {
     await template.value.save()
     router.push(getCompanyPath('/document-templates'))
-  } catch {
+  } catch (err) {
     template.value.statusId = lastStatus
+    toast.error(err)
   }
 }
 
@@ -74,8 +98,9 @@ async function onUnarchive() {
   template.value.statusId = 'DRAFT'
   try {
     await template.value.save()
-  } catch {
+  } catch (err) {
     template.value.statusId = lastStatus
+    toast.error(err)
   }
 }
 
@@ -93,9 +118,17 @@ function goBack() {
     <SafeTeleport to="#main-header-actions">
       <div class="tw:flex tw:items-center tw:gap-3">
         <button
+          v-if="canUpdate && template?.statusId === 'DRAFT'"
+          class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:bg-primary tw:text-white tw:text-sm tw:font-medium tw:hover:bg-primary/90 tw:transition-colors"
+          @click="showPublishConfirm = true"
+        >
+          <IconSend :size="16" />
+          Publish
+        </button>
+        <button
           v-if="canArchive && template?.statusId !== 'ARCHIVED'"
           class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:border tw:border-red-300 tw:text-red-600 tw:text-sm tw:font-medium tw:hover:bg-red-50 tw:transition-colors"
-          @click="onArchive"
+          @click="showArchiveConfirm = true"
         >
           <IconArchive :size="16" />
           Archive
@@ -103,7 +136,7 @@ function goBack() {
         <button
           v-if="canArchive && template?.statusId === 'ARCHIVED'"
           class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:border tw:border-primary tw:text-primary tw:text-sm tw:font-medium tw:hover:bg-primary/10 tw:transition-colors"
-          @click="onUnarchive"
+          @click="showUnarchiveConfirm = true"
         >
           <IconArchiveOff :size="16" />
           Unarchive
@@ -126,7 +159,7 @@ function goBack() {
           <div>
             <div class="tw:flex tw:items-center tw:gap-3 tw:mb-2">
               <!-- Editable name -->
-              <template v-if="editingName && canUpdate">
+              <template v-if="editingName && canEdit">
                 <BaseTextInput
                   v-model="template.name"
                   placeholder="Template Name"
@@ -138,8 +171,8 @@ function goBack() {
               <h1
                 v-else
                 class="tw:text-3xl tw:font-black tw:text-on-sidebar"
-                :class="{ 'tw:cursor-pointer tw:hover:text-primary': canUpdate }"
-                @click="canUpdate && (editingName = true)"
+                :class="{ 'tw:cursor-pointer tw:hover:text-primary': canEdit }"
+                @click="canEdit && (editingName = true)"
               >
                 {{ template.name }}
               </h1>
@@ -165,7 +198,7 @@ function goBack() {
             <div>
               <p class="tw:text-secondary tw:mb-1">Document Prefix</p>
               <BaseTextInput
-                v-if="canUpdate"
+                v-if="canEdit"
                 v-model="template.prefix"
                 placeholder="Prefix"
                 size="sm"
@@ -176,7 +209,7 @@ function goBack() {
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Department</p>
-              <DepartmentSelectMenu v-if="canUpdate" v-model="template.departmentId" />
+              <DepartmentSelectMenu v-if="canEdit" v-model="template.departmentId" />
               <template v-else>
                 <DepartmentBadgeById
                   v-if="template.departmentId"
@@ -187,7 +220,7 @@ function goBack() {
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Related Standard</p>
-              <RelatedStandardSelectMenu v-if="canUpdate" v-model="template.relatedStandardId" />
+              <RelatedStandardSelectMenu v-if="canEdit" v-model="template.relatedStandardId" />
               <template v-else>
                 <RelatedStandardBadgeById
                   v-if="template.relatedStandardId"
@@ -218,16 +251,16 @@ function goBack() {
           <div class="tw:p-6 tw:grid tw:grid-cols-2 tw:md:grid-cols-3 tw:gap-6">
             <div>
               <p class="tw:text-secondary tw:mb-1">Training Available</p>
-              <BaseSwitch v-model="template.trainingAvailable" :disabled="!canUpdate" />
+              <BaseSwitch v-model="template.trainingAvailable" :disabled="!canEdit" />
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Retraining on Version</p>
-              <BaseSwitch v-model="template.retrainingOnVersion" :disabled="!canUpdate" />
+              <BaseSwitch v-model="template.retrainingOnVersion" :disabled="!canEdit" />
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Periodic Review</p>
               <BaseTextInput
-                v-if="canUpdate"
+                v-if="canEdit"
                 v-model="template.periodicReviewMonths"
                 type="number"
                 placeholder="Months"
@@ -237,7 +270,7 @@ function goBack() {
             <div>
               <p class="tw:text-secondary tw:mb-1">Review Limit</p>
               <BaseTextInput
-                v-if="canUpdate"
+                v-if="canEdit"
                 v-model="template.reviewLimitDays"
                 type="number"
                 placeholder="Days"
@@ -247,7 +280,7 @@ function goBack() {
             <div>
               <p class="tw:text-secondary tw:mb-1">Approval Limit</p>
               <BaseTextInput
-                v-if="canUpdate"
+                v-if="canEdit"
                 v-model="template.approvalLimitDays"
                 type="number"
                 placeholder="Days"
@@ -256,17 +289,17 @@ function goBack() {
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Auto Effective</p>
-              <BaseSwitch v-model="template.autoEffectiveOnApproval" :disabled="!canUpdate" />
+              <BaseSwitch v-model="template.autoEffectiveOnApproval" :disabled="!canEdit" />
             </div>
             <div>
               <p class="tw:text-secondary tw:mb-1">Show Section Titles</p>
-              <BaseSwitch v-model="template.showSectionTitles" :disabled="!canUpdate" />
+              <BaseSwitch v-model="template.showSectionTitles" :disabled="!canEdit" />
             </div>
           </div>
         </div>
 
         <!-- Sections Card -->
-        <DocumentSectionsEditor v-model="template.sections" :readonly="!canUpdate" />
+        <DocumentSectionsEditor v-model="template.sections" :readonly="!canEdit" />
       </div>
     </div>
 
@@ -281,5 +314,29 @@ function goBack() {
         Go Back
       </button>
     </div>
+
+    <ConfirmDialog
+      v-model="showPublishConfirm"
+      title="Publish template"
+      message="Once you publish this template, it can be used in documents — but you won't be able to edit it after publishing. Continue?"
+      okLabel="Publish"
+      @ok="onPublish"
+    />
+
+    <ConfirmDialog
+      v-model="showArchiveConfirm"
+      title="Archive template"
+      message="Once this template is archived, you won't be able to edit it or use it for new documents. Continue?"
+      okLabel="Archive"
+      @ok="onArchive"
+    />
+
+    <ConfirmDialog
+      v-model="showUnarchiveConfirm"
+      title="Unarchive template"
+      message="This template will return to Draft status — it will be editable again, but you'll need to publish it before it can be used for new documents. Continue?"
+      okLabel="Unarchive"
+      @ok="onUnarchive"
+    />
   </div>
 </template>

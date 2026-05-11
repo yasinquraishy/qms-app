@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 @ClientModel('documentTemplates', {
   primaryKey: 'id',
   syncField: 'updatedAt',
-  customIndex: 'departmentId',
+  customIndex: 'departmentId, statusId',
 })
 export class DocumentTemplate extends BaseModel {
   static paranoid = true
@@ -34,7 +34,7 @@ export class DocumentTemplate extends BaseModel {
   @Property({ type: Boolean }) showSectionTitles = true
   @Property({ type: Array }) sections = []
   @Property({ type: String }) relatedStandardId = ''
-  @Property({ type: String }) statusId = 'ACTIVE'
+  @Property({ type: String }) statusId = 'DRAFT'
   @Property({ type: DateTime }) deletedAt = null
   @Property({ type: DateTime, required: true, timestamp: true })
   createdAt = /** @type {DateTime} */ (null)

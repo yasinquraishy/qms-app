@@ -18,6 +18,7 @@ const confirmDelete = ref({ open: false, workflow: null })
 
 const columns = [
   { name: 'name', label: 'WORKFLOW NAME', field: 'name', align: 'left', sortable: true },
+  { name: 'type', label: 'TYPE', field: 'moduleId', align: 'left', sortable: true },
   { name: 'steps', label: 'STEPS', field: 'steps', align: 'left', sortable: false },
   { name: 'version', label: 'VERSION', field: 'version', align: 'left', sortable: false },
   { name: 'statusId', label: 'STATUS', field: 'statusId', align: 'left', sortable: false },
@@ -104,6 +105,10 @@ const pagination = ref({
           {{ row.description }}
         </span>
       </div>
+    </template>
+
+    <template #body-cell-type="{ row }">
+      <ModuleBadgeById :moduleId="row.moduleId" />
     </template>
 
     <template #body-cell-steps="{ row }">

@@ -64,6 +64,16 @@ function stepCount(versionId) {
   return steps.value.filter((s) => s.workflowVersionId === versionId).length
 }
 
+watch(
+  activeWorkflows,
+  (entries) => {
+    if (!selectedVersionId.value && entries.length === 1) {
+      selectedVersionId.value = entries[0].version.id
+    }
+  },
+  { immediate: true },
+)
+
 function pickWorkflow(entry) {
   selectedVersionId.value = entry.version.id
 }

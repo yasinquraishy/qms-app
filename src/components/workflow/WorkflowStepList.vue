@@ -66,17 +66,21 @@ const createStep = useLiveMutation(async (db, { versionId, order, settings, pare
   return step
 })
 
+function nextStepOrder() {
+  const orders = steps.value.map((s) => s.stepOrder ?? 0)
+  return (orders.length ? Math.max(...orders) : 0) + 1
+}
+
 async function addStep() {
   const s = currentCompany.value?.settings || {}
-  const order = (props.showChildSteps ? rootSteps.value.length : steps.value.length) + 1
+  const order = nextStepOrder()
   const step = await createStep({ versionId: props.versionId, order, settings: s })
   if (step) stepId.value = step.id
 }
 
 async function addChildStep(parentId) {
   const s = currentCompany.value?.settings || {}
-  const siblings = childrenByParentId.value[parentId] ?? []
-  const order = siblings.length + 1
+  const order = nextStepOrder()
   const step = await createStep({
     versionId: props.versionId,
     order,
@@ -93,12 +97,6 @@ async function removeFromSiblings(step, siblings) {
   const wasSelected = stepId.value === step.id
   await step.delete()
   const remaining = siblings.filter((s) => s.id !== step.id)
-  await Promise.all(
-    remaining.map((s, i) => {
-      s.stepOrder = i + 1
-      return s.save()
-    }),
-  )
   if (wasSelected) {
     const newIndex = Math.max(0, index - 1)
     stepId.value = remaining[newIndex]?.id ?? null

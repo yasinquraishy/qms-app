@@ -103,10 +103,6 @@ function closeRightDrawer() {
 
 function togglePreview() {
   showPreview.value = !showPreview.value
-  if (showPreview.value) {
-    clearSelection()
-    rightDrawerOpen.value = false
-  }
 }
 
 function onSave() {
@@ -330,45 +326,52 @@ function copyJson() {
       <!-- Content + Right Sidebar -->
       <div class="tw:flex tw:flex-1 tw:overflow-hidden">
         <!-- Canvas Area -->
-        <div class="tw:flex-1 tw:overflow-auto tw:bg-main tw:p-4">
-          <!-- Edit Mode - Canvas -->
-          <div v-if="!showPreview" class="tw:max-w-4xl tw:mx-auto tw:min-h-full">
-            <FormCanvas
-              v-model="previewData"
-              :fields="schema"
-              :selectedPath="selectedFieldPath"
-              :isDragging="isDragging"
-              @addField="addField"
-              @selectField="handleSelectField"
-              @removeField="removeField"
-              @duplicateField="duplicateField"
-              @moveField="moveField"
-            />
-          </div>
-
-          <!-- Preview Mode -->
-          <div v-else class="tw:py-6 tw:px-4 tw:min-h-full">
-            <div
-              class="tw:max-w-4xl tw:mx-auto tw:bg-sidebar tw:border tw:border-divider tw:rounded-2xl tw:shadow-xl tw:overflow-hidden"
-            >
-              <div class="tw:bg-main tw:px-5 tw:py-3 tw:border-b tw:border-divider">
-                <div class="tw:text-xl tw:font-bold tw:text-on-sidebar">Form Preview</div>
-              </div>
-              <div class="tw:p-5">
-                <DynamicForm v-model="previewData" :fields="schema" @submit="onPreviewSubmit">
-                  <template #footer="{ submit }">
-                    <div
-                      class="tw:flex tw:justify-end tw:mt-5 tw:pt-4 tw:border-t tw:border-divider"
-                    >
-                      <BaseButton variant="primary" size="lg" @click="submit">
-                        Submit Application
-                      </BaseButton>
-                    </div>
-                  </template>
-                </DynamicForm>
-              </div>
+        <div class="tw:flex tw:flex-1 tw:overflow-hidden tw:bg-main">
+          <!-- Edit Mode - Canvas (always visible) -->
+          <div class="tw:flex-1 tw:overflow-auto tw:p-4">
+            <div class="tw:max-w-4xl tw:mx-auto tw:min-h-full">
+              <FormCanvas
+                v-model="previewData"
+                :fields="schema"
+                :selectedPath="selectedFieldPath"
+                :isDragging="isDragging"
+                @addField="addField"
+                @selectField="handleSelectField"
+                @removeField="removeField"
+                @duplicateField="duplicateField"
+                @moveField="moveField"
+              />
             </div>
           </div>
+
+          <!-- Preview Panel (side-by-side when toggled) -->
+          <Transition name="slide-right">
+            <div
+              v-if="showPreview"
+              class="tw:flex-1 tw:overflow-auto tw:border-l tw:border-divider tw:bg-main tw:py-6 tw:px-4"
+            >
+              <div
+                class="tw:max-w-4xl tw:mx-auto tw:bg-sidebar tw:border tw:border-divider tw:rounded-2xl tw:shadow-xl tw:overflow-hidden"
+              >
+                <div class="tw:bg-main tw:px-5 tw:py-3 tw:border-b tw:border-divider">
+                  <div class="tw:text-xl tw:font-bold tw:text-on-sidebar">Form Preview</div>
+                </div>
+                <div class="tw:p-5">
+                  <DynamicForm v-model="previewData" :fields="schema" @submit="onPreviewSubmit">
+                    <template #footer="{ submit }">
+                      <div
+                        class="tw:flex tw:justify-end tw:mt-5 tw:pt-4 tw:border-t tw:border-divider"
+                      >
+                        <BaseButton variant="primary" size="lg" @click="submit">
+                          Submit Application
+                        </BaseButton>
+                      </div>
+                    </template>
+                  </DynamicForm>
+                </div>
+              </div>
+            </div>
+          </Transition>
         </div>
 
         <!-- Right Sidebar - Field Config -->

@@ -60,7 +60,7 @@ export function useLiveQuery(
 export function useLiveQueryWithDeps(
   deps,
   queryFn,
-  { initial = undefined, debounce = DEFAULT_DEBOUNCE } = {},
+  { models = '*', initial = undefined, debounce = DEFAULT_DEBOUNCE } = {},
 ) {
   const data = shallowRef(initial)
   let lastDepValues = []
@@ -84,8 +84,7 @@ export function useLiveQueryWithDeps(
   )
 
   // Re-run on sync events — reuse the last resolved dep values
-  // const modelList = Array.isArray(models) ? models : [models]
-  const modelList = ['*']
+  const modelList = Array.isArray(models) ? models : [models]
   const unsubscribes = modelList.map((m) =>
     syncBus.on(m, () => refresh(lastDepValues), { debounce }),
   )

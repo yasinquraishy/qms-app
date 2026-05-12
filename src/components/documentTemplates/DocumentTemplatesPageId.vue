@@ -20,9 +20,13 @@ const props = defineProps({
 const router = useRouter()
 const toast = useToast()
 
-const template = useLiveQueryWithDeps([() => props.id], async (db, [id]) => {
-  return db.DocumentTemplate.findByPk(id)
-})
+const template = useLiveQueryWithDeps(
+  [() => props.id],
+  async (db, [id]) => {
+    return db.DocumentTemplate.findByPk(id)
+  },
+  { models: 'DocumentTemplate' },
+)
 
 const loading = computed(() => template.value === undefined)
 const canUpdate = computed(() => isAllowed(['document-templates:update']))

@@ -16,7 +16,6 @@ import StarterKit from '@tiptap/starter-kit'
 import Highlight from '@tiptap/extension-highlight'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
-import Image from '@tiptap/extension-image'
 import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
@@ -24,7 +23,9 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import EditorToolbar from './EditorToolbar.vue'
 import TableToolbar from './TableToolbar.vue'
 import LinkDialog from './LinkDialog.vue'
-import EditorImageDialog from './EditorImageDialog.vue'
+import ImageCropDialog from '@/components/common/ImageCropDialog.vue'
+import ImageBubbleMenu from './extensions/image/ImageBubbleMenu.vue'
+import { AdvancedImage } from './extensions/image/advancedImage.js'
 import { uploadFile } from '@/composables/useFileUpload.js'
 import { DocumentMention } from './extensions/documentMention/documentMention.js'
 import { UserMention } from './extensions/userMention/userMention.js'
@@ -63,44 +64,135 @@ const showLinkDialog = ref(false)
 const initialLinkUrl = ref('')
 
 const imageUploading = ref(false)
-const imageDialog = ref(null)
 const router = useRouter()
+const toast = useToast()
 
-function openImageDialog(file) {
-  imageDialog.value?.open(file)
+// Bridges the AdvancedImage extension's uploader contract to this project's
+// upload composable. Tracks an active count for the toolbar spinner — the
+// in-document placeholder is rendered separately by the extension itself.
+async function uploadImageFile(file) {
+  imageUploading.value = true
+  try {
+    const result = await uploadFile(file, 'ASSET')
+    if (!result.success || !result.asset?.url) {
+      throw new Error(result.error || 'Upload failed')
+    }
+    return {
+      url: result.asset.url,
+      id: result.asset.id ?? null,
+      width: result.asset.width ?? null,
+      height: result.asset.height ?? null,
+    }
+  } finally {
+    imageUploading.value = false
+  }
 }
 
-async function handleImageConfirm(file) {
-  if (!editor?.value || !file) return
+function handleUploadError(err) {
+  toast.error(err?.message || 'Image upload failed')
+}
 
-  imageUploading.value = true
-  const result = await uploadFile(file, 'ASSET')
-  imageUploading.value = false
+// Image-crop dialog state. The toolbar (and bubble-menu "Replace") routes the
+// picked file through the cropper before handing it to the extension upload
+// pipeline so users can frame the image before it leaves the browser.
+const showCropDialog = ref(false)
+const cropFile = ref(null)
+// 'insert' = new image at insertPos; 'replace' = swap the currently selected
+// image's attrs.
+const cropMode = ref('insert')
+const insertPos = ref(null)
 
-  if (result.success && result.asset?.url) {
-    editor.value.chain().focus().setImage({ src: result.asset.url }).run()
+// Toolbar entry point — defers to the extension's command so paste/drop and
+// toolbar uploads share the same placeholder + replace pipeline.
+//
+// We snapshot `selection.to` here rather than letting startUpload read it,
+// because there's a small window between the file picker closing and this
+// handler firing where focus events / DOM blurs could nudge the selection.
+// `.to` (not `.from`) is intentional: if the user had a range selected, the
+// image goes AFTER it; the selection's content is preserved.
+function handleToolbarImageUpload(file) {
+  if (!editor.value || !file) return
+  insertPos.value = editor.value.state.selection.to
+  cropMode.value = 'insert'
+  cropFile.value = file
+  showCropDialog.value = true
+}
+
+// Bubble-menu "Replace" action: open a picker, then route through the cropper
+// before swapping the current image node's attrs.
+function handleReplaceImage() {
+  if (!editor.value) return
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    cropMode.value = 'replace'
+    cropFile.value = file
+    showCropDialog.value = true
   }
+  input.click()
+}
+
+// Bubble-menu "Crop" action on an already-uploaded image: fetch the current
+// src into a File, then reuse the replace pipeline so the cropped result is
+// uploaded fresh and the node's attrs are swapped to the new asset.
+async function handleCropImage() {
+  if (!editor.value) return
+  const attrs = editor.value.getAttributes('image') || {}
+  const src = attrs.src
+  if (!src) return
+  try {
+    const res = await fetch(src, { credentials: 'include' })
+    if (!res.ok) throw new Error(`Failed to load image (${res.status})`)
+    const blob = await res.blob()
+    const name = attrs.originalFilename || src.split('/').pop()?.split('?')[0] || 'image.jpg'
+    const file = new File([blob], name, { type: blob.type || 'image/jpeg' })
+    cropMode.value = 'replace'
+    cropFile.value = file
+    showCropDialog.value = true
+  } catch (err) {
+    handleUploadError(err)
+  }
+}
+
+async function handleCropSave({ file }) {
+  showCropDialog.value = false
+  if (!editor.value || !file) return
+
+  if (cropMode.value === 'replace') {
+    try {
+      const result = await uploadImageFile(file)
+      editor.value
+        .chain()
+        .focus()
+        .updateAttributes('image', {
+          src: result.url,
+          dataId: result.id,
+          originalFilename: file.name,
+          width: result.width || null,
+          height: result.height || null,
+        })
+        .run()
+    } catch (err) {
+      handleUploadError(err)
+    }
+    return
+  }
+
+  // Insert flow — let the extension drive the placeholder + replace pipeline.
+  editor.value.commands.uploadImage(file, insertPos.value)
 }
 
 const editor = useEditor({
   content: modelValue.value,
   editable: props.editable,
   editorProps: {
-    handlePaste(view, event) {
-      const items = event.clipboardData?.items
-      if (!items) return false
-
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          event.preventDefault()
-          const file = item.getAsFile()
-          if (file) openImageDialog(file)
-          return true
-        }
-      }
-      return false
-    },
-    handleClick(view, pos, event) {
+    // Image paste/drop are handled inside AdvancedImage's own ProseMirror
+    // plugin — we intentionally don't intercept clipboard images here so the
+    // extension owns the full upload/placeholder pipeline.
+    handleClick(_view, _pos, event) {
       const mentionEl = event.target.closest(
         'a[data-type="documentMention"], a[data-type="userMention"]',
       )
@@ -136,10 +228,11 @@ const editor = useEditor({
     Placeholder.configure({
       placeholder: props.placeholder,
     }),
-    Image.configure({
-      HTMLAttributes: {
-        class: 'tiptap-image',
-      },
+    AdvancedImage.configure({
+      uploader: uploadImageFile,
+      onUploadError: handleUploadError,
+      minWidth: 80,
+      maxWidth: 1600,
     }),
     Table.configure({
       resizable: true,
@@ -154,9 +247,24 @@ const editor = useEditor({
     UserMention,
   ],
   onUpdate: ({ editor }) => {
+    lastLocalEditAt = Date.now()
     modelValue.value = getContent(editor)
   },
 })
+
+// Round-trip suppression. When the editor commits a change, the value flows
+// out via v-model → parent → syncEngine save → backend → IDB → live-query
+// re-emits → parent → v-model → back to us. The "back to us" step lands here
+// in the modelValue watcher, and if the backend mutated the HTML at all
+// (sanitization, attribute normalization, whitespace), the watcher sees a
+// difference and calls setContent — which destroys whatever the user did
+// after the edit fired (including newly-inserted images, formatting, etc).
+//
+// Fix: for SETCONTENT_COOLDOWN_MS after any local edit, ignore parent pushes.
+// External changes outside this window (initial load, another user via collab)
+// still flow through normally.
+let lastLocalEditAt = 0
+const SETCONTENT_COOLDOWN_MS = 2500
 
 function executeCommand(item) {
   if (!editor.value) return
@@ -233,6 +341,19 @@ function handleLinkKeydown(event) {
   }
 }
 
+// Text-format bubble menu must hide when a node is selected (image, etc.) or
+// the cursor is inside a table — those have their own menus, and stacking
+// causes overlap. Default bubble-menu behavior shows for any non-empty
+// selection, including NodeSelection, which is why this filter is needed.
+function textBubbleShouldShow({ editor, state }) {
+  const { selection } = state
+  if (selection.empty) return false
+  if (selection.node) return false
+  if (editor.isActive('image')) return false
+  if (editor.isActive('table')) return false
+  return true
+}
+
 function getContent(editorInstance) {
   if (!editorInstance) return ''
 
@@ -259,6 +380,15 @@ function setContent(content) {
 
   if (currentContent === newContent) return
 
+  // Loud: if this fires while the user is actively editing, it's the
+  // round-trip-strips-content bug. The cooldown guard below should prevent
+  // it, but we still want visibility if something gets through.
+  console.warn('[TiptapEditor] setContent replacing doc', {
+    currentLength: currentContent.length,
+    newLength: newContent.length,
+    msSinceLocalEdit: Date.now() - lastLocalEditAt,
+  })
+
   try {
     editor.value.commands.setContent(content)
   } catch (error) {
@@ -269,6 +399,10 @@ function setContent(content) {
 watch(
   () => modelValue.value,
   (newValue) => {
+    // Suppress parent pushes that arrive within the cooldown window after a
+    // local edit — they're almost always the save round-trip echoing back a
+    // sanitized version of what we just sent. See cooldown comment above.
+    if (Date.now() - lastLocalEditAt < SETCONTENT_COOLDOWN_MS) return
     setContent(newValue)
   },
 )
@@ -309,11 +443,25 @@ defineExpose({
       :editor="editor"
       :imageUploading="imageUploading"
       @toggleLink="openLinkDialog"
-      @uploadImage="openImageDialog"
+      @uploadImage="handleToolbarImageUpload"
     />
 
-    <!-- Image Crop/Resize Dialog -->
-    <EditorImageDialog ref="imageDialog" @confirm="handleImageConfirm" />
+    <!-- Image bubble menu (appears when an image node is selected) -->
+    <ImageBubbleMenu
+      v-if="editor && editable"
+      :editor="editor"
+      @replace="handleReplaceImage"
+      @crop="handleCropImage"
+    />
+
+    <!-- Image Crop Dialog (opens before any image is uploaded) -->
+    <ImageCropDialog
+      v-model="showCropDialog"
+      :initialFile="cropFile"
+      :aspectRatio="null"
+      title="Crop Image"
+      @save="handleCropSave"
+    />
 
     <!-- Link Dialog -->
     <LinkDialog
@@ -324,7 +472,13 @@ defineExpose({
     />
 
     <!-- Bubble Menu (appears on text selection) -->
-    <BubbleMenu v-if="editor && editable" :editor="editor" :tippyOptions="{ duration: 100 }">
+    <BubbleMenu
+      v-if="editor && editable"
+      pluginKey="text-bubble-menu"
+      :editor="editor"
+      :shouldShow="textBubbleShouldShow"
+      :tippyOptions="{ duration: 100 }"
+    >
       <div
         class="tw:flex tw:items-center tw:gap-1 tw:p-1 tw:bg-white tw:rounded-lg tw:shadow-xl tw:border tw:border-divider"
       >
@@ -400,6 +554,7 @@ defineExpose({
     <!-- Table Toolbar (appears when cursor is in a table) -->
     <BubbleMenu
       v-if="editor && editable"
+      pluginKey="table-bubble-menu"
       :editor="editor"
       :shouldShow="({ editor }) => editor.isActive('table')"
       :tippyOptions="{ duration: 100, placement: 'top' }"
@@ -433,14 +588,6 @@ defineExpose({
 :deep(.q-btn.tw\:bg-primary\!) {
   background-color: var(--q-primary) !important;
   color: white !important;
-}
-
-.tiptap-editor-content :deep(.tiptap-image) {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-  display: block;
-  margin: 0.5rem 0;
 }
 
 .tiptap-editor-content :deep(.ProseMirror) {

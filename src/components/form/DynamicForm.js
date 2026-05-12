@@ -11,11 +11,10 @@ import {
   IconChevronRight,
 } from '@tabler/icons-vue'
 import BaseTextInput from '@shared/components/BaseTextInput.vue'
-import BaseTextarea from '@shared/components/BaseTextarea.vue'
 import BaseCheckbox from '@shared/components/BaseCheckbox.vue'
 import BaseSwitch from '@shared/components/BaseSwitch.vue'
 import BaseColorPicker from '@shared/components/BaseColorPicker.vue'
-import TextEditor from '@shared/components/Editor/TextEditor.vue'
+import TiptapEditor from '@shared/components/Editor/TiptapEditor.vue'
 import BaseDatePicker from '@shared/components/BaseDatePicker.vue'
 import BaseTimePicker from '@shared/components/BaseTimePicker.vue'
 import BaseDateTimePicker from '@shared/components/BaseDateTimePicker.vue'
@@ -221,10 +220,7 @@ export default defineComponent({
           })
 
         case 'textarea':
-          return h(BaseTextarea, {
-            ...inputFieldProps,
-            autosize: field.autogrow,
-          })
+          return h(TiptapEditor, inputFieldProps)
 
         case 'number':
           return h(BaseTextInput, {
@@ -236,7 +232,7 @@ export default defineComponent({
           })
 
         case 'textEditor':
-          return h(TextEditor, inputFieldProps)
+          return h(TiptapEditor, inputFieldProps)
 
         case 'datetime': {
           const isDisabled = props.disabled || field.disabled

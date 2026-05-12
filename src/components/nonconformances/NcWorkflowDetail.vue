@@ -91,19 +91,22 @@ const reassignCandidates = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-const currentReassignAssignments = useLiveQueryWithDeps(
+const currentlyAssignedUserIds = useLiveQueryWithDeps(
   [() => reassignStepInstanceId.value],
   async (db, [id]) => {
     if (!id) return []
-    return db.UserOnWorkflowInstanceStep.where('workflowInstanceStepId', id).exec()
+    const assignments = await db.UserOnWorkflowInstanceStep.where(
+      'workflowInstanceStepId',
+      id,
+    ).exec()
+    return assignments.filter((a) => a.statusId === 'ASSIGNED').map((a) => a.userId)
   },
   { initial: [] },
 )
 
-const filteredReassignCandidates = computed(() => {
-  const assignedUserIds = currentReassignAssignments.value.map((a) => a.userId)
-  return reassignCandidates.value.filter((u) => !assignedUserIds.includes(u.id))
-})
+const reassignCandidatesExcludingAssigned = computed(() =>
+  reassignCandidates.value.filter((u) => !currentlyAssignedUserIds.value.includes(u.id)),
+)
 
 function openReassignDialog(instanceStepId) {
   reassignStepInstanceId.value = instanceStepId
@@ -177,7 +180,7 @@ async function handleSendBack() {
       </label>
       <div class="tw:flex tw:flex-col tw:gap-2">
         <label
-          v-for="user in filteredReassignCandidates"
+          v-for="user in reassignCandidatesExcludingAssigned"
           :key="user.id"
           class="tw:flex tw:items-center tw:gap-3 tw:cursor-pointer tw:rounded-lg tw:px-3 tw:py-2 tw:border tw:transition-colors"
           :class="
@@ -199,7 +202,7 @@ async function handleSendBack() {
             <div class="tw:text-xs tw:text-secondary tw:truncate">{{ user.email }}</div>
           </div>
         </label>
-        <p v-if="!filteredReassignCandidates.length" class="tw:text-sm tw:text-secondary">
+        <p v-if="!reassignCandidatesExcludingAssigned.length" class="tw:text-sm tw:text-secondary">
           No eligible users available for reassignment.
         </p>
       </div>

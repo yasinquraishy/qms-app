@@ -316,6 +316,9 @@ watch(
       </div>
     </div>
 
+    <!-- Form Schema -->
+    <WorkflowStepFormSchema v-if="showFormSchema" :stepId="stepId" :canUpdate="canUpdate" />
+
     <!-- Step Assignee -->
     <div class="tw:space-y-4">
       <div class="tw:flex tw:items-center tw:justify-between">
@@ -389,9 +392,6 @@ watch(
       :canUpdate="canUpdate"
       :stepApproversTab="stepApproversTab"
     />
-
-    <!-- Form Schema -->
-    <WorkflowStepFormSchema v-if="showFormSchema" :stepId="stepId" :canUpdate="canUpdate" />
 
     <!-- Send-Back Targets -->
     <div

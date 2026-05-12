@@ -92,28 +92,38 @@ async function handleSave(schema) {
     </div>
 
     <!-- Has schema -->
-    <div
-      v-else
-      class="tw:border tw:border-divider tw:rounded-xl tw:p-4 tw:flex tw:items-center tw:gap-4"
-    >
-      <div class="tw:flex-1 tw:flex tw:flex-col tw:gap-1 tw:min-w-0">
-        <div class="tw:flex tw:items-center tw:gap-2">
-          <span
-            class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-full tw:text-xs tw:font-semibold tw:bg-primary/10 tw:text-primary"
-          >
-            {{ fieldCountLabel }}
-          </span>
+    <div v-else class="tw:border tw:border-divider tw:rounded-xl tw:overflow-hidden">
+      <!-- Header row -->
+      <div class="tw:flex tw:items-center tw:gap-4 tw:p-4 tw:border-b tw:border-divider">
+        <div class="tw:flex-1 tw:flex tw:flex-col tw:gap-1 tw:min-w-0">
+          <div class="tw:flex tw:items-center tw:gap-2">
+            <span
+              class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-full tw:text-xs tw:font-semibold tw:bg-primary/10 tw:text-primary"
+            >
+              {{ fieldCountLabel }}
+            </span>
+          </div>
+          <p v-if="previewFieldNames.length > 0" class="tw:text-xs tw:text-secondary tw:truncate">
+            {{ previewFieldNames.join(', ') }}{{ (step?.formSchema?.length ?? 0) > 3 ? ', …' : '' }}
+          </p>
         </div>
-        <p v-if="previewFieldNames.length > 0" class="tw:text-xs tw:text-secondary tw:truncate">
-          {{ previewFieldNames.join(', ') }}{{ (step?.formSchema?.length ?? 0) > 3 ? ', …' : '' }}
-        </p>
+        <BaseButton variant="secondary" size="sm" :disabled="!canUpdate" @click="openEdit">
+          <template #icon>
+            <IconPencil :size="14" />
+          </template>
+          Edit Schema
+        </BaseButton>
       </div>
-      <BaseButton variant="secondary" size="sm" :disabled="!canUpdate" @click="openEdit">
-        <template #icon>
-          <IconPencil :size="14" />
-        </template>
-        Edit Schema
-      </BaseButton>
+
+      <!-- Form preview -->
+      <div class="tw:p-6 tw:bg-main-hover/30">
+        <p
+          class="tw:text-[10px] tw:font-bold tw:uppercase tw:text-secondary tw:mb-4 tw:tracking-wide"
+        >
+          Preview
+        </p>
+        <DynamicForm :fields="step.formSchema" :modelValue="{}" readonly />
+      </div>
     </div>
   </div>
 

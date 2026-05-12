@@ -1,6 +1,8 @@
 <script setup>
+import { DateTime } from 'luxon'
 import { post } from '@/api'
 import { getCompanyPath } from '@/utils/routeHelpers.js'
+import { currentSession } from '@/utils/currentSession.js'
 
 const router = useRouter()
 const toast = useToast()
@@ -14,9 +16,9 @@ const form = ref({
   departmentId: null,
   typeId: null,
   sourceId: null,
-  severityId: null,
-  detectedAt: '',
-  ownerId: null,
+  severityId: 'MINOR',
+  detectedAt: DateTime.now(),
+  ownerId: currentSession.value?.userId ?? null,
   productId: null,
   supplierId: null,
   qtyAffected: null,

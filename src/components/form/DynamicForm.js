@@ -177,6 +177,7 @@ export default defineComponent({
             field.props[updateModelValueEvent](val)
           }
         },
+        required: field.required,
       }
 
       const inputFieldProps = {
@@ -190,6 +191,7 @@ export default defineComponent({
         optionValue: 'value',
         ...inputFieldProps,
         options: field.options,
+        multiple: field.multiple,
       }
 
       switch (field.type) {

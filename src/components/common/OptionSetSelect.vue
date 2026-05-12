@@ -30,6 +30,10 @@ const props = defineProps({
     type: String,
     default: 'Select...',
   },
+  label: {
+    type: String,
+    default: '',
+  },
 })
 
 const modelValue = defineModel({ type: [String, Array, null], default: null })
@@ -68,6 +72,7 @@ function getArray() {
 
 <template>
   <div :class="isDisabled ? 'tw:pointer-events-none tw:opacity-60' : ''">
+    <div class="tw:text-sm">{{ label }}</div>
     <BaseSelectMenu
       v-model="modelValue"
       :items="computedItems"
@@ -92,26 +97,19 @@ function getArray() {
               </button>
             </span>
           </div>
-          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">{{
-            placeholder
-          }}</span>
+          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">
+            {{ placeholder }}
+          </span>
         </template>
         <template v-else>
           <div v-if="modelValue != null" class="tw:flex tw:items-center tw:gap-2 tw:flex-1">
-            <span class="tw:text-sm tw:font-medium tw:text-on-main tw:flex-1">
+            <BaseBadge class="tw:text-sm tw:font-medium tw:text-on-main tw:flex-1" selectable>
               {{ getOptionName(modelValue) }}
-            </span>
-            <button
-              v-if="!required"
-              class="tw:text-secondary tw:hover:text-on-main tw:bg-transparent tw:border-0 tw:cursor-pointer tw:p-0 tw:text-xs"
-              @click.stop="scope.clear(modelValue)"
-            >
-              &times;
-            </button>
+            </BaseBadge>
           </div>
-          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder">{{
-            placeholder
-          }}</span>
+          <span v-else class="tw:text-sm tw:font-medium tw:text-placeholder tw:cursor-pointer">
+            {{ placeholder || 'Select...' }}
+          </span>
         </template>
       </template>
     </BaseSelectMenu>

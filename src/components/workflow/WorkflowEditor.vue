@@ -199,7 +199,7 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
       slaDays: step.slaDays,
       requireComments: step.requireComments,
       requireEsignature: step.requireEsignature,
-      formSchema: structuredClone(step.formSchema ?? []),
+      formSchema: JSON.parse(JSON.stringify(step.formSchema ?? [])),
     })
     await newStep.save()
     idMap[step.id] = newStep.id

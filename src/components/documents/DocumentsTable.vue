@@ -78,7 +78,7 @@ const columns = computed(() => [
   {
     name: 'effectiveDate',
     label: 'EFFECTIVE DATE',
-    field: (row) => currentVersionMapById.value[row.id]?.effectiveDate,
+    field: (row) => latestVersionMapById.value[row.id]?.effectiveDate,
     align: 'left',
     sortable: false,
   },

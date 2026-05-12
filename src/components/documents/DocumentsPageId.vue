@@ -35,7 +35,7 @@ const versions = useLiveQueryWithDeps(
   async (db, [id]) => {
     return db.DocumentVersion.where('documentId', id).orderBy('createdAt', 'desc').exec()
   },
-  { initial: [] },
+  { initial: [], models: ['DocumentVersion', 'Document'] },
 )
 
 const latestVersion = useLiveQueryWithDeps([() => props.id], async (db, [documentId]) => {
@@ -66,7 +66,7 @@ const activeTaskVersionId = useLiveQueryWithDeps(
     }
     return null
   },
-  { models: 'TaskInstance' },
+  { models: ['TaskInstance', 'DocumentVersion'] },
 )
 
 // Auto-select version when versions list changes.
@@ -83,9 +83,7 @@ watch([versions, activeTaskVersionId], ([list, taskVersionId]) => {
 })
 
 const hasActiveTaskOnSelected = computed(
-  () =>
-    !!activeTaskVersionId.value &&
-    selectedVersion.value?.id === activeTaskVersionId.value,
+  () => !!activeTaskVersionId.value && selectedVersion.value?.id === activeTaskVersionId.value,
 )
 
 const breadcrumbs = computed(() => [

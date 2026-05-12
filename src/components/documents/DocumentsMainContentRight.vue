@@ -51,7 +51,7 @@ const documentSections = useLiveQueryWithDeps(
     if (!versionId) return []
     return db.DocumentSection.where('documentVersionId', versionId).orderBy('order', 'asc').exec()
   },
-  { initial: [], models: 'DocumentSection' },
+  { initial: [], models: ['DocumentSection', 'Document', 'DocumentVersion'] },
 )
 
 // Section methods

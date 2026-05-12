@@ -1,11 +1,6 @@
 <script setup>
 import { isAllowed, currentSession } from '@/utils/currentSession.js'
-import {
-  IconMessageCheck,
-  IconMessageExclamation,
-  IconLoader2,
-  IconTrash,
-} from '@tabler/icons-vue'
+import { IconMessageCheck, IconMessageExclamation, IconLoader2, IconTrash } from '@tabler/icons-vue'
 
 const props = defineProps({
   sectionId: {
@@ -37,7 +32,7 @@ const props = defineProps({
 const section = useLiveQueryWithDeps(
   [() => props.sectionId],
   async (db, [id]) => db.DocumentSection.findByPk(id),
-  { models: 'DocumentSection' },
+  { models: ['DocumentSection', 'DocumentVersion'] },
 )
 
 const canUpdateSection = computed(
@@ -95,7 +90,7 @@ const reviewerComment = useLiveQueryWithDeps(
       .where('userId', reviewerUserId || currentSession.value?.userId)
       .first()
   },
-  { models: 'Comment' },
+  { models: ['Comment', 'DocumentSection', 'DocumentVersion'] },
 )
 
 const commentText = ref('')

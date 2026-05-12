@@ -26,7 +26,7 @@ const ncRecord = useLiveQueryWithDeps(
     if (!taskInstanceId) return null
     return db.NcRecord.where('taskInstanceId', taskInstanceId).first()
   },
-  { models: 'NcRecord' },
+  { models: ['NcRecord', 'TaskInstance', 'WorkflowInstance', 'WorkflowInstanceStep'] },
 )
 
 // Own allowedOutcomes and sendBackTargets queries
@@ -36,6 +36,7 @@ const allowedOutcomes = useLiveQueryWithDeps(
     if (!stepId) return []
     return db.AllowedOutcomeOnStep.where('stepId', stepId).exec()
   },
+  { models: ['AllowedOutcomeOnStep', 'WorkflowStep'] },
 )
 
 const sendBackTargets = useLiveQueryWithDeps(

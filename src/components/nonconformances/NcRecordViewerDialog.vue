@@ -13,7 +13,15 @@ const ncRecord = useLiveQueryWithDeps(
     if (!id) return null
     return db.NcRecord.findByPk(id)
   },
-  { models: 'NcRecord' },
+  {
+    models: [
+      'NcRecord',
+      'Nonconformance',
+      'TaskInstance',
+      'WorkflowInstanceStep',
+      'WorkflowInstance',
+    ],
+  },
 )
 
 const submitter = useLiveQueryWithDeps([() => ncRecord.value?.userId], async (db, [userId]) => {

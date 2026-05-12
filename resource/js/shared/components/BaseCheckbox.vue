@@ -45,7 +45,7 @@ const checked = defineModel({
       <IconMinus v-if="indeterminate" :size="10" class="tw:text-white" :stroke-width="3" />
       <IconCheck v-else-if="checked" :size="10" class="tw:text-white" :stroke-width="3" />
     </span>
-    <span v-if="label" class="tw:text-sm tw:text-on-main">
+    <span class="tw:text-sm tw:text-on-main">
       <slot>{{ label }}</slot>
     </span>
   </label>

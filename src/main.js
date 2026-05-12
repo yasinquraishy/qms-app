@@ -1,6 +1,7 @@
 import '@/extensions/datetime' // Extend Luxon's DateTime with custom formatting method
 import 'v-calendar/style.css'
 import '@models/index.js' // Initialize IndexedDB database and live query system
+import '@/components/form/tools/index.js' // Register custom form tool components
 
 import VCalendar from 'v-calendar'
 

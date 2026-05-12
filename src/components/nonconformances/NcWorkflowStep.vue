@@ -19,6 +19,11 @@ const toast = useToast()
 const currentUserId = computed(() => currentSession.value?.userId)
 
 // ─── Step instance + definition ──────────────────────────────────────────────
+const nc = useLiveQueryWithDeps(
+  [() => props.ncId],
+  async (db, [id]) => (id ? db.Nonconformance.findByPk(id) : null),
+)
+
 const instanceStep = useLiveQueryWithDeps(
   [() => props.instanceStepId],
   async (db, [id]) => (id ? db.WorkflowInstanceStep.findByPk(id) : null),
@@ -91,15 +96,25 @@ const saving = ref(false)
 let formSeeded = false
 
 watch(
-  currentUserRecord,
-  (record) => {
+  [currentUserRecord, nc],
+  ([record, ncRecord]) => {
     if (record && !formSeeded) {
-      formData.value = { ...(record.payload || {}) }
+      formData.value = {
+        ...(record.payload || {}),
+        _parent_problem: ncRecord?.description ?? '',
+      }
       formSeeded = true
     }
   },
   { immediate: true },
 )
+
+// Keep the NC description in sync if the NC is updated after the form is seeded
+watch(nc, (ncRecord) => {
+  if (formSeeded) {
+    formData.value._parent_problem = ncRecord?.description ?? ''
+  }
+})
 
 async function persistRecord({ submit }) {
   if (saving.value) return
@@ -110,7 +125,8 @@ async function persistRecord({ submit }) {
   if (!instanceStep.value) return
   saving.value = true
   try {
-    const payload = { ...(formData.value || {}) }
+    // Strip context-only keys (prefixed with _nc_) before persisting
+    const { _parent_problem: _1, ...payload } = formData.value || {}
     const existing = currentUserRecord.value
     const submittedAt = submit ? DateTime.now() : (existing?.submittedAt ?? null)
     if (existing) {

@@ -25,6 +25,7 @@ import { useValidator } from '@shared/composables/validator.js'
 import BasePhoto from '@shared/components/BasePhoto.vue'
 import BaseUploader from '@/components/common/BaseUploader.vue'
 import { required } from '@vuelidate/validators'
+import { getFormComponent } from './formComponentRegistry.js'
 
 export default defineComponent({
   name: 'DynamicForm',
@@ -394,12 +395,26 @@ export default defineComponent({
             facingMode: field.facingMode,
           })
 
-        default:
+        default: {
+          const custom = getFormComponent(field.type)
+          if (custom) {
+            return h(custom.component, {
+              modelValue: scope.value ?? {},
+              field,
+              readonly: props.readonly || field.readonly,
+              disabled: props.disabled || field.disabled,
+              formValues: modelValue.value,
+              'onUpdate:modelValue': (val) => {
+                scope.value = val
+              },
+            })
+          }
           return h(
             'div',
             { class: 'tw:text-red-500' },
             `Invalid Field.type "${field.type}" at "${scope.path}"`,
           )
+        }
       }
     }
 

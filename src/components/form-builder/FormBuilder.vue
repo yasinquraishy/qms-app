@@ -211,7 +211,7 @@ function copyJson() {
 </script>
 
 <template>
-  <div class="tw:flex tw:h-screen tw:bg-main tw:overflow-hidden">
+  <div class="tw:flex tw:h-full tw:bg-main tw:overflow-hidden">
     <!-- Left Sidebar - Field Palette -->
     <Transition name="slide-left">
       <aside

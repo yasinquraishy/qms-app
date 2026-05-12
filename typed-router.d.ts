@@ -128,9 +128,23 @@ declare module 'vue-router/auto-routes' {
       { companyCode: ParamValue<false> },
       | never
     >,
+    '/[companyCode]/rca-templates': RouteRecordInfo<
+      '/[companyCode]/rca-templates',
+      '/:companyCode/rca-templates',
+      { companyCode: ParamValue<true> },
+      { companyCode: ParamValue<false> },
+      | never
+    >,
     '/[companyCode]/records': RouteRecordInfo<
       '/[companyCode]/records',
       '/:companyCode/records',
+      { companyCode: ParamValue<true> },
+      { companyCode: ParamValue<false> },
+      | never
+    >,
+    '/[companyCode]/risk-assessment-templates': RouteRecordInfo<
+      '/[companyCode]/risk-assessment-templates',
+      '/:companyCode/risk-assessment-templates',
       { companyCode: ParamValue<true> },
       { companyCode: ParamValue<false> },
       | never
@@ -364,9 +378,21 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
+    'src/pages/[companyCode]/rca-templates.vue': {
+      routes:
+        | '/[companyCode]/rca-templates'
+      views:
+        | never
+    }
     'src/pages/[companyCode]/records.vue': {
       routes:
         | '/[companyCode]/records'
+      views:
+        | never
+    }
+    'src/pages/[companyCode]/risk-assessment-templates.vue': {
+      routes:
+        | '/[companyCode]/risk-assessment-templates'
       views:
         | never
     }

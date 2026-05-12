@@ -2,10 +2,14 @@
 import { IconCalendar, IconHistory, IconInfoCircle } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany.js'
 
-const company = useLiveQueryWithDeps([() => currentCompany.value?.id], async (db, [id]) => {
-  if (!id) return null
-  return db.Company.findByPk(id)
-})
+const company = useLiveQueryWithDeps(
+  [() => currentCompany.value?.id],
+  async (db, [id]) => {
+    if (!id) return null
+    return db.Company.findByPk(id)
+  },
+  { models: ['Company'] },
+)
 
 const subscriptionBadgeColor = computed(() => {
   const state = company.value?.subscriptionState?.toUpperCase()

@@ -33,6 +33,12 @@ import './css/base.css'
 // Import app-specific styles
 import './css/app.scss'
 
+if (!import.meta.env.DEV) {
+  // eslint-disable-next-line no-console
+  console.log = () => {} // Disable console.log in production for cleaner output
+  console.debug = () => {} // Disable console.debug in production
+}
+
 // Create i18n instance
 const i18n = createI18n({
   locale: 'en-US',

@@ -199,6 +199,7 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
       slaDays: step.slaDays,
       requireComments: step.requireComments,
       requireEsignature: step.requireEsignature,
+      formSchema: structuredClone(step.formSchema ?? []),
     })
     await newStep.save()
     idMap[step.id] = newStep.id
@@ -215,13 +216,33 @@ const createDraftMutation = useLiveMutation(async (db, { workflowId, majorBump }
       const newSr = db.WorkflowStepRole.create({ stepId: newStep.id, roleId: sr.roleId })
       await newSr.save()
     }
+
+    const outcomes = await db.AllowedOutcomeOnStep.where('stepId', step.id).exec()
+    for (const o of outcomes) {
+      const newO = db.AllowedOutcomeOnStep.create({
+        stepId: newStep.id,
+        outcomeId: o.outcomeId,
+      })
+      await newO.save()
+    }
   }
 
-  // Second pass: remap parentStepId to the new step IDs
+  // Second pass: remap parentStepId and clone send-back targets through the idMap
   for (const { oldStep, newStep } of stepPairs) {
     if (oldStep.parentStepId && idMap[oldStep.parentStepId]) {
       newStep.parentStepId = idMap[oldStep.parentStepId]
       await newStep.save()
+    }
+
+    const sendBacks = await db.StepSendBackTarget.where('stepId', oldStep.id).exec()
+    for (const sb of sendBacks) {
+      const newTargetId = idMap[sb.targetStepId]
+      if (!newTargetId) continue
+      const newSb = db.StepSendBackTarget.create({
+        stepId: newStep.id,
+        targetStepId: newTargetId,
+      })
+      await newSb.save()
     }
   }
 

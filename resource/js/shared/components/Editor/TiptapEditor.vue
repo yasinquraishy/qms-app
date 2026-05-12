@@ -116,10 +116,7 @@ defineExpose({ insertTag, insertEmoji })
 
 <template>
   <div class="tw:flex tw:flex-col tw:gap-1" v-bind="$attrs">
-    <label
-      v-if="label || $slots.label"
-      class="tw:text-sm tw:font-medium tw:text-secondary"
-    >
+    <label v-if="label || $slots.label" class="tw:text-sm tw:font-medium tw:text-secondary">
       <slot name="label">{{ label }}</slot>
       <span v-if="required" class="tw:text-red-500">*</span>
     </label>
@@ -134,7 +131,7 @@ defineExpose({ insertTag, insertEmoji })
     >
       <EditorContent
         :editor="editor"
-        class="tw:flex-1 tw:min-h-[80px] tw:max-h-[200px] tw:overflow-y-auto tw:text-sm"
+        class="tw:flex-1 tw:min-h-20 tw:max-h-50 tw:overflow-y-auto tw:text-sm"
       />
       <button
         v-if="tooltip"

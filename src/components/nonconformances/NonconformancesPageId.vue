@@ -103,6 +103,7 @@ const editingCredit = ref(false)
 
 // ─── Inline-edit for overview fields ──────────────────────────────────────────
 const editingTitle = ref(false)
+const editingDescription = ref(false)
 const editingSeverity = ref(false)
 const editingDetected = ref(false)
 const editingDueDate = ref(false)
@@ -171,12 +172,23 @@ const editingDueDate = ref(false)
               >
                 {{ nc.title }}
               </div>
-              <p
-                v-if="nc.description"
-                class="tw:text-sm tw:text-secondary tw:mb-4 tw:leading-relaxed"
-              >
-                {{ nc.description }}
-              </p>
+              <BaseTextarea
+                v-if="editingDescription && isEditable"
+                v-model="nc.description"
+                placeholder="Add a description…"
+                autofocus
+                rows="3"
+                class="tw:mb-4"
+                @blur="editingDescription = false"
+              />
+              <div v-else class="tw:mb-4" @click="isEditable && (editingDescription = true)">
+                <p
+                  class="tw:text-sm tw:text-secondary tw:leading-relaxed tw:whitespace-pre-wrap"
+                  :class="isEditable ? 'tw:cursor-pointer tw:hover:text-primary' : ''"
+                >
+                  {{ nc.description || (isEditable ? 'Add a description…' : '—') }}
+                </p>
+              </div>
 
               <div class="tw:grid tw:grid-cols-3 tw:gap-3">
                 <div class="tw:flex tw:flex-col tw:gap-1">

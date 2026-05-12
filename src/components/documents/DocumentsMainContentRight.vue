@@ -1,5 +1,6 @@
 <script setup>
 import { isAllowed } from '@/utils/currentSession.js'
+import { getCompanyPath } from '@/utils/routeHelpers'
 import { IconSettings, IconHierarchy } from '@tabler/icons-vue'
 
 const props = defineProps({
@@ -219,8 +220,9 @@ watch(
         </div>
 
         <!-- Selected workflow display -->
-        <div
+        <RouterLink
           v-if="selectedWorkflow && selectedWorkflowVersion"
+          :to="getCompanyPath('workflow-templates/' + selectedWorkflow.id)"
           class="tw:flex tw:items-center tw:gap-3 tw:p-3 tw:rounded-lg tw:bg-main tw:border tw:border-divider"
         >
           <div
@@ -239,7 +241,7 @@ watch(
               }}
             </p>
           </div>
-        </div>
+        </RouterLink>
 
         <!-- Empty state -->
         <button

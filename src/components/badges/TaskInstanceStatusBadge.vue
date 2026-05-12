@@ -17,6 +17,7 @@ const SCHEME_MAP = {
   REASSIGNED: { class: 'tw:bg-purple-100 tw:text-purple-700' },
   SENT_BACK: { class: 'tw:bg-orange-100 tw:text-orange-700' },
   FORM_SUBMITTED: { class: 'tw:bg-sky-100 tw:text-sky-700' },
+  SUPERSEDED: { class: 'tw:bg-slate-100 tw:text-slate-600' },
 }
 
 const name = computed(() => {

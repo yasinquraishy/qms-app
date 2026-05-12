@@ -29,15 +29,14 @@ const modelValue = defineModel({
 const departments = useLiveQueryWithDeps(
   [() => props.siteId],
   async (db, [siteId]) => {
-    if (siteId) return db.Department.where('siteId', siteId).exec()
-    return db.Department.where().exec()
+    console.debug('Fetching departments for siteId:', siteId)
+    if (siteId) return await db.Department.where('siteId', siteId).exec()
+    return await db.Department.where().exec()
   },
   { initial: [] },
 )
 
-const canCreateDepartment = computed(
-  () => props.allowCreate && isAllowed(['departments:create']),
-)
+const canCreateDepartment = computed(() => props.allowCreate && isAllowed(['departments:create']))
 
 const showCreateDialog = ref(false)
 

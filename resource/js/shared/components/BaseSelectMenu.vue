@@ -101,24 +101,41 @@ function isSelected(id) {
 
 watch(
   () => props.items,
-  () => {
+  (newItems) => {
+    // Skip while items haven't loaded — preserves an upstream selection
+    // until the list is actually known.
+    if (!newItems || newItems.length === 0) return
+
+    // Drop a stale selection that's no longer in the list (e.g. a dependent
+    // filter like siteId changed and the previously chosen department is gone).
+    const validIds = new Set(newItems.map((i) => i.id))
+    if (props.multiple) {
+      const arr = getArray()
+      const filtered = arr.filter((id) => validIds.has(id))
+      if (filtered.length !== arr.length) selected.value = filtered
+    } else if (
+      selected.value !== null &&
+      selected.value !== undefined &&
+      !validIds.has(selected.value)
+    ) {
+      selected.value = null
+    }
+
     if (
       props.required &&
       !selected.value &&
-      props.items.length > 0 &&
       (Array.isArray(selected.value) ? selected.value.length === 0 : true)
     ) {
       if (props.multiple) {
-        if (getArray().length === 0 && props.items.length > 0) {
-          selected.value = [props.items[0].id]
+        if (getArray().length === 0) {
+          selected.value = [newItems[0].id]
         }
-      } else {
-        if ((selected.value === null || selected.value === undefined) && props.items.length > 0) {
-          selected.value = props.items[0].id
-        }
+      } else if (selected.value === null || selected.value === undefined) {
+        selected.value = newItems[0].id
       }
     }
   },
+  { immediate: true },
 )
 </script>
 

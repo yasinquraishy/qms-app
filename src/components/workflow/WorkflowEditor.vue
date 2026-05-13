@@ -18,9 +18,16 @@ const workflow = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
   db.Workflow.findByPk(id),
 )
 
-const showAllowedOutcomes = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
-const showSendBackTargets = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
-const showFormSchema = computed(() => workflow.value?.moduleId === 'NON_CONFORMANCE')
+const WORKFLOW_MODULES_WITH_STEP_CONFIG = ['NON_CONFORMANCE', 'CAPA']
+const showAllowedOutcomes = computed(() =>
+  WORKFLOW_MODULES_WITH_STEP_CONFIG.includes(workflow.value?.moduleId),
+)
+const showSendBackTargets = computed(() =>
+  WORKFLOW_MODULES_WITH_STEP_CONFIG.includes(workflow.value?.moduleId),
+)
+const showFormSchema = computed(() =>
+  WORKFLOW_MODULES_WITH_STEP_CONFIG.includes(workflow.value?.moduleId),
+)
 const showChildSteps = computed(() => workflow.value?.moduleId === 'CAPA')
 const stepApproversTab = computed(() => {
   if (workflow.value?.moduleId === 'NON_CONFORMANCE') return 'roles'

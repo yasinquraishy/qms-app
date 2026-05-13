@@ -103,6 +103,11 @@ const navItems = computed(() => {
       icon: IconAlertCircle,
       to: getCompanyPath('/nonconformances'),
     },
+    {
+      label: 'CAPAs',
+      icon: IconShield,
+      to: getCompanyPath('/capas'),
+    },
     {}, // Divider
     {
       label: 'Audit Logs',

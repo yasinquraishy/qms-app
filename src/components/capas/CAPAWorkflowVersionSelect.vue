@@ -1,0 +1,81 @@
+<script setup>
+const emit = defineEmits(['submit'])
+const modelValue = defineModel({ type: String })
+const submitDialogOpen = ref(false)
+
+const steps = useLiveQueryWithDeps(
+  [() => modelValue.value],
+  async (db, [versionId]) => {
+    if (!versionId) return []
+    return db.WorkflowStep.where('workflowVersionId', versionId).orderBy('stepOrder', 'asc').exec()
+  },
+  { initial: [] },
+)
+
+const selections = reactive({})
+
+const firstStepHasUser = computed(() => {
+  const firstStepId = steps.value[0]?.id
+  return !!firstStepId && !!selections[firstStepId]
+})
+
+watch(submitDialogOpen, (isOpen) => {
+  if (isOpen) {
+    Object.keys(selections).forEach((key) => delete selections[key])
+  }
+})
+
+function submit() {
+  if (!modelValue.value) return
+  submitDialogOpen.value = true
+}
+
+function handleConfirm() {
+  if (!firstStepHasUser.value) return
+
+  const reviewers = {}
+  Object.entries(selections).forEach(([stepId, userId]) => {
+    if (userId) {
+      reviewers[stepId] = [userId]
+    }
+  })
+
+  submitDialogOpen.value = false
+  emit('submit', reviewers)
+}
+
+function handleCancel(close) {
+  close()
+}
+
+defineExpose({ submit })
+</script>
+
+<template>
+  <WorkflowVersionSelect v-model="modelValue" moduleId="CAPA" />
+
+  <BaseDialog v-model="submitDialogOpen" title="Assign Step Reviewers" maxWidth="lg" persistent>
+    <div class="tw:space-y-3 tw:py-2">
+      <p class="tw:text-sm tw:text-secondary">
+        Assign task to user for each workflow step before submitting.
+      </p>
+      <CAPAWorkflowStepReviewerSelect
+        v-for="(step, index) in steps"
+        :key="step.id"
+        v-model="selections[step.id]"
+        :step="step"
+        :stepIndex="index"
+        :required="index === 0"
+      />
+    </div>
+
+    <template #footer="{ close }">
+      <div class="tw:flex tw:justify-end tw:gap-2">
+        <BaseButton variant="outline" @click="handleCancel(close)">Cancel</BaseButton>
+        <BaseButton variant="primary" :disabled="!firstStepHasUser" @click="handleConfirm">
+          Confirm
+        </BaseButton>
+      </div>
+    </template>
+  </BaseDialog>
+</template>

@@ -65,7 +65,7 @@ const amOrPm = computed({
     <select
       v-model="hours12"
       :disabled="props.disabled"
-      class="tw:py-0! tw:h-full tw:cursor-pointer tw:bg-transparent! tw:px-1 tw:text-center tw:text-sm tw:font-medium tw:text-on-sidebar tw:outline-none tw:border-0! tw:disabled:cursor-not-allowed"
+      class="tw:py-0! tw:h-full tw:cursor-pointer tw:bg-transparent! tw:text-center tw:text-sm tw:font-medium tw:text-on-sidebar tw:outline-none tw:border-0! tw:disabled:cursor-not-allowed"
     >
       <option value="1">1</option>
       <option value="2">2</option>
@@ -84,7 +84,7 @@ const amOrPm = computed({
     <select
       v-model="mins"
       :disabled="props.disabled"
-      class="tw:py-0! tw:h-full tw:cursor-pointer tw:bg-transparent! tw:px-1 tw:text-center tw:text-sm tw:font-medium tw:text-on-sidebar tw:outline-none tw:border-0! tw:disabled:cursor-not-allowed"
+      class="tw:py-0! tw:h-full tw:cursor-pointer tw:bg-transparent! tw:text-center tw:text-sm tw:font-medium tw:text-on-sidebar tw:outline-none tw:border-0! tw:disabled:cursor-not-allowed"
     >
       <option value="0">00</option>
       <option value="5">05</option>
@@ -102,7 +102,7 @@ const amOrPm = computed({
     <select
       v-model="amOrPm"
       :disabled="props.disabled"
-      class="tw:py-0! tw:h-full tw:cursor-pointer tw:bg-transparent! tw:px-1 tw:text-center tw:text-sm tw:font-medium tw:text-on-sidebar tw:outline-none tw:border-0! tw:disabled:cursor-not-allowed"
+      class="tw:py-0! tw:h-full tw:cursor-pointer tw:bg-transparent! tw:text-center tw:text-sm tw:font-medium tw:text-on-sidebar tw:outline-none tw:border-0! tw:disabled:cursor-not-allowed"
     >
       <option value="am">am</option>
       <option value="pm">pm</option>

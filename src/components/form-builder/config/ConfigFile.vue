@@ -38,12 +38,6 @@ const formattedMaxSize = computed(() => {
 
 <template>
   <div class="tw:mb-4 tw:last:mb-0">
-    <div
-      class="tw:font-semibold tw:text-xs tw:uppercase tw:tracking-wide tw:text-secondary tw:mb-3 tw:pb-2 tw:border-b tw:border-divider"
-    >
-      File Settings
-    </div>
-
     <div class="tw:flex tw:flex-col tw:gap-3">
       <div>
         <p class="tw:text-sm tw:font-medium tw:text-secondary tw:mb-1">File Type</p>

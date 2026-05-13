@@ -31,8 +31,10 @@ const props = defineProps({
 
 const section = useLiveQueryWithDeps(
   [() => props.sectionId],
-  async (db, [id]) => db.DocumentSection.findByPk(id),
-  { models: ['DocumentSection', 'DocumentVersion'] },
+  async (db, [id]) => {
+    return db.DocumentSection.findByPk(id)
+  },
+  { models: ['DocumentSection'] },
 )
 
 const canUpdateSection = computed(
@@ -51,13 +53,15 @@ async function deleteSection() {
 
 // ── Auto-save on any change while the section is editable ──────
 const isFirstLoad = ref(true)
+let isPersistingAttachments = false
 
-const debouncedSave = useDebounceFn(async () => {
-  if (canUpdateSection.value && section.value) {
-    section.value.updatedBy = currentSession.value?.userId || null
-    await section.value.save()
-  }
-}, 500)
+async function persistSection() {
+  if (!canUpdateSection.value || !section.value) return
+  section.value.updatedBy = currentSession.value?.userId || null
+  await section.value.save()
+}
+
+const debouncedSave = useDebounceFn(persistSection, 500)
 
 watch(
   section,
@@ -66,10 +70,28 @@ watch(
       isFirstLoad.value = false
       return
     }
+    // Attachment changes are handled synchronously by handleAttachmentsChange;
+    // skip the debounced path so a live-query refresh can't reset the value
+    // before the timer fires.
+    if (isPersistingAttachments) return
     if (canUpdateSection.value) debouncedSave()
   },
   { deep: true },
 )
+
+// File uploads / removals are discrete events — save synchronously so a
+// concurrent DocumentSection sync refresh can't clobber the in-memory mutation
+// before the debounced save fires.
+async function handleAttachmentsChange(next) {
+  if (!section.value || !canUpdateSection.value) return
+  isPersistingAttachments = true
+  try {
+    section.value.attachments = next
+    await persistSection()
+  } finally {
+    isPersistingAttachments = false
+  }
+}
 
 // ── Reviewer comments ───────────────────────────────────────────
 const rejectedTask = useLiveQueryWithDeps(
@@ -169,10 +191,11 @@ const debouncedSaveComment = useDebounceFn(async () => {
       <BaseUploader
         v-if="section.sectionType === 'attachment'"
         :key="`${section.id}-${canUpdateSection ? 'editable' : 'readonly'}`"
-        v-model="section.attachments"
+        :modelValue="section.attachments"
         :readonly="!canUpdateSection"
         hideHeader
         class="tw:border-0 tw:shadow-none! tw:p-0"
+        @update:modelValue="handleAttachmentsChange"
       />
     </div>
 

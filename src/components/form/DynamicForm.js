@@ -14,7 +14,7 @@ import BaseTextInput from '@shared/components/BaseTextInput.vue'
 import BaseCheckbox from '@shared/components/BaseCheckbox.vue'
 import BaseSwitch from '@shared/components/BaseSwitch.vue'
 import BaseColorPicker from '@shared/components/BaseColorPicker.vue'
-import TiptapEditor from '@shared/components/Editor/TiptapEditor.vue'
+import TiptapEditor from '@/components/editor/TiptapEditor.vue'
 import BaseDatePicker from '@shared/components/BaseDatePicker.vue'
 import BaseTimePicker from '@shared/components/BaseTimePicker.vue'
 import BaseDateTimePicker from '@shared/components/BaseDateTimePicker.vue'
@@ -221,7 +221,7 @@ export default defineComponent({
           })
 
         case 'textarea':
-          return h(TiptapEditor, inputFieldProps)
+          return h(TiptapEditor, { ...inputFieldProps, editable: !inputFieldProps.readonly })
 
         case 'number':
           return h(BaseTextInput, {
@@ -233,7 +233,7 @@ export default defineComponent({
           })
 
         case 'textEditor':
-          return h(TiptapEditor, inputFieldProps)
+          return h(TiptapEditor, { ...inputFieldProps, editable: !inputFieldProps.readonly })
 
         case 'datetime': {
           const isDisabled = props.disabled || field.disabled

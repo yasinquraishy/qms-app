@@ -10,6 +10,7 @@ import {
   IconList,
   IconTruck,
   IconPackage,
+  IconLayoutGrid,
 } from '@tabler/icons-vue'
 
 /**
@@ -93,6 +94,16 @@ export const CATEGORY_METADATA = {
     icon: IconShield,
     description: 'Manage access for Nonconformances',
   },
+  rcaTemplates: {
+    label: 'RCA Templates',
+    icon: IconSitemap,
+    description: 'Manage access for RCA Templates',
+  },
+  riskAssessmentTemplates: {
+    label: 'Risk Assessment Templates',
+    icon: IconLayoutGrid,
+    description: 'Manage access for Risk Assessment Templates',
+  },
 }
 
 export const PERMISSION_SECTIONS = [
@@ -113,7 +124,7 @@ export const PERMISSION_SECTIONS = [
   },
   {
     name: 'Configuration',
-    categories: ['formTemplates', 'records', 'documents', 'document-templates', 'workflows'],
+    categories: ['formTemplates', 'rcaTemplates', 'riskAssessmentTemplates', 'records', 'documents', 'document-templates', 'workflows'],
   },
 ]
 

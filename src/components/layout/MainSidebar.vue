@@ -26,6 +26,8 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconAlertCircle,
+  IconSitemap,
+  IconLayoutGrid,
 } from '@tabler/icons-vue'
 import { currentCompany } from '@/utils/currentCompany'
 import { logoutCurrentSession, currentSession, isAllowed, isAdmin } from '@/utils/currentSession'
@@ -151,6 +153,16 @@ const navItems = computed(() => {
           permissions: ['suppliers:read'],
           icon: IconTruck,
           to: getCompanyPath('/suppliers'),
+        },
+        {
+          label: 'RCA Templates',
+          icon: IconSitemap,
+          to: getCompanyPath('/rca-templates'),
+        },
+        {
+          label: 'Risk Assessment Templates',
+          icon: IconLayoutGrid,
+          to: getCompanyPath('/risk-assessment-templates'),
         },
         {
           label: 'Option Sets',

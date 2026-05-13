@@ -143,6 +143,41 @@ function updateRowColClass(value) {
           </BaseSelectMenu>
           <p class="tw:text-xs tw:text-secondary tw:mt-1">Format for date/time selection</p>
         </template>
+
+        <!-- RCA Settings -->
+        <template v-if="field.type === 'rca'">
+          <div class="tw:flex tw:flex-col tw:gap-3">
+            <div class="tw:flex tw:flex-col tw:gap-2">
+              <label class="tw:text-sm tw:font-medium tw:text-on-main">RCA Template</label>
+              <RcaTemplateSelectMenu v-model="field.rcaTemplateId" :required="true" />
+              <p class="tw:text-xs tw:text-secondary">
+                The template defines branch labels and analysis structure. Users add causes during investigation.
+              </p>
+            </div>
+            <div class="tw:flex tw:flex-col tw:gap-1">
+              <label class="tw:text-sm tw:font-medium tw:text-on-main">Problem Source Field</label>
+              <BaseTextInput
+                v-model="field.problemField"
+                placeholder="e.g. problemDescription"
+                size="sm"
+              />
+              <p class="tw:text-xs tw:text-secondary">
+                Field name in this form whose value appears as the problem statement in the fishbone diagram.
+              </p>
+            </div>
+          </div>
+        </template>
+
+        <!-- Risk Assessment Settings -->
+        <template v-if="field.type === 'riskAssessment'">
+          <div class="tw:flex tw:flex-col tw:gap-2">
+            <label class="tw:text-sm tw:font-medium tw:text-on-main">Risk Assessment Template</label>
+            <RiskAssessmentTemplateSelectMenu v-model="field.riskAssessmentTemplateId" :required="true" />
+            <p class="tw:text-xs tw:text-secondary">
+              The template defines the likelihood/severity matrix and risk level colors.
+            </p>
+          </div>
+        </template>
       </div>
 
       <!-- Styling -->

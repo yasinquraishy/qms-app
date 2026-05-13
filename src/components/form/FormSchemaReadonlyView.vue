@@ -1,6 +1,7 @@
 <script setup>
 import { IconStarFilled, IconStar } from '@tabler/icons-vue'
 import { DateTime } from 'luxon'
+import { getFormComponent } from './formComponentRegistry.js'
 
 const props = defineProps({
   fields: { type: Array, required: true },
@@ -136,11 +137,17 @@ function isRepeaterField(field) {
   return field.type === 'repeater'
 }
 
+function isCustomField(field) {
+  const reg = getFormComponent(field.type)
+  return !!(reg?.readonlyComponent)
+}
+
 function isRenderableField(field) {
   return (
     field.name &&
     !isSectionField(field) &&
     !isRepeaterField(field) &&
+    !isCustomField(field) &&
     field.type !== 'checklist' &&
     field.type !== 'photo'
   )
@@ -253,6 +260,18 @@ function getVisibleFields(fields) {
           </div>
         </template>
         <span v-else class="tw:text-sm tw:text-secondary">—</span>
+      </div>
+
+      <!-- Custom registered field (full-width) -->
+      <div v-else-if="isCustomField(field)" class="tw:col-span-3 tw:flex tw:flex-col tw:gap-0.5">
+        <div v-if="field.label" class="tw:text-[11px] tw:text-secondary tw:font-medium">
+          {{ field.label }}
+        </div>
+        <component
+          :is="getFormComponent(field.type).readonlyComponent"
+          :field="field"
+          :values="getFieldValue(field)"
+        />
       </div>
 
       <!-- Standard field (grid cell) -->

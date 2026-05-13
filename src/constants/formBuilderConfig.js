@@ -21,6 +21,8 @@ import {
   IconRepeat,
   IconMinus,
   IconGrid3x3,
+  IconSitemap,
+  IconLayoutGrid,
 } from '@tabler/icons-vue'
 
 export const CATEGORY_LABELS = Object.freeze({
@@ -29,6 +31,7 @@ export const CATEGORY_LABELS = Object.freeze({
   special: 'Special Fields',
   layout: 'Layout Elements',
   widget: 'Widgets',
+  tools: 'Tools',
 })
 
 // Field type definitions with icons and labels
@@ -64,6 +67,10 @@ export const FIELD_TYPES = Object.freeze({
 
   // widgets
   inputTable: { icon: IconGrid3x3, label: 'Input Table', category: 'widget' },
+
+  // tools
+  rca: { icon: IconSitemap, label: 'Root Cause Analysis', category: 'tools' },
+  riskAssessment: { icon: IconLayoutGrid, label: 'Risk Assessment', category: 'tools' },
 })
 
 export const WIDGET_CONFIG = Object.freeze({
@@ -214,6 +221,13 @@ export const FIELD_TYPES_CONFIG = Object.freeze({
     props: {},
   },
   ...WIDGET_CONFIG,
+  rca: {
+    rcaTemplateId: null,
+    problemField: '_parent_problem',
+  },
+  riskAssessment: {
+    riskAssessmentTemplateId: null,
+  },
 })
 
 export const PLACEHOLDER_TYPES = new Set(['input', 'textarea', 'number', 'password', 'select'])
@@ -231,11 +245,13 @@ export const TYPE_SETTINGS_TYPES = new Set([
   'repeater',
   'row',
   'datetime',
+  'rca',
+  'riskAssessment',
 ])
 export const NUMBER_TYPES = new Set(['number', 'slider'])
 export const OPTIONS_TYPES = new Set(['select', 'radio', 'optionGroup'])
 export const NO_LABEL_TYPES = new Set(['row', 'column'])
-export const NO_STATE_TYPES = new Set(['row', 'column', 'separator', 'section'])
+export const NO_STATE_TYPES = new Set(['row', 'column', 'separator', 'section', 'rca', 'riskAssessment'])
 
 export const DATETIME_MODE_OPTIONS = [
   { label: 'Date & Time', value: 'datetime' },

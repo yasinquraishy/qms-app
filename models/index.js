@@ -79,6 +79,8 @@ import { NcSource } from './ncSource'
 import { NcDispositionType } from './ncDispositionType'
 import { NcRootCauseCategory } from './ncRootCauseCategory'
 import { NcRecord } from './ncRecord'
+import { RcaTemplate } from './rcaTemplate'
+import { RiskAssessmentTemplate } from './riskAssessmentTemplate'
 
 export const db = {
   ApiKey,
@@ -162,4 +164,6 @@ export const db = {
   NcDispositionType,
   NcRootCauseCategory,
   NcRecord,
+  RcaTemplate,
+  RiskAssessmentTemplate,
 }

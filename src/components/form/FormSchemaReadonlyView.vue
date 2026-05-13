@@ -137,6 +137,18 @@ function isRepeaterField(field) {
   return field.type === 'repeater'
 }
 
+function isLayoutContainer(field) {
+  return field.type === 'row' || field.type === 'column'
+}
+
+// Layout containers with a name scope their children's values under that name
+// (mirrors DynamicForm.js's path traversal). Without a name, children read from
+// the parent values flat.
+function getContainerValues(field) {
+  if (!field.name) return props.values
+  return props.values?.[field.name] || {}
+}
+
 function isCustomField(field) {
   const reg = getFormComponent(field.type)
   return !!(reg?.readonlyComponent)
@@ -147,6 +159,7 @@ function isRenderableField(field) {
     field.name &&
     !isSectionField(field) &&
     !isRepeaterField(field) &&
+    !isLayoutContainer(field) &&
     !isCustomField(field) &&
     field.type !== 'checklist' &&
     field.type !== 'photo'
@@ -162,6 +175,8 @@ function getVisibleFields(fields) {
       }
     } else if (isRepeaterField(field)) {
       result.push(field)
+    } else if (isLayoutContainer(field)) {
+      if (field.children?.length) result.push(field)
     } else if (field.name) {
       result.push(field)
     }
@@ -183,6 +198,16 @@ function getVisibleFields(fields) {
             {{ field.label }}
           </div>
           <FormSchemaReadonlyView :fields="field.children" :values="values" />
+        </div>
+      </template>
+
+      <!-- Layout container (row / column) — recurse into children with scoped values -->
+      <template v-else-if="isLayoutContainer(field)">
+        <div class="tw:col-span-3">
+          <FormSchemaReadonlyView
+            :fields="field.children || []"
+            :values="getContainerValues(field)"
+          />
         </div>
       </template>
 
@@ -262,7 +287,7 @@ function getVisibleFields(fields) {
         <span v-else class="tw:text-sm tw:text-secondary">—</span>
       </div>
 
-      <!-- Custom registered field (full-width) -->
+      <!-- Custom registered field (rca, riskAssessment, …) — full-width -->
       <div v-else-if="isCustomField(field)" class="tw:col-span-3 tw:flex tw:flex-col tw:gap-0.5">
         <div v-if="field.label" class="tw:text-[11px] tw:text-secondary tw:font-medium">
           {{ field.label }}
@@ -270,7 +295,8 @@ function getVisibleFields(fields) {
         <component
           :is="getFormComponent(field.type).readonlyComponent"
           :field="field"
-          :values="getFieldValue(field)"
+          :values="getFieldValue(field) || {}"
+          :formValues="values"
         />
       </div>
 

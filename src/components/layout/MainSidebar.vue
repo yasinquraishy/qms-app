@@ -121,6 +121,7 @@ const navItems = computed(() => {
       children: [
         {
           label: 'General',
+          permissions: ['company:manage'],
           icon: IconAdjustments,
           to: getCompanyPath('/settings'),
         },

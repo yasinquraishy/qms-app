@@ -403,9 +403,15 @@ watch(
       :stepApproversTab="stepApproversTab"
     />
 
-    <!-- Send-Back Targets -->
+    <!-- Send-Back Targets — root steps only. Child (sub-)steps can't
+         initiate a send-back, so no targets are configurable. -->
     <div
-      v-if="showSendBackTargets && isSendBackActive && siblingSteps.length > 0"
+      v-if="
+        showSendBackTargets &&
+        isSendBackActive &&
+        siblingSteps.length > 0 &&
+        !step.parentStepId
+      "
       class="tw:space-y-4"
     >
       <div class="tw:flex tw:items-center tw:gap-2 tw:text-secondary">

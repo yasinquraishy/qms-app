@@ -130,7 +130,7 @@ const linkedCapas = useLiveQueryWithDeps(
   [() => props.id],
   async (db, [ncId]) => {
     if (!ncId) return []
-    return db.Capa.where('[sourceType+sourceId]', ['Nonconformance', ncId]).exec()
+    return db.Capa.where('[sourceType+sourceId]', ['NC', ncId]).exec()
   },
   { initial: [] },
 )

@@ -26,15 +26,15 @@ const form = ref({
   siteId: null,
   departmentId: null,
   typeId: null,
-  // Categorical source kind (FK to capa_sources): NC, INTERNAL_AUDIT, …
-  sourceKindId: presetNcId.value ? 'NC' : null,
+  // Source kind — a CapaSource id (NC / INTERNAL_AUDIT / …). When the CAPA
+  // was spawned from a specific row, `sourceId` below points at it.
+  sourceType: presetNcId.value ? 'NC' : null,
   priorityId: 'MEDIUM',
   initiatedAt: DateTime.now(),
   dueDate: null,
   ownerId: currentSession.value?.userId ?? null,
-  // Polymorphic origin — populated when the CAPA is spawned from a row
-  // (e.g. an NC). Both null for ad-hoc CAPAs.
-  sourceType: presetNcId.value ? 'Nonconformance' : null,
+  // Optional pointer to the originating row when source_type maps to a known
+  // table (e.g. source_type='NC' → source_id = a Nonconformance id).
   sourceId: presetNcId.value || null,
   rootCauseCategoryId: null,
   rootCause: '',
@@ -76,7 +76,7 @@ function handleSubmit() {
     toast.notify({ type: 'negative', message: 'Type is required' })
     return
   }
-  if (!form.value.sourceKindId) {
+  if (!form.value.sourceType) {
     toast.notify({ type: 'negative', message: 'Source is required' })
     return
   }
@@ -204,7 +204,7 @@ async function handleReviewersConfirmed(reviewers) {
               <label class="tw:text-sm tw:font-medium tw:text-secondary">
                 Source <span class="tw:text-red-500">*</span>
               </label>
-              <CapaSourceSelectMenu v-model="form.sourceKindId" required />
+              <CapaSourceSelectMenu v-model="form.sourceType" required />
             </div>
             <div class="tw:flex tw:flex-col tw:gap-1">
               <label class="tw:text-sm tw:font-medium tw:text-secondary">

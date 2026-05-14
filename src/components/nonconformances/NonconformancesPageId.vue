@@ -24,8 +24,13 @@ const breadcrumbs = computed(() => [
 
 // ─── Inline disposition auto-save ─────────────────────────────────────────────
 const isFirstLoad = ref(true)
+const canUpdate = computed(() => isAllowed(['nonconformances:update']))
 const isEditable = computed(
-  () => nc.value && nc.value.statusId !== 'CLOSED' && nc.value.statusId !== 'VOID',
+  () =>
+    nc.value &&
+    nc.value.statusId !== 'CLOSED' &&
+    nc.value.statusId !== 'VOID' &&
+    canUpdate.value,
 )
 
 const debouncedSave = useDebounceFn(async () => {

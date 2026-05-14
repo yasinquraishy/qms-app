@@ -100,8 +100,14 @@ const navItems = computed(() => {
     },
     {
       label: 'Nonconformances',
+      permissions: ['nonconformances:read'],
       icon: IconAlertCircle,
       to: getCompanyPath('/nonconformances'),
+    },
+    {
+      label: 'CAPAs',
+      icon: IconShield,
+      to: getCompanyPath('/capas'),
     },
     {}, // Divider
     {

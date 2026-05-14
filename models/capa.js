@@ -46,6 +46,8 @@ export class Capa extends BaseModel {
   @Property({ type: String }) effectivenessVerification = ''
   @Property({ type: DateTime }) verifiedAt = /** @type {DateTime} */ (null)
   @Property({ type: String }) verifiedBy = /** @type {String} */ (null)
+  @Property({ type: Object }) effectivenessCheck = /** @type {Object} */ ({})
+  @Property({ type: Object }) scheduledCycle = /** @type {Object} */ (null)
   @Property({ type: String, required: true }) createdBy = ''
   @Property({ type: String, required: true }) updatedBy = ''
   @Property({ type: DateTime, required: true, timestamp: true })

@@ -9,7 +9,6 @@ const props = defineProps({
 })
 
 const router = useRouter()
-const toast = useToast()
 
 const capa = useLiveQueryWithDeps([() => props.id], async (db, [id]) => db.Capa.findByPk(id))
 
@@ -22,10 +21,7 @@ const breadcrumbs = computed(() => [
 
 const isFirstLoad = ref(true)
 const isEditable = computed(
-  () =>
-    capa.value &&
-    capa.value.statusId !== 'CLOSED' &&
-    capa.value.statusId !== 'VERIFIED',
+  () => capa.value && capa.value.statusId !== 'CLOSED' && capa.value.statusId !== 'VERIFIED',
 )
 
 const debouncedSave = useDebounceFn(async () => {

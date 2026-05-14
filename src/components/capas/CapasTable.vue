@@ -29,10 +29,30 @@ const columns = [
   { name: 'priority', label: 'PRIORITY', field: 'priorityId', align: 'left', sortable: false },
   { name: 'status', label: 'STATUS', field: 'statusId', align: 'left', sortable: false },
   { name: 'type', label: 'TYPE', field: 'typeId', align: 'left', sortable: false },
+  {
+    name: 'effectivenessCheck',
+    label: 'EFFECTIVENESS CHECK',
+    field: 'effectivenessCheck',
+    align: 'left',
+    sortable: false,
+  },
+  {
+    name: 'scheduledCycle',
+    label: 'CYCLE',
+    field: 'scheduledCycle',
+    align: 'left',
+    sortable: false,
+  },
   { name: 'dueDate', label: 'DUE DATE', field: 'dueDate', align: 'left', sortable: true },
   { name: 'createdAt', label: 'CREATED', field: 'createdAt', align: 'left', sortable: true },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
+
+function formatCycle(cycle) {
+  if (!cycle?.value || !cycle?.unit) return null
+  const unit = String(cycle.unit).toLowerCase()
+  return `${cycle.value} ${unit}`
+}
 
 const pagination = ref({
   page: 1,
@@ -88,6 +108,20 @@ function rowMenuItems(row) {
 
     <template #body-cell-type="{ row }">
       <CapaTypeBadgeById :typeId="row.typeId" />
+    </template>
+
+    <template #body-cell-effectivenessCheck="{ row }">
+      <span v-if="row.effectivenessCheck?.status" class="tw:text-sm tw:font-medium tw:text-on-main">
+        {{ row.effectivenessCheck.status }}
+      </span>
+      <span v-else class="tw:text-secondary">—</span>
+    </template>
+
+    <template #body-cell-scheduledCycle="{ row }">
+      <span v-if="formatCycle(row.scheduledCycle)" class="tw:text-sm tw:text-secondary">
+        {{ formatCycle(row.scheduledCycle) }}
+      </span>
+      <span v-else class="tw:text-secondary">—</span>
     </template>
 
     <template #body-cell-dueDate="{ row }">

@@ -297,11 +297,14 @@ const editingDescription = ref(false)
                 </div>
               </div>
             </div>
+
+            <!-- Effectiveness Check (post-closure follow-up) -->
+            <CapaEffectivenessCheckCard :capaId="id" :isOwner="isOwner" />
           </div>
 
           <!-- Right column - meta -->
           <aside
-            class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5 tw:flex tw:flex-col tw:gap-4"
+            class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5 tw:flex! tw:flex-col tw:gap-4"
           >
             <div class="tw:flex tw:flex-col tw:gap-1">
               <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Number</div>

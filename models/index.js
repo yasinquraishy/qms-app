@@ -86,6 +86,8 @@ import { CapaType } from './capaType'
 import { CapaSource } from './capaSource'
 import { CapaPriority } from './capaPriority'
 import { CapaRecord } from './capaRecord'
+import { CapaEffectivenessCheck } from './capaEffectivenessCheck'
+import { CapaEffectivenessCheckStatus } from './capaEffectivenessCheckStatus'
 import { RcaTemplate } from './rcaTemplate'
 import { RiskAssessmentTemplate } from './riskAssessmentTemplate'
 
@@ -178,6 +180,8 @@ export const db = {
   CapaSource,
   CapaPriority,
   CapaRecord,
+  CapaEffectivenessCheck,
+  CapaEffectivenessCheckStatus,
   RcaTemplate,
   RiskAssessmentTemplate,
 }

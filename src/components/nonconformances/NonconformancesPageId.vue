@@ -97,6 +97,16 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
   return results.find((i) => i.statusId === 'IN_PROGRESS') || results[0] || null
 })
 
+// Resolve the underlying Workflow id from the version so we can link to the
+// template (workflow-templates route is keyed by workflow id, not version id).
+const workflowVersion = useLiveQueryWithDeps(
+  [() => workflowInstance.value?.workflowVersionId ?? nc.value?.workflowVersionId],
+  async (db, [versionId]) => {
+    if (!versionId) return null
+    return db.WorkflowVersion.findByPk(versionId)
+  },
+)
+
 // ─── Inline-edit for cost fields ──────────────────────────────────────────────
 const editingCost = ref(false)
 const editingCredit = ref(false)
@@ -582,6 +592,13 @@ function onCreateLinkedCapa() {
                   :to="getCompanyPath(`/workflow-instances/${workflowInstance.id}`)"
                 >
                   View workflow details →
+                </RouterLink>
+                <RouterLink
+                  v-if="workflowVersion?.workflowId"
+                  class="tw:mt-1 tw:flex tw:items-center tw:text-sm tw:text-primary tw:font-medium tw:hover:underline"
+                  :to="getCompanyPath(`/workflow-templates/${workflowVersion.workflowId}`)"
+                >
+                  View workflow template →
                 </RouterLink>
               </div>
 

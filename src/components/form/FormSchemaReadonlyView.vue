@@ -118,7 +118,7 @@ function formatDisplayValue(field, rawVal) {
 }
 
 function isHtmlField(field) {
-  return field.type === 'textEditor'
+  return field.type === 'textEditor' || field.type === 'textarea'
 }
 
 function isRatingField(field) {
@@ -129,6 +129,22 @@ function isFileField(field) {
   return field.type === 'file'
 }
 
+function isPhotoField(field) {
+  return field.type === 'photo'
+}
+
+function isChecklistField(field) {
+  return field.type === 'checklist'
+}
+
+function isSeparatorField(field) {
+  return field.type === 'separator'
+}
+
+function isColorPickerField(field) {
+  return field.type === 'colorPicker'
+}
+
 function isSectionField(field) {
   return field.type === 'section'
 }
@@ -137,9 +153,21 @@ function isRepeaterField(field) {
   return field.type === 'repeater'
 }
 
+function isLayoutContainer(field) {
+  return field.type === 'row' || field.type === 'column'
+}
+
+// Layout containers with a name scope their children's values under that name
+// (mirrors DynamicForm.js's path traversal). Without a name, children read from
+// the parent values flat.
+function getContainerValues(field) {
+  if (!field.name) return props.values
+  return props.values?.[field.name] || {}
+}
+
 function isCustomField(field) {
   const reg = getFormComponent(field.type)
-  return !!(reg?.readonlyComponent)
+  return !!reg?.readonlyComponent
 }
 
 function isRenderableField(field) {
@@ -147,9 +175,12 @@ function isRenderableField(field) {
     field.name &&
     !isSectionField(field) &&
     !isRepeaterField(field) &&
+    !isLayoutContainer(field) &&
     !isCustomField(field) &&
-    field.type !== 'checklist' &&
-    field.type !== 'photo'
+    !isChecklistField(field) &&
+    !isPhotoField(field) &&
+    !isSeparatorField(field) &&
+    !isColorPickerField(field)
   )
 }
 
@@ -162,11 +193,44 @@ function getVisibleFields(fields) {
       }
     } else if (isRepeaterField(field)) {
       result.push(field)
+    } else if (isLayoutContainer(field)) {
+      if (field.children?.length) result.push(field)
+    } else if (isSeparatorField(field)) {
+      result.push(field)
     } else if (field.name) {
       result.push(field)
     }
   }
   return result
+}
+
+function getPhotoUrl(field) {
+  const val = getFieldValue(field)
+  if (!val) return null
+  if (typeof val === 'string') return val
+  return val?.url || val?.thumbnailUrl || null
+}
+
+function getChecklistColumns(field) {
+  if (!Array.isArray(field.columns)) return []
+  return field.columns
+}
+
+function getChecklistRowValue(field, rowIndex) {
+  const val = getFieldValue(field)
+  if (!Array.isArray(val)) return null
+  const entry = val[rowIndex]
+  if (entry == null) return null
+  return Array.isArray(entry) ? entry : [entry]
+}
+
+function getChecklistRowLabel(row) {
+  if (typeof row === 'string') return row
+  return row?.label || row?.value || ''
+}
+
+function getChecklistColumnLabel(col) {
+  return col?.label || col?.value || ''
 }
 </script>
 
@@ -182,7 +246,20 @@ function getVisibleFields(fields) {
           >
             {{ field.label }}
           </div>
-          <FormSchemaReadonlyView :fields="field.children" :values="values" />
+          <FormSchemaReadonlyView
+            :fields="field.children"
+            :values="getContainerValues(field)"
+          />
+        </div>
+      </template>
+
+      <!-- Layout container (row / column) — recurse into children with scoped values -->
+      <template v-else-if="isLayoutContainer(field)">
+        <div class="tw:col-span-3">
+          <FormSchemaReadonlyView
+            :fields="field.children || []"
+            :values="getContainerValues(field)"
+          />
         </div>
       </template>
 
@@ -251,18 +328,104 @@ function getVisibleFields(fields) {
       <div v-else-if="isFileField(field)" class="tw:col-span-3 tw:flex tw:flex-col tw:gap-0.5">
         <div class="tw:text-[11px] tw:text-secondary tw:font-medium">{{ field.label }}</div>
         <template v-if="Array.isArray(getFieldValue(field)) && getFieldValue(field).length">
-          <div
+          <a
             v-for="(file, fi) in getFieldValue(field)"
             :key="fi"
-            class="tw:text-sm tw:text-primary"
+            :href="typeof file === 'string' ? file : file?.url"
+            target="_blank"
+            rel="noopener"
+            class="tw:text-sm tw:text-primary tw:hover:underline tw:break-all"
           >
-            {{ typeof file === 'string' ? file : file?.name || file?.fileName || 'File' }}
-          </div>
+            {{
+              typeof file === 'string'
+                ? file
+                : file?.originalFilename || file?.filename || file?.name || 'File'
+            }}
+          </a>
         </template>
         <span v-else class="tw:text-sm tw:text-secondary">—</span>
       </div>
 
-      <!-- Custom registered field (full-width) -->
+      <!-- Photo field (full-width) -->
+      <div v-else-if="isPhotoField(field)" class="tw:col-span-3 tw:flex tw:flex-col tw:gap-0.5">
+        <div class="tw:text-[11px] tw:text-secondary tw:font-medium">{{ field.label }}</div>
+        <img
+          v-if="getPhotoUrl(field)"
+          :src="getPhotoUrl(field)"
+          :alt="field.label"
+          class="tw:rounded tw:border tw:border-divider tw:object-contain"
+          :style="{
+            maxWidth: field.previewSize || '150px',
+            maxHeight: field.previewSize || '150px',
+          }"
+        />
+        <span v-else class="tw:text-sm tw:text-secondary">—</span>
+      </div>
+
+      <!-- Checklist field (full-width) -->
+      <div v-else-if="isChecklistField(field)" class="tw:col-span-3 tw:flex tw:flex-col tw:gap-1">
+        <div class="tw:text-[11px] tw:text-secondary tw:font-medium">{{ field.label }}</div>
+        <div class="tw:overflow-x-auto">
+          <table class="tw:w-full tw:text-sm tw:border tw:border-divider tw:rounded">
+            <thead class="tw:bg-main-hover">
+              <tr>
+                <th class="tw:text-left tw:font-semibold tw:text-secondary tw:px-3 tw:py-2"></th>
+                <th
+                  v-for="col in getChecklistColumns(field)"
+                  :key="col.value || col.label"
+                  class="tw:text-left tw:font-semibold tw:text-secondary tw:px-3 tw:py-2"
+                >
+                  {{ getChecklistColumnLabel(col) }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(row, rowIndex) in field.rows || []"
+                :key="rowIndex"
+                class="tw:border-t tw:border-divider"
+              >
+                <td class="tw:px-3 tw:py-2 tw:text-on-main tw:font-medium">
+                  {{ getChecklistRowLabel(row) }}
+                </td>
+                <td
+                  v-for="col in getChecklistColumns(field)"
+                  :key="col.value || col.label"
+                  class="tw:px-3 tw:py-2 tw:text-on-main"
+                >
+                  <span v-if="(getChecklistRowValue(field, rowIndex) || []).includes(col.value)">
+                    ✓
+                  </span>
+                  <span v-else class="tw:text-secondary">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Separator (full-width rule) -->
+      <hr
+        v-else-if="isSeparatorField(field)"
+        class="tw:col-span-3 tw:border-0 tw:border-t tw:border-divider tw:my-1"
+      />
+
+      <!-- Color picker — swatch + hex value (grid cell) -->
+      <div v-else-if="isColorPickerField(field)" class="tw:flex tw:flex-col tw:gap-0.5">
+        <div class="tw:text-[11px] tw:text-secondary tw:font-medium">{{ field.label }}</div>
+        <div v-if="getFieldValue(field)" class="tw:flex tw:items-center tw:gap-2">
+          <span
+            class="tw:inline-block tw:size-4 tw:rounded tw:border tw:border-divider tw:shrink-0"
+            :style="{ backgroundColor: getFieldValue(field) }"
+          />
+          <span class="tw:text-sm tw:font-medium tw:font-mono tw:text-on-main">
+            {{ getFieldValue(field) }}
+          </span>
+        </div>
+        <span v-else class="tw:text-sm tw:text-secondary">—</span>
+      </div>
+
+      <!-- Custom registered field (rca, riskAssessment, …) — full-width -->
       <div v-else-if="isCustomField(field)" class="tw:col-span-3 tw:flex tw:flex-col tw:gap-0.5">
         <div v-if="field.label" class="tw:text-[11px] tw:text-secondary tw:font-medium">
           {{ field.label }}
@@ -270,7 +433,8 @@ function getVisibleFields(fields) {
         <component
           :is="getFormComponent(field.type).readonlyComponent"
           :field="field"
-          :values="getFieldValue(field)"
+          :values="getFieldValue(field) || {}"
+          :formValues="values"
         />
       </div>
 

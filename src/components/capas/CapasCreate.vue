@@ -26,12 +26,16 @@ const form = ref({
   siteId: null,
   departmentId: null,
   typeId: null,
-  sourceId: presetNcId.value ? 'NC' : null,
+  // Categorical source kind (FK to capa_sources): NC, INTERNAL_AUDIT, …
+  sourceKindId: presetNcId.value ? 'NC' : null,
   priorityId: 'MEDIUM',
   initiatedAt: DateTime.now(),
   dueDate: null,
   ownerId: currentSession.value?.userId ?? null,
-  ncId: presetNcId.value || null,
+  // Polymorphic origin — populated when the CAPA is spawned from a row
+  // (e.g. an NC). Both null for ad-hoc CAPAs.
+  sourceType: presetNcId.value ? 'Nonconformance' : null,
+  sourceId: presetNcId.value || null,
   rootCauseCategoryId: null,
   rootCause: '',
   correctiveAction: '',
@@ -72,7 +76,7 @@ function handleSubmit() {
     toast.notify({ type: 'negative', message: 'Type is required' })
     return
   }
-  if (!form.value.sourceId) {
+  if (!form.value.sourceKindId) {
     toast.notify({ type: 'negative', message: 'Source is required' })
     return
   }
@@ -200,7 +204,7 @@ async function handleReviewersConfirmed(reviewers) {
               <label class="tw:text-sm tw:font-medium tw:text-secondary">
                 Source <span class="tw:text-red-500">*</span>
               </label>
-              <CapaSourceSelectMenu v-model="form.sourceId" required />
+              <CapaSourceSelectMenu v-model="form.sourceKindId" required />
             </div>
             <div class="tw:flex tw:flex-col tw:gap-1">
               <label class="tw:text-sm tw:font-medium tw:text-secondary">

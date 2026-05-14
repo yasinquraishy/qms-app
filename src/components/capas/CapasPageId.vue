@@ -89,10 +89,15 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
   return results.find((i) => i.statusId === 'IN_PROGRESS') || results[0] || null
 })
 
-const sourceNc = useLiveQueryWithDeps([() => capa.value?.ncId], async (db, [ncId]) => {
-  if (!ncId) return null
-  return db.Nonconformance.findByPk(ncId)
-})
+// Resolve the originating Nonconformance only when this CAPA was spawned
+// from one (polymorphic source_type='Nonconformance').
+const sourceNc = useLiveQueryWithDeps(
+  [() => capa.value?.sourceType, () => capa.value?.sourceId],
+  async (db, [sourceType, sourceId]) => {
+    if (sourceType !== 'Nonconformance' || !sourceId) return null
+    return db.Nonconformance.findByPk(sourceId)
+  },
+)
 
 const editingTitle = ref(false)
 const editingDescription = ref(false)
@@ -191,7 +196,7 @@ const editingDescription = ref(false)
                 </div>
                 <div class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Source</div>
-                  <CapaSourceBadgeById :sourceId="capa.sourceId" />
+                  <CapaSourceBadgeById :sourceId="capa.sourceKindId" />
                 </div>
                 <div class="tw:flex tw:flex-col tw:gap-1">
                   <div class="tw:text-xs tw:text-secondary">Initiated</div>

@@ -151,7 +151,7 @@ const navItems = computed(() => {
         },
         {
           label: 'Products',
-          // permissions: ['products:read'],
+          permissions: ['products:read'],
           icon: IconPackage,
           to: getCompanyPath('/products'),
         },
@@ -163,11 +163,13 @@ const navItems = computed(() => {
         },
         {
           label: 'RCA Templates',
+          permissions: ['rcaTemplates:read'],
           icon: IconSitemap,
           to: getCompanyPath('/rca-templates'),
         },
         {
           label: 'Risk Assessment Templates',
+          permissions: ['riskAssessmentTemplates:read'],
           icon: IconLayoutGrid,
           to: getCompanyPath('/risk-assessment-templates'),
         },

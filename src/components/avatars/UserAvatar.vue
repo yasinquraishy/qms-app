@@ -48,7 +48,7 @@ const badgeColorClass = computed(() => {
 
 // Size to text size mapping
 function sizeToTextSize(size) {
-  if (size <= 4) return 'tw:text-xs'
+  if (size <= 6) return 'tw:text-xs'
   if (size <= 8) return 'tw:text-sm'
   if (size <= 10) return 'tw:text-base'
   if (size <= 12) return 'tw:text-lg'

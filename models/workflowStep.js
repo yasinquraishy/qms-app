@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 @ClientModel('workflowSteps', {
   primaryKey: 'id',
   syncField: 'updatedAt',
-  customIndex: 'workflowVersionId',
+  customIndex: 'workflowVersionId, parentStepId',
 })
 export class WorkflowStep extends BaseModel {
   static paranoid = true // Enable soft deletes using deletedAt field

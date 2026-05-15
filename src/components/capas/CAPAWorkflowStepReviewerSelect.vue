@@ -4,10 +4,20 @@ import { RadioGroup, RadioGroupOption } from '@headlessui/vue'
 const props = defineProps({
   step: { type: Object, required: true },
   stepIndex: { type: Number, required: true },
+  parentIndex: { type: Number, default: null },
+  isChild: { type: Boolean, default: false },
   required: { type: Boolean, default: false },
 })
 
 const modelValue = defineModel({ type: String, default: null })
+
+const numberLabel = computed(() => {
+  if (props.isChild) {
+    const parent = props.parentIndex != null ? props.parentIndex + 1 : '?'
+    return `${parent}.${props.stepIndex + 1}`
+  }
+  return `${props.stepIndex + 1}`
+})
 
 const stepRoles = useLiveQueryWithDeps(
   [() => props.step.id],
@@ -60,15 +70,25 @@ function getUserDisplayName(user) {
 </script>
 
 <template>
-  <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-4 tw:space-y-3">
+  <div
+    class="tw:border tw:border-divider tw:rounded-lg tw:space-y-3"
+    :class="
+      isChild
+        ? 'tw:bg-main-hover/40 tw:ml-8 tw:p-3 tw:border-l-2 tw:border-l-primary/40'
+        : 'tw:bg-white tw:p-4'
+    "
+  >
     <div class="tw:flex tw:items-center tw:gap-3">
       <div
-        class="tw:w-6 tw:h-6 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:text-xs tw:font-bold tw:shrink-0"
-        :class="modelValue ? 'tw:bg-primary tw:text-white' : 'tw:bg-main-hover tw:text-secondary'"
+        class="tw:rounded-full tw:flex tw:items-center tw:justify-center tw:font-bold tw:shrink-0"
+        :class="[
+          isChild ? 'tw:w-5 tw:h-5 tw:text-[10px]' : 'tw:w-6 tw:h-6 tw:text-xs',
+          modelValue ? 'tw:bg-primary tw:text-white' : 'tw:bg-main-hover tw:text-secondary',
+        ]"
       >
-        {{ stepIndex + 1 }}
+        {{ numberLabel }}
       </div>
-      <span class="tw:text-sm tw:font-semibold tw:text-on-main">
+      <span class="tw:font-semibold tw:text-on-main" :class="isChild ? 'tw:text-xs' : 'tw:text-sm'">
         {{ step.name }}
         <span v-if="required" class="tw:text-red-500">*</span>
       </span>

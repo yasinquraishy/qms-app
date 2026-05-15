@@ -106,6 +106,7 @@ const navItems = computed(() => {
     },
     {
       label: 'CAPAs',
+      permissions: ['capas:read'],
       icon: IconShield,
       to: getCompanyPath('/capas'),
     },

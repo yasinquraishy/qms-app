@@ -2,14 +2,13 @@
 import { post } from '@/api'
 
 const props = defineProps({
-  ncId: { type: String, required: true },
+  capaId: { type: String, required: true },
   workflowInstanceId: { type: String, default: null },
   isOwner: { type: Boolean, default: false },
 })
 
 const toast = useToast()
 
-// ─── Workflow instance steps (latest per stepId after send-back churn) ──────
 const workflowInstanceSteps = useLiveQueryWithDeps(
   [() => props.workflowInstanceId],
   async (db, [instanceId]) => {
@@ -17,8 +16,7 @@ const workflowInstanceSteps = useLiveQueryWithDeps(
     const all = await db.WorkflowInstanceStep.where('workflowInstanceId', instanceId)
       .orderBy('stepNumber', 'asc')
       .exec()
-    // After a send-back the same stepId can have multiple instances.
-    // Keep only the most recently created one per stepId.
+    // Collapse to the latest instance per stepId (handles send-back churn).
     const latestByStepId = new Map()
     for (const step of all) {
       const existing = latestByStepId.get(step.stepId)
@@ -26,7 +24,16 @@ const workflowInstanceSteps = useLiveQueryWithDeps(
         latestByStepId.set(step.stepId, step)
       }
     }
-    return [...latestByStepId.values()].sort((a, b) => a.stepNumber - b.stepNumber)
+    const latest = [...latestByStepId.values()]
+    // Only show root-level instance steps at this depth — children are rendered
+    // nested inside their parent stage by CapaWorkflowStep.
+    const stepIds = latest.map((s) => s.stepId)
+    if (stepIds.length === 0) return []
+    const defs = await Promise.all(stepIds.map((id) => db.WorkflowStep.findByPk(id)))
+    const isRoot = new Map(defs.filter(Boolean).map((d) => [d.id, !d.parentStepId]))
+    return latest
+      .filter((s) => isRoot.get(s.stepId))
+      .sort((a, b) => a.stepNumber - b.stepNumber)
   },
   { initial: [] },
 )
@@ -35,7 +42,6 @@ const currentStep = computed(() =>
   workflowInstanceSteps.value.find((s) => s.statusId === 'IN_PROGRESS'),
 )
 
-// ─── Send-back targets configured for the current IN_PROGRESS step ───────────
 const sendBackTargets = useLiveQueryWithDeps(
   [() => currentStep.value?.stepId],
   async (db, [stepId]) => {
@@ -121,7 +127,7 @@ async function handleReassign() {
   if (!reassignStepInstanceId.value || !reassignToUserId.value) return
   reassigning.value = true
   try {
-    await post(`/v1/services/nonconformances/${props.ncId}/reassignStepReviewer`, {
+    await post(`/v1/services/capas/${props.capaId}/reassignStepReviewer`, {
       workflowInstanceStepId: reassignStepInstanceId.value,
       toUserId: reassignToUserId.value,
     })
@@ -148,7 +154,7 @@ async function handleSendBack() {
   if (!sendBackTargetStepId.value) return
   sendingBack.value = true
   try {
-    await post(`/v1/services/nonconformances/${props.ncId}/sendBack`, {
+    await post(`/v1/services/capas/${props.capaId}/sendBack`, {
       targetStepId: sendBackTargetStepId.value,
     })
     showSendBackDialog.value = false
@@ -163,19 +169,19 @@ async function handleSendBack() {
 
 <template>
   <template v-if="workflowInstanceSteps.length">
-    <NcWorkflowStep
-      v-for="step in workflowInstanceSteps"
+    <CapaWorkflowStep
+      v-for="(step, idx) in workflowInstanceSteps"
       :key="step.id"
       :instanceStepId="step.id"
-      :ncId="ncId"
+      :capaId="capaId"
       :isOwner="isOwner"
       :hasSendBackTargets="step.statusId === 'IN_PROGRESS' && sendBackTargets.length > 0"
+      :displayNumber="String(idx + 1)"
       @reassign="openReassignDialog"
       @sendBack="openSendBackDialog"
     />
   </template>
 
-  <!-- Reassign dialog -->
   <BaseDialog v-model="showReassignDialog" title="Reassign Step Reviewer" maxWidth="md">
     <div class="tw:mb-4">
       <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-2">
@@ -231,7 +237,6 @@ async function handleSendBack() {
     </div>
   </BaseDialog>
 
-  <!-- Send back dialog -->
   <BaseDialog v-model="showSendBackDialog" title="Send Back Step" maxWidth="md">
     <div class="tw:mb-4">
       <label class="tw:block tw:text-sm tw:font-medium tw:text-on-main tw:mb-2">

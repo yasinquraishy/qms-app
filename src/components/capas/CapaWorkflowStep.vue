@@ -1,38 +1,25 @@
 <script setup>
-import {
-  IconUserCheck,
-  IconArrowBackUp,
-  IconDeviceFloppy,
-  IconSend,
-  IconCircleCheck,
-} from '@tabler/icons-vue'
+import { IconDeviceFloppy, IconSend } from '@tabler/icons-vue'
 import DynamicForm from '@/components/form/DynamicForm.js'
 import FormSchemaReadonlyView from '@/components/form/FormSchemaReadonlyView.vue'
 import { currentSession } from '@/utils/currentSession.js'
 import { db } from '@models/index'
-import { post } from '@/api'
 import { DateTime } from 'luxon'
 
 const props = defineProps({
   instanceStepId: { type: String, required: true },
   capaId: { type: String, required: true },
-  isOwner: { type: Boolean, default: false },
-  hasSendBackTargets: { type: Boolean, default: false },
 })
-
-const emit = defineEmits(['reassign', 'sendBack'])
 
 const toast = useToast()
 const currentUserId = computed(() => currentSession.value?.userId)
 
-const capa = useLiveQueryWithDeps(
-  [() => props.capaId],
-  async (db, [id]) => (id ? db.Capa.findByPk(id) : null),
+const capa = useLiveQueryWithDeps([() => props.capaId], async (db, [id]) =>
+  id ? db.Capa.findByPk(id) : null,
 )
 
-const instanceStep = useLiveQueryWithDeps(
-  [() => props.instanceStepId],
-  async (db, [id]) => (id ? db.WorkflowInstanceStep.findByPk(id) : null),
+const instanceStep = useLiveQueryWithDeps([() => props.instanceStepId], async (db, [id]) =>
+  id ? db.WorkflowInstanceStep.findByPk(id) : null,
 )
 
 const stepDefinition = useLiveQueryWithDeps(
@@ -194,17 +181,6 @@ function getStatusLabel(statusId) {
   return statusId.replace('_', ' ')
 }
 
-const canReassign = computed(() => {
-  const status = instanceStep.value?.statusId
-  return (
-    props.isOwner && (status === 'PENDING' || status === 'IN_PROGRESS' || status === 'SENT_BACK')
-  )
-})
-
-const canSendBack = computed(
-  () => props.isOwner && instanceStep.value?.statusId === 'IN_PROGRESS' && props.hasSendBackTargets,
-)
-
 // ─── Child sub-steps (CAPA nested stages) ─────────────────────────────────────
 const childStepDefs = useLiveQueryWithDeps(
   [() => stepDefinition.value?.id],
@@ -226,10 +202,7 @@ const childInstanceSteps = useLiveQueryWithDeps(
   async (db, [workflowInstanceId, idsStr]) => {
     if (!workflowInstanceId || !idsStr) return []
     const childStepIds = new Set(idsStr.split(','))
-    const all = await db.WorkflowInstanceStep.where(
-      'workflowInstanceId',
-      workflowInstanceId,
-    ).exec()
+    const all = await db.WorkflowInstanceStep.where('workflowInstanceId', workflowInstanceId).exec()
     const latest = new Map()
     for (const s of all) {
       if (!childStepIds.has(s.stepId)) continue
@@ -239,13 +212,6 @@ const childInstanceSteps = useLiveQueryWithDeps(
     return [...latest.values()].sort((a, b) => a.stepNumber - b.stepNumber)
   },
   { initial: [] },
-)
-
-const allChildrenApproved = computed(
-  () =>
-    hasChildren.value &&
-    childInstanceSteps.value.length > 0 &&
-    childInstanceSteps.value.every((s) => s.statusId === 'APPROVED'),
 )
 
 // Task instances + assignees for each child instance step (used by the table).
@@ -271,7 +237,9 @@ function activeTaskFor(childInstanceStepId) {
   if (!tasks.length) return null
   const active = tasks.find((t) => ['ASSIGNED', 'IN_PROGRESS'].includes(t.statusId))
   if (active) return active
-  return tasks.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))[0]
+  return tasks.sort(
+    (a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0),
+  )[0]
 }
 
 function childTitle(childInstanceStep) {
@@ -283,83 +251,19 @@ function childDueDate(childInstanceStep) {
   if (!def?.slaDays || !childInstanceStep.startedAt) return null
   return childInstanceStep.startedAt.plus({ days: def.slaDays })
 }
-
-// ─── Approve & Advance ────────────────────────────────────────────────────────
-const approveAdvancing = ref(false)
-
-const canApproveAdvance = computed(() => {
-  if (!currentUserTask.value || currentUserTask.value.statusId !== 'ASSIGNED') return false
-  if (hasChildren.value && !allChildrenApproved.value) return false
-  return true
-})
-
-async function approveAndAdvance() {
-  if (!currentUserTask.value) return
-  approveAdvancing.value = true
-  try {
-    await post(`/v1/services/taskInstances/${currentUserTask.value.id}/action`, {
-      action: 'APPROVE',
-    })
-    toast.success('Stage approved')
-  } catch (e) {
-    toast.error(e.message || 'Failed to approve')
-  } finally {
-    approveAdvancing.value = false
-  }
-}
 </script>
 
 <template>
-  <div
-    v-if="instanceStep"
-    class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5"
-  >
+  <div v-if="instanceStep" class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
     <div
-      class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+      class="tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
     >
-      <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
-        <span
-          class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider"
-        >
-          {{ instanceStep.stepNumber }}. {{ stepDefinition?.name || 'Step' }}
-        </span>
-        <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(instanceStep.statusId)">
-          {{ getStatusLabel(instanceStep.statusId) }}
-        </BaseBadge>
-      </div>
-      <div class="tw:flex tw:items-center tw:gap-2">
-        <button
-          v-if="canSendBack"
-          class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-amber-600 tw:hover:text-amber-700 tw:cursor-pointer tw:font-medium"
-          @click="emit('sendBack')"
-        >
-          <IconArrowBackUp :size="14" />
-          Send back
-        </button>
-        <button
-          v-if="canReassign"
-          class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-primary tw:hover:underline tw:cursor-pointer tw:font-medium"
-          @click="emit('reassign', instanceStepId)"
-        >
-          <IconUserCheck :size="14" />
-          Reassign
-        </button>
-        <BaseButton
-          v-if="currentUserTask?.statusId === 'ASSIGNED'"
-          variant="primary"
-          size="sm"
-          :disabled="!canApproveAdvance || approveAdvancing"
-          :title="
-            hasChildren && !allChildrenApproved
-              ? 'All sub-tasks must be approved before advancing'
-              : ''
-          "
-          @click="approveAndAdvance"
-        >
-          <template #icon><IconCircleCheck :size="14" /></template>
-          {{ approveAdvancing ? 'Approving…' : 'Approve & Advance' }}
-        </BaseButton>
-      </div>
+      <span class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider">
+        {{ instanceStep.stepNumber }}. {{ stepDefinition?.name || 'Step' }}
+      </span>
+      <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(instanceStep.statusId)">
+        {{ getStatusLabel(instanceStep.statusId) }}
+      </BaseBadge>
     </div>
 
     <!-- Sub-tasks table (nested-parent stages only) -->
@@ -387,9 +291,6 @@ async function approveAndAdvance() {
             >
               Status
             </th>
-            <th
-              class="tw:text-right tw:px-3 tw:py-2 tw:text-[11px] tw:font-semibold tw:text-secondary tw:uppercase"
-            ></th>
           </tr>
         </thead>
         <tbody>
@@ -415,19 +316,6 @@ async function approveAndAdvance() {
               <BaseBadge :class="getStepStatusClass(child.statusId)">
                 {{ getStatusLabel(child.statusId) }}
               </BaseBadge>
-            </td>
-            <td class="tw:px-3 tw:py-2 tw:text-right">
-              <button
-                v-if="
-                  isOwner &&
-                  ['PENDING', 'IN_PROGRESS', 'SENT_BACK'].includes(child.statusId)
-                "
-                class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-primary tw:hover:underline tw:cursor-pointer tw:font-medium tw:ml-auto"
-                @click="emit('reassign', child.id)"
-              >
-                <IconUserCheck :size="14" />
-                Reassign
-              </button>
             </td>
           </tr>
         </tbody>

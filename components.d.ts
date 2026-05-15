@@ -91,6 +91,7 @@ declare module 'vue' {
     CapaWorkflowChildSteps: typeof import('./src/components/capas/CapaWorkflowChildSteps.vue')['default']
     CapaWorkflowDetail: typeof import('./src/components/capas/CapaWorkflowDetail.vue')['default']
     CapaWorkflowStep: typeof import('./src/components/capas/CapaWorkflowStep.vue')['default']
+    CapaWorkflowStepForm: typeof import('./src/components/capas/CapaWorkflowStepForm.vue')['default']
     CAPAWorkflowStepReviewerSelect: typeof import('./src/components/capas/CAPAWorkflowStepReviewerSelect.vue')['default']
     CAPAWorkflowVersionSelect: typeof import('./src/components/capas/CAPAWorkflowVersionSelect.vue')['default']
     CompanyBrandingCard: typeof import('./src/components/company/companyBrandingCard.vue')['default']

@@ -2,6 +2,7 @@
 const props = defineProps({
   parentStepId: { type: String, required: true },
   workflowInstanceId: { type: String, required: true },
+  capaId: { type: String, required: true },
 })
 
 const childStepDefs = useLiveQueryWithDeps(
@@ -83,28 +84,35 @@ function getStatusLabel(statusId) {
 </script>
 
 <template>
-  <div class="tw:flex tw:flex-col tw:gap-1.5">
+  <div class="tw:flex tw:flex-col tw:gap-2">
     <div
       v-for="child in childInstanceSteps"
       :key="child.id"
-      class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:bg-main-hover/40 tw:border tw:border-divider tw:border-l-2 tw:border-l-primary/40 tw:rounded-md tw:px-3 tw:py-1.5"
+      class="tw:bg-main-hover/40 tw:border tw:border-divider tw:border-l-2 tw:border-l-primary/40 tw:rounded-md"
     >
-      <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0 tw:flex-1">
-        <span class="tw:text-xs tw:font-medium tw:text-on-main tw:truncate">
-          {{ childTitle(child) }}
-        </span>
-        <BaseBadge class="tw:text-[9px]" :class="getStepStatusClass(child.statusId)">
-          {{ getStatusLabel(child.statusId) }}
-        </BaseBadge>
+      <div
+        class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:px-3 tw:py-1.5"
+      >
+        <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0 tw:flex-1">
+          <span class="tw:text-xs tw:font-medium tw:text-on-main tw:truncate">
+            {{ childTitle(child) }}
+          </span>
+          <BaseBadge class="tw:text-[9px]" :class="getStepStatusClass(child.statusId)">
+            {{ getStatusLabel(child.statusId) }}
+          </BaseBadge>
+        </div>
+        <div class="tw:flex tw:items-center tw:gap-3 tw:text-[11px] tw:text-secondary tw:shrink-0">
+          <UserAvatarById
+            v-if="activeTaskFor(child.id)?.assignedTo"
+            :userId="activeTaskFor(child.id).assignedTo"
+            class="tw:size-6"
+          />
+          <span v-else>—</span>
+          <span>{{ childDueDate(child)?.formatDate('date') || '—' }}</span>
+        </div>
       </div>
-      <div class="tw:flex tw:items-center tw:gap-3 tw:text-[11px] tw:text-secondary tw:shrink-0">
-        <UserAvatarById
-          v-if="activeTaskFor(child.id)?.assignedTo"
-          :userId="activeTaskFor(child.id).assignedTo"
-          class="tw:size-6"
-        />
-        <span v-else>—</span>
-        <span>{{ childDueDate(child)?.formatDate('date') || '—' }}</span>
+      <div class="tw:px-3 tw:pb-3">
+        <CapaWorkflowStepForm :instanceStepId="child.id" :capaId="capaId" />
       </div>
     </div>
   </div>

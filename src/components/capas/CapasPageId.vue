@@ -89,6 +89,30 @@ const workflowInstance = useLiveQueryWithDeps([() => props.id], async (db, [id])
   return results.find((i) => i.statusId === 'IN_PROGRESS') || results[0] || null
 })
 
+// Resolve the WorkflowVersion (for label + workflowId link target). Prefer the
+// instance's version; fall back to the CAPA's directly-assigned version if no
+// instance exists yet (DRAFT CAPAs).
+const workflowVersion = useLiveQueryWithDeps(
+  [() => workflowInstance.value?.workflowVersionId ?? capa.value?.workflowVersionId],
+  async (db, [versionId]) => {
+    if (!versionId) return null
+    return db.WorkflowVersion.findByPk(versionId)
+  },
+)
+
+const workflow = useLiveQueryWithDeps(
+  [() => workflowVersion.value?.workflowId],
+  async (db, [workflowId]) => {
+    if (!workflowId) return null
+    return db.Workflow.findByPk(workflowId)
+  },
+)
+
+function workflowVersionLabel(v) {
+  if (!v) return ''
+  return v.versionLabel || `${v.versionMajor ?? 1}.${v.versionMinor ?? 0}`
+}
+
 // Resolve the originating Nonconformance only when this CAPA was spawned
 // from one (source_type='NC' → source_id points at a Nonconformance row).
 const sourceNc = useLiveQueryWithDeps(
@@ -307,45 +331,73 @@ const editingDescription = ref(false)
             <CapaEffectivenessCheckCard :capaId="id" :isOwner="isOwner" />
           </div>
 
-          <!-- Right column - meta -->
-          <aside
-            class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5 tw:flex! tw:flex-col tw:gap-4"
-          >
-            <div class="tw:flex tw:flex-col tw:gap-1">
-              <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Number</div>
-              <div class="tw:text-sm tw:font-mono tw:text-on-main">{{ capa.capaNumber }}</div>
-            </div>
-            <div class="tw:flex tw:flex-col tw:gap-1">
-              <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Status</div>
-              <CapaStatusBadgeById :statusId="capa.statusId" />
-            </div>
-            <div class="tw:flex tw:flex-col tw:gap-1">
-              <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Owner</div>
-              <UserBadgeById :userId="capa.ownerId" />
-            </div>
-            <div class="tw:flex tw:flex-col tw:gap-1">
-              <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Site</div>
-              <SiteBadgeById :siteId="capa.siteId" />
-            </div>
-            <div class="tw:flex tw:flex-col tw:gap-1">
-              <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">
-                Department
+          <!-- Right column -->
+          <div class="tw:flex tw:flex-col tw:gap-4">
+            <!-- Meta card -->
+            <aside
+              class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5 tw:flex! tw:flex-col tw:gap-4"
+            >
+              <div class="tw:flex tw:flex-col tw:gap-1">
+                <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Number</div>
+                <div class="tw:text-sm tw:font-mono tw:text-on-main">{{ capa.capaNumber }}</div>
               </div>
-              <DepartmentBadgeById :departmentId="capa.departmentId" />
-            </div>
-            <div v-if="capa.verifiedAt" class="tw:flex tw:flex-col tw:gap-1">
-              <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Verified</div>
-              <span class="tw:text-sm tw:text-on-main">
-                {{ capa.verifiedAt.formatDate('dateTime') }}
-              </span>
-            </div>
-            <div v-if="capa.closedAt" class="tw:flex tw:flex-col tw:gap-1">
-              <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Closed</div>
-              <span class="tw:text-sm tw:text-on-main">
-                {{ capa.closedAt.formatDate('dateTime') }}
-              </span>
-            </div>
-          </aside>
+              <div class="tw:flex tw:flex-col tw:gap-1">
+                <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Status</div>
+                <CapaStatusBadgeById :statusId="capa.statusId" />
+              </div>
+              <div class="tw:flex tw:flex-col tw:gap-1">
+                <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Owner</div>
+                <UserBadgeById :userId="capa.ownerId" />
+              </div>
+              <div class="tw:flex tw:flex-col tw:gap-1">
+                <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Site</div>
+                <SiteBadgeById :siteId="capa.siteId" />
+              </div>
+              <div class="tw:flex tw:flex-col tw:gap-1">
+                <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">
+                  Department
+                </div>
+                <DepartmentBadgeById :departmentId="capa.departmentId" />
+              </div>
+              <div v-if="capa.verifiedAt" class="tw:flex tw:flex-col tw:gap-1">
+                <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">
+                  Verified
+                </div>
+                <span class="tw:text-sm tw:text-on-main">
+                  {{ capa.verifiedAt.formatDate('dateTime') }}
+                </span>
+              </div>
+              <div v-if="capa.closedAt" class="tw:flex tw:flex-col tw:gap-1">
+                <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">Closed</div>
+                <span class="tw:text-sm tw:text-on-main">
+                  {{ capa.closedAt.formatDate('dateTime') }}
+                </span>
+              </div>
+            </aside>
+
+            <!-- Workflow template card -->
+            <RouterLink
+              v-if="workflow && workflowVersion"
+              :to="
+                getCompanyPath(`/workflow-templates/${workflow.id}?versionId=${workflowVersion.id}`)
+              "
+              class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5 tw:flex tw:flex-col tw:gap-2 tw:hover:border-primary tw:hover:bg-main-hover tw:transition-colors"
+            >
+              <div class="tw:text-xs tw:text-secondary tw:uppercase tw:font-semibold">
+                Workflow template
+              </div>
+              <div class="tw:flex tw:items-center tw:justify-between tw:gap-2">
+                <span class="tw:text-sm tw:font-semibold tw:text-on-main tw:truncate">
+                  {{ workflow.name }}
+                </span>
+                <span
+                  class="tw:text-xs tw:font-mono tw:text-secondary tw:bg-main-hover tw:px-2 tw:py-0.5 tw:rounded"
+                >
+                  v{{ workflowVersionLabel(workflowVersion) }}
+                </span>
+              </div>
+            </RouterLink>
+          </div>
         </div>
       </div>
     </div>

@@ -1,9 +1,16 @@
 <script setup>
-import { IconUserCheck, IconArrowBackUp, IconDeviceFloppy, IconSend } from '@tabler/icons-vue'
+import {
+  IconUserCheck,
+  IconArrowBackUp,
+  IconDeviceFloppy,
+  IconSend,
+  IconCircleCheck,
+} from '@tabler/icons-vue'
 import DynamicForm from '@/components/form/DynamicForm.js'
 import FormSchemaReadonlyView from '@/components/form/FormSchemaReadonlyView.vue'
 import { currentSession } from '@/utils/currentSession.js'
 import { db } from '@models/index'
+import { post } from '@/api'
 import { DateTime } from 'luxon'
 
 const props = defineProps({
@@ -197,6 +204,109 @@ const canReassign = computed(() => {
 const canSendBack = computed(
   () => props.isOwner && instanceStep.value?.statusId === 'IN_PROGRESS' && props.hasSendBackTargets,
 )
+
+// ─── Child sub-steps (CAPA nested stages) ─────────────────────────────────────
+const childStepDefs = useLiveQueryWithDeps(
+  [() => stepDefinition.value?.id],
+  async (db, [parentId]) => {
+    if (!parentId) return []
+    return db.WorkflowStep.where('parentStepId', parentId).orderBy('stepOrder').exec()
+  },
+  { initial: [] },
+)
+
+const hasChildren = computed(() => childStepDefs.value.length > 0)
+
+// Latest instance step per child stepId in the same workflow instance.
+const childInstanceSteps = useLiveQueryWithDeps(
+  [
+    () => instanceStep.value?.workflowInstanceId,
+    () => childStepDefs.value.map((s) => s.id).join(','),
+  ],
+  async (db, [workflowInstanceId, idsStr]) => {
+    if (!workflowInstanceId || !idsStr) return []
+    const childStepIds = new Set(idsStr.split(','))
+    const all = await db.WorkflowInstanceStep.where(
+      'workflowInstanceId',
+      workflowInstanceId,
+    ).exec()
+    const latest = new Map()
+    for (const s of all) {
+      if (!childStepIds.has(s.stepId)) continue
+      const existing = latest.get(s.stepId)
+      if (!existing || s.createdAt > existing.createdAt) latest.set(s.stepId, s)
+    }
+    return [...latest.values()].sort((a, b) => a.stepNumber - b.stepNumber)
+  },
+  { initial: [] },
+)
+
+const allChildrenApproved = computed(
+  () =>
+    hasChildren.value &&
+    childInstanceSteps.value.length > 0 &&
+    childInstanceSteps.value.every((s) => s.statusId === 'APPROVED'),
+)
+
+// Task instances + assignees for each child instance step (used by the table).
+const childTaskInstances = useLiveQueryWithDeps(
+  [() => childInstanceSteps.value.map((s) => s.id).join(',')],
+  async (db, [idsStr]) => {
+    if (!idsStr) return []
+    const ids = idsStr.split(',')
+    const fetched = await Promise.all(
+      ids.map((id) =>
+        db.TaskInstance.where('[sourceType+sourceId]', ['WorkflowInstanceStep', id]).exec(),
+      ),
+    )
+    return fetched.flat()
+  },
+  { initial: [] },
+)
+
+function activeTaskFor(childInstanceStepId) {
+  // The active assignee task for a child stage is the most-recent non-terminal
+  // TaskInstance on that step.
+  const tasks = childTaskInstances.value.filter((t) => t.sourceId === childInstanceStepId)
+  if (!tasks.length) return null
+  const active = tasks.find((t) => ['ASSIGNED', 'IN_PROGRESS'].includes(t.statusId))
+  if (active) return active
+  return tasks.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0))[0]
+}
+
+function childTitle(childInstanceStep) {
+  return childStepDefs.value.find((d) => d.id === childInstanceStep.stepId)?.name || 'Step'
+}
+
+function childDueDate(childInstanceStep) {
+  const def = childStepDefs.value.find((d) => d.id === childInstanceStep.stepId)
+  if (!def?.slaDays || !childInstanceStep.startedAt) return null
+  return childInstanceStep.startedAt.plus({ days: def.slaDays })
+}
+
+// ─── Approve & Advance ────────────────────────────────────────────────────────
+const approveAdvancing = ref(false)
+
+const canApproveAdvance = computed(() => {
+  if (!currentUserTask.value || currentUserTask.value.statusId !== 'ASSIGNED') return false
+  if (hasChildren.value && !allChildrenApproved.value) return false
+  return true
+})
+
+async function approveAndAdvance() {
+  if (!currentUserTask.value) return
+  approveAdvancing.value = true
+  try {
+    await post(`/v1/services/taskInstances/${currentUserTask.value.id}/action`, {
+      action: 'APPROVE',
+    })
+    toast.success('Stage approved')
+  } catch (e) {
+    toast.error(e.message || 'Failed to approve')
+  } finally {
+    approveAdvancing.value = false
+  }
+}
 </script>
 
 <template>
@@ -234,10 +344,98 @@ const canSendBack = computed(
           <IconUserCheck :size="14" />
           Reassign
         </button>
+        <BaseButton
+          v-if="currentUserTask?.statusId === 'ASSIGNED'"
+          variant="primary"
+          size="sm"
+          :disabled="!canApproveAdvance || approveAdvancing"
+          :title="
+            hasChildren && !allChildrenApproved
+              ? 'All sub-tasks must be approved before advancing'
+              : ''
+          "
+          @click="approveAndAdvance"
+        >
+          <template #icon><IconCircleCheck :size="14" /></template>
+          {{ approveAdvancing ? 'Approving…' : 'Approve & Advance' }}
+        </BaseButton>
       </div>
     </div>
 
-    <div class="tw:mb-4">
+    <!-- Sub-tasks table (nested-parent stages only) -->
+    <div v-if="hasChildren" class="tw:overflow-x-auto">
+      <table class="tw:w-full tw:text-sm">
+        <thead class="tw:bg-main-hover">
+          <tr>
+            <th
+              class="tw:text-left tw:px-3 tw:py-2 tw:text-[11px] tw:font-semibold tw:text-secondary tw:uppercase"
+            >
+              Task
+            </th>
+            <th
+              class="tw:text-left tw:px-3 tw:py-2 tw:text-[11px] tw:font-semibold tw:text-secondary tw:uppercase"
+            >
+              Assignee
+            </th>
+            <th
+              class="tw:text-left tw:px-3 tw:py-2 tw:text-[11px] tw:font-semibold tw:text-secondary tw:uppercase"
+            >
+              Due date
+            </th>
+            <th
+              class="tw:text-left tw:px-3 tw:py-2 tw:text-[11px] tw:font-semibold tw:text-secondary tw:uppercase"
+            >
+              Status
+            </th>
+            <th
+              class="tw:text-right tw:px-3 tw:py-2 tw:text-[11px] tw:font-semibold tw:text-secondary tw:uppercase"
+            ></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="child in childInstanceSteps"
+            :key="child.id"
+            class="tw:border-t tw:border-divider"
+          >
+            <td class="tw:px-3 tw:py-2 tw:text-on-main tw:font-medium">
+              {{ childTitle(child) }}
+            </td>
+            <td class="tw:px-3 tw:py-2">
+              <UserBadgeById
+                v-if="activeTaskFor(child.id)?.assignedTo"
+                :userId="activeTaskFor(child.id).assignedTo"
+              />
+              <span v-else class="tw:text-secondary">—</span>
+            </td>
+            <td class="tw:px-3 tw:py-2 tw:text-secondary">
+              {{ childDueDate(child)?.formatDate('date') || '—' }}
+            </td>
+            <td class="tw:px-3 tw:py-2">
+              <BaseBadge :class="getStepStatusClass(child.statusId)">
+                {{ getStatusLabel(child.statusId) }}
+              </BaseBadge>
+            </td>
+            <td class="tw:px-3 tw:py-2 tw:text-right">
+              <button
+                v-if="
+                  isOwner &&
+                  ['PENDING', 'IN_PROGRESS', 'SENT_BACK'].includes(child.statusId)
+                "
+                class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-primary tw:hover:underline tw:cursor-pointer tw:font-medium tw:ml-auto"
+                @click="emit('reassign', child.id)"
+              >
+                <IconUserCheck :size="14" />
+                Reassign
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Assignees list (non-nested stages only) -->
+    <div v-else class="tw:mb-4">
       <div class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2">Assignees</div>
       <div v-if="assignments.length" class="tw:flex tw:flex-col tw:gap-2">
         <div
@@ -267,7 +465,7 @@ const canSendBack = computed(
       <span v-else class="tw:text-sm tw:text-secondary">—</span>
     </div>
 
-    <template v-if="stepDefinition?.formSchema?.length">
+    <template v-if="!hasChildren && stepDefinition?.formSchema?.length">
       <template v-if="isEditable">
         <DynamicForm v-model="formData" :fields="stepDefinition.formSchema" />
         <div class="tw:mt-4 tw:flex tw:justify-end tw:gap-2">

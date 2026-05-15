@@ -8,10 +8,35 @@ const props = defineProps({
 })
 
 const toast = useToast()
+const route = useRoute()
+const router = useRouter()
 
-const selectedVersionId = ref(null)
+// Seed from the ?versionId= query param so deep-links from other pages
+// (e.g. the CAPA / NC detail "Workflow template" card) open the right version.
+const selectedVersionId = ref(typeof route.query.versionId === 'string' ? route.query.versionId : null)
 const selectedStepId = ref(null)
 const publishing = ref(false)
+
+// Reflect manual version selection back into the URL so the version is
+// bookmarkable and survives reloads.
+watch(selectedVersionId, (id) => {
+  const current = typeof route.query.versionId === 'string' ? route.query.versionId : null
+  if (id === current) return
+  const query = { ...route.query }
+  if (id) query.versionId = id
+  else delete query.versionId
+  router.replace({ query })
+})
+
+// External URL changes (browser back/forward, paste a versionId link) should
+// flip the selection too.
+watch(
+  () => route.query.versionId,
+  (id) => {
+    const next = typeof id === 'string' ? id : null
+    if (next !== selectedVersionId.value) selectedVersionId.value = next
+  },
+)
 
 // --- Live data ---
 const workflow = useLiveQueryWithDeps([() => props.id], async (db, [id]) =>
@@ -95,9 +120,12 @@ const stepsWithoutAssignees = computed(() => {
 watch(
   versions,
   (vs) => {
-    if (vs?.length > 0 && !selectedVersionId.value) {
-      selectedVersionId.value = vs.find((v) => v.statusId === 'DRAFT')?.id ?? vs[0].id
-    }
+    if (!vs?.length) return
+    // Respect an existing selection (from ?versionId or a click), but verify
+    // it still belongs to the current workflow's versions — otherwise fall
+    // back to the latest DRAFT or the newest version.
+    if (selectedVersionId.value && vs.some((v) => v.id === selectedVersionId.value)) return
+    selectedVersionId.value = vs.find((v) => v.statusId === 'DRAFT')?.id ?? vs[0].id
   },
   { immediate: true },
 )

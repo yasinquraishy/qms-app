@@ -170,12 +170,13 @@ async function handleSendBack() {
 <template>
   <template v-if="workflowInstanceSteps.length">
     <CapaWorkflowStep
-      v-for="step in workflowInstanceSteps"
+      v-for="(step, idx) in workflowInstanceSteps"
       :key="step.id"
       :instanceStepId="step.id"
       :capaId="capaId"
       :isOwner="isOwner"
       :hasSendBackTargets="step.statusId === 'IN_PROGRESS' && sendBackTargets.length > 0"
+      :displayNumber="String(idx + 1)"
       @reassign="openReassignDialog"
       @sendBack="openSendBackDialog"
     />

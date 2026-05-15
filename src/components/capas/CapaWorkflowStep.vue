@@ -6,6 +6,7 @@ const props = defineProps({
   capaId: { type: String, required: true },
   isOwner: { type: Boolean, default: false },
   hasSendBackTargets: { type: Boolean, default: false },
+  displayNumber: { type: String, default: null },
 })
 
 const emit = defineEmits(['reassign', 'sendBack'])
@@ -81,7 +82,7 @@ const canSendBack = computed(
     >
       <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
         <span class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider">
-          {{ instanceStep.stepNumber }}. {{ stepDefinition?.name || 'Step' }}
+          {{ displayNumber ?? instanceStep.stepNumber }}. {{ stepDefinition?.name || 'Step' }}
         </span>
         <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(instanceStep.statusId)">
           {{ getStatusLabel(instanceStep.statusId) }}
@@ -116,7 +117,7 @@ const canSendBack = computed(
     <CapaWorkflowChildSteps
       v-if="hasChildren && stepDefinition?.id && instanceStep.workflowInstanceId"
       :parentStepId="stepDefinition.id"
-      :parentStepNumber="instanceStep.stepNumber"
+      :parentStepNumber="displayNumber ?? instanceStep.stepNumber"
       :workflowInstanceId="instanceStep.workflowInstanceId"
       :capaId="capaId"
       :isOwner="isOwner"

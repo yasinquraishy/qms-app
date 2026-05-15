@@ -379,7 +379,11 @@ const editingDescription = ref(false)
             <RouterLink
               v-if="workflow && workflowVersion"
               :to="
-                getCompanyPath(`/workflow-templates/${workflow.id}?versionId=${workflowVersion.id}`)
+                getCompanyPath(
+                  `/workflow-templates/${workflow.id}?version=${encodeURIComponent(
+                    workflowVersionLabel(workflowVersion),
+                  )}`,
+                )
               "
               class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5 tw:flex tw:flex-col tw:gap-2 tw:hover:border-primary tw:hover:bg-main-hover tw:transition-colors"
             >

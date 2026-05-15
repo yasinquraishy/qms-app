@@ -601,7 +601,14 @@ function onCreateLinkedCapa() {
                 <RouterLink
                   v-if="workflowVersion?.workflowId"
                   class="tw:mt-1 tw:flex tw:items-center tw:text-sm tw:text-primary tw:font-medium tw:hover:underline"
-                  :to="getCompanyPath(`/workflow-templates/${workflowVersion.workflowId}`)"
+                  :to="
+                    getCompanyPath(
+                      `/workflow-templates/${workflowVersion.workflowId}?version=${encodeURIComponent(
+                        workflowVersion.versionLabel ||
+                          `${workflowVersion.versionMajor ?? 1}.${workflowVersion.versionMinor ?? 0}`,
+                      )}`,
+                    )
+                  "
                 >
                   View workflow template →
                 </RouterLink>

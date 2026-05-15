@@ -11,30 +11,44 @@ const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 
-// Seed from the ?versionId= query param so deep-links from other pages
-// (e.g. the CAPA / NC detail "Workflow template" card) open the right version.
-const selectedVersionId = ref(typeof route.query.versionId === 'string' ? route.query.versionId : null)
+const selectedVersionId = ref(null)
 const selectedStepId = ref(null)
 const publishing = ref(false)
 
-// Reflect manual version selection back into the URL so the version is
-// bookmarkable and survives reloads.
+function formatVersionLabel(v) {
+  if (!v) return ''
+  return v.versionLabel || `${v.versionMajor ?? 1}.${v.versionMinor ?? 0}`
+}
+
+function readVersionParam() {
+  const q = route.query.version
+  return typeof q === 'string' && q.length > 0 ? q : null
+}
+
+// Reflect manual version selection back into the URL using the version label
+// (e.g. ?version=1.0) so the link is bookmarkable and human-friendly.
 watch(selectedVersionId, (id) => {
-  const current = typeof route.query.versionId === 'string' ? route.query.versionId : null
-  if (id === current) return
+  const selected = versions.value?.find((v) => v.id === id) ?? null
+  const desired = selected ? formatVersionLabel(selected) : null
+  const current = readVersionParam()
+  if (desired === current) return
   const query = { ...route.query }
-  if (id) query.versionId = id
-  else delete query.versionId
+  if (desired) query.version = desired
+  else delete query.version
   router.replace({ query })
 })
 
-// External URL changes (browser back/forward, paste a versionId link) should
-// flip the selection too.
+// External URL changes (browser back/forward, paste a ?version=<label> link)
+// should flip the selection too.
 watch(
-  () => route.query.versionId,
-  (id) => {
-    const next = typeof id === 'string' ? id : null
-    if (next !== selectedVersionId.value) selectedVersionId.value = next
+  () => route.query.version,
+  () => {
+    const label = readVersionParam()
+    if (!label || !versions.value?.length) return
+    const match = versions.value.find((v) => formatVersionLabel(v) === label)
+    if (match && match.id !== selectedVersionId.value) {
+      selectedVersionId.value = match.id
+    }
   },
 )
 
@@ -121,9 +135,17 @@ watch(
   versions,
   (vs) => {
     if (!vs?.length) return
-    // Respect an existing selection (from ?versionId or a click), but verify
-    // it still belongs to the current workflow's versions — otherwise fall
-    // back to the latest DRAFT or the newest version.
+    // Prefer the version named by ?version=<label> from the URL.
+    const label = readVersionParam()
+    if (label) {
+      const match = vs.find((v) => formatVersionLabel(v) === label)
+      if (match) {
+        selectedVersionId.value = match.id
+        return
+      }
+    }
+    // Respect an existing in-memory selection if it still belongs to this
+    // workflow's versions; otherwise default to the latest DRAFT or newest.
     if (selectedVersionId.value && vs.some((v) => v.id === selectedVersionId.value)) return
     selectedVersionId.value = vs.find((v) => v.statusId === 'DRAFT')?.id ?? vs[0].id
   },

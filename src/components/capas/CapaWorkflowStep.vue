@@ -1,8 +1,14 @@
 <script setup>
+import { IconUserCheck, IconArrowBackUp } from '@tabler/icons-vue'
+
 const props = defineProps({
   instanceStepId: { type: String, required: true },
   capaId: { type: String, required: true },
+  isOwner: { type: Boolean, default: false },
+  hasSendBackTargets: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['reassign', 'sendBack'])
 
 const instanceStep = useLiveQueryWithDeps([() => props.instanceStepId], async (db, [id]) =>
   id ? db.WorkflowInstanceStep.findByPk(id) : null,
@@ -22,27 +28,6 @@ const assignments = useLiveQueryWithDeps(
   { initial: [] },
 )
 
-const assigneeUsers = useLiveQueryWithDeps(
-  [() => assignments.value.map((a) => a.userId).join(',')],
-  async (db, [userIdsStr]) => {
-    if (!userIdsStr) return {}
-    const userIds = [...new Set(userIdsStr.split(','))]
-    const users = await Promise.all(userIds.map((id) => db.User.findByPk(id)))
-    return Object.fromEntries(users.filter(Boolean).map((u) => [u.id, u]))
-  },
-  { initial: {} },
-)
-
-function getUserName(userId) {
-  const u = assigneeUsers.value[userId]
-  if (!u) return '—'
-  return [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email
-}
-
-function getUserEmail(userId) {
-  return assigneeUsers.value[userId]?.email || '—'
-}
-
 function getStepStatusClass(statusId) {
   return {
     'tw:bg-blue-100 tw:text-blue-700': statusId === 'IN_PROGRESS',
@@ -50,17 +35,6 @@ function getStepStatusClass(statusId) {
     'tw:bg-green-100 tw:text-green-700': statusId === 'APPROVED',
     'tw:bg-red-100 tw:text-red-700': statusId === 'CANCELLED',
     'tw:bg-orange-100 tw:text-orange-700': statusId === 'SENT_BACK',
-  }
-}
-
-function getUserStatusClass(statusId) {
-  return {
-    'tw:bg-gray-100 tw:text-gray-600': statusId === 'PENDING',
-    'tw:bg-blue-100 tw:text-blue-700': statusId === 'ASSIGNED',
-    'tw:bg-green-100 tw:text-green-700': statusId === 'APPROVED',
-    'tw:bg-red-100 tw:text-red-700': statusId === 'REJECTED',
-    'tw:bg-orange-100 tw:text-orange-700': statusId === 'REASSIGNED',
-    'tw:bg-yellow-100 tw:text-yellow-700': statusId === 'CANCELLED',
   }
 }
 
@@ -82,61 +56,72 @@ const childStepCount = useLiveQueryWithDeps(
 )
 
 const hasChildren = computed(() => childStepCount.value > 0)
+
+const canReassign = computed(() => {
+  const status = instanceStep.value?.statusId
+  return (
+    props.isOwner && (status === 'PENDING' || status === 'IN_PROGRESS' || status === 'SENT_BACK')
+  )
+})
+
+const activeAssigneeId = computed(() => {
+  const active = assignments.value.find((a) => a.statusId === 'ASSIGNED')
+  return active?.userId || null
+})
+
+const canSendBack = computed(
+  () => props.isOwner && instanceStep.value?.statusId === 'IN_PROGRESS' && props.hasSendBackTargets,
+)
 </script>
 
 <template>
   <div v-if="instanceStep" class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">
     <div
-      class="tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
+      class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:pb-3 tw:border-b tw:border-divider tw:mb-4"
     >
-      <span class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider">
-        {{ instanceStep.stepNumber }}. {{ stepDefinition?.name || 'Step' }}
-      </span>
-      <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(instanceStep.statusId)">
-        {{ getStatusLabel(instanceStep.statusId) }}
-      </BaseBadge>
+      <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
+        <span class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider">
+          {{ instanceStep.stepNumber }}. {{ stepDefinition?.name || 'Step' }}
+        </span>
+        <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(instanceStep.statusId)">
+          {{ getStatusLabel(instanceStep.statusId) }}
+        </BaseBadge>
+      </div>
+      <div class="tw:flex tw:items-center tw:gap-2">
+        <button
+          v-if="canSendBack"
+          class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-amber-600 tw:hover:text-amber-700 tw:cursor-pointer tw:font-medium"
+          @click="emit('sendBack')"
+        >
+          <IconArrowBackUp :size="14" />
+          Send back
+        </button>
+        <UserBadgeById v-if="canReassign && activeAssigneeId" :userId="activeAssigneeId" />
+        <button
+          v-if="canReassign"
+          class="tw:flex tw:items-center tw:gap-1 tw:text-xs tw:text-primary tw:hover:underline tw:cursor-pointer tw:font-medium"
+          @click="emit('reassign', instanceStepId)"
+        >
+          <IconUserCheck :size="14" />
+          Reassign
+        </button>
+      </div>
     </div>
+
+    <CapaWorkflowStepForm :instanceStepId="instanceStepId" :capaId="capaId" />
+
+    <div class="tw:my-5 tw:border-t tw:border-divider"></div>
 
     <!-- Sub-tasks list (parent stages with nested children) -->
     <CapaWorkflowChildSteps
       v-if="hasChildren && stepDefinition?.id && instanceStep.workflowInstanceId"
       :parentStepId="stepDefinition.id"
+      :parentStepNumber="instanceStep.stepNumber"
       :workflowInstanceId="instanceStep.workflowInstanceId"
       :capaId="capaId"
+      :isOwner="isOwner"
       class="tw:mb-4"
+      @reassign="(childInstanceStepId) => emit('reassign', childInstanceStepId)"
     />
-
-    <!-- Assignees list -->
-    <div class="tw:mb-4">
-      <div class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2">Assignees</div>
-      <div v-if="assignments.length" class="tw:flex tw:flex-col tw:gap-2">
-        <div
-          v-for="assignment in assignments"
-          :key="assignment.id"
-          class="tw:flex tw:items-center tw:gap-2"
-        >
-          <UserAvatarById :userId="assignment.userId" class="tw:size-8" />
-          <div class="tw:flex tw:flex-col tw:gap-1 tw:min-w-0">
-            <div>
-              <span class="tw:text-xs tw:text-on-main tw:font-medium">
-                {{ getUserName(assignment.userId) }}
-              </span>
-              <span
-                class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded tw:font-medium tw:shrink-0 tw:ml-1"
-                :class="getUserStatusClass(assignment.statusId)"
-              >
-                {{ getStatusLabel(assignment.statusId) }}
-              </span>
-            </div>
-            <span class="tw:text-xs tw:text-secondary tw:truncate">
-              {{ getUserEmail(assignment.userId) }}
-            </span>
-          </div>
-        </div>
-      </div>
-      <span v-else class="tw:text-sm tw:text-secondary">—</span>
-    </div>
-
-    <CapaWorkflowStepForm :instanceStepId="instanceStepId" :capaId="capaId" />
   </div>
 </template>

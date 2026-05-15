@@ -250,7 +250,11 @@ const editingDescription = ref(false)
             </div>
 
             <!-- Workflow steps -->
-            <CapaWorkflowDetail :capaId="id" :workflowInstanceId="workflowInstance?.id" />
+            <CapaWorkflowDetail
+              :capaId="id"
+              :workflowInstanceId="workflowInstance?.id"
+              :isOwner="isOwner"
+            />
 
             <!-- Action plan -->
             <div class="tw:bg-white tw:border tw:border-divider tw:rounded-lg tw:p-5">

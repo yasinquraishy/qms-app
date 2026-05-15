@@ -208,15 +208,16 @@ const hasChildren = computed(() => childStepCount.value > 0)
       </BaseBadge>
     </div>
 
-    <!-- Sub-tasks list (nested-parent stages only) -->
+    <!-- Sub-tasks list (parent stages with nested children) -->
     <CapaWorkflowChildSteps
       v-if="hasChildren && stepDefinition?.id && instanceStep.workflowInstanceId"
       :parentStepId="stepDefinition.id"
       :workflowInstanceId="instanceStep.workflowInstanceId"
+      class="tw:mb-4"
     />
 
-    <!-- Assignees list (non-nested stages only) -->
-    <div v-else class="tw:mb-4">
+    <!-- Assignees list -->
+    <div class="tw:mb-4">
       <div class="tw:text-[11px] tw:text-secondary tw:font-medium tw:mb-2">Assignees</div>
       <div v-if="assignments.length" class="tw:flex tw:flex-col tw:gap-2">
         <div
@@ -246,7 +247,7 @@ const hasChildren = computed(() => childStepCount.value > 0)
       <span v-else class="tw:text-sm tw:text-secondary">—</span>
     </div>
 
-    <template v-if="!hasChildren && stepDefinition?.formSchema?.length">
+    <template v-if="stepDefinition?.formSchema?.length">
       <template v-if="isEditable">
         <DynamicForm v-model="formData" :fields="stepDefinition.formSchema" />
         <div class="tw:mt-4 tw:flex tw:justify-end tw:gap-2">

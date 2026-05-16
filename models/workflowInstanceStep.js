@@ -22,7 +22,11 @@ export class WorkflowInstanceStep extends BaseModel {
   @Property({ type: String, uuid: true, required: true }) id = ''
   @Property({ type: String, required: true }) workflowInstanceId = ''
   @Property({ type: Number, required: true }) stepNumber = 0
-  @Property({ type: String, required: true }) stepId = ''
+  @Property({ type: String }) stepId = /** @type {string|null} */ (null)
+  @Property({ type: String }) parentInstanceStepId = /** @type {string|null} */ (null)
+  @Property({ type: String }) name = /** @type {string|null} */ (null)
+  @Property({ type: String }) description = /** @type {string|null} */ (null)
+  @Property({ type: Number }) slaDays = /** @type {number|null} */ (null)
   @Property({ type: DateTime }) startedAt = null
   @Property({ type: DateTime }) completedAt = null
   @Property({ type: String, required: true }) statusId = 'PENDING'

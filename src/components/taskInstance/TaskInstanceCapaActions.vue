@@ -56,35 +56,41 @@ const childStepDefs = useLiveQueryWithDeps(
   { initial: [] },
 )
 
+// Children come in two flavors and both must be APPROVED to advance:
+//   • Template children — instance step's stepId matches a WorkflowStep with
+//     parentStepId === this step's stepId.
+//   • Ad-hoc children — instance step's parentInstanceStepId === this step's
+//     instance id (added at runtime, no template behind them).
 const childInstanceSteps = useLiveQueryWithDeps(
   [
+    () => props.instanceStep?.id,
     () => props.instanceStep?.workflowInstanceId,
     () => childStepDefs.value.map((s) => s.id).join(','),
   ],
-  async (db, [workflowInstanceId, idsStr]) => {
-    if (!workflowInstanceId || !idsStr) return []
-    const childStepIds = new Set(idsStr.split(','))
+  async (db, [parentInstanceStepId, workflowInstanceId, idsStr]) => {
+    if (!workflowInstanceId || !parentInstanceStepId) return []
+    const templateChildIds = new Set(idsStr ? idsStr.split(',') : [])
     const all = await db.WorkflowInstanceStep.where(
       'workflowInstanceId',
       workflowInstanceId,
     ).exec()
     const latest = new Map()
     for (const s of all) {
-      if (!childStepIds.has(s.stepId)) continue
-      const existing = latest.get(s.stepId)
-      if (!existing || s.createdAt > existing.createdAt) latest.set(s.stepId, s)
+      const isAdHoc = s.parentInstanceStepId && s.parentInstanceStepId === parentInstanceStepId
+      const isTemplate = s.stepId && templateChildIds.has(s.stepId)
+      if (!isAdHoc && !isTemplate) continue
+      const key = isAdHoc ? `adhoc:${s.id}` : `tpl:${s.stepId}`
+      const existing = latest.get(key)
+      if (!existing || s.createdAt > existing.createdAt) latest.set(key, s)
     }
     return [...latest.values()]
   },
   { initial: [] },
 )
 
-const hasChildren = computed(() => childStepDefs.value.length > 0)
+const hasChildren = computed(() => childInstanceSteps.value.length > 0)
 const allChildrenApproved = computed(
-  () =>
-    hasChildren.value &&
-    childInstanceSteps.value.length > 0 &&
-    childInstanceSteps.value.every((s) => s.statusId === 'APPROVED'),
+  () => hasChildren.value && childInstanceSteps.value.every((s) => s.statusId === 'APPROVED'),
 )
 const childrenBlock = computed(() => hasChildren.value && !allChildrenApproved.value)
 

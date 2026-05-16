@@ -5,11 +5,14 @@ import {
   IconLoader2,
   IconAlertTriangle,
   IconArrowBackUp,
+  IconPlus,
 } from '@tabler/icons-vue'
 import { DateTime } from 'luxon'
+import { post } from '@/api'
 
 const props = defineProps({
   parentStepId: { type: String, required: true },
+  parentInstanceStepId: { type: String, required: true },
   parentStepNumber: { type: [Number, String], default: null },
   workflowInstanceId: { type: String, required: true },
   capaId: { type: String, required: true },
@@ -17,6 +20,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['reassign'])
+const toast = useToast()
+
+const parentStep = useLiveQueryWithDeps([() => props.parentStepId], async (db, [parentId]) =>
+  parentId ? db.WorkflowStep.findByPk(parentId) : null,
+)
+const canAddChild = computed(() => props.isOwner && !!parentStep.value?.allowChildSteps)
 
 const selectedChildId = ref(null)
 const dialogOpen = ref(false)
@@ -36,6 +45,39 @@ function openChild(child) {
   dialogOpen.value = true
 }
 
+// ─── Add child step dialog ───────────────────────────────────────────────────
+const addDialogOpen = ref(false)
+const addingChild = ref(false)
+const newChild = ref({ name: '', description: '', slaDays: null, assigneeUserId: null })
+
+function openAddDialog() {
+  newChild.value = { name: '', description: '', slaDays: null, assigneeUserId: null }
+  addDialogOpen.value = true
+}
+
+async function handleAddChild() {
+  if (!newChild.value.name || !newChild.value.assigneeUserId) {
+    toast.warning('Step name and assignee are required')
+    return
+  }
+  addingChild.value = true
+  try {
+    await post(`/v1/services/capas/${props.capaId}/addChildStep`, {
+      parentInstanceStepId: props.parentInstanceStepId,
+      name: newChild.value.name,
+      description: newChild.value.description || null,
+      slaDays: newChild.value.slaDays || null,
+      assigneeUserId: newChild.value.assigneeUserId,
+    })
+    addDialogOpen.value = false
+    toast.success('Child step added')
+  } catch (e) {
+    toast.error(e.message || 'Failed to add child step')
+  } finally {
+    addingChild.value = false
+  }
+}
+
 const REASSIGNABLE_STATUSES = ['PENDING', 'IN_PROGRESS', 'SENT_BACK']
 function canReassignChild(child) {
   return props.isOwner && REASSIGNABLE_STATUSES.includes(child.statusId)
@@ -50,17 +92,32 @@ const childStepDefs = useLiveQueryWithDeps(
   { initial: [] },
 )
 
+// Two kinds of children share this list:
+//   1. Template children — WorkflowInstanceStep.stepId points at a WorkflowStep
+//      whose parentStepId === parent's stepId. Deduped by stepId because send-
+//      backs create new instances of the same template step.
+//   2. Ad-hoc children — WorkflowInstanceStep.parentInstanceStepId === parent's
+//      instance step id, no template WorkflowStep behind them.
 const childInstanceSteps = useLiveQueryWithDeps(
-  [() => props.workflowInstanceId, () => childStepDefs.value.map((s) => s.id).join(',')],
-  async (db, [workflowInstanceId, idsStr]) => {
-    if (!workflowInstanceId || !idsStr) return []
-    const childStepIds = new Set(idsStr.split(','))
+  [
+    () => props.workflowInstanceId,
+    () => props.parentInstanceStepId,
+    () => childStepDefs.value.map((s) => s.id).join(','),
+  ],
+  async (db, [workflowInstanceId, parentInstanceStepId, idsStr]) => {
+    if (!workflowInstanceId) return []
+    const templateChildIds = new Set(idsStr ? idsStr.split(',') : [])
     const all = await db.WorkflowInstanceStep.where('workflowInstanceId', workflowInstanceId).exec()
     const latest = new Map()
     for (const s of all) {
-      if (!childStepIds.has(s.stepId)) continue
-      const existing = latest.get(s.stepId)
-      if (!existing || s.createdAt > existing.createdAt) latest.set(s.stepId, s)
+      const isAdHoc = s.parentInstanceStepId && s.parentInstanceStepId === parentInstanceStepId
+      const isTemplate = s.stepId && templateChildIds.has(s.stepId)
+      if (!isAdHoc && !isTemplate) continue
+      // Ad-hoc rows are unique by id; template rows dedupe by stepId so the
+      // latest re-instance (post-sendback) wins.
+      const key = isAdHoc ? `adhoc:${s.id}` : `tpl:${s.stepId}`
+      const existing = latest.get(key)
+      if (!existing || s.createdAt > existing.createdAt) latest.set(key, s)
     }
     return [...latest.values()].sort((a, b) => a.stepNumber - b.stepNumber)
   },
@@ -93,19 +150,27 @@ function activeAssigneeIdFor(childInstanceStepId) {
 }
 
 function childTitle(child) {
-  return childStepDefs.value.find((d) => d.id === child.stepId)?.name || 'Step'
+  if (child.stepId) {
+    const def = childStepDefs.value.find((d) => d.id === child.stepId)
+    if (def?.name) return def.name
+  }
+  return child.name || 'Step'
 }
 
 function childStepLabel(child) {
-  const ordinal = childStepDefs.value.findIndex((d) => d.id === child.stepId) + 1
+  const ordinal = childInstanceSteps.value.findIndex((c) => c.id === child.id) + 1
   if (!ordinal) return ''
   return props.parentStepNumber != null ? `${props.parentStepNumber}.${ordinal}` : `${ordinal}`
 }
 
 function childDueDate(child) {
-  const def = childStepDefs.value.find((d) => d.id === child.stepId)
-  if (!def?.slaDays || !child.startedAt) return null
-  return child.startedAt.plus({ days: def.slaDays })
+  if (!child.startedAt) return null
+  let slaDays = child.slaDays
+  if (slaDays == null && child.stepId) {
+    slaDays = childStepDefs.value.find((d) => d.id === child.stepId)?.slaDays
+  }
+  if (!slaDays) return null
+  return child.startedAt.plus({ days: slaDays })
 }
 
 function isOverdue(child) {
@@ -151,6 +216,13 @@ function getRowClass(child) {
 
 <template>
   <div class="tw:flex tw:flex-col tw:gap-2">
+    <div v-if="canAddChild" class="tw:flex tw:justify-end">
+      <BaseButton variant="outline" size="sm" @click="openAddDialog">
+        <template #icon><IconPlus :size="14" /></template>
+        Add child step
+      </BaseButton>
+    </div>
+
     <div
       v-for="child in childInstanceSteps"
       :key="child.id"
@@ -248,6 +320,55 @@ function getRowClass(child) {
         :instanceStepId="selectedChildId"
         :capaId="capaId"
       />
+    </BaseDialog>
+
+    <BaseDialog v-model="addDialogOpen" title="Add Child Step" maxWidth="md">
+      <div class="tw:flex tw:flex-col tw:gap-4">
+        <div>
+          <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5">
+            Step name <span class="tw:text-red-500">*</span>
+          </label>
+          <BaseTextInput v-model="newChild.name" placeholder="e.g. Recalibrate sensor" />
+        </div>
+        <div>
+          <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5">
+            Description
+          </label>
+          <BaseTextarea
+            v-model="newChild.description"
+            placeholder="Optional details for the assignee"
+            rows="3"
+          />
+        </div>
+        <div>
+          <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5">
+            SLA (days)
+          </label>
+          <BaseTextInput
+            v-model.number="newChild.slaDays"
+            type="number"
+            :min="1"
+            placeholder="e.g. 5"
+            inputClass="tw:w-32"
+          />
+        </div>
+        <div>
+          <label class="tw:block tw:text-xs tw:font-bold tw:text-secondary tw:uppercase tw:mb-1.5">
+            Assignee <span class="tw:text-red-500">*</span>
+          </label>
+          <UserSelectMenu v-model="newChild.assigneeUserId" :required="true" />
+        </div>
+      </div>
+      <template #footer="{ close }">
+        <BaseButton variant="outline" :disabled="addingChild" @click="close">Cancel</BaseButton>
+        <BaseButton
+          variant="primary"
+          :disabled="!newChild.name || !newChild.assigneeUserId || addingChild"
+          @click="handleAddChild"
+        >
+          {{ addingChild ? 'Adding…' : 'Add step' }}
+        </BaseButton>
+      </template>
     </BaseDialog>
   </div>
 </template>

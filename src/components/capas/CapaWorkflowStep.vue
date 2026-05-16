@@ -57,6 +57,12 @@ const childStepCount = useLiveQueryWithDeps(
 )
 
 const hasChildren = computed(() => childStepCount.value > 0)
+// Render the child-step section whenever this stage already has children OR
+// is configured to accept them — the section hosts the "Add child step" button
+// even when the list is empty.
+const showChildSection = computed(
+  () => hasChildren.value || !!stepDefinition.value?.allowChildSteps,
+)
 
 const canReassign = computed(() => {
   const status = instanceStep.value?.statusId
@@ -115,8 +121,9 @@ const canSendBack = computed(
 
     <!-- Sub-tasks list (parent stages with nested children) -->
     <CapaWorkflowChildSteps
-      v-if="hasChildren && stepDefinition?.id && instanceStep.workflowInstanceId"
+      v-if="showChildSection && stepDefinition?.id && instanceStep.workflowInstanceId"
       :parentStepId="stepDefinition.id"
+      :parentInstanceStepId="instanceStep.id"
       :parentStepNumber="displayNumber ?? instanceStep.stepNumber"
       :workflowInstanceId="instanceStep.workflowInstanceId"
       :capaId="capaId"

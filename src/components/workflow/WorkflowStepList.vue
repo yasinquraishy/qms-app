@@ -209,9 +209,9 @@ defineExpose({ addStep })
               @moveDown="moveChildStepDown(step.id, ci)"
             />
 
-            <!-- Add Sub-step Button -->
+            <!-- Add Sub-step Button — only when the parent has opted in -->
             <button
-              v-if="canUpdate"
+              v-if="canUpdate && step.allowChildSteps"
               class="tw:w-full tw:py-2 tw:border tw:border-dashed tw:border-divider tw:rounded-lg tw:flex tw:items-center tw:justify-center tw:gap-1.5 tw:text-secondary tw:hover:text-primary tw:hover:border-primary tw:hover:bg-primary/5 tw:transition-all"
               @click="addChildStep(step.id)"
             >

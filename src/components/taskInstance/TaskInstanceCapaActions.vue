@@ -46,44 +46,13 @@ const sendBackTargets = useLiveQueryWithDeps(
 )
 
 // CAPA-specific: if this step is a parent that has child stages, advance is
-// only allowed when every child instance step is APPROVED.
-const childStepDefs = useLiveQueryWithDeps(
-  [() => props.instanceStep?.stepId],
-  async (db, [stepId]) => {
-    if (!stepId) return []
-    return db.WorkflowStep.where('parentStepId', stepId).exec()
-  },
-  { initial: [] },
-)
-
-// Children come in two flavors and both must be APPROVED to advance:
-//   • Template children — instance step's stepId matches a WorkflowStep with
-//     parentStepId === this step's stepId.
-//   • Ad-hoc children — instance step's parentInstanceStepId === this step's
-//     instance id (added at runtime, no template behind them).
+// only allowed when every child instance step is APPROVED. Hierarchy lives on
+// the instance row — single indexed lookup, no WorkflowStep fetch.
 const childInstanceSteps = useLiveQueryWithDeps(
-  [
-    () => props.instanceStep?.id,
-    () => props.instanceStep?.workflowInstanceId,
-    () => childStepDefs.value.map((s) => s.id).join(','),
-  ],
-  async (db, [parentInstanceStepId, workflowInstanceId, idsStr]) => {
-    if (!workflowInstanceId || !parentInstanceStepId) return []
-    const templateChildIds = new Set(idsStr ? idsStr.split(',') : [])
-    const all = await db.WorkflowInstanceStep.where(
-      'workflowInstanceId',
-      workflowInstanceId,
-    ).exec()
-    const latest = new Map()
-    for (const s of all) {
-      const isAdHoc = s.parentInstanceStepId && s.parentInstanceStepId === parentInstanceStepId
-      const isTemplate = s.stepId && templateChildIds.has(s.stepId)
-      if (!isAdHoc && !isTemplate) continue
-      const key = isAdHoc ? `adhoc:${s.id}` : `tpl:${s.stepId}`
-      const existing = latest.get(key)
-      if (!existing || s.createdAt > existing.createdAt) latest.set(key, s)
-    }
-    return [...latest.values()]
+  [() => props.instanceStep?.id],
+  async (db, [parentInstanceStepId]) => {
+    if (!parentInstanceStepId) return []
+    return db.WorkflowInstanceStep.where('parentInstanceStepId', parentInstanceStepId).exec()
   },
   { initial: [] },
 )

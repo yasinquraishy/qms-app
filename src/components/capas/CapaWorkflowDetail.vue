@@ -24,15 +24,11 @@ const workflowInstanceSteps = useLiveQueryWithDeps(
         latestByStepId.set(step.stepId, step)
       }
     }
-    const latest = [...latestByStepId.values()]
     // Only show root-level instance steps at this depth — children are rendered
-    // nested inside their parent stage by CapaWorkflowStep.
-    const stepIds = latest.map((s) => s.stepId)
-    if (stepIds.length === 0) return []
-    const defs = await Promise.all(stepIds.map((id) => db.WorkflowStep.findByPk(id)))
-    const isRoot = new Map(defs.filter(Boolean).map((d) => [d.id, !d.parentStepId]))
-    return latest
-      .filter((s) => isRoot.get(s.stepId))
+    // nested inside their parent stage by CapaWorkflowStep. Hierarchy lives on
+    // the instance row (parentInstanceStepId is NULL for roots).
+    return [...latestByStepId.values()]
+      .filter((s) => !s.parentInstanceStepId)
       .sort((a, b) => a.stepNumber - b.stepNumber)
   },
   { initial: [] },

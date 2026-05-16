@@ -46,11 +46,15 @@ function getStatusLabel(statusId) {
 }
 
 // CAPA nested stages: whether this step has children (drives form vs. sub-step list).
+// Hierarchy lives on the instance row — count rows that point at us.
 const childStepCount = useLiveQueryWithDeps(
-  [() => stepDefinition.value?.id],
-  async (db, [parentId]) => {
-    if (!parentId) return 0
-    const children = await db.WorkflowStep.where('parentStepId', parentId).exec()
+  [() => props.instanceStepId],
+  async (db, [parentInstanceStepId]) => {
+    if (!parentInstanceStepId) return 0
+    const children = await db.WorkflowInstanceStep.where(
+      'parentInstanceStepId',
+      parentInstanceStepId,
+    ).exec()
     return children.length
   },
   { initial: 0 },
@@ -121,13 +125,13 @@ const canSendBack = computed(
 
     <!-- Sub-tasks list (parent stages with nested children) -->
     <CapaWorkflowChildSteps
-      v-if="showChildSection && stepDefinition?.id && instanceStep.workflowInstanceId"
-      :parentStepId="stepDefinition.id"
+      v-if="showChildSection && instanceStep.workflowInstanceId"
       :parentInstanceStepId="instanceStep.id"
       :parentStepNumber="displayNumber ?? instanceStep.stepNumber"
       :workflowInstanceId="instanceStep.workflowInstanceId"
       :capaId="capaId"
       :isOwner="isOwner"
+      :allowChildSteps="!!stepDefinition?.allowChildSteps"
       class="tw:mb-4"
       @reassign="(childInstanceStepId) => emit('reassign', childInstanceStepId)"
     />

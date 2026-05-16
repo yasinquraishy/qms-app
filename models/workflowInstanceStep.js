@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 @ClientModel('workflowInstanceSteps', {
   primaryKey: 'id',
   syncField: 'updatedAt',
-  customIndex: '[workflowInstanceId+statusId], workflowInstanceId',
+  customIndex: '[workflowInstanceId+statusId], workflowInstanceId, parentInstanceStepId',
 })
 export class WorkflowInstanceStep extends BaseModel {
   constructor(...args) {

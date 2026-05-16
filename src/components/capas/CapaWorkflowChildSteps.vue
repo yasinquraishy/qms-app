@@ -11,21 +11,18 @@ import { DateTime } from 'luxon'
 import { post } from '@/api'
 
 const props = defineProps({
-  parentStepId: { type: String, required: true },
   parentInstanceStepId: { type: String, required: true },
   parentStepNumber: { type: [Number, String], default: null },
   workflowInstanceId: { type: String, required: true },
   capaId: { type: String, required: true },
   isOwner: { type: Boolean, default: false },
+  allowChildSteps: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['reassign'])
 const toast = useToast()
 
-const parentStep = useLiveQueryWithDeps([() => props.parentStepId], async (db, [parentId]) =>
-  parentId ? db.WorkflowStep.findByPk(parentId) : null,
-)
-const canAddChild = computed(() => props.isOwner && !!parentStep.value?.allowChildSteps)
+const canAddChild = computed(() => props.isOwner && props.allowChildSteps)
 
 const selectedChildId = ref(null)
 const dialogOpen = ref(false)
@@ -83,43 +80,17 @@ function canReassignChild(child) {
   return props.isOwner && REASSIGNABLE_STATUSES.includes(child.statusId)
 }
 
-const childStepDefs = useLiveQueryWithDeps(
-  [() => props.parentStepId],
-  async (db, [parentId]) => {
-    if (!parentId) return []
-    return db.WorkflowStep.where('parentStepId', parentId).orderBy('stepOrder').exec()
-  },
-  { initial: [] },
-)
-
-// Two kinds of children share this list:
-//   1. Template children — WorkflowInstanceStep.stepId points at a WorkflowStep
-//      whose parentStepId === parent's stepId. Deduped by stepId because send-
-//      backs create new instances of the same template step.
-//   2. Ad-hoc children — WorkflowInstanceStep.parentInstanceStepId === parent's
-//      instance step id, no template WorkflowStep behind them.
+// All children (template-spawned or ad-hoc) carry parentInstanceStepId pointing
+// at this parent's instance row. One indexed lookup, no WorkflowStep fetch.
 const childInstanceSteps = useLiveQueryWithDeps(
-  [
-    () => props.workflowInstanceId,
-    () => props.parentInstanceStepId,
-    () => childStepDefs.value.map((s) => s.id).join(','),
-  ],
-  async (db, [workflowInstanceId, parentInstanceStepId, idsStr]) => {
-    if (!workflowInstanceId) return []
-    const templateChildIds = new Set(idsStr ? idsStr.split(',') : [])
-    const all = await db.WorkflowInstanceStep.where('workflowInstanceId', workflowInstanceId).exec()
-    const latest = new Map()
-    for (const s of all) {
-      const isAdHoc = s.parentInstanceStepId && s.parentInstanceStepId === parentInstanceStepId
-      const isTemplate = s.stepId && templateChildIds.has(s.stepId)
-      if (!isAdHoc && !isTemplate) continue
-      // Ad-hoc rows are unique by id; template rows dedupe by stepId so the
-      // latest re-instance (post-sendback) wins.
-      const key = isAdHoc ? `adhoc:${s.id}` : `tpl:${s.stepId}`
-      const existing = latest.get(key)
-      if (!existing || s.createdAt > existing.createdAt) latest.set(key, s)
-    }
-    return [...latest.values()].sort((a, b) => a.stepNumber - b.stepNumber)
+  [() => props.parentInstanceStepId],
+  async (db, [parentInstanceStepId]) => {
+    if (!parentInstanceStepId) return []
+    const all = await db.WorkflowInstanceStep.where(
+      'parentInstanceStepId',
+      parentInstanceStepId,
+    ).exec()
+    return all.sort((a, b) => a.stepNumber - b.stepNumber)
   },
   { initial: [] },
 )

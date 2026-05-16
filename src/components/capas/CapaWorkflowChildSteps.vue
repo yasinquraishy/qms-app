@@ -150,10 +150,6 @@ function activeAssigneeIdFor(childInstanceStepId) {
 }
 
 function childTitle(child) {
-  if (child.stepId) {
-    const def = childStepDefs.value.find((d) => d.id === child.stepId)
-    if (def?.name) return def.name
-  }
   return child.name || 'Step'
 }
 
@@ -164,13 +160,8 @@ function childStepLabel(child) {
 }
 
 function childDueDate(child) {
-  if (!child.startedAt) return null
-  let slaDays = child.slaDays
-  if (slaDays == null && child.stepId) {
-    slaDays = childStepDefs.value.find((d) => d.id === child.stepId)?.slaDays
-  }
-  if (!slaDays) return null
-  return child.startedAt.plus({ days: slaDays })
+  if (!child.startedAt || !child.slaDays) return null
+  return child.startedAt.plus({ days: child.slaDays })
 }
 
 function isOverdue(child) {

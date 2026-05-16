@@ -88,7 +88,7 @@ const canSendBack = computed(
     >
       <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
         <span class="tw:text-xs tw:font-semibold tw:text-secondary tw:uppercase tw:tracking-wider">
-          {{ displayNumber ?? instanceStep.stepNumber }}. {{ stepDefinition?.name || 'Step' }}
+          {{ displayNumber ?? instanceStep.stepNumber }}. {{ instanceStep.name || 'Step' }}
         </span>
         <BaseBadge class="tw:text-[10px]" :class="getStepStatusClass(instanceStep.statusId)">
           {{ getStatusLabel(instanceStep.statusId) }}

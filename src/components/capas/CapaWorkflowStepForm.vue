@@ -22,12 +22,7 @@ const instanceStep = useLiveQueryWithDeps([() => props.instanceStepId], async (d
   id ? db.WorkflowInstanceStep.findByPk(id) : null,
 )
 
-const stepDefinition = useLiveQueryWithDeps(
-  [() => instanceStep.value?.stepId],
-  async (db, [stepId]) => (stepId ? db.WorkflowStep.findByPk(stepId) : null),
-)
-
-const formSchema = computed(() => stepDefinition.value?.formSchema || [])
+const formSchema = computed(() => instanceStep.value?.formSchema || [])
 const hasForm = computed(() => formSchema.value.length > 0)
 
 const records = useLiveQueryWithDeps(

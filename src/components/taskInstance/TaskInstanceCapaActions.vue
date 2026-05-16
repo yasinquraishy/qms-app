@@ -174,7 +174,7 @@ const filteredReassignCandidates = computed(() =>
 )
 
 const formRequired = computed(
-  () => Array.isArray(props.workflowStep?.formSchema) && props.workflowStep.formSchema.length > 0,
+  () => Array.isArray(props.instanceStep?.formSchema) && props.instanceStep.formSchema.length > 0,
 )
 const formSaveRequired = computed(() => formRequired.value && !capaRecord.value?.submittedAt)
 

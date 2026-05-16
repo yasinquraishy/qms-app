@@ -119,6 +119,7 @@ const canSendBack = computed(
       :parentStepId="stepDefinition.id"
       :parentStepNumber="displayNumber ?? instanceStep.stepNumber"
       :workflowInstanceId="instanceStep.workflowInstanceId"
+      :capaId="capaId"
       :isOwner="isOwner"
       class="tw:mb-4"
       @reassign="(childInstanceStepId) => emit('reassign', childInstanceStepId)"

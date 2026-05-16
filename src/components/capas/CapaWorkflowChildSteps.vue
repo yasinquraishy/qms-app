@@ -12,10 +12,29 @@ const props = defineProps({
   parentStepId: { type: String, required: true },
   parentStepNumber: { type: [Number, String], default: null },
   workflowInstanceId: { type: String, required: true },
+  capaId: { type: String, required: true },
   isOwner: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['reassign'])
+
+const selectedChildId = ref(null)
+const dialogOpen = ref(false)
+
+const selectedChild = computed(
+  () => childInstanceSteps.value.find((c) => c.id === selectedChildId.value) || null,
+)
+
+const dialogTitle = computed(() => {
+  const child = selectedChild.value
+  if (!child) return 'Step'
+  return `${childStepLabel(child)} · ${childTitle(child)}`
+})
+
+function openChild(child) {
+  selectedChildId.value = child.id
+  dialogOpen.value = true
+}
 
 const REASSIGNABLE_STATUSES = ['PENDING', 'IN_PROGRESS', 'SENT_BACK']
 function canReassignChild(child) {
@@ -135,8 +154,9 @@ function getRowClass(child) {
     <div
       v-for="child in childInstanceSteps"
       :key="child.id"
-      class="tw:flex tw:items-center tw:gap-3 tw:px-4 tw:py-3 tw:border tw:rounded-lg"
+      class="tw:flex tw:items-center tw:gap-3 tw:px-4 tw:py-3 tw:border tw:rounded-lg tw:cursor-pointer tw:hover:shadow-sm tw:transition-shadow"
       :class="getRowClass(child)"
+      @click="openChild(child)"
     >
       <!-- Status icon -->
       <div class="tw:shrink-0">
@@ -205,6 +225,7 @@ function getRowClass(child) {
           :userId="activeAssigneeIdFor(child.id)"
           :showCardOnClick="true"
           class="tw:size-7"
+          @click.stop
         />
         <span v-else class="tw:text-xs tw:text-secondary">—</span>
         <BaseBadge class="tw:text-[10px]" :class="getBadgeClass(child)">
@@ -220,5 +241,13 @@ function getRowClass(child) {
         </button>
       </div>
     </div>
+
+    <BaseDialog v-model="dialogOpen" :title="dialogTitle" maxWidth="2xl">
+      <CapaWorkflowStepForm
+        v-if="selectedChildId"
+        :instanceStepId="selectedChildId"
+        :capaId="capaId"
+      />
+    </BaseDialog>
   </div>
 </template>
